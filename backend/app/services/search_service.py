@@ -616,4 +616,103 @@ class AdvancedSearchService:
             # True hybrid search - combine both approaches
             return fusion_search(db, query, hybrid_weight, AdvancedSearchService)
 
+    @staticmethod
+    def search_with_annotations(
+        db: Session,
+        query: str,
+        user_id: str,
+        include_annotations: bool = True,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Enhanced search that includes annotation matches.
+        
+        Algorithm:
+        1. Perform standard resource search using existing search method
+        2. If include_annotations is True:
+           - Search user's annotations using AnnotationService
+           - Build resource-annotation mapping
+        3. Return dict with resources, annotations, and resource_annotation_matches
+        
+        Args:
+            db: Database session
+            query: Search query text
+            user_id: User ID for annotation filtering
+            include_annotations: Whether to include annotation search results
+            limit: Maximum number of results per type
+            offset: Offset for pagination
+            
+        Returns:
+            Dictionary with keys:
+            - resources: List of matching Resource objects
+            - total: Total count of matching resources
+            - annotations: List of matching Annotation objects (if include_annotations=True)
+            - resource_annotation_matches: Dict mapping resource_id to list of annotation_ids
+            - facets: Search facets
+            - snippets: Search result snippets
+        """
+        from backend.app.schemas.search import SearchQuery, SearchFilters
+        
+        # Build SearchQuery object for standard search
+        search_query = SearchQuery(
+            text=query,
+            filters=SearchFilters(),
+            limit=limit,
+            offset=offset,
+            sort_by="relevance",
+            sort_dir="desc"
+        )
+        
+        # Perform standard resource search
+        search_results = AdvancedSearchService.search(db, search_query)
+        
+        # Unpack results (handle both 3-tuple and 4-tuple returns)
+        if len(search_results) == 4:
+            resources, total, facets, snippets = search_results
+        else:
+            resources, total, facets = search_results
+            snippets = {}
+        
+        # Initialize response
+        response = {
+            "resources": resources,
+            "total": total,
+            "facets": facets,
+            "snippets": snippets,
+            "annotations": [],
+            "resource_annotation_matches": {}
+        }
+        
+        if not include_annotations or not query:
+            return response
+        
+        # Search user's annotations
+        try:
+            from backend.app.services.annotation_service import AnnotationService
+            
+            annotation_service = AnnotationService(db)
+            annotations = annotation_service.search_annotations_fulltext(
+                user_id=user_id,
+                query=query,
+                limit=limit
+            )
+            
+            # Build resource-annotation mapping
+            resource_annotation_map: Dict[str, List[str]] = {}
+            for ann in annotations:
+                resource_id_str = str(ann.resource_id)
+                if resource_id_str not in resource_annotation_map:
+                    resource_annotation_map[resource_id_str] = []
+                resource_annotation_map[resource_id_str].append(str(ann.id))
+            
+            response["annotations"] = annotations
+            response["resource_annotation_matches"] = resource_annotation_map
+            
+        except Exception as e:
+            # Gracefully degrade if annotation search fails
+            print(f"Warning: Annotation search failed: {e}")
+        
+        return response
+
 

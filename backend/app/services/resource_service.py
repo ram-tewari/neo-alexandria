@@ -453,5 +453,30 @@ def delete_resource(db: Session, resource_id) -> None:
     resource = get_resource(db, resource_id)
     if not resource:
         raise ValueError("Resource not found")
+    
+    # Phase 7.5: Cascade delete annotations
+    # Note: Database CASCADE constraint handles this automatically,
+    # but explicit deletion provides better logging and control
+    try:
+        from backend.app.database.models import Annotation
+        # Convert resource_id to UUID if needed
+        if isinstance(resource_id, str):
+            try:
+                import uuid as uuid_module
+                resource_uuid = uuid_module.UUID(resource_id)
+            except (ValueError, TypeError):
+                resource_uuid = resource_id
+        else:
+            resource_uuid = resource_id
+        
+        # Delete annotations associated with this resource
+        annotation_count = db.query(Annotation).filter(Annotation.resource_id == resource_uuid).delete()
+        if annotation_count > 0:
+            print(f"Deleted {annotation_count} annotations for resource {resource_id}")
+    except Exception as e:
+        # Log but don't fail if annotation deletion fails
+        # The CASCADE constraint will handle it at the database level
+        print(f"Warning: Could not explicitly delete annotations for resource {resource_id}: {e}")
+    
     db.delete(resource)
     db.commit()

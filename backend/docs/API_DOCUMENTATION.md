@@ -1845,6 +1845,767 @@ Collections automatically update when resources are deleted:
 
 ---
 
+## Annotation Management Endpoints
+
+### POST /resources/{resource_id}/annotations
+
+Create a new annotation on a resource by highlighting text and optionally adding a note.
+
+**Path Parameters:**
+- `resource_id` (string, required): UUID of the resource
+
+**Request Body:**
+```json
+{
+  "start_offset": "integer (required, >= 0)",
+  "end_offset": "integer (required, > start_offset)",
+  "highlighted_text": "string (required)",
+  "note": "string (optional, max 10,000 characters)",
+  "tags": ["string"] (optional, max 20 tags, max 50 chars each),
+  "color": "string (optional, hex color, default: #FFFF00)",
+  "collection_ids": ["uuid"] (optional)
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+  "user_id": "user123",
+  "start_offset": 150,
+  "end_offset": 200,
+  "highlighted_text": "This is the key finding of the paper",
+  "note": "Important result - contradicts previous assumptions",
+  "tags": ["key-finding", "methodology"],
+  "color": "#FFD700",
+  "context_before": "...previous text leading up to...",
+  "context_after": "...text following the highlight...",
+  "is_shared": false,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:00:00Z"
+}
+```
+
+**Authentication:** Required
+
+**Behavior:**
+- Validates resource exists and user has access
+- Validates offsets (start < end, non-negative)
+- Extracts 50 characters of context before/after highlight
+- Generates semantic embedding if note provided (async)
+- Target: <50ms creation time (excluding embedding)
+
+**Error Responses:**
+- `400 Bad Request` - Invalid offsets, text too long, or validation errors
+- `401 Unauthorized` - No authentication token
+- `404 Not Found` - Resource not found
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/resources/660e8400-e29b-41d4-a716-446655440001/annotations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_offset": 150,
+    "end_offset": 200,
+    "highlighted_text": "This is the key finding of the paper",
+    "note": "Important result - contradicts previous assumptions",
+    "tags": ["key-finding", "methodology"],
+    "color": "#FFD700"
+  }'
+```
+
+---
+
+### GET /resources/{resource_id}/annotations
+
+List all annotations for a specific resource in document order.
+
+**Path Parameters:**
+- `resource_id` (string, required): UUID of the resource
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `include_shared` | boolean | Include shared annotations from other users | false |
+| `tags` | string[] | Filter by tags (comma-separated) | - |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "user_id": "user123",
+      "start_offset": 150,
+      "end_offset": 200,
+      "highlighted_text": "This is the key finding",
+      "note": "Important result",
+      "tags": ["key-finding"],
+      "color": "#FFD700",
+      "context_before": "...previous text...",
+      "context_after": "...following text...",
+      "is_shared": false,
+      "created_at": "2024-01-01T10:00:00Z",
+      "updated_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Authentication:** Required
+
+**Ordering:** Results ordered by start_offset ascending (document order)
+
+**Example:**
+```bash
+# Get all user's annotations for resource
+curl "http://127.0.0.1:8000/resources/660e8400-e29b-41d4-a716-446655440001/annotations"
+
+# Include shared annotations
+curl "http://127.0.0.1:8000/resources/660e8400-e29b-41d4-a716-446655440001/annotations?include_shared=true"
+
+# Filter by tags
+curl "http://127.0.0.1:8000/resources/660e8400-e29b-41d4-a716-446655440001/annotations?tags=key-finding,methodology"
+```
+
+---
+
+### GET /annotations
+
+List all annotations for the authenticated user across all resources.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Results per page (1-100) | 50 |
+| `offset` | integer | Number of results to skip | 0 |
+| `sort_by` | string | Sort order (recent/oldest) | recent |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "resource_title": "Deep Learning Fundamentals",
+      "user_id": "user123",
+      "start_offset": 150,
+      "end_offset": 200,
+      "highlighted_text": "This is the key finding",
+      "note": "Important result",
+      "tags": ["key-finding"],
+      "color": "#FFD700",
+      "created_at": "2024-01-01T10:00:00Z",
+      "updated_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 42,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+**Authentication:** Required
+
+**Sorting:**
+- `recent`: Sort by created_at descending (newest first)
+- `oldest`: Sort by created_at ascending (oldest first)
+
+**Example:**
+```bash
+# Get recent annotations
+curl "http://127.0.0.1:8000/annotations?limit=20&sort_by=recent"
+
+# Get oldest annotations with pagination
+curl "http://127.0.0.1:8000/annotations?limit=50&offset=50&sort_by=oldest"
+```
+
+---
+
+### GET /annotations/{annotation_id}
+
+Retrieve a specific annotation by ID.
+
+**Path Parameters:**
+- `annotation_id` (string, required): UUID of the annotation
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+  "resource_title": "Deep Learning Fundamentals",
+  "user_id": "user123",
+  "start_offset": 150,
+  "end_offset": 200,
+  "highlighted_text": "This is the key finding",
+  "note": "Important result",
+  "tags": ["key-finding"],
+  "color": "#FFD700",
+  "context_before": "...previous text...",
+  "context_after": "...following text...",
+  "is_shared": false,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:00:00Z"
+}
+```
+
+**Authentication:** Required
+
+**Access Control:**
+- User must be owner OR annotation must be shared
+
+**Error Responses:**
+- `403 Forbidden` - User does not have access to annotation
+- `404 Not Found` - Annotation not found
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/annotations/550e8400-e29b-41d4-a716-446655440000"
+```
+
+---
+
+### PUT /annotations/{annotation_id}
+
+Update an existing annotation's note, tags, color, or sharing status.
+
+**Path Parameters:**
+- `annotation_id` (string, required): UUID of the annotation
+
+**Request Body:**
+```json
+{
+  "note": "string (optional, max 10,000 characters)",
+  "tags": ["string"] (optional, max 20 tags),
+  "color": "string (optional, hex color)",
+  "is_shared": "boolean (optional)"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+  "user_id": "user123",
+  "start_offset": 150,
+  "end_offset": 200,
+  "highlighted_text": "This is the key finding",
+  "note": "Updated note with new insights",
+  "tags": ["key-finding", "revised"],
+  "color": "#00FF00",
+  "is_shared": true,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T11:00:00Z"
+}
+```
+
+**Authentication:** Required (owner only)
+
+**Behavior:**
+- Cannot update start_offset, end_offset, or highlighted_text
+- Regenerates embedding if note is changed
+- Updates updated_at timestamp automatically
+
+**Error Responses:**
+- `403 Forbidden` - User is not the annotation owner
+- `404 Not Found` - Annotation not found
+
+**Example:**
+```bash
+curl -X PUT http://127.0.0.1:8000/annotations/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "note": "Updated note with new insights",
+    "tags": ["key-finding", "revised"],
+    "is_shared": true
+  }'
+```
+
+---
+
+### DELETE /annotations/{annotation_id}
+
+Delete an annotation.
+
+**Path Parameters:**
+- `annotation_id` (string, required): UUID of the annotation
+
+**Response (204 No Content)**
+
+**Authentication:** Required (owner only)
+
+**Error Responses:**
+- `403 Forbidden` - User is not the annotation owner
+- `404 Not Found` - Annotation not found
+
+**Example:**
+```bash
+curl -X DELETE http://127.0.0.1:8000/annotations/550e8400-e29b-41d4-a716-446655440000
+```
+
+---
+
+### GET /annotations/search/fulltext
+
+Search annotations using full-text search across notes and highlighted text.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `query` | string | Search query (required) | - |
+| `limit` | integer | Max results (1-100) | 25 |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "resource_title": "Deep Learning Fundamentals",
+      "highlighted_text": "machine learning algorithms",
+      "note": "Key discussion of ML algorithms",
+      "tags": ["algorithms"],
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Authentication:** Required
+
+**Search Behavior:**
+- Searches both note and highlighted_text fields
+- Case-insensitive LIKE query
+- Returns only user's own annotations
+- Target: <100ms for 10,000 annotations
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/annotations/search/fulltext?query=machine+learning&limit=10"
+```
+
+---
+
+### GET /annotations/search/semantic
+
+Search annotations using semantic similarity for conceptual discovery.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `query` | string | Search query (required) | - |
+| `limit` | integer | Max results (1-50) | 10 |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "resource_title": "Deep Learning Fundamentals",
+      "highlighted_text": "neural network architectures",
+      "note": "Discussion of CNN and RNN structures",
+      "tags": ["architecture"],
+      "similarity": 0.92,
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Authentication:** Required
+
+**Search Behavior:**
+- Generates embedding for query text
+- Computes cosine similarity with annotation embeddings
+- Returns results sorted by similarity descending
+- Only searches annotations with embeddings
+- Target: <500ms for 1,000 annotations
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/annotations/search/semantic?query=deep+learning+architectures&limit=10"
+```
+
+---
+
+### GET /annotations/search/tags
+
+Search annotations by tags with flexible matching.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `tags` | string[] | Tags to search (comma-separated, required) | - |
+| `match_all` | boolean | Require all tags (true) or any tag (false) | false |
+| `limit` | integer | Max results (1-100) | 50 |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "resource_title": "Deep Learning Fundamentals",
+      "highlighted_text": "key finding",
+      "note": "Important result",
+      "tags": ["key-finding", "methodology"],
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Authentication:** Required
+
+**Matching Modes:**
+- `match_all=false`: Returns annotations with ANY of the specified tags
+- `match_all=true`: Returns annotations with ALL of the specified tags
+
+**Example:**
+```bash
+# Find annotations with any of these tags
+curl "http://127.0.0.1:8000/annotations/search/tags?tags=key-finding,methodology&match_all=false"
+
+# Find annotations with all of these tags
+curl "http://127.0.0.1:8000/annotations/search/tags?tags=key-finding,methodology&match_all=true"
+```
+
+---
+
+### GET /annotations/export/markdown
+
+Export annotations to Markdown format for use in external note-taking applications.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `resource_id` | string | Filter by resource UUID (optional) | - |
+
+**Response (200 OK):**
+```markdown
+Content-Type: text/markdown
+
+# Annotations Export
+
+## Deep Learning Fundamentals
+
+### Annotation 1
+**Highlighted Text:**
+> This is the key finding of the paper
+
+**Note:** Important result - contradicts previous assumptions
+
+**Tags:** key-finding, methodology
+
+**Created:** 2024-01-01 10:00:00
+
+---
+
+## Neural Network Architectures
+
+### Annotation 2
+**Highlighted Text:**
+> Convolutional layers extract spatial features
+
+**Note:** Core concept for image processing
+
+**Tags:** architecture, cnn
+
+**Created:** 2024-01-01 11:00:00
+
+---
+```
+
+**Authentication:** Required
+
+**Behavior:**
+- Groups annotations by resource
+- Formats each annotation with highlighted text, note, tags, timestamp
+- Exports all user annotations if no resource_id specified
+- Target: <2s for 1,000 annotations
+
+**Example:**
+```bash
+# Export all annotations
+curl "http://127.0.0.1:8000/annotations/export/markdown" > annotations.md
+
+# Export annotations for specific resource
+curl "http://127.0.0.1:8000/annotations/export/markdown?resource_id=660e8400-e29b-41d4-a716-446655440001" > resource_annotations.md
+```
+
+---
+
+### GET /annotations/export/json
+
+Export annotations to JSON format with complete metadata.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `resource_id` | string | Filter by resource UUID (optional) | - |
+
+**Response (200 OK):**
+```json
+{
+  "annotations": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+      "resource_title": "Deep Learning Fundamentals",
+      "start_offset": 150,
+      "end_offset": 200,
+      "highlighted_text": "This is the key finding",
+      "note": "Important result",
+      "tags": ["key-finding", "methodology"],
+      "color": "#FFD700",
+      "is_shared": false,
+      "created_at": "2024-01-01T10:00:00Z",
+      "updated_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 1,
+  "exported_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Authentication:** Required
+
+**Behavior:**
+- Includes complete annotation metadata
+- Includes resource title for context
+- Exports all user annotations if no resource_id specified
+
+**Example:**
+```bash
+# Export all annotations to JSON
+curl "http://127.0.0.1:8000/annotations/export/json" > annotations.json
+
+# Export annotations for specific resource
+curl "http://127.0.0.1:8000/annotations/export/json?resource_id=660e8400-e29b-41d4-a716-446655440001" > resource_annotations.json
+```
+
+---
+
+## Annotation Data Models
+
+### Annotation Model
+
+```json
+{
+  "id": "uuid",
+  "resource_id": "uuid",
+  "user_id": "string",
+  "start_offset": "integer (>= 0)",
+  "end_offset": "integer (> start_offset)",
+  "highlighted_text": "string",
+  "note": "string or null (max 10,000 characters)",
+  "tags": ["string"] (max 20 tags, max 50 chars each),
+  "color": "string (hex color, default: #FFFF00)",
+  "embedding": [float] or null (384-dimensional vector),
+  "context_before": "string or null (50 characters)",
+  "context_after": "string or null (50 characters)",
+  "is_shared": "boolean (default: false)",
+  "collection_ids": ["uuid"] or null,
+  "created_at": "datetime (ISO 8601)",
+  "updated_at": "datetime (ISO 8601)"
+}
+```
+
+**Field Descriptions:**
+- `id`: Unique annotation identifier
+- `resource_id`: Resource being annotated
+- `user_id`: User who created the annotation
+- `start_offset`: Zero-indexed character position where highlight starts
+- `end_offset`: Zero-indexed character position where highlight ends
+- `highlighted_text`: The actual text that was highlighted
+- `note`: User's commentary or observation (optional)
+- `tags`: User-defined labels for categorization
+- `color`: Hex color code for visual organization
+- `embedding`: Semantic vector for note content (generated async)
+- `context_before`: 50 characters before highlight for preview
+- `context_after`: 50 characters after highlight for preview
+- `is_shared`: Whether annotation is visible to other users
+- `collection_ids`: Associated research collections
+
+### Annotation List Response Model
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "resource_id": "uuid",
+      "resource_title": "string (optional)",
+      "user_id": "string",
+      "start_offset": "integer",
+      "end_offset": "integer",
+      "highlighted_text": "string",
+      "note": "string or null",
+      "tags": ["string"],
+      "color": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ],
+  "total": "integer",
+  "limit": "integer (optional)",
+  "offset": "integer (optional)"
+}
+```
+
+### Semantic Search Response Model
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "resource_id": "uuid",
+      "resource_title": "string",
+      "highlighted_text": "string",
+      "note": "string or null",
+      "tags": ["string"],
+      "similarity": "float (0.0-1.0)",
+      "created_at": "datetime"
+    }
+  ],
+  "total": "integer"
+}
+```
+
+---
+
+## Annotation Features
+
+### Text Offset Tracking
+
+Annotations use character offsets for precise text positioning:
+
+**Offset Calculation:**
+- Zero-indexed character positions in resource content
+- `start_offset`: First character of highlight (inclusive)
+- `end_offset`: Last character of highlight (exclusive)
+- Example: "Hello World"[0:5] = "Hello"
+
+**Validation Rules:**
+- `start_offset >= 0`
+- `end_offset > start_offset`
+- `end_offset <= content_length`
+- Zero-length highlights rejected
+
+**Advantages:**
+- Works with any text format (HTML, PDF, plain text)
+- More reliable than DOM-based selection
+- Survives content reformatting
+- Simple to implement and understand
+
+### Context Extraction
+
+Annotations automatically capture surrounding text:
+
+**Algorithm:**
+1. Extract 50 characters before start_offset
+2. Extract 50 characters after end_offset
+3. Handle document boundaries gracefully
+4. Store in context_before and context_after fields
+
+**Use Cases:**
+- Preview annotations in list views
+- Understand highlight context without full document
+- Quick reference in search results
+
+**Performance:** <10ms per annotation
+
+### Semantic Embedding Generation
+
+Annotations with notes get automatic semantic embeddings:
+
+**Process:**
+1. User creates annotation with note
+2. Annotation saved immediately (fast path)
+3. Embedding generation queued (background)
+4. Embedding computed using sentence-transformers
+5. Annotation updated with embedding vector
+
+**Model:** nomic-ai/nomic-embed-text-v1 (384 dimensions)
+
+**Performance:**
+- Annotation creation: <50ms (excluding embedding)
+- Embedding generation: <500ms (async)
+- Semantic search: <500ms for 1,000 annotations
+
+### Privacy and Sharing
+
+Annotations are private by default:
+
+**Privacy Model:**
+- `is_shared=false`: Only owner can view (default)
+- `is_shared=true`: Visible to all users with resource access
+
+**Access Control:**
+- Create: Authenticated users only
+- Read: Owner OR (shared AND has resource access)
+- Update: Owner only
+- Delete: Owner only
+- Search: User's own annotations only
+
+### Collection Integration
+
+Annotations can be associated with collections:
+
+**Association:**
+- Store collection UUIDs in `collection_ids` JSON array
+- Multiple collections per annotation supported
+- Optional field (can be null or empty)
+
+**Use Cases:**
+- Organize annotations by research project
+- Filter annotations by collection context
+- Export collection-specific annotations
+
+### Export Capabilities
+
+Annotations support multiple export formats:
+
+**Markdown Export:**
+- Human-readable format
+- Grouped by resource
+- Includes all metadata
+- Compatible with note-taking apps (Obsidian, Notion, etc.)
+
+**JSON Export:**
+- Machine-readable format
+- Complete metadata preservation
+- Suitable for backup and migration
+- Easy to parse programmatically
+
+**Performance:**
+- Target: <2s for 1,000 annotations
+- Efficient batch queries
+- Single database transaction
+
+---
+
 ## Citation Data Models
 
 ### Citation Model

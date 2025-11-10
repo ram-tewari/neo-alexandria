@@ -31,6 +31,7 @@ Neo Alexandria 2.0 implements a modern, API-first architecture with the followin
 6. **Knowledge Graph** - Relationship detection and graph-based exploration
 7. **Recommendation Engine** - Personalized content recommendations
 8. **Collection Management** - User-curated collections with semantic embeddings
+9. **Annotation System** - Text highlighting and note-taking with semantic search
 
 #### Data Flow Architecture
 
@@ -99,7 +100,8 @@ neo_alexandria/
 │   │   ├── classification.py    # Classification system endpoints
 │   │   ├── graph.py             # Knowledge graph endpoints
 │   │   ├── recommendation.py    # Recommendation system endpoints
-│   │   └── collections.py       # Collection management endpoints
+│   │   ├── collections.py       # Collection management endpoints
+│   │   └── annotations.py       # Annotation management endpoints
 │   ├── services/                # Business logic layer
 │   │   ├── __init__.py
 │   │   ├── ai_core.py           # AI processing and embedding generation
@@ -113,6 +115,7 @@ neo_alexandria/
 │   │   ├── graph_service.py     # Knowledge graph processing
 │   │   ├── recommendation_service.py # Recommendation engine
 │   │   ├── collection_service.py # Collection management logic
+│   │   ├── annotation_service.py # Annotation management logic
 │   │   └── dependencies.py      # Dependency injection
 │   ├── schemas/                 # Data validation schemas
 │   │   ├── __init__.py
@@ -121,7 +124,8 @@ neo_alexandria/
 │   │   ├── query.py             # Query parameter schemas
 │   │   ├── graph.py             # Graph data schemas
 │   │   ├── recommendation.py    # Recommendation schemas
-│   │   └── collection.py        # Collection validation schemas
+│   │   ├── collection.py        # Collection validation schemas
+│   │   └── annotation.py        # Annotation validation schemas
 │   ├── utils/                   # Utility functions
 │   │   ├── __init__.py
 │   │   ├── content_extractor.py # Content extraction and processing
@@ -695,6 +699,514 @@ class CollectionAnalytics:
 @router.get("/collections/{id}/analytics")
 def get_analytics(id: str):
     return analytics_service.get_collection_analytics(id)
+```
+
+### Working with Annotations
+
+The annotation system enables users to highlight text passages, add notes, and organize their reading with tags. This section covers the architecture, text offset tracking, and annotation workflows.
+
+#### Annotation Model Architecture
+
+Annotations use character offsets for precise text positioning:
+
+```python
+class Annotation(Base):
+    __tablename__ = "annotations"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    
+    # Foreign keys
+    resource_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("resources.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Text selection (precise positioning)
+    start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    highlighted_text: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # User content
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    
+    # Visual styling
+    color: Mapped[str] = mapped_column(String(7), nullable=False, default="#FFFF00")
+    
+    # Semantic search
+    embedding: Mapped[List[float] | None] = mapped_column(JSON, nullable=True)
+    
+    # Context preservation
+    context_before: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    context_after: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    
+    # Sharing and organization
+    is_shared: Mapped[bool] = mapped_column(Integer, nullable=False, default=0)
+    collection_ids: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
+    
+    # Relationships
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="annotations")
+```
+
+**Key Design Decisions:**
+- **Character offsets**: More reliable than DOM-based selection, works with any text format
+- **JSON for arrays**: Flexible storage for tags and collection IDs without additional tables
+- **Context fields**: 50 chars before/after for preview without re-parsing full content
+- **Embedding field**: Enables semantic search without external vector database
+
+#### Text Offset Tracking
+
+Annotations use zero-indexed character offsets for precise text positioning:
+
+**Offset Calculation:**
+```python
+# Example: "Hello World"
+text = "Hello World"
+start_offset = 0
+end_offset = 5
+highlighted_text = text[start_offset:end_offset]  # "Hello"
+```
+
+**Validation Rules:**
+```python
+def validate_offsets(start_offset: int, end_offset: int, content_length: int):
+    """Validate annotation offsets."""
+    if start_offset < 0 or end_offset < 0:
+        raise ValidationError("Offsets must be non-negative")
+    
+    if start_offset >= end_offset:
+        raise ValidationError("start_offset must be less than end_offset")
+    
+    if end_offset > content_length:
+        raise ValidationError(f"end_offset exceeds content length")
+```
+
+**Advantages:**
+- Works with any text format (HTML, PDF, plain text)
+- More reliable than DOM-based selection
+- Survives content reformatting
+- Simple to implement and understand
+
+**Edge Cases:**
+```python
+# Handle document boundaries
+def extract_context(content: str, start: int, end: int, context_size: int = 50):
+    """Extract context around highlight."""
+    # Context before (handle start of document)
+    context_start = max(0, start - context_size)
+    context_before = content[context_start:start]
+    
+    # Context after (handle end of document)
+    context_end = min(len(content), end + context_size)
+    context_after = content[end:context_end]
+    
+    return context_before, context_after
+```
+
+#### Annotation Service Architecture
+
+The annotation service implements CRUD operations and search functionality:
+
+```python
+class AnnotationService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.embedding_service = EmbeddingService(db)
+    
+    def create_annotation(
+        self,
+        resource_id: str,
+        user_id: str,
+        start_offset: int,
+        end_offset: int,
+        highlighted_text: str,
+        note: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        color: str = "#FFFF00"
+    ) -> Annotation:
+        """
+        Create annotation with validation and context extraction.
+        
+        Steps:
+        1. Validate resource exists and user has access
+        2. Validate offsets (start < end, non-negative)
+        3. Extract context (50 chars before/after)
+        4. Create Annotation record
+        5. Enqueue embedding generation if note provided
+        6. Return created annotation
+        
+        Performance: <50ms (excluding embedding)
+        """
+        # Validate resource
+        resource = self.db.query(Resource).filter(Resource.id == resource_id).first()
+        if not resource:
+            raise ValueError("Resource not found")
+        
+        # Validate offsets
+        validate_offsets(start_offset, end_offset, len(resource.content))
+        
+        # Extract context
+        context_before, context_after = extract_context(
+            resource.content, start_offset, end_offset
+        )
+        
+        # Create annotation
+        annotation = Annotation(
+            id=uuid.uuid4(),
+            resource_id=resource_id,
+            user_id=user_id,
+            start_offset=start_offset,
+            end_offset=end_offset,
+            highlighted_text=highlighted_text,
+            note=note,
+            tags=json.dumps(tags) if tags else None,
+            color=color,
+            context_before=context_before,
+            context_after=context_after
+        )
+        
+        self.db.add(annotation)
+        self.db.commit()
+        
+        # Enqueue embedding generation (async)
+        if note:
+            background_tasks.add_task(
+                self._generate_annotation_embedding,
+                annotation.id,
+                note
+            )
+        
+        return annotation
+```
+
+#### Semantic Search Implementation
+
+Annotations support semantic search using cosine similarity:
+
+```python
+def search_annotations_semantic(
+    self,
+    user_id: str,
+    query: str,
+    limit: int = 10
+) -> List[Tuple[Annotation, float]]:
+    """
+    Search annotations using semantic similarity.
+    
+    Algorithm:
+    1. Generate embedding for query text
+    2. Retrieve user annotations with embeddings
+    3. Compute cosine similarity for each
+    4. Sort by similarity descending
+    5. Return top N with scores
+    
+    Performance: <500ms for 1,000 annotations
+    """
+    # Generate query embedding
+    query_embedding = self.embedding_service.generate_embedding(query)
+    
+    # Get user annotations with embeddings
+    annotations = (
+        self.db.query(Annotation)
+        .filter(
+            Annotation.user_id == user_id,
+            Annotation.embedding.isnot(None)
+        )
+        .all()
+    )
+    
+    # Compute similarities
+    results = []
+    for annotation in annotations:
+        similarity = self._cosine_similarity(
+            query_embedding,
+            json.loads(annotation.embedding)
+        )
+        results.append((annotation, similarity))
+    
+    # Sort by similarity and return top N
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results[:limit]
+
+def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    import numpy as np
+    
+    v1 = np.array(vec1)
+    v2 = np.array(vec2)
+    
+    dot_product = np.dot(v1, v2)
+    norm1 = np.linalg.norm(v1)
+    norm2 = np.linalg.norm(v2)
+    
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    
+    return float(dot_product / (norm1 * norm2))
+```
+
+#### Export Functionality
+
+Annotations can be exported to Markdown or JSON:
+
+```python
+def export_annotations_markdown(
+    self,
+    user_id: str,
+    resource_id: Optional[str] = None
+) -> str:
+    """
+    Export annotations to Markdown format.
+    
+    Algorithm:
+    1. Retrieve annotations (filtered by resource if specified)
+    2. Group by resource
+    3. Format each annotation as Markdown block
+    4. Concatenate all sections
+    
+    Performance: <2s for 1,000 annotations
+    """
+    # Query annotations
+    query = self.db.query(Annotation).filter(Annotation.user_id == user_id)
+    if resource_id:
+        query = query.filter(Annotation.resource_id == resource_id)
+    
+    annotations = query.options(joinedload(Annotation.resource)).all()
+    
+    # Group by resource
+    by_resource = {}
+    for ann in annotations:
+        if ann.resource_id not in by_resource:
+            by_resource[ann.resource_id] = []
+        by_resource[ann.resource_id].append(ann)
+    
+    # Format as Markdown
+    markdown_parts = ["# Annotations Export\n\n"]
+    
+    for resource_id, anns in by_resource.items():
+        resource_title = anns[0].resource.title
+        markdown_parts.append(f"## {resource_title}\n\n")
+        
+        for i, ann in enumerate(anns, 1):
+            markdown_parts.append(f"### Annotation {i}\n")
+            markdown_parts.append(f"**Highlighted Text:**\n> {ann.highlighted_text}\n\n")
+            
+            if ann.note:
+                markdown_parts.append(f"**Note:** {ann.note}\n\n")
+            
+            if ann.tags:
+                tags = json.loads(ann.tags)
+                markdown_parts.append(f"**Tags:** {', '.join(tags)}\n\n")
+            
+            markdown_parts.append(f"**Created:** {ann.created_at}\n\n")
+            markdown_parts.append("---\n\n")
+    
+    return "".join(markdown_parts)
+```
+
+#### Annotation Workflows
+
+**Creating an Annotation:**
+```python
+# 1. User selects text in frontend
+selection = {
+    "start_offset": 150,
+    "end_offset": 200,
+    "highlighted_text": "This is the key finding"
+}
+
+# 2. Frontend sends POST request
+response = requests.post(
+    f"/resources/{resource_id}/annotations",
+    json={
+        "start_offset": selection["start_offset"],
+        "end_offset": selection["end_offset"],
+        "highlighted_text": selection["highlighted_text"],
+        "note": "Important result",
+        "tags": ["key-finding"],
+        "color": "#FFD700"
+    }
+)
+
+# 3. Backend validates and creates annotation
+# 4. Embedding generated asynchronously
+# 5. Annotation returned immediately
+```
+
+**Searching Annotations:**
+```python
+# Full-text search
+results = annotation_service.search_annotations_fulltext(
+    user_id="user123",
+    query="machine learning",
+    limit=10
+)
+
+# Semantic search
+results = annotation_service.search_annotations_semantic(
+    user_id="user123",
+    query="neural network architectures",
+    limit=10
+)
+
+# Tag-based search
+results = annotation_service.search_annotations_by_tags(
+    user_id="user123",
+    tags=["key-finding", "methodology"],
+    match_all=False  # ANY tag
+)
+```
+
+**Exporting Annotations:**
+```python
+# Export to Markdown
+markdown = annotation_service.export_annotations_markdown(
+    user_id="user123",
+    resource_id=None  # All resources
+)
+
+with open("annotations.md", "w") as f:
+    f.write(markdown)
+
+# Export to JSON
+json_data = annotation_service.export_annotations_json(
+    user_id="user123",
+    resource_id=resource_id  # Specific resource
+)
+
+with open("annotations.json", "w") as f:
+    json.dump(json_data, f, indent=2)
+```
+
+#### Performance Optimization
+
+**Database Indexes:**
+```sql
+-- Fast resource annotation retrieval
+CREATE INDEX idx_annotations_resource ON annotations(resource_id);
+
+-- Fast user annotation retrieval
+CREATE INDEX idx_annotations_user ON annotations(user_id);
+
+-- Composite index for user-resource filtering
+CREATE INDEX idx_annotations_user_resource ON annotations(user_id, resource_id);
+
+-- Sorting by recency
+CREATE INDEX idx_annotations_created ON annotations(created_at);
+```
+
+**Query Optimization:**
+```python
+# Use eager loading to prevent N+1 queries
+annotations = (
+    db.query(Annotation)
+    .options(joinedload(Annotation.resource))
+    .filter(Annotation.user_id == user_id)
+    .all()
+)
+
+# Batch operations for export
+annotations = (
+    db.query(Annotation)
+    .filter(Annotation.user_id == user_id)
+    .order_by(Annotation.created_at.desc())
+    .limit(1000)
+    .all()
+)
+```
+
+**Embedding Generation Strategy:**
+```python
+# Synchronous path (fast)
+annotation = create_annotation(...)  # <50ms
+return annotation
+
+# Asynchronous path (background)
+background_tasks.add_task(
+    generate_annotation_embedding,
+    annotation.id,
+    note
+)
+```
+
+#### Integration with Other Services
+
+**Resource Deletion:**
+```python
+# In resource_service.py
+def delete_resource(db: Session, resource_id: str) -> None:
+    """Delete resource and cascade to annotations."""
+    # Annotations automatically deleted via CASCADE constraint
+    db.delete(resource)
+    db.commit()
+```
+
+**Search Integration:**
+```python
+# In search_service.py
+def search_with_annotations(
+    self,
+    query: str,
+    user_id: str,
+    include_annotations: bool = True
+) -> Dict:
+    """Include annotation matches in search results."""
+    # Standard resource search
+    resources = self.search(query)
+    
+    if include_annotations:
+        # Search user's annotations
+        annotation_service = AnnotationService(self.db)
+        annotations = annotation_service.search_annotations_fulltext(
+            user_id, query
+        )
+        
+        # Build resource-annotation mapping
+        resource_annotation_map = {}
+        for ann in annotations:
+            if ann.resource_id not in resource_annotation_map:
+                resource_annotation_map[ann.resource_id] = []
+            resource_annotation_map[ann.resource_id].append(ann.id)
+        
+        return {
+            "resources": resources,
+            "annotations": annotations,
+            "resource_annotation_matches": resource_annotation_map
+        }
+    
+    return {"resources": resources, "annotations": []}
+```
+
+**Recommendation Integration:**
+```python
+# In recommendation_service.py
+def recommend_based_on_annotations(
+    self,
+    user_id: str,
+    limit: int = 10
+) -> List[Resource]:
+    """Generate recommendations from annotation patterns."""
+    annotation_service = AnnotationService(self.db)
+    
+    # Get recent annotations
+    annotations = annotation_service.get_annotations_for_user(
+        user_id=user_id,
+        limit=100,
+        sort_by="recent"
+    )
+    
+    # Extract patterns
+    all_notes = " ".join([ann.note for ann in annotations if ann.note])
+    all_tags = []
+    for ann in annotations:
+        if ann.tags:
+            all_tags.extend(json.loads(ann.tags))
+    
+    # Generate recommendations
+    # ... (see recommendation_service.py for full implementation)
 ```
 
 ## Testing Framework

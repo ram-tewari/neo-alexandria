@@ -290,3 +290,165 @@ def generate_recommendations(db: Session, limit: int = 10) -> List[Dict[str, obj
     return score_candidates(profile, prepared, seed_keywords, limit)
 
 
+def recommend_based_on_annotations(db: Session, user_id: str, limit: int = 10) -> List[db_models.Resource]:
+    """
+    Generate recommendations based on user's annotation patterns.
+    
+    Algorithm:
+    1. Get recent annotations (last 100) for the user
+    2. Extract annotated resource IDs to exclude from recommendations
+    3. Aggregate annotation content:
+       - Combine all note text
+       - Extract and count all tags
+    4. Get top 5 most frequent tags
+    5. Generate embedding from aggregated notes (if available)
+    6. Find similar resources by embedding (exclude already-annotated)
+    7. Search resources by top tags (exclude already-annotated)
+    8. Merge and deduplicate results
+    9. Return top N resources
+    
+    Args:
+        db: Database session
+        user_id: User ID to generate recommendations for
+        limit: Maximum number of recommendations to return (default: 10)
+        
+    Returns:
+        List of Resource objects recommended based on annotation patterns
+    """
+    from collections import Counter
+    import json
+    from sqlalchemy import and_, or_
+    
+    try:
+        from backend.app.services.annotation_service import AnnotationService
+        
+        annotation_service = AnnotationService(db)
+        
+        # Get recent annotations (last 100)
+        annotations = annotation_service.get_annotations_for_user(
+            user_id=user_id,
+            limit=100,
+            sort_by="recent"
+        )
+        
+        if not annotations:
+            return []
+        
+        # Extract annotated resource IDs (to exclude)
+        annotated_resource_ids = list(set(str(ann.resource_id) for ann in annotations))
+        
+        # Aggregate annotation content
+        all_notes = " ".join([ann.note for ann in annotations if ann.note])
+        all_tags = []
+        for ann in annotations:
+            if ann.tags:
+                try:
+                    # Parse JSON tags
+                    tags = json.loads(ann.tags) if isinstance(ann.tags, str) else ann.tags
+                    if isinstance(tags, list):
+                        all_tags.extend(tags)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+        
+        # Get tag frequencies
+        tag_counts = Counter(all_tags)
+        top_tags = [tag for tag, _ in tag_counts.most_common(5)]
+        
+        similar_resources = []
+        
+        # Generate embedding from notes (if available)
+        if all_notes.strip():
+            try:
+                ai = get_ai_core()
+                notes_embedding = ai.generate_embedding(all_notes)
+                
+                if notes_embedding:
+                    # Find similar resources by embedding
+                    # Query resources with embeddings (exclude annotated ones)
+                    from sqlalchemy import select
+                    import uuid as uuid_module
+                    
+                    # Convert annotated_resource_ids to UUIDs
+                    exclude_uuids = []
+                    for rid in annotated_resource_ids:
+                        try:
+                            exclude_uuids.append(uuid_module.UUID(rid))
+                        except (ValueError, TypeError):
+                            continue
+                    
+                    query = select(db_models.Resource).filter(
+                        db_models.Resource.embedding.isnot(None)
+                    )
+                    
+                    if exclude_uuids:
+                        query = query.filter(~db_models.Resource.id.in_(exclude_uuids))
+                    
+                    query = query.limit(limit * 2)
+                    
+                    result = db.execute(query)
+                    candidates = result.scalars().all()
+                    
+                    # Compute cosine similarity
+                    notes_vec = _to_numpy_vector(notes_embedding)
+                    scored = []
+                    for resource in candidates:
+                        resource_vec = _to_numpy_vector(resource.embedding)
+                        if resource_vec.size > 0 and notes_vec.size > 0:
+                            sim = _cosine_similarity(notes_vec, resource_vec)
+                            scored.append((sim, resource))
+                    
+                    # Sort by similarity and take top results
+                    scored.sort(key=lambda x: x[0], reverse=True)
+                    similar_resources = [r for _, r in scored[:limit]]
+                    
+            except Exception as e:
+                print(f"Warning: Embedding-based recommendation failed: {e}")
+        
+        # Also search by top tags
+        tag_resources = []
+        if top_tags:
+            try:
+                # Convert annotated_resource_ids to UUIDs
+                import uuid as uuid_module
+                exclude_uuids = []
+                for rid in annotated_resource_ids:
+                    try:
+                        exclude_uuids.append(uuid_module.UUID(rid))
+                    except (ValueError, TypeError):
+                        continue
+                
+                # Build query for resources matching top tags
+                query = db.query(db_models.Resource)
+                
+                if exclude_uuids:
+                    query = query.filter(~db_models.Resource.id.in_(exclude_uuids))
+                
+                # Search in subject field (JSON array) using portable string matching
+                from sqlalchemy import cast, String, func
+                ser = func.lower(cast(db_models.Resource.subject, String))
+                tag_conditions = [ser.like(f"%{tag.lower()}%") for tag in top_tags]
+                
+                if tag_conditions:
+                    query = query.filter(or_(*tag_conditions))
+                
+                tag_resources = query.limit(limit).all()
+                
+            except Exception as e:
+                print(f"Warning: Tag-based recommendation failed: {e}")
+        
+        # Merge and deduplicate
+        combined = similar_resources + tag_resources
+        seen = set()
+        unique = []
+        for res in combined:
+            if res.id not in seen:
+                seen.add(res.id)
+                unique.append(res)
+        
+        return unique[:limit]
+        
+    except Exception as e:
+        print(f"Warning: Annotation-based recommendations failed: {e}")
+        return []
+
+

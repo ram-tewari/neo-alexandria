@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Initial Commit" />
+    <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Initial Commit">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/database/models.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -69,7 +72,7 @@
       <workItem from="1759112820162" duration="6449000" />
       <workItem from="1759299127036" duration="3357000" />
       <workItem from="1762397701972" duration="1305000" />
-      <workItem from="1762640851216" duration="2591000" />
+      <workItem from="1762640851216" duration="3969000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />
@@ -103,7 +106,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762744159513</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Initial Commit">
+      <option name="closed" value="true" />
+      <created>1762745836587</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1762745836587</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

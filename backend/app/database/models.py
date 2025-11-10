@@ -203,6 +203,13 @@ class Resource(Base):
         back_populates="resources"
     )
     
+    # One-to-many: annotations on this resource
+    annotations: Mapped[List["Annotation"]] = relationship(
+        "Annotation",
+        back_populates="resource",
+        cascade="all, delete-orphan"
+    )
+    
     def __repr__(self) -> str:
         scholarly_info = f", doi={self.doi!r}" if self.doi else ""
         return f"<Resource(id={self.id!r}, title={self.title!r}{scholarly_info})>"
@@ -472,3 +479,131 @@ class Collection(Base):
     
     def __repr__(self) -> str:
         return f"<Collection(id={self.id!r}, name={self.name!r}, owner_id={self.owner_id!r}, visibility={self.visibility!r})>"
+
+
+class Annotation(Base):
+    """
+    User annotations on resource content with text highlighting and notes.
+    
+    Supports:
+    - Precise text selection via character offsets
+    - Rich note-taking with semantic embeddings
+    - Tag-based organization and color-coding
+    - Context preservation for previews
+    - Privacy controls (private/shared)
+    - Collection associations
+    """
+    
+    __tablename__ = "annotations"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign keys
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True
+    )
+    
+    # Text selection (precise positioning via character offsets)
+    start_offset: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    end_offset: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    highlighted_text: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+    
+    # User content
+    note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+    tags: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON array: ["tag1", "tag2", ...]
+    
+    # Visual styling
+    color: Mapped[str] = mapped_column(
+        String(7),
+        nullable=False,
+        default="#FFFF00",
+        server_default="#FFFF00"
+    )
+    
+    # Semantic search support
+    embedding: Mapped[List[float] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=None
+    )
+    
+    # Context preservation (50 chars before/after for previews)
+    context_before: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True
+    )
+    context_after: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True
+    )
+    
+    # Sharing and organization
+    is_shared: Mapped[bool] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )  # SQLite uses 0/1 for bool
+    collection_ids: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON array: ["uuid1", "uuid2", ...]
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    resource: Mapped["Resource"] = relationship(
+        "Resource",
+        back_populates="annotations"
+    )
+    
+    # Composite indexes for efficient queries
+    __table_args__ = (
+        Index('idx_annotations_resource', 'resource_id'),
+        Index('idx_annotations_user', 'user_id'),
+        Index('idx_annotations_user_resource', 'user_id', 'resource_id'),
+        Index('idx_annotations_created', 'created_at'),
+    )
+    
+    def __repr__(self) -> str:
+        note_preview = f", note={self.note[:30]!r}..." if self.note and len(self.note) > 30 else f", note={self.note!r}" if self.note else ""
+        return f"<Annotation(id={self.id!r}, resource_id={self.resource_id!r}, user_id={self.user_id!r}{note_preview})>"

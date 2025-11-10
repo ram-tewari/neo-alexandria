@@ -31,6 +31,8 @@ from .routers.classification import router as classification_router
 from .routers.authority import router as authority_router
 from .routers.graph import router as graph_router
 from .routers.recommendation import router as recommendation_router
+from .routers.citations import router as citations_router
+from .routers.collections import router as collections_router
 from .monitoring import setup_monitoring
 
 
@@ -51,7 +53,7 @@ def create_app() -> FastAPI:
     # Add CORS middleware to allow frontend connections
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+        allow_origins=["*"],  # Allow all origins for development
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -69,6 +71,8 @@ def create_app() -> FastAPI:
     app.include_router(classification_router)
     app.include_router(graph_router)
     app.include_router(recommendation_router)
+    app.include_router(citations_router)
+    app.include_router(collections_router)
     
     # Set up performance monitoring
     setup_monitoring(app)

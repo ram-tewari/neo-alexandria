@@ -117,7 +117,7 @@ def get_resource_neighbors(
 def get_global_overview(
     limit: Optional[int] = Query(
         None,
-        ge=10,
+        ge=1,
         le=100,
         description=f"Maximum number of edges to return (default: {settings.GRAPH_OVERVIEW_MAX_EDGES})"
     ),

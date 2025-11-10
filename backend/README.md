@@ -23,6 +23,13 @@ Neo Alexandria 2.0 is a comprehensive knowledge management system that provides 
 - **Mind-Map Visualization**: Resource-centric neighbor discovery for exploration
 - **Global Overview**: System-wide relationship analysis and connection mapping
 
+### Citation Network & Link Intelligence
+- **Multi-Format Citation Extraction**: Automatically extract citations from HTML, PDF, and Markdown content
+- **Internal Citation Resolution**: Link citations to existing resources in your library
+- **PageRank Importance Scoring**: Compute citation importance using network analysis
+- **Citation Graph Visualization**: Build and explore citation networks with configurable depth
+- **Smart Citation Classification**: Automatically categorize citations as datasets, code, references, or general links
+
 ### Personalized Recommendations
 - **Content-Based Filtering**: Learn user preferences from existing library content
 - **Fresh Content Discovery**: Source and rank new content from external providers
@@ -110,6 +117,13 @@ Currently, no authentication is required for development and testing. Future rel
 #### Knowledge Graph
 - `GET /graph/resource/{id}/neighbors` - Find related resources for mind-map visualization
 - `GET /graph/overview` - Get global relationship overview
+
+#### Citation Network
+- `GET /citations/resources/{id}/citations` - Get citations for a resource (inbound/outbound)
+- `GET /citations/graph/citations` - Get citation network for visualization
+- `POST /citations/resources/{id}/citations/extract` - Trigger citation extraction
+- `POST /citations/resolve` - Resolve internal citations
+- `POST /citations/importance/compute` - Compute PageRank importance scores
 
 #### Authority and Classification
 - `GET /authority/subjects/suggest` - Get subject suggestions for autocomplete
@@ -337,6 +351,23 @@ pytest backend/tests/ -m "integration"     # Integration tests
 - Personalized content recommendations
 - External content sourcing
 - Explainable recommendation reasoning
+
+### Phase 6: Citation Network & Link Intelligence ✅
+- Citation extraction from HTML, PDF, and Markdown
+- Internal citation resolution (link resources together)
+- PageRank-style importance scoring
+- Citation graph visualization endpoints
+- Integration with knowledge graph service
+
+### Phase 6.5: Advanced Metadata Extraction & Scholarly Processing ✅
+- Fine-tuned metadata extraction for academic papers (authors, DOI, affiliations, funding)
+- Mathematical equation extraction with LaTeX format preservation
+- Table extraction with structure preservation (camelot-py + tabula-py)
+- Figure/image extraction with caption detection
+- OCR processing for scanned PDFs with error correction
+- Metadata validation and completeness scoring
+- Scholarly metadata API endpoints for comprehensive access
+- Integration with quality service for metadata quality scoring
 
 ## Production Deployment
 

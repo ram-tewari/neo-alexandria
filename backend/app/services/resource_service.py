@@ -226,11 +226,25 @@ def process_ingestion(
         resource.date_modified = resource.date_modified or datetime.now(timezone.utc)
         resource.ingestion_status = "completed"
         resource.ingestion_completed_at = datetime.now(timezone.utc)
+        resource.format = fetched.get("content_type")  # Store content type for citation extraction
         session.add(resource)
         session.commit()
         
         # Track successful ingestion
         track_ingestion_success()
+        
+        # Phase 6: Extract citations if content type supports it
+        try:
+            content_type = fetched.get("content_type", "").lower()
+            if any(ct in content_type for ct in ["html", "pdf", "markdown"]):
+                from backend.app.services.citation_service import CitationService
+                citation_service = CitationService(session)
+                citation_service.extract_citations(str(resource.id))
+                # Resolve internal citations
+                citation_service.resolve_internal_citations()
+        except Exception as citation_exc:
+            # Citation extraction is optional, don't fail the whole ingestion
+            print(f"Warning: Citation extraction failed for {resource_id}: {citation_exc}")
 
     except Exception as exc:  # pragma: no cover - error path
         if session is not None:

@@ -945,3 +945,426 @@ For API support and questions:
 - GitHub Issues for bug reports and feature requests
 - Documentation updates and improvements
 - Community contributions and feedback
+
+##
+ Citation Network Endpoints
+
+### GET /citations/resources/{resource_id}/citations
+
+Retrieve all citations for a specific resource, including both outbound citations (resources this one cites) and inbound citations (resources that cite this one).
+
+**Path Parameters:**
+- `resource_id` (string, required): UUID of the resource
+
+**Query Parameters:**
+- `direction` (string, optional): Citation direction filter
+  - `outbound`: Only citations from this resource
+  - `inbound`: Only citations to this resource
+  - `both` (default): Both directions
+
+**Response (200 OK):**
+```json
+{
+  "resource_id": "uuid",
+  "outbound": [
+    {
+      "id": "uuid",
+      "source_resource_id": "uuid",
+      "target_url": "string",
+      "target_resource_id": "uuid or null",
+      "citation_type": "reference|dataset|code|general",
+      "context_snippet": "string or null",
+      "position": "integer or null",
+      "importance_score": "float or null",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "target_resource": {
+        "id": "uuid",
+        "title": "string",
+        "source": "string"
+      }
+    }
+  ],
+  "inbound": [
+    {
+      "id": "uuid",
+      "source_resource_id": "uuid",
+      "target_url": "string",
+      "target_resource_id": "uuid",
+      "citation_type": "reference|dataset|code|general",
+      "context_snippet": "string or null",
+      "position": "integer or null",
+      "importance_score": "float or null",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  ],
+  "counts": {
+    "outbound": "integer",
+    "inbound": "integer",
+    "total": "integer"
+  }
+}
+```
+
+**Example:**
+```bash
+# Get all citations for a resource
+curl "http://127.0.0.1:8000/citations/resources/{resource_id}/citations"
+
+# Get only outbound citations
+curl "http://127.0.0.1:8000/citations/resources/{resource_id}/citations?direction=outbound"
+
+# Get only inbound citations
+curl "http://127.0.0.1:8000/citations/resources/{resource_id}/citations?direction=inbound"
+```
+
+**Use Cases:**
+- Display citation information on resource detail pages
+- Analyze citation patterns and relationships
+- Identify highly-cited resources
+- Track citation networks
+
+---
+
+### GET /citations/graph/citations
+
+Get citation network for visualization, optionally filtered by specific resources or importance threshold.
+
+**Query Parameters:**
+- `resource_ids` (array[string], optional): Filter to specific resource UUIDs
+- `min_importance` (float, optional): Minimum importance score (0.0-1.0), default: 0.0
+- `depth` (integer, optional): Graph traversal depth (1-2), default: 1
+
+**Response (200 OK):**
+```json
+{
+  "nodes": [
+    {
+      "id": "uuid",
+      "title": "string",
+      "type": "source|cited|citing"
+    }
+  ],
+  "edges": [
+    {
+      "source": "uuid",
+      "target": "uuid",
+      "type": "reference|dataset|code|general"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get global citation network
+curl "http://127.0.0.1:8000/citations/graph/citations"
+
+# Get citation network for specific resources
+curl "http://127.0.0.1:8000/citations/graph/citations?resource_ids=uuid1&resource_ids=uuid2"
+
+# Get high-importance citations only
+curl "http://127.0.0.1:8000/citations/graph/citations?min_importance=0.7"
+
+# Get deeper citation network
+curl "http://127.0.0.1:8000/citations/graph/citations?depth=2"
+```
+
+**Use Cases:**
+- Visualize citation networks in graph UI
+- Identify citation clusters and communities
+- Analyze citation flow and influence
+- Discover related resources through citations
+
+**Performance Notes:**
+- Results are limited to 100 nodes maximum
+- Depth is capped at 2 to prevent exponential explosion
+- Use `min_importance` to filter for significant citations
+
+---
+
+### POST /citations/resources/{resource_id}/citations/extract
+
+Manually trigger citation extraction for a resource. This is typically done automatically during ingestion but can be triggered manually for debugging or re-extraction.
+
+**Path Parameters:**
+- `resource_id` (string, required): UUID of the resource
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued",
+  "resource_id": "uuid",
+  "message": "Citation extraction queued for processing"
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/citations/resources/{resource_id}/citations/extract"
+```
+
+**Background Processing:**
+The system performs the following steps asynchronously:
+1. Retrieve resource content from archive
+2. Determine content type (HTML, PDF, Markdown)
+3. Extract citations using appropriate parser
+4. Classify citation types (dataset, code, reference, general)
+5. Extract context snippets around citations
+6. Store citations in database
+7. Trigger internal citation resolution
+
+**Use Cases:**
+- Re-extract citations after content updates
+- Debug citation extraction issues
+- Manually process resources that failed automatic extraction
+
+---
+
+### POST /citations/resolve
+
+Manually trigger internal citation resolution to match unresolved citation URLs to existing resources in the database.
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued"
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/citations/resolve"
+```
+
+**Background Processing:**
+The system performs the following steps asynchronously:
+1. Query all citations with `target_resource_id = NULL`
+2. Normalize citation URLs (remove fragments, trailing slashes)
+3. Match URLs to existing resources in database
+4. Update `target_resource_id` for matched citations
+5. Process in batches of 100 for performance
+
+**Use Cases:**
+- Resolve citations after bulk resource imports
+- Update citation links after URL changes
+- Periodic maintenance to link new resources
+
+**Performance Notes:**
+- Processes citations in batches of 100
+- Uses bulk database operations for efficiency
+- Typically completes in <1 second for 100 citations
+
+---
+
+### POST /citations/importance/compute
+
+Recompute PageRank importance scores for all citations. This is a computationally expensive operation that should be run periodically (e.g., daily) rather than on every request.
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued"
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/citations/importance/compute"
+```
+
+**Background Processing:**
+The system performs the following steps asynchronously:
+1. Build citation graph from all resolved citations
+2. Run PageRank algorithm with:
+   - Damping factor: 0.85
+   - Max iterations: 100
+   - Convergence threshold: 1e-6
+3. Normalize scores to [0, 1] range
+4. Update `importance_score` for all citations
+5. Return mapping of resource_id → importance_score
+
+**Use Cases:**
+- Periodic importance score updates (daily/weekly)
+- After bulk citation imports
+- Identify influential resources in citation network
+
+**Performance Notes:**
+- Uses NetworkX for PageRank computation
+- Typically completes in <5 seconds for 1000 resources
+- Sparse matrix representation for efficiency
+- Can be scheduled as a background job
+
+---
+
+## Citation Data Models
+
+### Citation Model
+
+```json
+{
+  "id": "uuid",
+  "source_resource_id": "uuid",
+  "target_resource_id": "uuid or null",
+  "target_url": "string",
+  "citation_type": "reference|dataset|code|general",
+  "context_snippet": "string or null",
+  "position": "integer or null",
+  "importance_score": "float or null (0.0-1.0)",
+  "created_at": "datetime",
+  "updated_at": "datetime"
+}
+```
+
+**Field Descriptions:**
+- `id`: Unique citation identifier
+- `source_resource_id`: Resource that contains the citation
+- `target_resource_id`: Cited resource if it exists in the database (null if external)
+- `target_url`: URL being cited
+- `citation_type`: Classification of citation:
+  - `reference`: Academic papers, articles, documentation
+  - `dataset`: Data files (.csv, .json, .xml, etc.)
+  - `code`: Code repositories (GitHub, GitLab, etc.)
+  - `general`: Other web links
+- `context_snippet`: Text surrounding the citation (up to 100 characters)
+- `position`: Position in the document (for ordering)
+- `importance_score`: PageRank-based importance (computed periodically)
+
+### Citation Graph Response Model
+
+```json
+{
+  "nodes": [
+    {
+      "id": "uuid",
+      "title": "string",
+      "type": "source|cited|citing"
+    }
+  ],
+  "edges": [
+    {
+      "source": "uuid",
+      "target": "uuid",
+      "type": "reference|dataset|code|general"
+    }
+  ]
+}
+```
+
+**Node Types:**
+- `source`: The focal resource being explored
+- `cited`: Resources cited by the focal resource
+- `citing`: Resources that cite the focal resource
+
+---
+
+## Citation Extraction Details
+
+### Supported Content Types
+
+#### HTML
+- Extracts `<a href="...">` links
+- Extracts `<cite>` tags
+- Captures link text and surrounding context
+- Filters out internal anchors and JavaScript links
+
+#### PDF
+- Uses pdfplumber to extract hyperlinks
+- Extracts URLs from text using regex
+- Captures page numbers for position tracking
+- Handles both embedded links and plain text URLs
+
+#### Markdown
+- Parses `[text](url)` syntax
+- Extracts link text and URLs
+- Captures surrounding context
+- Filters out internal anchors
+
+### Citation Type Classification
+
+The system uses heuristics to automatically classify citations:
+
+**Dataset Indicators:**
+- File extensions: `.csv`, `.json`, `.xml`, `.xlsx`, `.tsv`
+- Example: `https://example.com/data.csv` → `dataset`
+
+**Code Repository Indicators:**
+- Domains: `github.com`, `gitlab.com`, `bitbucket.org`
+- Example: `https://github.com/user/repo` → `code`
+
+**Academic Reference Indicators:**
+- Domains: `doi.org`, `arxiv.org`, `scholar.google`, `pubmed`
+- Example: `https://doi.org/10.1234/example` → `reference`
+
+**General:**
+- All other URLs default to `general`
+
+### Performance Characteristics
+
+**Citation Extraction:**
+- HTML: <500ms per resource
+- PDF: <2s per resource (depends on size)
+- Markdown: <200ms per resource
+- Limit: 50 citations per resource (for performance)
+
+**Citation Resolution:**
+- Batch size: 100 citations
+- Processing time: <100ms per batch
+- Uses bulk database operations
+
+**PageRank Computation:**
+- Small graphs (<100 nodes): <1s
+- Medium graphs (100-1000 nodes): <5s
+- Large graphs (1000+ nodes): <30s
+- Uses sparse matrix representation
+
+---
+
+## Integration Examples
+
+### Automatic Citation Extraction During Ingestion
+
+Citations are automatically extracted when a resource completes ingestion:
+
+```python
+# In resource_service.py process_ingestion()
+# After successful ingestion:
+if resource.format in ["text/html", "application/pdf", "text/markdown"]:
+    background_tasks.add_task(citation_service.extract_citations, resource_id)
+```
+
+### Periodic Citation Resolution
+
+Run citation resolution periodically to link new resources:
+
+```bash
+# Cron job (daily at 2 AM)
+0 2 * * * curl -X POST http://127.0.0.1:8000/citations/resolve
+```
+
+### Periodic Importance Score Updates
+
+Recompute PageRank scores periodically:
+
+```bash
+# Cron job (weekly on Sunday at 3 AM)
+0 3 * * 0 curl -X POST http://127.0.0.1:8000/citations/importance/compute
+```
+
+### Citation Network Visualization
+
+Build a citation network visualization:
+
+```javascript
+// Fetch citation graph
+const response = await fetch(
+  `/citations/graph/citations?resource_ids=${resourceId}&depth=2`
+);
+const graph = await response.json();
+
+// Render with D3.js or similar
+renderGraph(graph.nodes, graph.edges);
+```
+
+---

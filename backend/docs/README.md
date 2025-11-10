@@ -37,6 +37,7 @@ The **[API Reference](API_DOCUMENTATION.md)** provides comprehensive documentati
 - Content ingestion and processing
 - Advanced search with hybrid keyword/semantic capabilities
 - Knowledge graph exploration and visualization
+- Citation network and link intelligence
 - Personalized content recommendations
 - Authority control and classification systems
 - Curation workflows and quality control
@@ -133,6 +134,13 @@ The **[Changelog](CHANGELOG.md)** provides detailed information about:
 - Cosine similarity-based relevance scoring
 - Explainable recommendation reasoning
 - Configurable recommendation parameters
+
+**Citation Network & Link Intelligence**
+- Multi-format citation extraction (HTML, PDF, Markdown)
+- Internal citation resolution and linking
+- PageRank-style importance scoring
+- Citation graph visualization
+- Smart citation type classification
 
 **Authority Control**
 - Subject normalization and canonical forms
@@ -231,9 +239,9 @@ The **[Changelog](CHANGELOG.md)** provides detailed information about:
 
 ## Version Information
 
-**Current Version:** 0.7.1 (Phase 5.5)
-**Latest Features:** Personalized Recommendation Engine
-**Documentation Version:** Updated for all phases through 5.5
+**Current Version:** 0.8.0 (Phase 6)
+**Latest Features:** Citation Network & Link Intelligence
+**Documentation Version:** Updated for all phases through 6
 
 **Supported Phases:**
 - Phase 0: Foundation and infrastructure
@@ -244,6 +252,7 @@ The **[Changelog](CHANGELOG.md)** provides detailed information about:
 - Phase 4: Vector embeddings and hybrid search
 - Phase 5: Hybrid knowledge graph
 - Phase 5.5: Personalized recommendations
+- Phase 6: Citation network and link intelligence ✅
 
 ## License and Legal
 
@@ -251,6 +260,6 @@ This documentation is part of the Neo Alexandria 2.0 project and is subject to t
 
 ---
 
-**Last Updated:** January 15, 2025
-**Documentation Version:** 1.0.0
-**API Version:** 0.7.1
+**Last Updated:** November 9, 2025
+**Documentation Version:** 1.1.0
+**API Version:** 0.8.0

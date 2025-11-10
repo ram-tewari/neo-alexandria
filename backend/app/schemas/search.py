@@ -95,3 +95,84 @@ class SearchResults(BaseModel):
     snippets: dict[str, str] = Field(default_factory=dict)
 
 
+class MethodContributions(BaseModel):
+    """Contribution counts from each retrieval method"""
+    fts5: int = 0
+    dense: int = 0
+    sparse: int = 0
+
+
+class ThreeWayHybridResults(BaseModel):
+    """Results from three-way hybrid search with metadata"""
+    total: int
+    items: List[ResourceRead]
+    facets: Facets
+    snippets: dict[str, str] = Field(default_factory=dict)
+    latency_ms: float
+    method_contributions: MethodContributions
+    weights_used: List[float]
+
+
+class ComparisonMethodResults(BaseModel):
+    """Results from a single search method for comparison"""
+    results: List[ResourceRead]
+    latency_ms: float
+    total: int = 0
+
+
+class ComparisonResults(BaseModel):
+    """Side-by-side comparison of different search methods"""
+    query: str
+    methods: dict[str, ComparisonMethodResults]
+
+
+class RelevanceJudgments(BaseModel):
+    """Relevance judgments for evaluation (0-3 scale)"""
+    judgments: dict[str, int] = Field(
+        description="Map of resource_id to relevance score (0=not relevant, 1=marginally, 2=relevant, 3=highly relevant)"
+    )
+
+
+class EvaluationMetrics(BaseModel):
+    """Information retrieval metrics"""
+    ndcg_at_20: float
+    recall_at_20: float
+    precision_at_20: float
+    mrr: float
+
+
+class EvaluationRequest(BaseModel):
+    """Request for search quality evaluation"""
+    query: str
+    relevance_judgments: dict[str, int] = Field(
+        description="Map of resource_id to relevance score (0-3)"
+    )
+
+
+class EvaluationResults(BaseModel):
+    """Evaluation results with metrics and baseline comparison"""
+    query: str
+    metrics: EvaluationMetrics
+    baseline_comparison: Optional[dict[str, float]] = None
+
+
+class BatchSparseEmbeddingRequest(BaseModel):
+    """Request for batch sparse embedding generation"""
+    resource_ids: Optional[List[str]] = Field(
+        None,
+        description="Optional list of specific resource IDs to process. If None, processes all resources without sparse embeddings."
+    )
+    batch_size: Optional[int] = Field(
+        32,
+        description="Batch size for processing (32 for GPU, 8 for CPU)"
+    )
+
+
+class BatchSparseEmbeddingResponse(BaseModel):
+    """Response for batch sparse embedding generation"""
+    status: str
+    job_id: str
+    estimated_duration_minutes: int
+    resources_to_process: int
+
+

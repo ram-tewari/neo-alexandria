@@ -1098,6 +1098,615 @@ CREATE INDEX idx_annotations_user_resource ON annotations(user_id, resource_id);
 CREATE INDEX idx_annotations_created ON annotations(created_at);
 ```
 
+### Phase 8: Three-Way Hybrid Search Architecture
+
+Phase 8 implements a state-of-the-art three-way hybrid search system that combines FTS5, dense vectors, and sparse vectors with Reciprocal Rank Fusion (RRF) and ColBERT-style reranking.
+
+#### Sparse Vector Embeddings
+
+**Model Architecture:**
+```python
+class SparseEmbeddingService:
+    """
+    Generate and manage sparse vector embeddings using BGE-M3 model.
+    
+    Sparse vectors are learned keyword representations with 50-200 non-zero
+    dimensions that capture term importance beyond traditional TF-IDF.
+    """
+    
+    def __init__(self, db: Session, model_name: str = "BAAI/bge-m3"):
+        self.db = db
+        self.model_name = model_name
+        self._model = None  # Lazy loading
+    
+    def generate_sparse_embedding(self, text: str) -> Dict[int, float]:
+        """
+        Generate sparse vector for single text.
+        
+        Algorithm:
+        1. Tokenize input text (max 512 tokens)
+        2. Forward pass through BGE-M3 model
+        3. Extract sparse representation layer
+        4. Apply ReLU + log transformation (SPLADE-style)
+        5. Select top-200 non-zero dimensions
+        6. Normalize weights to [0, 1]
+        7. Return as dict {token_id: weight}
+        
+        Performance: <1 second per resource
+        """
+        if self._model is None:
+            self._load_model()
+        
+        # Tokenize and encode
+        inputs = self._tokenizer(
+            text,
+            max_length=512,
+            truncation=True,
+            return_tensors="pt"
+        )
+        
+        # Generate sparse representation
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+            sparse_vec = outputs.sparse_embedding
+        
+        # Apply transformations
+        sparse_vec = torch.relu(sparse_vec)
+        sparse_vec = torch.log(1 + sparse_vec)
+        
+        # Select top-K
+        top_k = 200
+        values, indices = torch.topk(sparse_vec, k=top_k)
+        
+        # Normalize to [0, 1]
+        if values.max() > 0:
+            values = values / values.max()
+        
+        # Convert to dict
+        sparse_dict = {
+            int(idx): float(val)
+            for idx, val in zip(indices.tolist(), values.tolist())
+            if val > 0
+        }
+        
+        return sparse_dict
+```
+
+**Storage Format:**
+```python
+# Resource model extension
+class Resource(Base):
+    # ... existing fields ...
+    
+    # Sparse embedding fields (Phase 8)
+    sparse_embedding: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sparse_embedding_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    sparse_embedding_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+# Example sparse embedding JSON
+{
+  "2453": 0.87,
+  "8921": 0.65,
+  "1234": 0.43,
+  ...
+}
+```
+
+**Sparse Vector Search:**
+```python
+def search_by_sparse_vector(
+    self,
+    query_sparse: Dict[int, float],
+    limit: int = 100,
+    min_score: float = 0.0
+) -> List[Tuple[str, float]]:
+    """
+    Search resources using sparse similarity.
+    
+    Algorithm:
+    1. Generate query sparse vector
+    2. For each resource with sparse embedding:
+       a. Parse JSON to dict
+       b. Compute sparse dot product (only overlapping dimensions)
+       c. Accumulate score
+    3. Sort by score descending
+    4. Return top-K results
+    
+    Performance: Linear scan acceptable for <100K resources
+    """
+    resources = (
+        self.db.query(Resource)
+        .filter(Resource.sparse_embedding.isnot(None))
+        .all()
+    )
+    
+    results = []
+    for resource in resources:
+        resource_sparse = json.loads(resource.sparse_embedding)
+        
+        # Sparse dot product
+        score = sum(
+            query_sparse.get(token_id, 0) * weight
+            for token_id, weight in resource_sparse.items()
+        )
+        
+        if score >= min_score:
+            results.append((resource.id, score))
+    
+    # Sort by score descending
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results[:limit]
+```
+
+#### Reciprocal Rank Fusion (RRF)
+
+**RRF Algorithm Implementation:**
+```python
+class ReciprocalRankFusionService:
+    """
+    Merge results from multiple retrieval methods using RRF.
+    
+    RRF is score-agnostic and works with heterogeneous scoring functions
+    (e.g., BM25 scores vs cosine similarity).
+    """
+    
+    def __init__(self, k: int = 60):
+        self.k = k  # Constant that reduces impact of high ranks
+    
+    def fuse_results(
+        self,
+        result_lists: List[List[Tuple[str, float]]],
+        weights: List[float] = None
+    ) -> List[Tuple[str, float]]:
+        """
+        Merge multiple ranked lists using RRF.
+        
+        Formula: RRF_score(d) = Σ [weight_i / (k + rank_i(d))]
+        
+        where:
+        - rank_i(d) = rank of document d in result list i (0-indexed)
+        - weight_i = importance weight for result list i
+        - k = constant (typically 60)
+        
+        Performance: <5ms for typical result sets
+        """
+        if weights is None:
+            weights = [1.0] * len(result_lists)
+        
+        # Normalize weights to sum to 1.0
+        weight_sum = sum(weights)
+        weights = [w / weight_sum for w in weights]
+        
+        # Compute RRF scores
+        rrf_scores = {}
+        
+        for i, result_list in enumerate(result_lists):
+            for rank, (doc_id, _) in enumerate(result_list):
+                if doc_id not in rrf_scores:
+                    rrf_scores[doc_id] = 0.0
+                
+                rrf_scores[doc_id] += weights[i] / (self.k + rank)
+        
+        # Sort by RRF score descending
+        sorted_results = sorted(
+            rrf_scores.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+        
+        return sorted_results
+```
+
+**Query-Adaptive Weighting:**
+```python
+def adaptive_weights(
+    self,
+    query: str,
+    result_lists: List[List[Tuple[str, float]]]
+) -> List[float]:
+    """
+    Compute query-adaptive weights based on query characteristics.
+    
+    Heuristics:
+    - Short queries (1-3 words): Boost FTS5 by 50%
+    - Long queries (>10 words): Boost dense vectors by 50%
+    - Technical queries (code, math): Boost sparse vectors by 50%
+    - Question queries (who/what/when/where/why/how): Boost dense by 30%
+    
+    Returns: [fts5_weight, dense_weight, sparse_weight]
+    """
+    # Start with equal weights
+    weights = [1.0, 1.0, 1.0]  # FTS5, dense, sparse
+    
+    # Analyze query
+    words = query.split()
+    word_count = len(words)
+    
+    # Short query heuristic
+    if word_count <= 3:
+        weights[0] *= 1.5  # Boost FTS5
+    
+    # Long query heuristic
+    if word_count > 10:
+        weights[1] *= 1.5  # Boost dense
+    
+    # Technical query heuristic
+    technical_indicators = ['def ', 'class ', '()', '{}', '[]', '=', '+', '-', '*', '/']
+    if any(indicator in query for indicator in technical_indicators):
+        weights[2] *= 1.5  # Boost sparse
+    
+    # Question query heuristic
+    question_words = ['who', 'what', 'when', 'where', 'why', 'how']
+    if any(query.lower().startswith(qw) for qw in question_words):
+        weights[1] *= 1.3  # Boost dense
+    
+    # Normalize to sum to 1.0
+    weight_sum = sum(weights)
+    weights = [w / weight_sum for w in weights]
+    
+    return weights
+```
+
+#### ColBERT Reranking
+
+**Reranking Service:**
+```python
+class RerankingService:
+    """
+    Apply ColBERT-style cross-encoder reranking for maximum precision.
+    
+    Cross-encoders model query-document interaction directly for
+    better relevance scoring than retrieval methods.
+    """
+    
+    def __init__(
+        self,
+        db: Session,
+        model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    ):
+        self.db = db
+        self.model_name = model_name
+        self._model = None  # Lazy loading
+    
+    def rerank(
+        self,
+        query: str,
+        candidates: List[str],  # Resource IDs
+        top_k: int = 20
+    ) -> List[Tuple[str, float]]:
+        """
+        Rerank candidates using cross-encoder.
+        
+        Algorithm:
+        1. Fetch resource content for candidate IDs
+        2. Build (query, document) pairs
+           - Use title + first 500 chars of content
+        3. Batch predict relevance scores using cross-encoder
+        4. Sort by relevance score descending
+        5. Return top-K results
+        
+        Performance: >100 documents/second
+        """
+        if self._model is None:
+            self._load_model()
+        
+        # Fetch resources
+        resources = (
+            self.db.query(Resource)
+            .filter(Resource.id.in_(candidates))
+            .all()
+        )
+        
+        # Build query-document pairs
+        pairs = []
+        resource_map = {}
+        for resource in resources:
+            doc_text = f"{resource.title}. {resource.content[:500]}"
+            pairs.append([query, doc_text])
+            resource_map[len(pairs) - 1] = resource.id
+        
+        # Batch predict relevance scores
+        scores = self._model.predict(pairs)
+        
+        # Sort by relevance score
+        results = [
+            (resource_map[i], float(score))
+            for i, score in enumerate(scores)
+        ]
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        return results[:top_k]
+```
+
+#### Three-Way Hybrid Search Integration
+
+**Complete Search Pipeline:**
+```python
+class AdvancedSearchService:
+    """
+    Orchestrate three-way hybrid search with RRF and reranking.
+    """
+    
+    @staticmethod
+    def search_three_way_hybrid(
+        db: Session,
+        query: SearchQuery,
+        enable_reranking: bool = True,
+        adaptive_weighting: bool = True
+    ) -> Tuple[List[Resource], int, Facets, Dict[str, str]]:
+        """
+        Three-way hybrid search with RRF and reranking.
+        
+        Algorithm:
+        1. Query Analysis
+           - Parse query text
+           - Detect query characteristics (length, type, technical)
+        
+        2. Parallel Retrieval (target: <150ms total)
+           - FTS5 search → top 100 results
+           - Dense vector search → top 100 results
+           - Sparse vector search → top 100 results
+        
+        3. Adaptive Weighting (if enabled)
+           - Compute weights based on query characteristics
+           - Default: [1.0, 1.0, 1.0] (equal weights)
+        
+        4. RRF Fusion
+           - Merge three result lists using RRF
+           - Apply adaptive weights
+           - Sort by RRF score
+        
+        5. Reranking (if enabled)
+           - Extract top 100 candidates
+           - Apply ColBERT cross-encoder
+           - Sort by relevance score
+           - Return top-K
+        
+        6. Fetch Resources
+           - Retrieve Resource objects preserving order
+           - Apply structured filters
+           - Compute facets
+        
+        7. Return Results
+           - Resources, total count, facets, snippets
+        
+        Performance: <200ms at 95th percentile
+        """
+        start_time = time.time()
+        
+        # 1. Query analysis
+        query_text = query.text
+        
+        # 2. Parallel retrieval
+        fts5_results = AdvancedSearchService._search_fts5(db, query_text, limit=100)
+        dense_results = AdvancedSearchService._search_dense(db, query_text, limit=100)
+        sparse_results = AdvancedSearchService._search_sparse(db, query_text, limit=100)
+        
+        # 3. Adaptive weighting
+        if adaptive_weighting:
+            rrf_service = ReciprocalRankFusionService()
+            weights = rrf_service.adaptive_weights(
+                query_text,
+                [fts5_results, dense_results, sparse_results]
+            )
+        else:
+            weights = [1.0, 1.0, 1.0]
+        
+        # 4. RRF fusion
+        rrf_service = ReciprocalRankFusionService(k=60)
+        fused_results = rrf_service.fuse_results(
+            [fts5_results, dense_results, sparse_results],
+            weights=weights
+        )
+        
+        # 5. Reranking (optional)
+        if enable_reranking:
+            reranking_service = RerankingService(db)
+            candidate_ids = [doc_id for doc_id, _ in fused_results[:100]]
+            reranked_results = reranking_service.rerank(
+                query_text,
+                candidate_ids,
+                top_k=query.limit
+            )
+            final_results = reranked_results
+        else:
+            final_results = fused_results[:query.limit]
+        
+        # 6. Fetch resources
+        resource_ids = [doc_id for doc_id, _ in final_results]
+        resources = AdvancedSearchService._fetch_resources_ordered(db, resource_ids)
+        
+        # 7. Compute metadata
+        latency_ms = (time.time() - start_time) * 1000
+        method_contributions = {
+            "fts5": len([r for r in fts5_results if r[0] in resource_ids]),
+            "dense": len([r for r in dense_results if r[0] in resource_ids]),
+            "sparse": len([r for r in sparse_results if r[0] in resource_ids])
+        }
+        
+        # Log performance
+        logger.info(
+            f"Three-way search completed in {latency_ms:.1f}ms "
+            f"(FTS5={method_contributions['fts5']}, "
+            f"Dense={method_contributions['dense']}, "
+            f"Sparse={method_contributions['sparse']}, "
+            f"Weights={weights})"
+        )
+        
+        if latency_ms > 500:
+            logger.warning(f"Slow query detected: {query_text} ({latency_ms:.1f}ms)")
+        
+        return resources, len(resources), {}, {}
+```
+
+#### Search Metrics Service
+
+**Information Retrieval Metrics:**
+```python
+class SearchMetricsService:
+    """
+    Compute information retrieval metrics for evaluation.
+    """
+    
+    def compute_ndcg(
+        self,
+        ranked_results: List[str],
+        relevance_judgments: Dict[str, int],
+        k: int = 20
+    ) -> float:
+        """
+        Compute nDCG@k (Normalized Discounted Cumulative Gain).
+        
+        Formula:
+        DCG@k = Σ [(2^rel_i - 1) / log2(i + 2)]
+        nDCG@k = DCG@k / IDCG@k
+        
+        where:
+        - rel_i = relevance score of document at position i (0-3 scale)
+        - IDCG@k = ideal DCG (perfect ranking)
+        
+        Range: [0, 1], higher is better
+        Target: >0.7 for excellent search quality
+        """
+        import math
+        
+        # Compute DCG
+        dcg = 0.0
+        for i, doc_id in enumerate(ranked_results[:k]):
+            rel = relevance_judgments.get(doc_id, 0)
+            dcg += (2 ** rel - 1) / math.log2(i + 2)
+        
+        # Compute IDCG (ideal ranking)
+        ideal_rels = sorted(relevance_judgments.values(), reverse=True)[:k]
+        idcg = sum(
+            (2 ** rel - 1) / math.log2(i + 2)
+            for i, rel in enumerate(ideal_rels)
+        )
+        
+        # Normalize
+        if idcg == 0:
+            return 0.0
+        
+        return dcg / idcg
+    
+    def compute_recall_at_k(
+        self,
+        ranked_results: List[str],
+        relevant_docs: List[str],
+        k: int = 20
+    ) -> float:
+        """
+        Compute Recall@k.
+        
+        Formula: Recall@k = (# relevant docs in top-k) / (total # relevant docs)
+        
+        Range: [0, 1], higher is better
+        """
+        top_k = set(ranked_results[:k])
+        relevant_set = set(relevant_docs)
+        
+        retrieved_relevant = len(top_k & relevant_set)
+        total_relevant = len(relevant_set)
+        
+        if total_relevant == 0:
+            return 0.0
+        
+        return retrieved_relevant / total_relevant
+    
+    def compute_precision_at_k(
+        self,
+        ranked_results: List[str],
+        relevant_docs: List[str],
+        k: int = 20
+    ) -> float:
+        """
+        Compute Precision@k.
+        
+        Formula: Precision@k = (# relevant docs in top-k) / k
+        
+        Range: [0, 1], higher is better
+        """
+        top_k = set(ranked_results[:k])
+        relevant_set = set(relevant_docs)
+        
+        retrieved_relevant = len(top_k & relevant_set)
+        
+        return retrieved_relevant / k
+    
+    def compute_mean_reciprocal_rank(
+        self,
+        ranked_results: List[str],
+        relevant_docs: List[str]
+    ) -> float:
+        """
+        Compute MRR (Mean Reciprocal Rank).
+        
+        Formula: MRR = 1 / (rank of first relevant document)
+        
+        Range: [0, 1], higher is better
+        """
+        relevant_set = set(relevant_docs)
+        
+        for i, doc_id in enumerate(ranked_results):
+            if doc_id in relevant_set:
+                return 1.0 / (i + 1)
+        
+        return 0.0
+```
+
+#### Performance Optimization Strategies
+
+**Parallel Retrieval:**
+```python
+import asyncio
+
+async def parallel_retrieval(query: str):
+    """Execute three retrieval methods in parallel."""
+    tasks = [
+        asyncio.to_thread(search_fts5, query, limit=100),
+        asyncio.to_thread(search_dense, query, limit=100),
+        asyncio.to_thread(search_sparse, query, limit=100)
+    ]
+    results = await asyncio.gather(*tasks)
+    return results
+
+# Expected speedup: 2-3x (from ~150ms sequential to ~50-75ms parallel)
+```
+
+**GPU Acceleration:**
+```python
+# Sparse embedding generation
+if torch.cuda.is_available():
+    model = model.cuda()
+    inputs = {k: v.cuda() for k, v in inputs.items()}
+
+# Expected speedup: 5-10x for batch processing
+
+# Reranking
+model = CrossEncoder(model_name, device='cuda' if torch.cuda.is_available() else 'cpu')
+
+# Expected speedup: 5-10x for reranking 100 documents
+```
+
+**Caching Strategy:**
+```python
+from functools import lru_cache
+from cachetools import TTLCache
+
+# Query result caching
+@lru_cache(maxsize=1000)
+def cached_search(query_hash: str, filters_hash: str):
+    # Cache search results for 5 minutes
+    pass
+
+# Reranking result caching
+reranking_cache = TTLCache(maxsize=500, ttl=3600)
+
+cache_key = f"{query}|{sorted(candidates)}"
+if cache_key in reranking_cache:
+    return reranking_cache[cache_key]
+```
+
 **Query Optimization:**
 ```python
 # Use eager loading to prevent N+1 queries

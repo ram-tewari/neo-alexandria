@@ -1174,6 +1174,510 @@ for conn_type, edges in connections.items():
         print(f"  - Weight: {edge['weight']:.2f}, Subjects: {edge['shared_subjects']}")
 ```
 
+## Phase 8: Three-Way Hybrid Search with Sparse Vectors & Reranking
+
+### Three-Way Hybrid Search Examples
+
+#### cURL Examples
+
+**Basic three-way hybrid search:**
+```bash
+# Three-way search with reranking and adaptive weighting (default)
+curl "http://127.0.0.1:8000/search/three-way-hybrid?query=machine+learning&limit=20"
+
+# Three-way search without reranking (faster)
+curl "http://127.0.0.1:8000/search/three-way-hybrid?query=neural+networks&limit=10&enable_reranking=false"
+
+# Three-way search with fixed weights (no adaptation)
+curl "http://127.0.0.1:8000/search/three-way-hybrid?query=data+science&adaptive_weighting=false"
+
+# Three-way search with pagination
+curl "http://127.0.0.1:8000/search/three-way-hybrid?query=artificial+intelligence&limit=20&offset=20"
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Machine Learning Fundamentals",
+      "description": "Comprehensive guide to ML concepts",
+      "subject": ["Machine Learning", "Artificial Intelligence"],
+      "quality_score": 0.85,
+      "relevance_score": 0.92
+    }
+  ],
+  "total": 42,
+  "latency_ms": 145.3,
+  "method_contributions": {
+    "fts5": 45,
+    "dense": 38,
+    "sparse": 42
+  },
+  "weights_used": [0.35, 0.35, 0.30],
+  "facets": {
+    "classification_code": [{"key": "004", "count": 30}]
+  }
+}
+```
+
+#### Compare Search Methods
+
+**Compare all search methods side-by-side:**
+```bash
+curl "http://127.0.0.1:8000/search/compare-methods?query=deep+learning&limit=10"
+```
+
+**Response:**
+```json
+{
+  "query": "deep learning",
+  "methods": {
+    "fts5_only": {
+      "results": [...],
+      "latency_ms": 25.3,
+      "count": 10
+    },
+    "dense_only": {
+      "results": [...],
+      "latency_ms": 42.1,
+      "count": 10
+    },
+    "sparse_only": {
+      "results": [...],
+      "latency_ms": 38.7,
+      "count": 10
+    },
+    "two_way_hybrid": {
+      "results": [...],
+      "latency_ms": 67.4,
+      "count": 10
+    },
+    "three_way_hybrid": {
+      "results": [...],
+      "latency_ms": 106.1,
+      "count": 10
+    },
+    "three_way_reranked": {
+      "results": [...],
+      "latency_ms": 856.8,
+      "count": 10
+    }
+  }
+}
+```
+
+#### Evaluate Search Quality
+
+**Evaluate search quality with relevance judgments:**
+```bash
+curl -X POST http://127.0.0.1:8000/search/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "machine learning algorithms",
+    "relevance_judgments": {
+      "550e8400-e29b-41d4-a716-446655440000": 3,
+      "660e8400-e29b-41d4-a716-446655440001": 2,
+      "770e8400-e29b-41d4-a716-446655440002": 1,
+      "880e8400-e29b-41d4-a716-446655440003": 0
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "query": "machine learning algorithms",
+  "metrics": {
+    "ndcg@20": 0.847,
+    "recall@20": 0.923,
+    "precision@20": 0.650,
+    "mrr": 0.833
+  },
+  "baseline_comparison": {
+    "two_way_ndcg": 0.651,
+    "improvement": 0.301
+  }
+}
+```
+
+#### Batch Generate Sparse Embeddings
+
+**Generate sparse embeddings for all resources:**
+```bash
+curl -X POST http://127.0.0.1:8000/admin/sparse-embeddings/generate \
+  -H "Content-Type: application/json" \
+  -d '{"batch_size": 32}'
+```
+
+**Generate for specific resources:**
+```bash
+curl -X POST http://127.0.0.1:8000/admin/sparse-embeddings/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": [
+      "550e8400-e29b-41d4-a716-446655440000",
+      "660e8400-e29b-41d4-a716-446655440001"
+    ],
+    "batch_size": 16
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "queued",
+  "job_id": "job_uuid",
+  "estimated_duration_minutes": 45,
+  "resources_to_process": 10000
+}
+```
+
+### Python Examples
+
+#### Three-Way Hybrid Search Client
+
+```python
+import requests
+from typing import Dict, List, Optional
+
+class ThreeWaySearchClient:
+    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+        self.base_url = base_url
+    
+    def search_three_way(
+        self,
+        query: str,
+        limit: int = 20,
+        offset: int = 0,
+        enable_reranking: bool = True,
+        adaptive_weighting: bool = True
+    ) -> Dict:
+        """Execute three-way hybrid search."""
+        response = requests.get(
+            f"{self.base_url}/search/three-way-hybrid",
+            params={
+                "query": query,
+                "limit": limit,
+                "offset": offset,
+                "enable_reranking": enable_reranking,
+                "adaptive_weighting": adaptive_weighting
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def compare_methods(self, query: str, limit: int = 20) -> Dict:
+        """Compare all search methods side-by-side."""
+        response = requests.get(
+            f"{self.base_url}/search/compare-methods",
+            params={"query": query, "limit": limit}
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def evaluate_search(
+        self,
+        query: str,
+        relevance_judgments: Dict[str, int]
+    ) -> Dict:
+        """Evaluate search quality with relevance judgments."""
+        response = requests.post(
+            f"{self.base_url}/search/evaluate",
+            json={
+                "query": query,
+                "relevance_judgments": relevance_judgments
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def generate_sparse_embeddings(
+        self,
+        resource_ids: Optional[List[str]] = None,
+        batch_size: int = 32
+    ) -> Dict:
+        """Batch generate sparse embeddings."""
+        payload = {"batch_size": batch_size}
+        if resource_ids:
+            payload["resource_ids"] = resource_ids
+        
+        response = requests.post(
+            f"{self.base_url}/admin/sparse-embeddings/generate",
+            json=payload
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Usage examples
+client = ThreeWaySearchClient()
+
+# Basic three-way search
+results = client.search_three_way("machine learning", limit=20)
+print(f"Found {results['total']} results in {results['latency_ms']:.1f}ms")
+print(f"Method contributions: FTS5={results['method_contributions']['fts5']}, "
+      f"Dense={results['method_contributions']['dense']}, "
+      f"Sparse={results['method_contributions']['sparse']}")
+print(f"Weights used: {results['weights_used']}")
+
+# Fast search without reranking
+fast_results = client.search_three_way(
+    "neural networks",
+    limit=10,
+    enable_reranking=False
+)
+print(f"Fast search completed in {fast_results['latency_ms']:.1f}ms")
+
+# Compare all methods
+comparison = client.compare_methods("deep learning", limit=10)
+print("\nMethod comparison:")
+for method, data in comparison["methods"].items():
+    print(f"  {method}: {data['count']} results in {data['latency_ms']:.1f}ms")
+
+# Evaluate search quality
+relevance = {
+    "550e8400-e29b-41d4-a716-446655440000": 3,  # Highly relevant
+    "660e8400-e29b-41d4-a716-446655440001": 2,  # Relevant
+    "770e8400-e29b-41d4-a716-446655440002": 1,  # Marginally relevant
+}
+metrics = client.evaluate_search("artificial intelligence", relevance)
+print(f"\nSearch quality metrics:")
+print(f"  nDCG@20: {metrics['metrics']['ndcg@20']:.3f}")
+print(f"  Recall@20: {metrics['metrics']['recall@20']:.3f}")
+print(f"  Precision@20: {metrics['metrics']['precision@20']:.3f}")
+print(f"  MRR: {metrics['metrics']['mrr']:.3f}")
+if "baseline_comparison" in metrics:
+    print(f"  Improvement over baseline: {metrics['baseline_comparison']['improvement']:.1%}")
+
+# Generate sparse embeddings
+job = client.generate_sparse_embeddings(batch_size=32)
+print(f"\nSparse embedding generation queued:")
+print(f"  Job ID: {job['job_id']}")
+print(f"  Resources to process: {job['resources_to_process']}")
+print(f"  Estimated duration: {job['estimated_duration_minutes']} minutes")
+```
+
+#### Advanced Search Analysis
+
+```python
+import requests
+from typing import Dict, List
+import statistics
+
+class SearchAnalyzer:
+    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+        self.base_url = base_url
+    
+    def analyze_query_types(self, queries: List[str]) -> Dict:
+        """Analyze how different query types perform."""
+        results = {}
+        
+        for query in queries:
+            response = requests.get(
+                f"{self.base_url}/search/three-way-hybrid",
+                params={"query": query, "limit": 20}
+            )
+            data = response.json()
+            
+            results[query] = {
+                "latency_ms": data["latency_ms"],
+                "total_results": data["total"],
+                "method_contributions": data["method_contributions"],
+                "weights_used": data["weights_used"]
+            }
+        
+        return results
+    
+    def benchmark_search_methods(self, query: str, iterations: int = 5) -> Dict:
+        """Benchmark different search methods."""
+        latencies = {
+            "fts5_only": [],
+            "dense_only": [],
+            "sparse_only": [],
+            "two_way_hybrid": [],
+            "three_way_hybrid": [],
+            "three_way_reranked": []
+        }
+        
+        for _ in range(iterations):
+            response = requests.get(
+                f"{self.base_url}/search/compare-methods",
+                params={"query": query, "limit": 20}
+            )
+            data = response.json()
+            
+            for method, method_data in data["methods"].items():
+                latencies[method].append(method_data["latency_ms"])
+        
+        # Compute statistics
+        stats = {}
+        for method, times in latencies.items():
+            stats[method] = {
+                "mean": statistics.mean(times),
+                "median": statistics.median(times),
+                "min": min(times),
+                "max": max(times),
+                "stdev": statistics.stdev(times) if len(times) > 1 else 0
+            }
+        
+        return stats
+
+# Usage
+analyzer = SearchAnalyzer()
+
+# Analyze different query types
+queries = [
+    "ML",  # Short query
+    "machine learning algorithms for classification",  # Long query
+    "def train_model(X, y):",  # Technical query
+    "what is deep learning?"  # Question query
+]
+
+analysis = analyzer.analyze_query_types(queries)
+print("Query type analysis:")
+for query, data in analysis.items():
+    print(f"\nQuery: '{query}'")
+    print(f"  Latency: {data['latency_ms']:.1f}ms")
+    print(f"  Results: {data['total_results']}")
+    print(f"  Contributions: FTS5={data['method_contributions']['fts5']}, "
+          f"Dense={data['method_contributions']['dense']}, "
+          f"Sparse={data['method_contributions']['sparse']}")
+    print(f"  Weights: {data['weights_used']}")
+
+# Benchmark search methods
+stats = analyzer.benchmark_search_methods("machine learning", iterations=10)
+print("\n\nSearch method benchmarks (10 iterations):")
+for method, method_stats in stats.items():
+    print(f"\n{method}:")
+    print(f"  Mean: {method_stats['mean']:.1f}ms")
+    print(f"  Median: {method_stats['median']:.1f}ms")
+    print(f"  Min: {method_stats['min']:.1f}ms")
+    print(f"  Max: {method_stats['max']:.1f}ms")
+    print(f"  StdDev: {method_stats['stdev']:.1f}ms")
+```
+
+### JavaScript Examples
+
+#### Three-Way Search Client
+
+```javascript
+class ThreeWaySearchClient {
+    constructor(baseUrl = 'http://127.0.0.1:8000') {
+        this.baseUrl = baseUrl;
+    }
+    
+    async searchThreeWay(query, options = {}) {
+        const {
+            limit = 20,
+            offset = 0,
+            enableReranking = true,
+            adaptiveWeighting = true
+        } = options;
+        
+        const params = new URLSearchParams({
+            query,
+            limit: limit.toString(),
+            offset: offset.toString(),
+            enable_reranking: enableReranking.toString(),
+            adaptive_weighting: adaptiveWeighting.toString()
+        });
+        
+        const response = await fetch(
+            `${this.baseUrl}/search/three-way-hybrid?${params}`
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.statusText}`);
+        }
+        
+        return response.json();
+    }
+    
+    async compareMethods(query, limit = 20) {
+        const params = new URLSearchParams({
+            query,
+            limit: limit.toString()
+        });
+        
+        const response = await fetch(
+            `${this.baseUrl}/search/compare-methods?${params}`
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Comparison failed: ${response.statusText}`);
+        }
+        
+        return response.json();
+    }
+    
+    async evaluateSearch(query, relevanceJudgments) {
+        const response = await fetch(
+            `${this.baseUrl}/search/evaluate`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query,
+                    relevance_judgments: relevanceJudgments
+                })
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Evaluation failed: ${response.statusText}`);
+        }
+        
+        return response.json();
+    }
+}
+
+// Usage
+const client = new ThreeWaySearchClient();
+
+// Basic three-way search
+client.searchThreeWay('machine learning', { limit: 20 })
+    .then(results => {
+        console.log(`Found ${results.total} results in ${results.latency_ms}ms`);
+        console.log('Method contributions:', results.method_contributions);
+        console.log('Weights used:', results.weights_used);
+        
+        results.results.forEach(result => {
+            console.log(`- ${result.title} (score: ${result.relevance_score})`);
+        });
+    })
+    .catch(error => console.error('Search failed:', error));
+
+// Compare methods
+client.compareMethods('deep learning', 10)
+    .then(comparison => {
+        console.log('\nMethod comparison:');
+        Object.entries(comparison.methods).forEach(([method, data]) => {
+            console.log(`  ${method}: ${data.count} results in ${data.latency_ms}ms`);
+        });
+    })
+    .catch(error => console.error('Comparison failed:', error));
+
+// Evaluate search quality
+const relevance = {
+    '550e8400-e29b-41d4-a716-446655440000': 3,
+    '660e8400-e29b-41d4-a716-446655440001': 2,
+    '770e8400-e29b-41d4-a716-446655440002': 1
+};
+
+client.evaluateSearch('artificial intelligence', relevance)
+    .then(metrics => {
+        console.log('\nSearch quality metrics:');
+        console.log(`  nDCG@20: ${metrics.metrics['ndcg@20'].toFixed(3)}`);
+        console.log(`  Recall@20: ${metrics.metrics['recall@20'].toFixed(3)}`);
+        console.log(`  Precision@20: ${metrics.metrics['precision@20'].toFixed(3)}`);
+        console.log(`  MRR: ${metrics.metrics.mrr.toFixed(3)}`);
+    })
+    .catch(error => console.error('Evaluation failed:', error));
+```
+
 ## Error Handling
 
 - Standard error format: `{ "detail": "..." }`

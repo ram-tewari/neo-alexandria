@@ -895,3 +895,297 @@ class CollectionService:
             "resource_recommendations": top_resources,
             "collection_recommendations": top_collections
         }
+
+    def cosine_similarity(
+        self,
+        embedding1: List[float],
+        embedding2: List[float]
+    ) -> float:
+        """
+        Compute cosine similarity between two embedding vectors.
+        
+        Algorithm:
+        1. Use numpy to compute dot product
+        2. Divide by product of L2 norms
+        3. Return similarity score (float between -1 and 1)
+        
+        Edge cases handled:
+        - Zero vectors: returns 0.0
+        - Different dimensions: raises ValueError
+        - None or empty vectors: raises ValueError
+        
+        Args:
+            embedding1: First embedding vector
+            embedding2: Second embedding vector
+            
+        Returns:
+            Cosine similarity score (float between -1 and 1)
+            
+        Raises:
+            ValueError: If vectors are None, empty, or have different dimensions
+        """
+        import numpy as np
+        
+        # Validate inputs
+        if not embedding1 or not embedding2:
+            raise ValueError("Embedding vectors cannot be None or empty")
+        
+        if len(embedding1) != len(embedding2):
+            raise ValueError(
+                f"Embedding dimensions must match: {len(embedding1)} != {len(embedding2)}"
+            )
+        
+        # Convert to numpy arrays
+        vec1 = np.array(embedding1, dtype=np.float64)
+        vec2 = np.array(embedding2, dtype=np.float64)
+        
+        # Compute L2 norms
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        
+        # Handle zero vectors
+        if norm1 < 1e-10 or norm2 < 1e-10:
+            return 0.0
+        
+        # Compute cosine similarity
+        dot_product = np.dot(vec1, vec2)
+        similarity = dot_product / (norm1 * norm2)
+        
+        return float(similarity)
+
+    def find_similar_resources(
+        self,
+        target_embedding: List[float],
+        exclude_resource_ids: List[str],
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Find resources similar to the target embedding.
+        
+        Algorithm:
+        1. Query all Resources with non-null embeddings
+        2. Exclude resources in exclude_resource_ids list
+        3. Compute cosine similarity for each resource embedding vs target
+        4. Sort by similarity descending
+        5. Return top N resources with similarity scores
+        
+        Args:
+            target_embedding: Target embedding vector to compare against
+            exclude_resource_ids: List of resource IDs to exclude from results
+            limit: Maximum number of results to return (1-50)
+            
+        Returns:
+            List of dictionaries with resource information and similarity scores:
+            [{"id": str, "title": str, "similarity": float, ...}]
+        """
+        # Validate limit
+        limit = max(1, min(limit, 50))
+        
+        # Convert exclude_resource_ids to UUIDs
+        exclude_uuids = []
+        for resource_id in exclude_resource_ids:
+            try:
+                exclude_uuids.append(uuid.UUID(resource_id))
+            except (ValueError, TypeError):
+                # Skip invalid UUIDs
+                pass
+        
+        # Query all resources with non-null embeddings
+        query = select(Resource).filter(Resource.embedding.isnot(None))
+        
+        # Exclude resources in exclude list
+        if exclude_uuids:
+            query = query.filter(~Resource.id.in_(exclude_uuids))
+        
+        result = self.db.execute(query)
+        candidate_resources = result.scalars().all()
+        
+        # Compute similarities
+        resource_similarities = []
+        for resource in candidate_resources:
+            if resource.embedding and len(resource.embedding) > 0:
+                try:
+                    similarity = self.cosine_similarity(target_embedding, resource.embedding)
+                    
+                    resource_similarities.append({
+                        "id": str(resource.id),
+                        "title": resource.title,
+                        "creator": resource.creator,
+                        "quality_score": resource.quality_score,
+                        "similarity": similarity,
+                        "description": resource.description
+                    })
+                except ValueError:
+                    # Skip resources with incompatible embeddings
+                    continue
+        
+        # Sort by similarity descending
+        resource_similarities.sort(key=lambda x: x["similarity"], reverse=True)
+        
+        # Return top N
+        return resource_similarities[:limit]
+
+    def find_similar_collections(
+        self,
+        target_embedding: List[float],
+        user_id: Optional[str],
+        exclude_collection_id: str,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Find collections similar to the target embedding.
+        
+        Algorithm:
+        1. Query all Collections with non-null embeddings
+        2. Apply access control filter (owner or public visibility)
+        3. Exclude collection with exclude_collection_id
+        4. Compute cosine similarity for each collection embedding vs target
+        5. Sort by similarity descending
+        6. Return top N collections with similarity scores
+        
+        Args:
+            target_embedding: Target embedding vector to compare against
+            user_id: User ID for access control (can be None)
+            exclude_collection_id: Collection ID to exclude from results
+            limit: Maximum number of results to return (1-50)
+            
+        Returns:
+            List of dictionaries with collection information and similarity scores:
+            [{"id": str, "name": str, "similarity": float, ...}]
+        """
+        # Validate limit
+        limit = max(1, min(limit, 50))
+        
+        # Convert exclude_collection_id to UUID
+        try:
+            exclude_uuid = uuid.UUID(exclude_collection_id)
+        except (ValueError, TypeError):
+            exclude_uuid = None
+        
+        # Query all collections with non-null embeddings
+        query = select(Collection).filter(Collection.embedding.isnot(None))
+        
+        # Exclude the source collection
+        if exclude_uuid:
+            query = query.filter(Collection.id != exclude_uuid)
+        
+        # Apply access control filter
+        if user_id:
+            # Include collections where user is owner OR visibility is public
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    Collection.owner_id == user_id,
+                    Collection.visibility == "public"
+                )
+            )
+        else:
+            # No user_id provided, only show public collections
+            query = query.filter(Collection.visibility == "public")
+        
+        result = self.db.execute(query)
+        candidate_collections = result.scalars().all()
+        
+        # Compute similarities
+        collection_similarities = []
+        for collection in candidate_collections:
+            if collection.embedding and len(collection.embedding) > 0:
+                try:
+                    similarity = self.cosine_similarity(target_embedding, collection.embedding)
+                    
+                    collection_similarities.append({
+                        "id": str(collection.id),
+                        "name": collection.name,
+                        "description": collection.description,
+                        "owner_id": collection.owner_id,
+                        "visibility": collection.visibility,
+                        "similarity": similarity
+                    })
+                except ValueError:
+                    # Skip collections with incompatible embeddings
+                    continue
+        
+        # Sort by similarity descending
+        collection_similarities.sort(key=lambda x: x["similarity"], reverse=True)
+        
+        # Return top N
+        return collection_similarities[:limit]
+
+    def get_recommendations(
+        self,
+        collection_id: str,
+        user_id: Optional[str],
+        limit: int = 10,
+        include_resources: bool = True,
+        include_collections: bool = True
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Get recommendations for resources and collections similar to this collection.
+        
+        Algorithm:
+        1. Retrieve collection and verify access
+        2. Get collection.embedding, raise error if None
+        3. Initialize results dictionary with "resources" and "collections" keys
+        4. If include_resources, call find_similar_resources
+        5. If include_collections, call find_similar_collections
+        6. Return results dictionary
+        
+        Args:
+            collection_id: UUID of the collection
+            user_id: User ID for access control (can be None)
+            limit: Maximum number of recommendations per type (1-50)
+            include_resources: Whether to include resource recommendations
+            include_collections: Whether to include collection recommendations
+            
+        Returns:
+            Dictionary with keys "resources" and "collections", each containing
+            a list of recommendation dictionaries with similarity scores
+            
+        Raises:
+            ValueError: If collection not found, access denied, or no embedding available
+        """
+        # Validate limit
+        limit = max(1, min(limit, 50))
+        
+        # Retrieve collection and verify access
+        collection = self.get_collection(collection_id, user_id)
+        
+        # Check if collection has embedding
+        if not collection.embedding or len(collection.embedding) == 0:
+            raise ValueError(
+                f"Collection {collection_id} does not have an aggregate embedding. "
+                "Add resources with embeddings to generate recommendations."
+            )
+        
+        # Initialize results dictionary
+        results = {
+            "resources": [],
+            "collections": []
+        }
+        
+        # Get member resource IDs to exclude from resource recommendations
+        result = self.db.execute(
+            select(CollectionResource.resource_id).filter(
+                CollectionResource.collection_id == uuid.UUID(collection_id)
+            )
+        )
+        member_resource_ids = [str(rid) for rid in result.scalars().all()]
+        
+        # If include_resources, call find_similar_resources
+        if include_resources:
+            results["resources"] = self.find_similar_resources(
+                target_embedding=collection.embedding,
+                exclude_resource_ids=member_resource_ids,
+                limit=limit
+            )
+        
+        # If include_collections, call find_similar_collections
+        if include_collections:
+            results["collections"] = self.find_similar_collections(
+                target_embedding=collection.embedding,
+                user_id=user_id,
+                exclude_collection_id=collection_id,
+                limit=limit
+            )
+        
+        return results

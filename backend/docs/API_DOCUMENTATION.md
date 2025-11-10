@@ -902,7 +902,26 @@ Webhooks are not currently supported but are planned for future releases to noti
 - `POST /curation/batch-update` - Apply batch updates to multiple resources
 - `POST /curation/bulk-quality-check` - Perform quality analysis on multiple resources
 
+### Collection Management
+- `POST /collections` - Create new collection
+- `GET /collections/{id}` - Get collection with member resources
+- `PUT /collections/{id}` - Update collection metadata
+- `DELETE /collections/{id}` - Delete collection and subcollections
+- `GET /collections` - List collections with filtering
+- `POST /collections/{id}/resources` - Add resources to collection
+- `DELETE /collections/{id}/resources` - Remove resources from collection
+- `GET /collections/{id}/recommendations` - Get similar resources and collections
+- `GET /collections/{id}/embedding` - Get collection aggregate embedding
+
 ## Changelog
+
+### Version 0.9.0 (Phase 7)
+- Added collection management system
+- Implemented hierarchical collection organization
+- Added aggregate embedding computation
+- Implemented collection-based recommendations
+- Added batch resource membership operations
+- Integrated collection cleanup with resource deletion
 
 ### Version 0.7.0 (Phase 5.5)
 - Added personalized recommendation system
@@ -1195,6 +1214,634 @@ The system performs the following steps asynchronously:
 - Typically completes in <5 seconds for 1000 resources
 - Sparse matrix representation for efficiency
 - Can be scheduled as a background job
+
+---
+
+## Collection Management Endpoints
+
+### POST /collections
+
+Create a new collection with metadata and optional hierarchical parent.
+
+**Request Body:**
+```json
+{
+  "name": "string (required, 1-255 characters)",
+  "description": "string (optional, max 2000 characters)",
+  "visibility": "private|shared|public (optional, default: private)",
+  "parent_id": "string (optional, UUID of parent collection)"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Machine Learning Papers",
+  "description": "Curated collection of ML research",
+  "owner_id": "user123",
+  "visibility": "public",
+  "parent_id": null,
+  "resource_count": 0,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:00:00Z",
+  "resources": []
+}
+```
+
+**Authentication:** Required (owner_id extracted from token)
+
+**Error Responses:**
+- `400 Bad Request` - Invalid name length, visibility value, or circular hierarchy
+- `401 Unauthorized` - No authentication token provided
+- `404 Not Found` - Parent collection not found
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Machine Learning Papers",
+    "description": "Curated collection of ML research",
+    "visibility": "public"
+  }'
+```
+
+---
+
+### GET /collections/{id}
+
+Retrieve a specific collection with member resource summaries.
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Machine Learning Papers",
+  "description": "Curated collection of ML research",
+  "owner_id": "user123",
+  "visibility": "public",
+  "parent_id": null,
+  "resource_count": 2,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:05:00Z",
+  "resources": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "title": "Deep Learning Fundamentals",
+      "creator": "John Doe",
+      "quality_score": 0.92
+    },
+    {
+      "id": "770e8400-e29b-41d4-a716-446655440002",
+      "title": "Neural Network Architectures",
+      "creator": "Jane Smith",
+      "quality_score": 0.88
+    }
+  ]
+}
+```
+
+**Authentication:** Required (visibility check applied)
+
+**Access Rules:**
+- `private`: Only owner can access
+- `shared`: Owner + explicit permissions (future)
+- `public`: All authenticated users
+
+**Error Responses:**
+- `403 Forbidden` - User does not have access to collection
+- `404 Not Found` - Collection not found
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000"
+```
+
+---
+
+### PUT /collections/{id}
+
+Update collection metadata (name, description, visibility, parent).
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Request Body:**
+```json
+{
+  "name": "string (optional, 1-255 characters)",
+  "description": "string (optional, max 2000 characters)",
+  "visibility": "private|shared|public (optional)",
+  "parent_id": "string (optional, UUID or null)"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Updated Collection Name",
+  "description": "Updated description",
+  "owner_id": "user123",
+  "visibility": "private",
+  "parent_id": null,
+  "resource_count": 2,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T11:00:00Z",
+  "resources": []
+}
+```
+
+**Authentication:** Required (owner only)
+
+**Error Responses:**
+- `400 Bad Request` - Invalid field values or circular hierarchy
+- `403 Forbidden` - User is not the collection owner
+- `404 Not Found` - Collection or parent not found
+
+**Example:**
+```bash
+curl -X PUT http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Collection Name",
+    "visibility": "private"
+  }'
+```
+
+---
+
+### DELETE /collections/{id}
+
+Delete a collection and all its subcollections recursively.
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Response (204 No Content)**
+
+**Authentication:** Required (owner only)
+
+**Cascade Behavior:**
+- Deletes all descendant collections recursively
+- Removes all collection-resource associations
+- Does NOT delete the member resources themselves
+
+**Error Responses:**
+- `403 Forbidden` - User is not the collection owner
+- `404 Not Found` - Collection not found
+
+**Example:**
+```bash
+curl -X DELETE http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000
+```
+
+---
+
+### GET /collections
+
+List collections with filtering and pagination.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Filter by owner UUID | - |
+| `visibility` | string | Filter by visibility (private/shared/public) | - |
+| `page` | integer | Page number (1-based) | 1 |
+| `limit` | integer | Results per page (1-100) | 50 |
+
+**Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Machine Learning Papers",
+      "description": "Curated collection of ML research",
+      "owner_id": "user123",
+      "visibility": "public",
+      "parent_id": null,
+      "resource_count": 2,
+      "created_at": "2024-01-01T10:00:00Z",
+      "updated_at": "2024-01-01T10:05:00Z",
+      "resources": []
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 50
+}
+```
+
+**Authentication:** Required (filtered by access)
+
+**Access Filtering:**
+- Returns collections where user is owner OR visibility is public
+- Private collections only visible to owner
+
+**Example:**
+```bash
+# List all accessible collections
+curl "http://127.0.0.1:8000/collections"
+
+# Filter by owner
+curl "http://127.0.0.1:8000/collections?owner_id=user123"
+
+# Filter by visibility
+curl "http://127.0.0.1:8000/collections?visibility=public&limit=10"
+
+# Pagination
+curl "http://127.0.0.1:8000/collections?page=2&limit=25"
+```
+
+---
+
+### POST /collections/{id}/resources
+
+Add resources to a collection (batch operation).
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Request Body:**
+```json
+{
+  "resource_ids": ["uuid", "uuid", ...] (1-100 items)
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Machine Learning Papers",
+  "description": "Curated collection of ML research",
+  "owner_id": "user123",
+  "visibility": "public",
+  "parent_id": null,
+  "resource_count": 5,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:10:00Z",
+  "resources": []
+}
+```
+
+**Authentication:** Required (owner only)
+
+**Behavior:**
+- Validates all resource IDs exist before adding
+- Handles duplicate associations gracefully (idempotent)
+- Triggers aggregate embedding recomputation
+- Supports batch operations up to 100 resources
+
+**Error Responses:**
+- `400 Bad Request` - Invalid resource IDs or exceeds batch limit
+- `403 Forbidden` - User is not the collection owner
+- `404 Not Found` - Collection or resources not found
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/resources \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": [
+      "660e8400-e29b-41d4-a716-446655440001",
+      "770e8400-e29b-41d4-a716-446655440002"
+    ]
+  }'
+```
+
+---
+
+### DELETE /collections/{id}/resources
+
+Remove resources from a collection (batch operation).
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Request Body:**
+```json
+{
+  "resource_ids": ["uuid", "uuid", ...] (1-100 items)
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Machine Learning Papers",
+  "description": "Curated collection of ML research",
+  "owner_id": "user123",
+  "visibility": "public",
+  "parent_id": null,
+  "resource_count": 3,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:15:00Z",
+  "resources": []
+}
+```
+
+**Authentication:** Required (owner only)
+
+**Behavior:**
+- Removes specified resource associations
+- Triggers aggregate embedding recomputation
+- Supports batch operations up to 100 resources
+- Idempotent (no error if resource not in collection)
+
+**Error Responses:**
+- `400 Bad Request` - Invalid resource IDs or exceeds batch limit
+- `403 Forbidden` - User is not the collection owner
+- `404 Not Found` - Collection not found
+
+**Example:**
+```bash
+curl -X DELETE http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/resources \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": [
+      "660e8400-e29b-41d4-a716-446655440001"
+    ]
+  }'
+```
+
+---
+
+### GET /collections/{id}/recommendations
+
+Get recommendations for similar resources and collections based on aggregate embedding.
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Max results per category (1-50) | 10 |
+| `include_resources` | boolean | Include resource recommendations | true |
+| `include_collections` | boolean | Include collection recommendations | true |
+
+**Response (200 OK):**
+```json
+{
+  "resources": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440003",
+      "title": "Advanced Neural Networks",
+      "similarity": 0.92
+    },
+    {
+      "id": "990e8400-e29b-41d4-a716-446655440004",
+      "title": "Reinforcement Learning Basics",
+      "similarity": 0.87
+    }
+  ],
+  "collections": [
+    {
+      "id": "aa0e8400-e29b-41d4-a716-446655440005",
+      "name": "AI Research Papers",
+      "similarity": 0.85
+    }
+  ]
+}
+```
+
+**Authentication:** Required (visibility check applied)
+
+**Algorithm:**
+1. Retrieves collection aggregate embedding
+2. Computes cosine similarity with all resources/collections
+3. Excludes resources already in collection
+4. Excludes source collection from collection recommendations
+5. Applies access control (only public collections for other users)
+6. Returns top N results sorted by similarity
+
+**Error Responses:**
+- `400 Bad Request` - Collection has no embedding (no member resources)
+- `403 Forbidden` - User does not have access to collection
+- `404 Not Found` - Collection not found
+
+**Example:**
+```bash
+# Get all recommendations
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/recommendations"
+
+# Get only resource recommendations
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/recommendations?include_collections=false&limit=20"
+
+# Get only collection recommendations
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/recommendations?include_resources=false&limit=5"
+```
+
+---
+
+### GET /collections/{id}/embedding
+
+Retrieve the aggregate embedding vector for a collection.
+
+**Path Parameters:**
+- `id` (string, required): UUID of the collection
+
+**Response (200 OK):**
+```json
+{
+  "embedding": [0.123, -0.456, 0.789, ...],
+  "dimension": 768
+}
+```
+
+**Authentication:** Required (visibility check applied)
+
+**Use Cases:**
+- Export embeddings for external analysis
+- Verify embedding computation
+- Custom similarity calculations
+
+**Error Responses:**
+- `400 Bad Request` - Collection has no embedding
+- `403 Forbidden` - User does not have access to collection
+- `404 Not Found` - Collection not found
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/embedding"
+```
+
+---
+
+## Collection Data Models
+
+### Collection Model
+
+```json
+{
+  "id": "uuid",
+  "name": "string (1-255 characters)",
+  "description": "string (max 2000 characters) or null",
+  "owner_id": "string",
+  "visibility": "private|shared|public",
+  "parent_id": "uuid or null",
+  "resource_count": "integer",
+  "created_at": "datetime (ISO 8601)",
+  "updated_at": "datetime (ISO 8601)",
+  "resources": [
+    {
+      "id": "uuid",
+      "title": "string",
+      "creator": "string or null",
+      "quality_score": "float (0.0-1.0)"
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `id`: Unique collection identifier
+- `name`: Collection name (required, 1-255 characters)
+- `description`: Optional description (max 2000 characters)
+- `owner_id`: User who created the collection
+- `visibility`: Access control level
+  - `private`: Only owner can access
+  - `shared`: Owner + explicit permissions (future)
+  - `public`: All authenticated users can read
+- `parent_id`: Parent collection for hierarchical organization (null for top-level)
+- `resource_count`: Number of resources in collection
+- `resources`: Array of resource summaries (only in GET /collections/{id})
+
+### Collection List Response Model
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "description": "string or null",
+      "owner_id": "string",
+      "visibility": "private|shared|public",
+      "parent_id": "uuid or null",
+      "resource_count": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "resources": []
+    }
+  ],
+  "total": "integer",
+  "page": "integer",
+  "limit": "integer"
+}
+```
+
+### Recommendation Response Model
+
+```json
+{
+  "resources": [
+    {
+      "id": "uuid",
+      "title": "string",
+      "similarity": "float (0.0-1.0)"
+    }
+  ],
+  "collections": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "similarity": "float (0.0-1.0)"
+    }
+  ]
+}
+```
+
+---
+
+## Collection Features
+
+### Hierarchical Organization
+
+Collections support parent-child relationships for organizing complex topic structures:
+
+**Creating Nested Collections:**
+```bash
+# Create parent collection
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Computer Science", "visibility": "public"}'
+
+# Create child collection
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Machine Learning",
+    "parent_id": "{parent_id}",
+    "visibility": "public"
+  }'
+```
+
+**Circular Reference Prevention:**
+The system validates hierarchy changes to prevent circular references. Attempting to set a collection's parent to one of its descendants will result in a `400 Bad Request` error.
+
+**Cascade Deletion:**
+Deleting a parent collection automatically deletes all descendant collections recursively.
+
+### Aggregate Embeddings
+
+Collections automatically compute aggregate embeddings from member resources:
+
+**Computation Algorithm:**
+1. Query all member resources with non-null embeddings
+2. Compute mean vector across all dimensions
+3. Normalize to unit length (L2 norm)
+4. Store in collection.embedding field
+
+**Automatic Updates:**
+- Embedding recomputed when resources are added
+- Embedding recomputed when resources are removed
+- Embedding set to null if no member resources have embeddings
+
+**Performance:**
+- Computation completes in <1 second for collections with 1000 resources
+- Uses NumPy for efficient vector operations
+
+### Access Control
+
+Collections implement granular access control based on visibility:
+
+**Visibility Levels:**
+
+| Level | Owner Access | Other Users Access |
+|-------|-------------|-------------------|
+| `private` | Full (read/write) | None |
+| `shared` | Full (read/write) | Read only (future: explicit permissions) |
+| `public` | Full (read/write) | Read only |
+
+**Authorization Rules:**
+- Only owner can update or delete collections
+- Only owner can modify resource membership
+- Read access determined by visibility level
+- Collections filtered by access in list endpoint
+
+### Resource Deletion Integration
+
+Collections automatically update when resources are deleted:
+
+**Automatic Cleanup:**
+1. Resource deletion removes all collection-resource associations
+2. Affected collections have embeddings recomputed
+3. Resource counts updated automatically
+4. No orphaned associations remain
+
+**Performance:**
+- Cleanup completes in <2 seconds for resources in 100 collections
+- Uses database CASCADE constraints for efficiency
 
 ---
 

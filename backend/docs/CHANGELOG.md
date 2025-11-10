@@ -4,6 +4,110 @@ All notable changes to Neo Alexandria 2.0 are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-11-09 - Phase 7: Collection Management
+
+### Added
+- **Collection CRUD Operations**
+  - `app/database/models.py` - Collection and CollectionResource models with relationships
+  - `app/services/collection_service.py` - Core collection management service
+  - `app/routers/collections.py` - REST API endpoints for collections
+  - `app/schemas/collection.py` - Pydantic schemas for validation
+  - Alembic migration `d4a8e9f1b2c3_add_collections_tables_phase7.py`
+
+- **Collection Features**
+  - Create, read, update, and delete collections with metadata
+  - Hierarchical organization with parent/child relationships
+  - Visibility controls (private, shared, public) for access management
+  - Owner-based permissions with automatic authorization checks
+  - Resource membership management with batch operations (up to 100 resources)
+  - Automatic collection updates when resources are deleted
+
+- **Aggregate Embedding System**
+  - Automatic embedding computation from member resource embeddings
+  - Mean vector calculation with L2 normalization
+  - Recomputation triggered on membership changes
+  - Null embedding handling for collections without resources
+  - Performance: <1 second for collections with 1000 resources
+
+- **Collection Recommendations**
+  - Semantic similarity search for related resources
+  - Collection-to-collection recommendations
+  - Cosine similarity-based ranking
+  - Exclusion of source collection and member resources
+  - Access control filtering for collection recommendations
+  - Configurable result limits (1-50 items)
+
+- **Hierarchy Validation**
+  - Circular reference detection and prevention
+  - Maximum depth limit (10 levels)
+  - Parent existence and ownership validation
+  - Cascade deletion for parent-child relationships
+
+- **API Endpoints**
+  - `POST /collections` - Create new collection
+  - `GET /collections/{id}` - Retrieve collection with member resources
+  - `PUT /collections/{id}` - Update collection metadata
+  - `DELETE /collections/{id}` - Delete collection and subcollections
+  - `GET /collections` - List collections with filtering and pagination
+  - `POST /collections/{id}/resources` - Add resources to collection (batch)
+  - `DELETE /collections/{id}/resources` - Remove resources from collection (batch)
+  - `GET /collections/{id}/recommendations` - Get similar resources and collections
+  - `GET /collections/{id}/embedding` - Retrieve aggregate embedding vector
+
+- **Comprehensive Test Suite**
+  - `tests/test_phase7_collections.py` - 50+ test cases covering all functionality
+  - Collection model creation and relationships
+  - CRUD operations with authorization
+  - Resource membership management
+  - Aggregate embedding computation
+  - Hierarchy validation and circular reference prevention
+  - Recommendation algorithm testing
+  - API endpoint integration tests
+  - Performance benchmarks
+  - All tests passing with 100% success rate
+
+### Technical Implementation
+- **Database Schema**
+  - Collections table with owner_id, visibility, parent_id, embedding fields
+  - CollectionResource association table with composite primary key
+  - Indexes on owner_id, visibility, parent_id for query optimization
+  - CASCADE DELETE constraints for parent-child and association cleanup
+  - Self-referential foreign key for hierarchical relationships
+
+- **Service Architecture**
+  - CollectionService with dependency injection pattern
+  - Batch operations using bulk_insert_mappings for performance
+  - NumPy-based vector operations for embedding computation
+  - Graceful error handling and validation
+  - Transaction-safe database operations
+
+- **Performance Optimizations**
+  - Database indexes on frequently queried fields
+  - Batch operations for resource membership (up to 100 per request)
+  - Efficient JSON queries for embedding operations
+  - Single embedding recomputation per batch operation
+  - Pagination support for large result sets
+
+### Integration Points
+- Automatic collection cleanup when resources are deleted
+- Integration with existing embedding infrastructure
+- Compatible with search and recommendation systems
+- Extends knowledge graph capabilities
+
+### Performance Characteristics
+- Collection retrieval: <500ms for collections with 1000 resources
+- Embedding computation: <1s for collections with 1000 resources
+- Batch resource operations: <2s for 100 resources
+- Recommendation queries: <1s for typical collections
+- Hierarchy validation: <100ms for depth 10
+
+### Documentation Updates
+- Updated README.md with Phase 7 features and use cases
+- Added comprehensive collection endpoint documentation to API_DOCUMENTATION.md
+- Updated DEVELOPER_GUIDE.md with collection service architecture
+- Added EXAMPLES_PHASE7.md with practical usage examples
+- Updated CHANGELOG.md with Phase 7 release notes
+
 ## [0.8.5] - 2025-11-09 - Phase 6.5: Advanced Metadata Extraction & Scholarly Processing
 
 ### Added

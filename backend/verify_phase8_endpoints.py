@@ -36,7 +36,7 @@ def test_endpoints():
         print(f"   Status: {response.status_code}")
         if response.status_code == 200:
             data = response.json()
-            print(f"   ✓ Endpoint accessible")
+            print("   ✓ Endpoint accessible")
             print(f"   - Total results: {data.get('total', 0)}")
             print(f"   - Latency: {data.get('latency_ms', 0):.2f}ms")
             print(f"   - Method contributions: {data.get('method_contributions', {})}")
@@ -59,7 +59,7 @@ def test_endpoints():
         print(f"   Status: {response.status_code}")
         if response.status_code == 200:
             data = response.json()
-            print(f"   ✓ Endpoint accessible")
+            print("   ✓ Endpoint accessible")
             print(f"   - Query: {data.get('query', '')}")
             methods = data.get('methods', {})
             print(f"   - Methods tested: {list(methods.keys())}")
@@ -87,7 +87,7 @@ def test_endpoints():
         print(f"   Status: {response.status_code}")
         if response.status_code == 200:
             data = response.json()
-            print(f"   ✓ Endpoint accessible")
+            print("   ✓ Endpoint accessible")
             print(f"   - Query: {data.get('query', '')}")
             metrics = data.get('metrics', {})
             print(f"   - nDCG@20: {metrics.get('ndcg_at_20', 0):.4f}")
@@ -116,7 +116,7 @@ def test_endpoints():
         print(f"   Status: {response.status_code}")
         if response.status_code == 200:
             data = response.json()
-            print(f"   ✓ Endpoint accessible")
+            print("   ✓ Endpoint accessible")
             print(f"   - Status: {data.get('status', '')}")
             print(f"   - Job ID: {data.get('job_id', '')}")
             print(f"   - Resources to process: {data.get('resources_to_process', 0)}")

@@ -1223,9 +1223,6 @@ class CollectionService:
             
             # Query annotations where collection_ids JSON array contains this collection_id
             # Use portable string matching since JSON operations vary by database
-            from sqlalchemy import cast, String, func
-            
-            collection_uuid = uuid.UUID(collection_id)
             
             # Count annotations that have this collection_id in their collection_ids JSON array
             annotation_count = self.db.query(Annotation).filter(

@@ -2,10 +2,8 @@
 
 import pytest
 import time
-from unittest.mock import patch, Mock
-from pathlib import Path
+from unittest.mock import patch
 
-from backend.app.database.models import Resource
 from backend.app.services.resource_service import create_pending_resource, process_ingestion
 
 

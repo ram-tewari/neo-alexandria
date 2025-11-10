@@ -276,7 +276,7 @@ async def get_metadata_completeness_stats(
     ).scalar() or 0.0
     
     requires_review = db.query(func.count(db_models.Resource.id)).filter(
-        db_models.Resource.requires_manual_review == True
+        db_models.Resource.requires_manual_review
     ).scalar() or 0
     
     # Breakdown by content type

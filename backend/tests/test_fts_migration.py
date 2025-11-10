@@ -195,7 +195,6 @@ class TestFtsMigrationIntegration:
         
         # Run the migration
         import importlib.util
-        import sys
         spec = importlib.util.spec_from_file_location("migration", "backend/alembic/versions/20250910_add_fts_and_triggers.py")
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
@@ -242,7 +241,6 @@ class TestFtsMigrationIntegration:
         
         # Run the migration
         import importlib.util
-        import sys
         spec = importlib.util.spec_from_file_location("migration", "backend/alembic/versions/20250910_add_fts_and_triggers.py")
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
@@ -271,7 +269,6 @@ class TestFtsMigrationIntegration:
         
         # Run the migration first
         import importlib.util
-        import sys
         spec = importlib.util.spec_from_file_location("migration", "backend/alembic/versions/20250910_add_fts_and_triggers.py")
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
@@ -324,7 +321,6 @@ class TestFtsMigrationIntegration:
         
         # Run the migration first
         import importlib.util
-        import sys
         spec = importlib.util.spec_from_file_location("migration", "backend/alembic/versions/20250910_add_fts_and_triggers.py")
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
@@ -376,7 +372,6 @@ class TestFtsMigrationIntegration:
         
         # Run the migration first
         import importlib.util
-        import sys
         spec = importlib.util.spec_from_file_location("migration", "backend/alembic/versions/20250910_add_fts_and_triggers.py")
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)

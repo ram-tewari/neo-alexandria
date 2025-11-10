@@ -6,7 +6,6 @@ Test suite for annotation export functionality (Task 5).
 
 import pytest
 import uuid
-import json
 from datetime import datetime, timezone
 
 from backend.app.database.models import Resource, Annotation

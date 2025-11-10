@@ -73,7 +73,7 @@ def main():
     # Test batch update (will gracefully fail if model not available)
     print("\n5. Testing batch update...")
     stats = service.batch_update_sparse_embeddings()
-    print(f"   ✓ Batch update completed:")
+    print("   ✓ Batch update completed:")
     print(f"     - Total: {stats['total']}")
     print(f"     - Success: {stats['success']}")
     print(f"     - Failed: {stats['failed']}")

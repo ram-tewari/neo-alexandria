@@ -3,7 +3,6 @@
 import pytest
 import time
 from unittest.mock import patch, Mock
-from pathlib import Path
 
 from backend.app.services.resource_service import (
     create_pending_resource, process_ingestion, get_resource, update_resource, delete_resource

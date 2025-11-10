@@ -37,9 +37,8 @@ Configuration:
 
 from __future__ import annotations
 
-import math
 import time
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from sqlalchemy import select, desc
@@ -317,7 +316,7 @@ def recommend_based_on_annotations(db: Session, user_id: str, limit: int = 10) -
     """
     from collections import Counter
     import json
-    from sqlalchemy import and_, or_
+    from sqlalchemy import or_
     
     try:
         from backend.app.services.annotation_service import AnnotationService

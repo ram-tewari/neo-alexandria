@@ -45,7 +45,6 @@ Options:
 import sys
 import subprocess
 import argparse
-from pathlib import Path
 
 
 def run_command(cmd, description=""):
@@ -184,8 +183,8 @@ def main():
         print(f"\n✅ {args.test_type} recommendation tests passed!")
         
         if args.html_coverage:
-            print(f"\n📊 HTML coverage report generated in: htmlcov_recommendations/")
-            print(f"   Open htmlcov_recommendations/index.html in your browser to view detailed coverage")
+            print("\n📊 HTML coverage report generated in: htmlcov_recommendations/")
+            print("   Open htmlcov_recommendations/index.html in your browser to view detailed coverage")
     else:
         print(f"\n❌ {args.test_type} recommendation tests failed!")
     

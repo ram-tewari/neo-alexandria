@@ -21,8 +21,8 @@ backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
 # Import directly to avoid app initialization issues
-from sqlalchemy import create_engine, String, Text, DateTime
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import create_engine, String, Text, DateTime  # noqa: E402
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column  # noqa: E402
 
 # Simple base for testing
 class Base(DeclarativeBase):
@@ -39,7 +39,7 @@ class Resource(Base):
     date_created: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 # Import the service we're testing
-from app.services.reranking_service import RerankingService
+from app.services.reranking_service import RerankingService  # noqa: E402
 
 
 def setup_test_db():
@@ -153,7 +153,7 @@ def test_caching(db, resources):
     cache = {}
     
     print(f"\nQuery: '{query}'")
-    print(f"Cache: empty")
+    print("Cache: empty")
     
     # First call - should perform reranking
     start = time.time()
@@ -181,7 +181,7 @@ def test_caching(db, resources):
         speedup = elapsed1 / elapsed2
         print(f"\n✓ Cache hit is {speedup:.1f}x faster")
     else:
-        print(f"\n✓ Cache hit completed (speedup may vary)")
+        print("\n✓ Cache hit completed (speedup may vary)")
     
     # Verify results are identical
     assert results1 == results2, "Cached results don't match original!"
@@ -282,7 +282,7 @@ def test_performance_optimizations(db, resources):
         candidate_ids = [str(r.id) for r in resources]
         
         start = time.time()
-        results = service.rerank(query, candidate_ids, top_k=len(resources))
+        _ = service.rerank(query, candidate_ids, top_k=len(resources))
         elapsed = time.time() - start
         
         throughput = len(candidate_ids) / elapsed if elapsed > 0 else 0

@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, or_, and_
 
 from backend.app.database.models import Annotation, Resource
 from backend.app.services.ai_core import EmbeddingGenerator
@@ -351,7 +351,7 @@ class AnnotationService:
             query = query.filter(
                 or_(
                     Annotation.user_id == user_id,
-                    Annotation.is_shared == True
+                    Annotation.is_shared
                 )
             )
         else:

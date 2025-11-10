@@ -377,7 +377,6 @@ def mock_ai_core():
     def mock_generate_embedding(text):
         """Generate deterministic embeddings based on text content."""
         import hashlib
-        import numpy as np
         
         # Create a deterministic hash-based embedding
         hash_obj = hashlib.md5(text.encode())

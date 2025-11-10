@@ -47,7 +47,7 @@ from __future__ import annotations
 import pytest
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -56,9 +56,6 @@ from backend.app.database.models import Resource, AuthoritySubject
 from backend.app.services.recommendation_service import (
     generate_user_profile_vector,
     get_top_subjects,
-    fetch_candidates,
-    prepare_candidate,
-    score_candidates,
     generate_recommendations,
     _cosine_similarity,
     _to_numpy_vector,
@@ -547,24 +544,18 @@ class TestPerformance:
     
     def test_caching_behavior(self, client, recommendation_test_data, mock_ddgs_search, mock_ai_core):
         """Test that search results are cached appropriately."""
-        import time
-        
         # First request
-        start_time = time.time()
         response1 = client.get("/recommendations?limit=3")
-        first_duration = time.time() - start_time
         
         # Second request (should use cache)
-        start_time = time.time()
         response2 = client.get("/recommendations?limit=3")
-        second_duration = time.time() - start_time
         
         assert response1.status_code == 200
         assert response2.status_code == 200
         
         # Second request should be faster due to caching
         # (This is a soft assertion as caching behavior may vary)
-        # assert second_duration < first_duration
+        # Note: Duration tracking removed as it's not currently used in assertions
 
 
 # ============================================================================

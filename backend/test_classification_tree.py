@@ -9,7 +9,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
 
 from app.services.classification_service import PersonalClassification
 from app.database.base import get_sync_db
-from sqlalchemy.orm import Session
 
 def test_classification_tree():
     """Test that the classification tree returns the correct format."""

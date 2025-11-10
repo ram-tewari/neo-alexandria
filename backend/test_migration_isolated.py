@@ -120,7 +120,7 @@ def main():
         # Cleanup
         if os.path.exists(test_dir):
             shutil.rmtree(test_dir)
-            print(f"\n✓ Cleaned up test directory")
+            print("\n✓ Cleaned up test directory")
 
 if __name__ == "__main__":
     success = main()

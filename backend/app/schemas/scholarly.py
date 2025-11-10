@@ -6,7 +6,6 @@ Pydantic schemas for Phase 6.5 scholarly metadata API endpoints.
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
 
 
 class Author(BaseModel):

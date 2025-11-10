@@ -1,6 +1,5 @@
 """Tests for authority control service."""
 
-from sqlalchemy.orm import Session
 
 from backend.app.services.authority_service import AuthorityControl
 from backend.app.database.models import AuthoritySubject

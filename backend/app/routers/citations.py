@@ -9,21 +9,19 @@ Related files:
 - app/database/models.py: Citation and Resource models
 """
 
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, Depends, BackgroundTasks, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.app.database.base import get_sync_db
 from backend.app.services.citation_service import CitationService
 from backend.app.schemas.citation import (
-    CitationResponse,
     CitationWithResource,
     ResourceCitationsResponse,
     CitationGraphResponse,
     CitationExtractionResponse,
     CitationResolutionResponse,
     ImportanceComputationResponse,
-    ResourceSummary,
     GraphNode,
     GraphEdge,
 )

@@ -8,8 +8,6 @@ shared canonical subjects, and shared classification codes.
 
 import pytest
 import uuid
-from typing import List
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -20,9 +18,7 @@ from backend.app.services.graph_service import (
     compute_classification_match_score,
     compute_hybrid_weight,
     find_hybrid_neighbors,
-    generate_global_overview,
 )
-from backend.app.schemas.graph import KnowledgeGraph
 from backend.app.main import app
 
 

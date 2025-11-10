@@ -11,7 +11,7 @@ backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
 # Direct import to avoid app initialization
-import importlib.util
+import importlib.util  # noqa: E402
 spec = importlib.util.spec_from_file_location(
     "reranking_service",
     backend_path / "app" / "services" / "reranking_service.py"

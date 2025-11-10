@@ -24,8 +24,8 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import String, Text, DateTime, Float, Enum, func, JSON, Integer, ForeignKey, Index, Table
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import String, Text, DateTime, Float, func, JSON, Integer, ForeignKey, Index
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator, CHAR
 

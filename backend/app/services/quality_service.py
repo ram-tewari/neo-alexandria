@@ -21,9 +21,8 @@ Features:
 
 from __future__ import annotations
 
-import math
 import re
-from typing import Any, Dict, List, Mapping, MutableMapping
+from typing import Any, Dict, Mapping
 from urllib.parse import urlparse
 
 from backend.app.utils import text_processor as tp

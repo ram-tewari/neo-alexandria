@@ -13,7 +13,6 @@ Related files:
 """
 
 from functools import lru_cache
-from typing import Optional
 
 from .ai_core import AICore
 from .authority_service import AuthorityControl

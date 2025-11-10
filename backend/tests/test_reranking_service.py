@@ -418,7 +418,7 @@ class TestRerankingService:
             cache = {}
             
             # Call with candidates in different order
-            result1 = service.rerank_with_caching(
+            _ = service.rerank_with_caching(
                 "test",
                 ["uuid-1", "uuid-2"],
                 cache=cache
@@ -427,7 +427,7 @@ class TestRerankingService:
             # Reset mock to track second call
             mock_model.predict.reset_mock()
             
-            result2 = service.rerank_with_caching(
+            _ = service.rerank_with_caching(
                 "test",
                 ["uuid-2", "uuid-1"],  # Different order
                 cache=cache

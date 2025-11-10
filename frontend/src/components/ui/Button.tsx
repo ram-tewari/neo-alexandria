@@ -2,16 +2,18 @@
 // Flexible button component with multiple variants and sizes
 
 import React from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import { Loader2 } from 'lucide-react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'type'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'glass';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -25,45 +27,46 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     fullWidth = false,
     children,
     disabled,
+    type = 'button',
     ...props
   }, ref) => {
     const baseClasses = [
       'inline-flex items-center justify-center font-medium transition-colors duration-200',
-      'focus:outline-none focus:ring-2 focus:ring-offset-2',
+      'focus:outline-none focus:ring-2 focus:ring-offset-2 focus-visible:ring-2',
       'disabled:opacity-50 disabled:cursor-not-allowed',
       'rounded-lg',
     ];
 
     const variantClasses = {
       primary: [
-        'bg-primary-600 text-white',
-        'hover:bg-primary-700',
-        'focus:ring-primary-500',
+        'bg-accent-blue-500 text-white',
+        'hover:bg-accent-blue-600',
+        'focus:ring-accent-blue-500',
       ],
       secondary: [
-        'bg-secondary-100 text-secondary-700',
-        'hover:bg-secondary-200',
-        'focus:ring-secondary-500',
+        'bg-neutral-blue-600 text-white',
+        'hover:bg-neutral-blue-700',
+        'focus:ring-neutral-blue-500',
       ],
       ghost: [
-        'text-secondary-600 hover:text-secondary-700',
-        'hover:bg-secondary-100',
-        'focus:ring-secondary-500',
+        'text-charcoal-grey-300 hover:text-charcoal-grey-50',
+        'hover:bg-charcoal-grey-700',
+        'focus:ring-charcoal-grey-500',
       ],
       danger: [
-        'bg-red-600 text-white',
+        'bg-error text-white',
         'hover:bg-red-700',
-        'focus:ring-red-500',
+        'focus:ring-error',
       ],
       outline: [
-        'border border-secondary-300 text-secondary-700',
-        'hover:bg-secondary-50',
-        'focus:ring-secondary-500',
+        'border border-charcoal-grey-600 text-charcoal-grey-300',
+        'hover:bg-charcoal-grey-800 hover:border-charcoal-grey-500',
+        'focus:ring-charcoal-grey-500',
       ],
       glass: [
-        'glass-holo text-white',
-        'hover:bg-white/10',
-        'focus:ring-primary-500',
+        'bg-charcoal-grey-800/50 backdrop-blur-md text-white border border-charcoal-grey-700',
+        'hover:bg-charcoal-grey-700/50',
+        'focus:ring-accent-blue-500',
       ],
     };
 
@@ -101,10 +104,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ) : null;
 
     return (
-      <button
+      <motion.button
         ref={ref}
         className={classes}
         disabled={disabled || loading}
+        type={type}
+        whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
+        whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+        transition={{ duration: 0.15 }}
         {...props}
       >
         {iconElement && iconPosition === 'left' && (
@@ -118,7 +125,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {iconElement}
           </span>
         )}
-      </button>
+      </motion.button>
     );
   }
 );

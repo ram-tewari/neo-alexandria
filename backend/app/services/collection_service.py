@@ -1189,3 +1189,78 @@ class CollectionService:
             )
         
         return results
+
+    def get_collection_with_annotations(
+        self,
+        collection_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get collection details with annotation count.
+        
+        Algorithm:
+        1. Retrieve collection using get_collection (enforces access control)
+        2. Count annotations associated with this collection
+        3. Return collection data as dict with annotation_count field
+        
+        Args:
+            collection_id: UUID of the collection
+            user_id: User ID for access control
+            
+        Returns:
+            Dictionary with collection data and annotation_count field
+            
+        Raises:
+            ValueError: If collection not found or access denied
+        """
+        # Retrieve collection (enforces access control)
+        collection = self.get_collection(collection_id, user_id)
+        
+        # Count annotations associated with this collection
+        try:
+            from backend.app.database.models import Annotation
+            import json
+            
+            # Query annotations where collection_ids JSON array contains this collection_id
+            # Use portable string matching since JSON operations vary by database
+            from sqlalchemy import cast, String, func
+            
+            collection_uuid = uuid.UUID(collection_id)
+            
+            # Count annotations that have this collection_id in their collection_ids JSON array
+            annotation_count = self.db.query(Annotation).filter(
+                Annotation.user_id == user_id
+            ).all()
+            
+            # Filter in Python to handle JSON array matching portably
+            count = 0
+            for ann in annotation_count:
+                if ann.collection_ids:
+                    try:
+                        coll_ids = json.loads(ann.collection_ids) if isinstance(ann.collection_ids, str) else ann.collection_ids
+                        if isinstance(coll_ids, list) and collection_id in coll_ids:
+                            count += 1
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+            
+            annotation_count = count
+            
+        except Exception as e:
+            # If annotation counting fails, default to 0
+            print(f"Warning: Could not count annotations for collection {collection_id}: {e}")
+            annotation_count = 0
+        
+        # Convert collection to dict
+        collection_dict = {
+            "id": str(collection.id),
+            "name": collection.name,
+            "description": collection.description,
+            "owner_id": collection.owner_id,
+            "visibility": collection.visibility,
+            "parent_id": str(collection.parent_id) if collection.parent_id else None,
+            "created_at": collection.created_at.isoformat() if collection.created_at else None,
+            "updated_at": collection.updated_at.isoformat() if collection.updated_at else None,
+            "annotation_count": annotation_count
+        }
+        
+        return collection_dict

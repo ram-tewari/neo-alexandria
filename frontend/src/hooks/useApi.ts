@@ -10,6 +10,8 @@ import type {
   SearchQuery,
   ResourceQueryParams,
   ProcessingResource,
+  CreateResourceRequest,
+  BatchUpdateRequest,
 } from '@/types/api';
 
 // Query keys for consistent cache management
@@ -66,7 +68,7 @@ export function useCreateResource() {
   const addLibraryResource = useAppStore(state => state.addLibraryResource);
 
   return useMutation({
-    mutationFn: (request) => apiService.ingestResource(request),
+    mutationFn: (request: CreateResourceRequest) => apiService.ingestResource(request),
     onSuccess: async (data, variables) => {
       // Add to processing queue
       const processingResource: ProcessingResource = {
@@ -164,7 +166,7 @@ export function useDeleteResource() {
   const removeResource = useAppStore(state => state.removeLibraryResource);
 
   return useMutation({
-    mutationFn: (resourceId) => apiService.deleteResource(resourceId),
+    mutationFn: (resourceId: string) => apiService.deleteResource(resourceId),
     onSuccess: (_, resourceId) => {
       removeResource(resourceId);
       addNotification({
@@ -286,7 +288,7 @@ export function useBatchUpdate() {
   const addNotification = useAppStore(state => state.addNotification);
 
   return useMutation({
-    mutationFn: (request) => apiService.batchUpdate(request),
+    mutationFn: (request: BatchUpdateRequest) => apiService.batchUpdate(request),
     onSuccess: (data) => {
       addNotification({
         type: 'success',

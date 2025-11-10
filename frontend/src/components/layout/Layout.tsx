@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { cn } from '@/utils/cn';
-import { useAppStore } from '@/store';
+import { useAppStore, useProcessingResources } from '@/store';
 import { 
   Menu, 
   X, 
@@ -35,10 +35,14 @@ interface SidebarNavItem {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  const sidebarOpen = useAppStore(state => state.sidebarOpen);
-  const processingResources = useAppStore(state => state.processingResources);
+  const sidebarOpen = useAppStore(state => state.isSidebarOpen);
+  const processingResources = useProcessingResources();
   const toggleSidebar = useAppStore(state => state.toggleSidebar);
-  const setSidebarOpen = useAppStore(state => state.setSidebarOpen);
+  const setSidebarOpen = (open: boolean) => {
+    if (open !== sidebarOpen) {
+      toggleSidebar();
+    }
+  };
 
   const activeProcessingCount = processingResources.filter(
     r => r.status === 'pending' || r.status === 'processing'

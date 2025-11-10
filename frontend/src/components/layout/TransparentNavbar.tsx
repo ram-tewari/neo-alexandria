@@ -1,56 +1,14 @@
 // Neo Alexandria 2.0 Frontend - TransparentNavbar Component
 // Adaptive navigation bar with scroll detection and mobile menu
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useAppStore } from '@/store';
 import { cn } from '@/utils/cn';
-import { 
-  Menu, 
-  X, 
-  Library, 
-  Search, 
-  Lightbulb, 
-  Network, 
-  FolderTree,
-  FolderOpen,
-  User,
-  Home
-} from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Menu, X } from 'lucide-react';
 
 const TransparentNavbar: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-
-  // Throttled scroll handler
-  const handleScroll = useCallback(() => {
-    const scrollPosition = window.scrollY;
-    setIsScrolled(scrollPosition > 50);
-  }, []);
-
-  useEffect(() => {
-    // Throttle scroll events
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const throttledScroll = () => {
-      if (timeoutId) return;
-      timeoutId = setTimeout(() => {
-        handleScroll();
-        timeoutId = null;
-      }, 100);
-    };
-
-    window.addEventListener('scroll', throttledScroll);
-    
-    // Check initial scroll position
-    handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', throttledScroll);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [handleScroll]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -58,77 +16,76 @@ const TransparentNavbar: React.FC = () => {
   }, [navigate]);
 
   const navigationItems = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Library', href: '/library', icon: Library },
-    { label: 'Search', href: '/search', icon: Search },
-    { label: 'Recommendations', href: '/recommendations', icon: Lightbulb },
-    { label: 'Knowledge Graph', href: '/graph', icon: Network },
-    { label: 'Classification', href: '/classification', icon: FolderTree },
-    { label: 'Collections', href: '/collections', icon: FolderOpen },
-    { label: 'Profile', href: '/profile', icon: User },
+    { label: 'Home', href: '/' },
+    { label: 'Library', href: '/library' },
+    { label: 'Search', href: '/search' },
+    { label: 'Recommendations', href: '/recommendations' },
+    { label: 'Knowledge Graph', href: '/graph' },
+    { label: 'Classification', href: '/classification' },
+    { label: 'Collections', href: '/collections' },
+    { label: 'Profile', href: '/profile' },
   ];
 
   return (
     <>
       <nav
-        className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-200 ease-in-out',
-          isScrolled
-            ? 'bg-charcoal-grey-900/95 backdrop-blur-md shadow-lg border-b border-charcoal-grey-700'
-            : 'bg-transparent'
-        )}
+        id="navigation"
+        role="navigation"
+        aria-label="Main navigation"
+        className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-zinc-900"
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center h-12">
             {/* Logo */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 group"
+              className="flex items-center gap-2 mr-8 group"
+              aria-label="Neo Alexandria home"
             >
-              <div className="w-8 h-8 bg-accent-blue-500 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
-                <Library className="w-5 h-5 text-white" />
+              <div className="text-xs font-semibold text-zinc-100 tracking-wide">
+                NA
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-charcoal-grey-50">
-                  Neo Alexandria
-                </h1>
+              <div className="hidden sm:block text-xs font-medium text-zinc-400 group-hover:text-zinc-100 transition-colors">
+                Neo Alexandria
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="hidden md:flex items-center gap-1 flex-1" role="menubar">
               {navigationItems.map((item) => {
-                const Icon = item.icon;
                 return (
                   <NavLink
                     key={item.href}
                     to={item.href}
+                    role="menuitem"
+                    aria-label={`Navigate to ${item.label}`}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+                        'px-3 py-1.5 rounded text-xs font-medium transition-colors',
+                        'focus-visible:ring-2 focus-visible:ring-accent-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
                         isActive
-                          ? 'bg-accent-blue-500/20 text-accent-blue-400'
-                          : 'text-charcoal-grey-300 hover:text-charcoal-grey-50 hover:bg-charcoal-grey-800'
+                          ? 'bg-accent-blue-500/10 text-accent-blue-400 border border-accent-blue-500/20'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent'
                       )
                     }
                   >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                    {item.label}
                   </NavLink>
                 );
               })}
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Touch-friendly 44x44px */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-charcoal-grey-300 hover:text-charcoal-grey-50 hover:bg-charcoal-grey-800 transition-colors"
+              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors ml-auto"
               aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Menu className="w-5 h-5" />
               )}
             </button>
           </div>
@@ -153,38 +110,54 @@ const TransparentNavbar: React.FC = () => {
         {/* Menu Panel */}
         <div
           className={cn(
-            'absolute top-16 right-0 bottom-0 w-64 bg-charcoal-grey-900 border-l border-charcoal-grey-700 shadow-2xl transition-transform duration-300',
+            'absolute top-14 right-0 bottom-0 w-72 sm:w-80 bg-black border-l border-zinc-900 shadow-2xl transition-transform duration-300 ease-out',
             isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           )}
         >
-          <div className="flex flex-col h-full p-4 space-y-2 overflow-y-auto">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-150',
-                      isActive
-                        ? 'bg-accent-blue-500/20 text-accent-blue-400'
-                        : 'text-charcoal-grey-300 hover:text-charcoal-grey-50 hover:bg-charcoal-grey-800'
-                    )
-                  }
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
+          <div className="flex flex-col h-full overflow-y-auto">
+            {/* Close button at top */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-900">
+              <h2 className="text-sm font-medium text-zinc-100">Menu</h2>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation items with touch-friendly spacing */}
+            <nav className="flex flex-col p-3 space-y-0.5" role="menu" aria-label="Mobile navigation menu">
+              {navigationItems.map((item) => {
+                return (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    role="menuitem"
+                    aria-label={`Navigate to ${item.label}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center min-h-[44px] px-3 py-2.5 rounded text-sm font-medium transition-colors',
+                        'focus-visible:ring-2 focus-visible:ring-accent-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+                        isActive
+                          ? 'bg-accent-blue-500/10 text-accent-blue-400 border border-accent-blue-500/20'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent'
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </nav>
           </div>
         </div>
       </div>
 
       {/* Spacer to prevent content from going under fixed navbar */}
-      <div className="h-16" />
+      <div className="h-12" />
     </>
   );
 };

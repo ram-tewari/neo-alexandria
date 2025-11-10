@@ -1,5 +1,8 @@
 /* Neo Alexandria 2.0 Frontend - Global Styles */
 
+/* Touch-friendly styles */
+@import './styles/touch.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,25 +14,57 @@
   }
 
   body {
-    @apply bg-charcoal-grey-900 text-charcoal-grey-50;
+    background-color: #000000;
+    color: #FAFAFA;
     @apply antialiased;
   }
 
-  /* Scrollbar styling */
+  /* Focus indicators for accessibility */
+  *:focus {
+    @apply outline-none;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent-blue-500;
+    outline-style: solid;
+  }
+
+  /* Enhanced focus for interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    @apply ring-2 ring-accent-blue-500 ring-offset-2;
+    ring-offset-color: #000000;
+  }
+
+  /* Remove focus outline for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Scrollbar styling - minimal and refined */
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-charcoal-grey-800;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-charcoal-grey-600 rounded-full;
+    background: #27272A;
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-charcoal-grey-500;
+    background: #3F3F46;
   }
 }
 
@@ -65,5 +100,29 @@
   /* Text gradient */
   .text-gradient {
     @apply bg-gradient-to-r from-accent-blue-400 to-neutral-blue-400 bg-clip-text text-transparent;
+  }
+
+  /* Screen reader only - for accessibility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
 }

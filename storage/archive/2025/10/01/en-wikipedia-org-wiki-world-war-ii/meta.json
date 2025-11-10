@@ -1,0 +1,12 @@
+{
+  "source_url": "https://en.wikipedia.org/wiki/World_War_II",
+  "status": 200,
+  "extracted_title": "World War II - Wikipedia",
+  "readability": {
+    "reading_ease": 44.55313330726702,
+    "fk_grade": 9.031041327272181
+  },
+  "content_type": "",
+  "url": "https://en.wikipedia.org/wiki/World_War_II",
+  "archived_at": "2025-10-01T06:12:49.742280+00:00"
+}

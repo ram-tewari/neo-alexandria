@@ -5,17 +5,112 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Initial Commit">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/database/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/routers/graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/graph.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/services/resource_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/resource_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_classification_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test_classification_tree.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE6_5_IMPLEMENTATION_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE6_IMPLEMENTATION_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE7_IMPLEMENTATION_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/alembic/versions/23fa08826047_add_citation_table_phase6.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/alembic/versions/c15f564b1ccd_add_scholarly_metadata_fields_phase6_5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/alembic/versions/d4a8e9f1b2c3_add_collections_tables_phase7.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/routers/citations.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/routers/collections.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/routers/scholarly.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/citation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/collection.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/scholarly.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/citation_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/collection_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/metadata_extractor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/utils/equation_parser.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/utils/table_extractor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/docs/COLLECTIONS_API_GUIDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/docs/EXAMPLES_PHASE6.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/docs/EXAMPLES_PHASE6_5.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/docs/PHASE6_5_QUICKSTART.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test_phase7_migration.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_phase6_5_scholarly.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_phase6_citations.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_phase7_collections.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/12/example-com/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/12/example-com/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/12/example-com/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/net2025-cc-verify/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/net2025-cc-verify/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/net2025-cc-verify/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-postman-com/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-postman-com/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-postman-com/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-reddit-com-r-purdue-comments-1nhb7kc-for-every-save-this-spotify-playlist-gets-ill/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-reddit-com-r-purdue-comments-1nhb7kc-for-every-save-this-spotify-playlist-gets-ill/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-reddit-com-r-purdue-comments-1nhb7kc-for-every-save-this-spotify-playlist-gets-ill/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-youtube-com-watch/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-youtube-com-watch/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/09/15/www-youtube-com-watch/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-abstract-art/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-abstract-art/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-abstract-art/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-ancient-egypt/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-ancient-egypt/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-ancient-egypt/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-artificial-intelligence/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-artificial-intelligence/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-artificial-intelligence/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-blockchain/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-blockchain/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-blockchain/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-calculus/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-calculus/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-calculus/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-climate-change/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-climate-change/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-climate-change/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-cybersecurity/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-cybersecurity/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-cybersecurity/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-dna/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-dna/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-dna/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-evolution/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-evolution/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-evolution/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-game-theory/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-game-theory/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-game-theory/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-greek-mythology/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-greek-mythology/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-greek-mythology/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-machine-learning/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-machine-learning/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-machine-learning/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-natural-language-processing/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-natural-language-processing/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-natural-language-processing/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-neural-network/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-neural-network/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-neural-network/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-quantum-mechanics/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-quantum-mechanics/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-quantum-mechanics/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-relativity/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-relativity/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-relativity/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-renaissance/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-renaissance/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-renaissance/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-shakespeare/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-shakespeare/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-shakespeare/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-world-war-ii/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-world-war-ii/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/en-wikipedia-org-wiki-world-war-ii/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-consciousness/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-consciousness/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-consciousness/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-epistemology/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-epistemology/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-epistemology/text.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-ethics-virtue/meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-ethics-virtue/raw.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/storage/archive/2025/10/01/plato-stanford-edu-entries-ethics-virtue/text.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +176,7 @@
       <workItem from="1759112820162" duration="6449000" />
       <workItem from="1759299127036" duration="3357000" />
       <workItem from="1762397701972" duration="1305000" />
-      <workItem from="1762640851216" duration="1202000" />
+      <workItem from="1762640851216" duration="1953000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />
@@ -99,7 +194,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758263913198</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Initial Commit">
+      <option name="closed" value="true" />
+      <created>1762743269481</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1762743269481</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

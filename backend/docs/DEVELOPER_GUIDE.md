@@ -30,6 +30,7 @@ Neo Alexandria 2.0 implements a modern, API-first architecture with the followin
 5. **Search Engine** - Hybrid keyword and semantic search capabilities
 6. **Knowledge Graph** - Relationship detection and graph-based exploration
 7. **Recommendation Engine** - Personalized content recommendations
+8. **Collection Management** - User-curated collections with semantic embeddings
 
 #### Data Flow Architecture
 
@@ -97,7 +98,8 @@ neo_alexandria/
 │   │   ├── authority.py         # Authority control endpoints
 │   │   ├── classification.py    # Classification system endpoints
 │   │   ├── graph.py             # Knowledge graph endpoints
-│   │   └── recommendation.py    # Recommendation system endpoints
+│   │   ├── recommendation.py    # Recommendation system endpoints
+│   │   └── collections.py       # Collection management endpoints
 │   ├── services/                # Business logic layer
 │   │   ├── __init__.py
 │   │   ├── ai_core.py           # AI processing and embedding generation
@@ -110,6 +112,7 @@ neo_alexandria/
 │   │   ├── curation_service.py  # Curation workflows
 │   │   ├── graph_service.py     # Knowledge graph processing
 │   │   ├── recommendation_service.py # Recommendation engine
+│   │   ├── collection_service.py # Collection management logic
 │   │   └── dependencies.py      # Dependency injection
 │   ├── schemas/                 # Data validation schemas
 │   │   ├── __init__.py
@@ -117,7 +120,8 @@ neo_alexandria/
 │   │   ├── search.py            # Search request/response schemas
 │   │   ├── query.py             # Query parameter schemas
 │   │   ├── graph.py             # Graph data schemas
-│   │   └── recommendation.py    # Recommendation schemas
+│   │   ├── recommendation.py    # Recommendation schemas
+│   │   └── collection.py        # Collection validation schemas
 │   ├── utils/                   # Utility functions
 │   │   ├── __init__.py
 │   │   ├── content_extractor.py # Content extraction and processing
@@ -364,6 +368,333 @@ class ResourceCreate(BaseModel):
                 "title": "Example Article"
             }
         }
+```
+
+### Collection Service Architecture
+
+The collection service implements a comprehensive system for organizing resources:
+
+#### Many-to-Many Association Pattern
+
+Collections use a many-to-many relationship with resources through an association table:
+
+```python
+# Association table
+class CollectionResource(Base):
+    __tablename__ = "collection_resources"
+    
+    collection_id = Column(UUID, ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True)
+    resource_id = Column(UUID, ForeignKey("resources.id", ondelete="CASCADE"), primary_key=True)
+    added_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    
+    # Composite index for efficient queries
+    __table_args__ = (
+        Index('idx_collection_resources_collection', 'collection_id'),
+        Index('idx_collection_resources_resource', 'resource_id'),
+    )
+
+# Collection model
+class Collection(Base):
+    __tablename__ = "collections"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(String(255), nullable=False, index=True)
+    visibility = Column(String(20), nullable=False, default="private", index=True)
+    parent_id = Column(UUID, ForeignKey("collections.id", ondelete="CASCADE"), nullable=True, index=True)
+    embedding = Column(JSON, nullable=True)
+    
+    # Relationships
+    resources = relationship("Resource", secondary="collection_resources", back_populates="collections")
+    parent = relationship("Collection", remote_side=[id], back_populates="subcollections")
+    subcollections = relationship("Collection", back_populates="parent", cascade="all, delete-orphan")
+```
+
+**Key Design Decisions:**
+- **CASCADE DELETE**: Parent deletion automatically removes subcollections
+- **Composite Primary Key**: Prevents duplicate resource associations
+- **Indexed Foreign Keys**: Optimizes queries for collection membership
+- **JSON Embedding Storage**: Cross-database compatibility for vector data
+
+#### Aggregate Embedding Computation
+
+Collections compute semantic representations from member resources:
+
+```python
+def compute_aggregate_embedding(resource_embeddings: List[List[float]]) -> List[float]:
+    """
+    Compute mean embedding from resource embeddings.
+    
+    Algorithm:
+    1. Stack embeddings into matrix (n x d)
+    2. Compute column-wise mean
+    3. Normalize to unit length (L2 norm)
+    4. Return as list
+    """
+    if not resource_embeddings:
+        return None
+    
+    import numpy as np
+    
+    # Stack into matrix
+    matrix = np.array(resource_embeddings)
+    
+    # Compute mean
+    mean_vector = np.mean(matrix, axis=0)
+    
+    # Normalize to unit length
+    norm = np.linalg.norm(mean_vector)
+    if norm > 0:
+        mean_vector = mean_vector / norm
+    
+    return mean_vector.tolist()
+```
+
+**Performance Characteristics:**
+- Time Complexity: O(n × d) where n = resources, d = embedding dimension
+- Space Complexity: O(n × d) for matrix storage
+- Target Performance: <1 second for 1000 resources
+- Uses NumPy for efficient vector operations
+
+**Automatic Updates:**
+- Embedding recomputed when resources added
+- Embedding recomputed when resources removed
+- Embedding set to null if no member resources have embeddings
+- Triggered automatically by membership operations
+
+#### Hierarchy Validation
+
+Collections prevent circular references in parent-child relationships:
+
+```python
+def validate_hierarchy(collection_id: str, new_parent_id: str) -> bool:
+    """
+    Prevent circular references in hierarchy.
+    
+    Algorithm:
+    1. Start at new_parent_id
+    2. Traverse up parent chain
+    3. If collection_id encountered → cycle detected
+    4. If None reached → valid hierarchy
+    5. Limit traversal depth to 10 levels
+    """
+    if new_parent_id is None:
+        return True  # Top-level collection
+    
+    visited = set()
+    current_id = new_parent_id
+    depth = 0
+    max_depth = 10
+    
+    while current_id is not None and depth < max_depth:
+        if current_id == collection_id:
+            raise ValueError("Circular reference detected in collection hierarchy")
+        
+        if current_id in visited:
+            raise ValueError("Cycle detected in collection hierarchy")
+        
+        visited.add(current_id)
+        
+        # Get parent of current collection
+        collection = db.query(Collection).filter(Collection.id == current_id).first()
+        if collection is None:
+            raise ValueError(f"Parent collection {current_id} not found")
+        
+        current_id = collection.parent_id
+        depth += 1
+    
+    if depth >= max_depth:
+        raise ValueError("Collection hierarchy exceeds maximum depth")
+    
+    return True
+```
+
+**Validation Rules:**
+- Maximum hierarchy depth: 10 levels
+- No circular references allowed
+- Parent must exist and be owned by same user
+- Validated on collection creation and update
+
+#### Batch Operations
+
+Resource membership supports efficient batch operations:
+
+```python
+def add_resources(collection_id: str, user_id: str, resource_ids: List[str]) -> Collection:
+    """
+    Add resources to collection (batch operation).
+    
+    Performance optimizations:
+    - Validates all resources exist in single query
+    - Uses bulk_insert_mappings for batch insert
+    - Handles duplicates gracefully (idempotent)
+    - Triggers single embedding recomputation
+    """
+    # Verify ownership
+    collection = get_collection(collection_id, user_id)
+    if collection.owner_id != user_id:
+        raise PermissionError("Only owner can modify collection")
+    
+    # Validate all resources exist
+    resources = db.query(Resource).filter(Resource.id.in_(resource_ids)).all()
+    if len(resources) != len(resource_ids):
+        raise ValueError("Some resource IDs not found")
+    
+    # Batch insert associations
+    associations = [
+        {"collection_id": collection_id, "resource_id": rid}
+        for rid in resource_ids
+    ]
+    db.bulk_insert_mappings(CollectionResource, associations)
+    
+    # Recompute embedding once
+    recompute_embedding(collection_id)
+    
+    db.commit()
+    return collection
+```
+
+**Batch Limits:**
+- Maximum 100 resources per operation
+- Single database transaction
+- Bulk operations for performance
+- Idempotent (duplicate handling)
+
+#### Access Control Implementation
+
+Collections implement owner-based permissions with visibility levels:
+
+```python
+def get_collection(collection_id: str, user_id: str) -> Collection:
+    """
+    Retrieve collection with access control.
+    
+    Access Rules:
+    - private: Only owner can access
+    - shared: Owner + explicit permissions (future)
+    - public: All authenticated users
+    """
+    collection = db.query(Collection).filter(Collection.id == collection_id).first()
+    
+    if collection is None:
+        raise ValueError("Collection not found")
+    
+    # Check access
+    if collection.visibility == "private":
+        if user_id != collection.owner_id:
+            raise PermissionError("Access denied to private collection")
+    elif collection.visibility == "public":
+        pass  # All authenticated users can access
+    elif collection.visibility == "shared":
+        # Future: Check explicit permissions
+        if user_id != collection.owner_id:
+            raise PermissionError("Access denied to shared collection")
+    
+    return collection
+```
+
+**Authorization Patterns:**
+- Read operations: Check visibility level
+- Write operations: Verify owner_id match
+- List operations: Filter by access rules
+- Cascade operations: Inherit parent permissions
+
+#### Resource Deletion Integration
+
+Collections automatically update when resources are deleted:
+
+```python
+# In resource_service.py
+def delete_resource(db: Session, resource_id: str) -> None:
+    """
+    Delete resource and update affected collections.
+    
+    Integration steps:
+    1. Query affected collections
+    2. Delete resource-collection associations
+    3. Recompute embeddings for affected collections
+    4. Delete resource
+    """
+    # Find affected collections
+    affected_collections = (
+        db.query(Collection.id)
+        .join(CollectionResource)
+        .filter(CollectionResource.resource_id == resource_id)
+        .all()
+    )
+    
+    # Delete associations (CASCADE handles this, but explicit is better)
+    db.execute(
+        delete(CollectionResource).where(CollectionResource.resource_id == resource_id)
+    )
+    
+    # Recompute embeddings for affected collections
+    for collection_id in affected_collections:
+        collection_service.recompute_embedding(collection_id)
+    
+    # Delete resource
+    db.delete(resource)
+    db.commit()
+```
+
+**Cleanup Guarantees:**
+- No orphaned associations remain
+- Embeddings updated automatically
+- Resource counts accurate
+- Performance: <2 seconds for 100 collections
+
+#### Extending Collection Features
+
+The collection service is designed for extensibility:
+
+**Adding New Visibility Levels:**
+```python
+# 1. Update visibility enum in model
+visibility = Column(String(20), nullable=False, default="private")
+
+# 2. Update access control logic
+def check_access(collection, user_id):
+    if collection.visibility == "team":
+        return user_id in get_team_members(collection.team_id)
+    # ... existing logic
+
+# 3. Update schema validation
+class CollectionCreate(BaseModel):
+    visibility: Literal["private", "shared", "public", "team"] = "private"
+```
+
+**Adding Collection Metadata:**
+```python
+# 1. Add column to model
+tags = Column(JSON, nullable=True)
+
+# 2. Update schema
+class CollectionCreate(BaseModel):
+    tags: List[str] = []
+
+# 3. Add filtering support
+def list_collections(tags: List[str] = None):
+    query = db.query(Collection)
+    if tags:
+        query = query.filter(Collection.tags.contains(tags))
+    return query.all()
+```
+
+**Adding Collection Analytics:**
+```python
+# 1. Create analytics service
+class CollectionAnalytics:
+    def get_view_count(self, collection_id: str) -> int:
+        pass
+    
+    def get_popular_resources(self, collection_id: str) -> List[Resource]:
+        pass
+
+# 2. Add analytics endpoint
+@router.get("/collections/{id}/analytics")
+def get_analytics(id: str):
+    return analytics_service.get_collection_analytics(id)
 ```
 
 ## Testing Framework

@@ -35,6 +35,16 @@ Neo Alexandria 2.0 is a comprehensive knowledge management system that provides 
 - **Fresh Content Discovery**: Source and rank new content from external providers
 - **Explainable Recommendations**: Provide reasoning for recommendation decisions
 
+### Collection Management
+- **Curated Collections**: Organize resources into named, thematic collections with descriptions
+- **Hierarchical Organization**: Create nested collections for complex topic structures
+- **Visibility Controls**: Set collections as private, shared, or public for flexible collaboration
+- **Aggregate Embeddings**: Automatic semantic representation computed from member resources
+- **Collection Recommendations**: Discover similar resources and collections based on semantic similarity
+- **Batch Operations**: Add or remove up to 100 resources in a single request
+- **Automatic Cleanup**: Collections update automatically when resources are deleted
+- **Access Control**: Owner-based permissions with visibility-based read access
+
 ### Authority Control and Classification
 - **Subject Normalization**: Intelligent tag standardization and canonical forms
 - **Hierarchical Classification**: UDC-inspired classification system with automatic assignment
@@ -124,6 +134,17 @@ Currently, no authentication is required for development and testing. Future rel
 - `POST /citations/resources/{id}/citations/extract` - Trigger citation extraction
 - `POST /citations/resolve` - Resolve internal citations
 - `POST /citations/importance/compute` - Compute PageRank importance scores
+
+#### Collection Management
+- `POST /collections` - Create a new collection
+- `GET /collections/{id}` - Retrieve collection details with member resources
+- `PUT /collections/{id}` - Update collection metadata
+- `DELETE /collections/{id}` - Delete collection and subcollections
+- `GET /collections` - List collections with filtering and pagination
+- `POST /collections/{id}/resources` - Add resources to collection
+- `DELETE /collections/{id}/resources` - Remove resources from collection
+- `GET /collections/{id}/recommendations` - Get similar resources and collections
+- `GET /collections/{id}/embedding` - Retrieve collection aggregate embedding
 
 #### Authority and Classification
 - `GET /authority/subjects/suggest` - Get subject suggestions for autocomplete
@@ -294,6 +315,43 @@ curl "http://127.0.0.1:8000/graph/overview?limit=50&vector_threshold=0.85"
 curl "http://127.0.0.1:8000/recommendations?limit=10"
 ```
 
+### Collection Management
+```bash
+# Create a new collection
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Machine Learning Papers",
+    "description": "Curated collection of ML research",
+    "visibility": "public"
+  }'
+
+# Add resources to collection
+curl -X POST http://127.0.0.1:8000/collections/{collection_id}/resources \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": [
+      "550e8400-e29b-41d4-a716-446655440000",
+      "660e8400-e29b-41d4-a716-446655440001"
+    ]
+  }'
+
+# Get collection with member resources
+curl "http://127.0.0.1:8000/collections/{collection_id}"
+
+# Get recommendations based on collection
+curl "http://127.0.0.1:8000/collections/{collection_id}/recommendations?limit=10"
+
+# Create nested collection
+curl -X POST http://127.0.0.1:8000/collections \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Deep Learning Subset",
+    "parent_id": "{parent_collection_id}",
+    "visibility": "public"
+  }'
+```
+
 ## Testing
 
 Run the comprehensive test suite:
@@ -368,6 +426,16 @@ pytest backend/tests/ -m "integration"     # Integration tests
 - Metadata validation and completeness scoring
 - Scholarly metadata API endpoints for comprehensive access
 - Integration with quality service for metadata quality scoring
+
+### Phase 7: Collection Management ✅
+- User-curated collections for organizing resources into thematic groups
+- Hierarchical collection organization with parent/child relationships
+- Flexible visibility controls (private, shared, public) for collaboration
+- Aggregate embedding computation for collection-level semantic representation
+- Intelligent recommendations based on collection similarity
+- Resource membership management with batch operations
+- Automatic collection updates when resources are deleted
+- Integration with existing search and recommendation infrastructure
 
 ## Production Deployment
 

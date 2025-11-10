@@ -4,9 +4,34 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Initial Commit">
+    <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Phase 7.5">
+      <change afterPath="$PROJECT_DIR$/backend/PHASE7_5_TASK10_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE7_5_TASK1_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE7_5_TASK8_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/PHASE7_5_TASK9_SUMMARY.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/alembic/versions/e5b9f2c3d4e5_add_annotations_table_phase7_5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/routers/annotations.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/schemas/annotation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/services/annotation_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/docs/EXAMPLES_PHASE7_5.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test_annotation_migration.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test_migration_isolated.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_annotation_export.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_annotation_retrieval.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_annotation_search.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/tests/test_phase7_5_annotations.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/verify_annotation_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/app/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/database/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/collection_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/collection_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/recommendation_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/recommendation_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/resource_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/resource_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/search_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/search_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +97,7 @@
       <workItem from="1759112820162" duration="6449000" />
       <workItem from="1759299127036" duration="3357000" />
       <workItem from="1762397701972" duration="1305000" />
-      <workItem from="1762640851216" duration="3969000" />
+      <workItem from="1762640851216" duration="4605000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />
@@ -122,6 +147,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial Commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial Commit" />
+    <MESSAGE value="Phase 7.5" />
+    <option name="LAST_COMMIT_MESSAGE" value="Phase 7.5" />
   </component>
 </project>

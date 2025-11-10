@@ -9,7 +9,7 @@ Tests information retrieval metrics:
 """
 
 import pytest
-from app.services.search_metrics_service import SearchMetricsService
+from backend.app.services.search_metrics_service import SearchMetricsService
 
 
 class TestSearchMetricsService:

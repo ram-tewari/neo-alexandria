@@ -9,7 +9,6 @@ from typing import Any, Dict
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-from backend.app.database.base import SessionLocal
 from backend.app.database.models import Resource
 
 

@@ -5,7 +5,7 @@ Multi-strategy table extraction from PDFs and HTML with structure preservation.
 """
 
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from bs4 import BeautifulSoup
 

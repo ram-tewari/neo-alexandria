@@ -278,7 +278,6 @@ class CitationService:
             
             for i, match in enumerate(matches):
                 url = match.group(2)
-                text = match.group(1)
                 
                 # Skip internal anchors
                 if url.startswith('#'):
@@ -692,7 +691,6 @@ class CitationService:
         
         # Update citation importance scores
         for citation in citations:
-            source_id = str(citation.source_resource_id)
             target_id = str(citation.target_resource_id)
             
             # Use target's PageRank as citation importance

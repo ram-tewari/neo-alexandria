@@ -24,20 +24,16 @@ Features tested:
 
 import pytest
 from unittest.mock import patch, MagicMock
-from typing import List
 
 from backend.app.services.ai_core import (
     EmbeddingGenerator, 
-    generate_embedding, 
     create_composite_text
 )
 from backend.app.services.hybrid_search_methods import (
     normalize_scores,
-    cosine_similarity,
-    pure_vector_search,
-    fusion_search
+    cosine_similarity
 )
-from backend.app.schemas.search import SearchQuery, SearchFilters
+from backend.app.schemas.search import SearchQuery
 from backend.app.database.models import Resource
 from backend.app.services.search_service import AdvancedSearchService
 

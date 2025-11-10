@@ -15,7 +15,7 @@ Related files:
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple
 from uuid import UUID
 
 # Import numpy with fallback for vector operations
@@ -23,7 +23,7 @@ try:
     import numpy as np
 except ImportError:  # pragma: no cover
     np = None
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.app.config.settings import get_settings

@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 # Add backend to path
 sys.path.insert(0, '.')
 
-from backend.app.database.models import Resource, Base
+from backend.app.database.models import Base
 from backend.app.services.search_service import AdvancedSearchService
 from backend.app.schemas.search import SearchQuery, SearchFilters
 
@@ -50,30 +50,30 @@ def verify_three_way_hybrid_search():
         # Short query
         analysis = AdvancedSearchService._analyze_query("machine learning")
         assert analysis['word_count'] == 2
-        assert analysis['is_short'] == True
-        assert analysis['is_long'] == False
+        assert analysis['is_short'] is True
+        assert analysis['is_long'] is False
         print("   ✓ Short query detection works")
         
         # Long query
         analysis = AdvancedSearchService._analyze_query("How does gradient descent work in deep neural networks for image classification")
         assert analysis['word_count'] == 12
-        assert analysis['is_short'] == False
-        assert analysis['is_long'] == True
+        assert analysis['is_short'] is False
+        assert analysis['is_long'] is True
         print("   ✓ Long query detection works")
         
         # Question query
         analysis = AdvancedSearchService._analyze_query("What is machine learning?")
-        assert analysis['is_question'] == True
+        assert analysis['is_question'] is True
         print("   ✓ Question query detection works")
         
         # Technical query (code)
         analysis = AdvancedSearchService._analyze_query("def fibonacci(n): return n")
-        assert analysis['is_technical'] == True
+        assert analysis['is_technical'] is True
         print("   ✓ Technical query detection works (code)")
         
         # Technical query (math)
         analysis = AdvancedSearchService._analyze_query("solve equation x^2 + 5x + 6 = 0")
-        assert analysis['is_technical'] == True
+        assert analysis['is_technical'] is True
         print("   ✓ Technical query detection works (math)")
         
         # Test 4: Test search_three_way_hybrid with empty database

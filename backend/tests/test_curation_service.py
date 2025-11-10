@@ -1,14 +1,12 @@
 """Tests for curation service quality analysis functionality."""
 
 import uuid
-from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 import pytest
 
 from backend.app.database.models import Resource
 from backend.app.services.curation_service import CurationInterface
 from backend.app.schemas.query import ReviewQueueParams, BatchUpdateResult
-from backend.app.schemas.resource import ResourceUpdate
 
 
 class TestCurationInterfaceQualityAnalysis:

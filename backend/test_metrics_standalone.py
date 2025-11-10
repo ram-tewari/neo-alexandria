@@ -3,7 +3,6 @@ Standalone test for SearchMetricsService
 """
 
 import sys
-import math
 
 # Import directly without going through app
 sys.path.insert(0, 'app/services')

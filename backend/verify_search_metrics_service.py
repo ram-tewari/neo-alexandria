@@ -50,14 +50,14 @@ def main():
     enhanced_precision = service.compute_precision_at_k(enhanced_results, relevant_docs, k=5)
     enhanced_mrr = service.compute_mean_reciprocal_rank(enhanced_results, relevant_docs)
     
-    print(f"Baseline Method:")
+    print("Baseline Method:")
     print(f"  nDCG@5:      {baseline_ndcg:.3f}")
     print(f"  Recall@5:    {baseline_recall:.3f}")
     print(f"  Precision@5: {baseline_precision:.3f}")
     print(f"  MRR:         {baseline_mrr:.3f}")
     print()
     
-    print(f"Enhanced Method:")
+    print("Enhanced Method:")
     print(f"  nDCG@5:      {enhanced_ndcg:.3f}")
     print(f"  Recall@5:    {enhanced_recall:.3f}")
     print(f"  Precision@5: {enhanced_precision:.3f}")
@@ -66,7 +66,7 @@ def main():
     
     # Calculate improvements
     ndcg_improvement = ((enhanced_ndcg - baseline_ndcg) / baseline_ndcg) * 100
-    print(f"Improvements:")
+    print("Improvements:")
     print(f"  nDCG improvement: {ndcg_improvement:+.1f}%")
     print(f"  Recall improvement: {(enhanced_recall - baseline_recall):+.3f}")
     print(f"  Precision improvement: {(enhanced_precision - baseline_precision):+.3f}")

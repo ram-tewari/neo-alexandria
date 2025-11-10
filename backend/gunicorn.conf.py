@@ -18,8 +18,6 @@ Features:
 """
 
 import multiprocessing
-import os
-from pathlib import Path
 
 # Server socket
 bind = "0.0.0.0:8000"

@@ -21,7 +21,7 @@ Features:
 from __future__ import annotations
 
 import re
-from typing import List, Optional, Iterable
+from typing import List, Optional
 
 from sqlalchemy import func, cast, String
 from sqlalchemy.orm import Session

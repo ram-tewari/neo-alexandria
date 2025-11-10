@@ -20,9 +20,8 @@ import uuid
 import json
 import time
 from datetime import datetime, timezone
-from typing import List
 
-from backend.app.database.models import Resource, Annotation, Collection, CollectionResource
+from backend.app.database.models import Resource, Annotation
 from backend.app.services.annotation_service import AnnotationService
 from backend.app.services.resource_service import delete_resource
 from backend.app.services.search_service import AdvancedSearchService
@@ -53,13 +52,6 @@ def annotation_service(db_session):
 @pytest.fixture
 def sample_resource(db_session):
     """Create a sample resource with content for testing."""
-    content = (
-        "This is a sample research paper about machine learning and artificial intelligence. "
-        "The methodology section describes the experimental setup. "
-        "Results show significant improvements in accuracy. "
-        "The conclusion summarizes the key findings and future work."
-    )
-    
     resource = Resource(
         title="Machine Learning Research Paper",
         description="A comprehensive study on ML algorithms",
@@ -78,7 +70,6 @@ def sample_resource(db_session):
 @pytest.fixture
 def sample_resource_with_content(db_session):
     """Create a resource with extractable content."""
-    content = "A" * 1000  # 1000 characters for context extraction
     resource = Resource(
         title="Test Paper with Content",
         source="https://example.com/test.pdf",

@@ -1,6 +1,5 @@
 """Tests for AI core functionality."""
 
-import pytest
 from unittest.mock import patch, Mock
 
 from backend.app.services.ai_core import Summarizer, ZeroShotTagger, AICore

@@ -5,10 +5,8 @@ Test suite for collection management functionality.
 """
 
 import pytest
-import uuid
-from datetime import datetime, timezone
 
-from backend.app.database.models import Resource, Collection, CollectionResource
+from backend.app.database.models import Resource
 from backend.app.services.collection_service import CollectionService
 
 

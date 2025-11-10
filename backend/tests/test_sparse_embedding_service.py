@@ -3,7 +3,6 @@
 import json
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
 
 from backend.app.services.sparse_embedding_service import SparseEmbeddingService
 from backend.app.database.models import Resource

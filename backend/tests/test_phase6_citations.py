@@ -5,8 +5,6 @@ This module tests the citation extraction, resolution, and graph functionality.
 """
 
 import pytest
-import uuid
-from datetime import datetime, timezone
 
 from backend.app.database.models import Resource, Citation
 from backend.app.services.citation_service import CitationService

@@ -2,7 +2,6 @@
 
 import pytest
 from unittest.mock import patch, Mock
-import io
 
 from backend.app.utils.content_extractor import (
     fetch_url, extract_from_fetched, extract_pdf, _looks_like_pdf_bytes

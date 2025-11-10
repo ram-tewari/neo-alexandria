@@ -29,8 +29,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.search import (
+from backend.app.database.base import get_sync_db  # noqa: E402
+from backend.app.schemas.search import (  # noqa: E402
     SearchQuery, 
     SearchResults,
     ThreeWayHybridResults,
@@ -43,8 +43,8 @@ from backend.app.schemas.search import (
     BatchSparseEmbeddingRequest,
     BatchSparseEmbeddingResponse
 )
-from backend.app.schemas.resource import ResourceRead
-from backend.app.services.search_service import AdvancedSearchService
+from backend.app.schemas.resource import ResourceRead  # noqa: E402
+from backend.app.services.search_service import AdvancedSearchService  # noqa: E402
 
 
 router = APIRouter(prefix="", tags=["search"])
@@ -179,7 +179,7 @@ def compare_search_methods_endpoint(
             latency_ms=latency,
             total=total
         )
-    except Exception as e:
+    except Exception:
         methods_results['fts5_only'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -205,7 +205,7 @@ def compare_search_methods_endpoint(
             latency_ms=latency,
             total=total
         )
-    except Exception as e:
+    except Exception:
         methods_results['dense_only'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -250,7 +250,7 @@ def compare_search_methods_endpoint(
                 latency_ms=0.0,
                 total=0
             )
-    except Exception as e:
+    except Exception:
         methods_results['sparse_only'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -274,7 +274,7 @@ def compare_search_methods_endpoint(
             latency_ms=latency,
             total=total
         )
-    except Exception as e:
+    except Exception:
         methods_results['two_way_hybrid'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -298,7 +298,7 @@ def compare_search_methods_endpoint(
             latency_ms=latency,
             total=total
         )
-    except Exception as e:
+    except Exception:
         methods_results['three_way_hybrid'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -322,7 +322,7 @@ def compare_search_methods_endpoint(
             latency_ms=latency,
             total=total
         )
-    except Exception as e:
+    except Exception:
         methods_results['three_way_reranked'] = ComparisonMethodResults(
             results=[],
             latency_ms=0.0,
@@ -436,7 +436,7 @@ def evaluate_search_endpoint(
                 'two_way_ndcg': baseline_ndcg,
                 'improvement': improvement
             }
-        except Exception as e:
+        except Exception:
             # Baseline comparison is optional, continue without it
             pass
         

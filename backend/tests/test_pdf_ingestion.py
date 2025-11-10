@@ -3,7 +3,6 @@
 import pytest
 import time
 from unittest.mock import patch, Mock
-from pathlib import Path
 
 from backend.app.utils.content_extractor import extract_from_fetched
 
@@ -15,7 +14,6 @@ class TestPDFIngestionFlow:
         """Test PDF ingestion through the API."""
         # Mock PDF content
         pdf_content = b"%PDF-1.4\nfake pdf content"
-        extracted_text = "This is a PDF document about machine learning and artificial intelligence. It contains detailed information about neural networks and deep learning algorithms."
         
         with patch('backend.app.utils.content_extractor.fetch_url') as mock_fetch, \
              patch('backend.app.services.resource_service.ARCHIVE_ROOT', temp_dir):

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -16,7 +15,6 @@ from backend.app.database.base import Base, SessionLocal
 from backend.app.utils import content_extractor as ce
 from backend.app.utils.text_processor import clean_text, readability_scores
 from backend.app.services.dependencies import (
-    get_ai_core,
     get_classification_service,
     get_quality_analyzer,
     get_authority_control,

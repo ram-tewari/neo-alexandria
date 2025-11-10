@@ -7,3 +7,4 @@ export * from './useKnowledgeGraph';
 export * from './useCollections';
 export * from './useCitations';
 export * from './useToast';
+export * from './useKeyboardShortcuts';

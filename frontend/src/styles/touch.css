@@ -1,0 +1,140 @@
+/* Touch-friendly interaction styles */
+
+/* Minimum touch target size for mobile */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Touch feedback animation */
+.touch-feedback {
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.touch-feedback:active {
+  transform: scale(0.95);
+  opacity: 0.7;
+}
+
+/* Prevent text selection during touch interactions */
+.touch-action-none {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scrolling for touch devices */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Larger tap targets on mobile */
+@media (max-width: 768px) {
+  .mobile-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Increase spacing between interactive elements */
+  .mobile-touch-spacing > * + * {
+    margin-top: 8px;
+  }
+
+  /* Larger checkboxes and radio buttons */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Larger form inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Swipe gesture indicators */
+.swipe-indicator {
+  position: relative;
+}
+
+.swipe-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 2px;
+  opacity: 0.3;
+}
+
+/* Pull-to-refresh indicator */
+.pull-to-refresh {
+  overscroll-behavior-y: contain;
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .hover-only {
+    display: none;
+  }
+
+  /* Remove hover states that don't work well on touch */
+  *:hover {
+    /* Hover styles will be ignored on touch devices */
+  }
+}
+
+/* Active state for touch */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  a:active,
+  .interactive:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+/* Prevent double-tap zoom on buttons */
+button,
+a,
+.no-double-tap-zoom {
+  touch-action: manipulation;
+}
+
+/* Momentum scrolling for iOS */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  .safe-area-inset-left {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+
+  .safe-area-inset-right {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}

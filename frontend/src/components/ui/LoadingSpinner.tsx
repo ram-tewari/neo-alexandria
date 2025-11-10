@@ -35,7 +35,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (variant === 'dots') {
     return (
-      <div className={cn('flex items-center justify-center gap-2', className)}>
+      <div className={cn('flex items-center justify-center gap-2', className)} role="status" aria-live="polite">
         {[0, 1, 2].map((index) => (
           <motion.div
             key={index}
@@ -55,12 +55,15 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
               repeat: Infinity,
               delay: index * 0.2,
             }}
+            aria-hidden="true"
           />
         ))}
-        {text && (
+        {text ? (
           <span className={cn('ml-2 text-charcoal-grey-300', textSizeClasses[size])}>
             {text}
           </span>
+        ) : (
+          <span className="sr-only">Loading...</span>
         )}
       </div>
     );
@@ -68,7 +71,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (variant === 'pulse') {
     return (
-      <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
+      <div className={cn('flex flex-col items-center justify-center gap-3', className)} role="status" aria-live="polite">
         <motion.div
           className={cn(
             'rounded-full bg-accent-blue-500',
@@ -83,11 +86,14 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             repeat: Infinity,
             ease: 'easeInOut',
           }}
+          aria-hidden="true"
         />
-        {text && (
+        {text ? (
           <span className={cn('text-charcoal-grey-300', textSizeClasses[size])}>
             {text}
           </span>
+        ) : (
+          <span className="sr-only">Loading...</span>
         )}
       </div>
     );
@@ -95,17 +101,20 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   // Default spinner variant
   return (
-    <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
+    <div className={cn('flex flex-col items-center justify-center gap-3', className)} role="status" aria-live="polite">
       <Loader2 
         className={cn(
           'animate-spin text-accent-blue-500',
           sizeClasses[size]
         )}
+        aria-hidden="true"
       />
-      {text && (
+      {text ? (
         <span className={cn('text-charcoal-grey-300', textSizeClasses[size])}>
           {text}
         </span>
+      ) : (
+        <span className="sr-only">Loading...</span>
       )}
     </div>
   );
@@ -132,6 +141,10 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
+      role="dialog"
+      aria-modal="true"
+      aria-live="assertive"
+      aria-busy="true"
     >
       <div className="flex flex-col items-center gap-4 p-8 bg-charcoal-grey-800 rounded-lg border border-charcoal-grey-700 shadow-2xl">
         <LoadingSpinner size="xl" variant={variant} />
@@ -171,14 +184,16 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   className 
 }) => {
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-3', className)} role="status" aria-live="polite" aria-label="Loading content">
       {Array.from({ length: lines }).map((_, i) => (
         <div
           key={i}
           className="h-4 bg-charcoal-grey-700 rounded animate-pulse"
           style={{ width: `${100 - (i * 10)}%` }}
+          aria-hidden="true"
         />
       ))}
+      <span className="sr-only">Loading content...</span>
     </div>
   );
 };

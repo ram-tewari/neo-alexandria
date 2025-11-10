@@ -432,3 +432,174 @@ class TestFacets:
         assert "es" not in languages
         
         db.close()
+
+
+class TestThreeWayHybridSearch:
+    """Test three-way hybrid search functionality (Phase 8)."""
+    
+    def test_three_way_hybrid_search_basic(self, test_db, sample_resources):
+        """Test basic three-way hybrid search functionality."""
+        db = test_db()
+        
+        query = SearchQuery(
+            text="machine learning",
+            limit=10,
+            offset=0
+        )
+        
+        # Call three-way hybrid search
+        result = AdvancedSearchService.search_three_way_hybrid(
+            db=db,
+            query=query,
+            enable_reranking=False,
+            adaptive_weighting=True
+        )
+        
+        # Unpack results (5-tuple with metadata)
+        resources, total, facets, snippets, metadata = result
+        
+        # Check that we got results
+        assert isinstance(resources, list)
+        assert isinstance(total, int)
+        assert isinstance(metadata, dict)
+        
+        # Check metadata structure
+        assert 'latency_ms' in metadata
+        assert 'method_contributions' in metadata
+        assert 'weights_used' in metadata
+        assert 'reranking_enabled' in metadata
+        assert 'adaptive_weighting' in metadata
+        
+        # Check method contributions
+        assert 'fts5' in metadata['method_contributions']
+        assert 'dense' in metadata['method_contributions']
+        assert 'sparse' in metadata['method_contributions']
+        
+        # Check weights are normalized (sum to ~1.0)
+        weights = metadata['weights_used']
+        assert len(weights) == 3
+        assert abs(sum(weights) - 1.0) < 0.01  # Allow small floating point error
+        
+        db.close()
+    
+    def test_query_analysis_short(self):
+        """Test query analysis for short queries."""
+        analysis = AdvancedSearchService._analyze_query("ML AI")
+        
+        assert analysis['word_count'] == 2
+        assert analysis['is_short'] is True
+        assert analysis['is_long'] is False
+        assert analysis['is_question'] is False
+        assert analysis['is_technical'] is False
+    
+    def test_query_analysis_long(self):
+        """Test query analysis for long queries."""
+        query = "How does gradient descent work in deep neural networks for optimization and training"
+        analysis = AdvancedSearchService._analyze_query(query)
+        
+        assert analysis['word_count'] > 10
+        assert analysis['is_short'] is False
+        assert analysis['is_long'] is True
+        assert analysis['is_question'] is True
+        assert analysis['is_technical'] is False
+    
+    def test_query_analysis_technical_code(self):
+        """Test query analysis for technical code queries."""
+        query = "def fibonacci(n): return n if n <= 1"
+        analysis = AdvancedSearchService._analyze_query(query)
+        
+        assert analysis['is_technical'] is True
+    
+    def test_query_analysis_technical_math(self):
+        """Test query analysis for technical math queries."""
+        query = "integral of x^2 + 5x"
+        analysis = AdvancedSearchService._analyze_query(query)
+        
+        assert analysis['is_technical'] is True
+    
+    def test_three_way_hybrid_with_empty_query(self, test_db):
+        """Test three-way hybrid search with empty query."""
+        db = test_db()
+        
+        query = SearchQuery(
+            text="",
+            limit=10
+        )
+        
+        result = AdvancedSearchService.search_three_way_hybrid(
+            db=db,
+            query=query,
+            enable_reranking=False,
+            adaptive_weighting=True
+        )
+        
+        resources, total, facets, snippets, metadata = result
+        
+        # Should return empty results gracefully
+        assert isinstance(resources, list)
+        assert isinstance(metadata, dict)
+        
+        db.close()
+    
+    def test_three_way_hybrid_fallback(self, test_db, sample_resources):
+        """Test that three-way hybrid falls back gracefully when services unavailable."""
+        db = test_db()
+        
+        query = SearchQuery(
+            text="machine learning",
+            limit=10
+        )
+        
+        # The search should work even if Phase 8 services are not fully available
+        # (it will fall back to two-way hybrid)
+        result = AdvancedSearchService.search_three_way_hybrid(
+            db=db,
+            query=query,
+            enable_reranking=False,
+            adaptive_weighting=True
+        )
+        
+        resources, total, facets, snippets, metadata = result
+        
+        # Should return results (either three-way or fallback)
+        assert isinstance(resources, list)
+        assert isinstance(metadata, dict)
+        assert 'latency_ms' in metadata
+        
+        db.close()
+    
+    def test_fetch_resources_ordered(self, test_db, sample_resources):
+        """Test that _fetch_resources_ordered preserves order."""
+        db = test_db()
+        
+        # Get resource IDs in specific order
+        resource_ids = sample_resources[:3]
+        reversed_ids = list(reversed(resource_ids))
+        
+        # Fetch in reversed order
+        resources = AdvancedSearchService._fetch_resources_ordered(
+            db=db,
+            resource_ids=reversed_ids,
+            filters=None
+        )
+        
+        # Check that order is preserved
+        fetched_ids = [str(r.id) for r in resources]
+        assert fetched_ids == reversed_ids
+        
+        db.close()
+    
+    def test_search_sparse_empty_query(self, test_db):
+        """Test sparse search with empty query."""
+        db = test_db()
+        
+        results = AdvancedSearchService._search_sparse(
+            db=db,
+            query="",
+            limit=100
+        )
+        
+        # Should return empty list gracefully
+        assert results == []
+        
+        db.close()

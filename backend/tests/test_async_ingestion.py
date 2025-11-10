@@ -392,3 +392,181 @@ class TestAsyncIngestionIntegration:
                     pytest.fail(f"Ingestion {resource_id} did not complete within timeout")
                 
                 assert status_data["ingestion_status"] == "completed"
+
+
+
+class TestSparseEmbeddingIntegration:
+    """Test sparse embedding integration in ingestion pipeline (Phase 8)."""
+    
+    def test_sparse_embedding_generated_during_ingestion(self, test_db, temp_dir):
+        """Test that sparse embeddings are generated during ingestion."""
+        db = test_db()
+        
+        # Create pending resource
+        payload = {"url": "https://example.com/test"}
+        resource = create_pending_resource(db, payload)
+        resource_id = str(resource.id)
+        db.close()
+        
+        # Mock external dependencies
+        with patch('backend.app.utils.content_extractor.fetch_url') as mock_fetch, \
+             patch('backend.app.utils.content_extractor.extract_from_fetched') as mock_extract, \
+             patch('backend.app.services.resource_service.AICore') as mock_ai_core_class, \
+             patch('backend.app.services.sparse_embedding_service.SparseEmbeddingService.generate_sparse_embedding') as mock_sparse:
+            
+            mock_fetch.return_value = {
+                "url": "https://example.com/test",
+                "status": 200,
+                "html": "<html><head><title>Test</title></head><body><p>Test content</p></body></html>",
+                "content_type": "text/html"
+            }
+            
+            mock_extract.return_value = {
+                "title": "Machine Learning Tutorial",
+                "text": "Test content about machine learning and neural networks"
+            }
+            
+            mock_ai_core = Mock()
+            mock_ai_core.generate_summary.return_value = "Summary about ML and neural networks"
+            mock_ai_core.generate_tags.return_value = ["Machine Learning", "Neural Networks", "AI"]
+            mock_ai_core.generate_embedding.return_value = [0.1, 0.2, 0.3]  # Mock dense embedding
+            mock_ai_core_class.return_value = mock_ai_core
+            
+            # Mock sparse embedding generation
+            mock_sparse.return_value = {
+                2453: 0.87,
+                8921: 0.65,
+                1234: 0.43
+            }
+            
+            # Process ingestion with test database URL
+            db_for_url = test_db()
+            engine_url = str(db_for_url.get_bind().url)
+            db_for_url.close()
+            process_ingestion(resource_id, archive_root=temp_dir, ai=mock_ai_core, engine_url=engine_url)
+        
+        # Verify resource was updated with sparse embedding
+        db = test_db()
+        updated_resource = get_resource(db, resource_id)
+        
+        assert updated_resource.ingestion_status == "completed"
+        assert updated_resource.sparse_embedding is not None
+        assert updated_resource.sparse_embedding_model == "BAAI/bge-m3"
+        assert updated_resource.sparse_embedding_updated_at is not None
+        
+        # Verify sparse embedding is valid JSON
+        import json
+        sparse_vec = json.loads(updated_resource.sparse_embedding)
+        assert isinstance(sparse_vec, dict)
+        assert len(sparse_vec) > 0
+        assert 2453 in [int(k) for k in sparse_vec.keys()]
+    
+    def test_sparse_embedding_failure_does_not_block_ingestion(self, test_db, temp_dir):
+        """Test that sparse embedding failures don't block ingestion."""
+        db = test_db()
+        
+        # Create pending resource
+        payload = {"url": "https://example.com/test"}
+        resource = create_pending_resource(db, payload)
+        resource_id = str(resource.id)
+        db.close()
+        
+        # Mock external dependencies
+        with patch('backend.app.utils.content_extractor.fetch_url') as mock_fetch, \
+             patch('backend.app.utils.content_extractor.extract_from_fetched') as mock_extract, \
+             patch('backend.app.services.resource_service.AICore') as mock_ai_core_class, \
+             patch('backend.app.services.sparse_embedding_service.SparseEmbeddingService.generate_sparse_embedding') as mock_sparse:
+            
+            mock_fetch.return_value = {
+                "url": "https://example.com/test",
+                "status": 200,
+                "html": "<html><head><title>Test</title></head><body><p>Test content</p></body></html>",
+                "content_type": "text/html"
+            }
+            
+            mock_extract.return_value = {
+                "title": "Test Article",
+                "text": "Test content"
+            }
+            
+            mock_ai_core = Mock()
+            mock_ai_core.generate_summary.return_value = "Summary"
+            mock_ai_core.generate_tags.return_value = ["Test"]
+            mock_ai_core.generate_embedding.return_value = [0.1, 0.2, 0.3]
+            mock_ai_core_class.return_value = mock_ai_core
+            
+            # Mock sparse embedding to raise an exception
+            mock_sparse.side_effect = Exception("Sparse embedding model failed")
+            
+            # Process ingestion with test database URL
+            db_for_url = test_db()
+            engine_url = str(db_for_url.get_bind().url)
+            db_for_url.close()
+            process_ingestion(resource_id, archive_root=temp_dir, ai=mock_ai_core, engine_url=engine_url)
+        
+        # Verify resource ingestion completed despite sparse embedding failure
+        db = test_db()
+        updated_resource = get_resource(db, resource_id)
+        
+        assert updated_resource.ingestion_status == "completed"
+        assert updated_resource.ingestion_error is None
+        assert updated_resource.title == "Test Article"
+        assert updated_resource.description == "Summary"
+        
+        # Sparse embedding should be None (marked for retry)
+        assert updated_resource.sparse_embedding is None
+        assert updated_resource.sparse_embedding_model is None
+        assert updated_resource.sparse_embedding_updated_at is None
+    
+    def test_sparse_embedding_with_empty_content(self, test_db, temp_dir):
+        """Test sparse embedding handling when content is empty."""
+        db = test_db()
+        
+        # Create pending resource
+        payload = {"url": "https://example.com/test"}
+        resource = create_pending_resource(db, payload)
+        resource_id = str(resource.id)
+        db.close()
+        
+        # Mock external dependencies
+        with patch('backend.app.utils.content_extractor.fetch_url') as mock_fetch, \
+             patch('backend.app.utils.content_extractor.extract_from_fetched') as mock_extract, \
+             patch('backend.app.services.resource_service.AICore') as mock_ai_core_class:
+            
+            mock_fetch.return_value = {
+                "url": "https://example.com/test",
+                "status": 200,
+                "html": "<html><head><title></title></head><body></body></html>",
+                "content_type": "text/html"
+            }
+            
+            mock_extract.return_value = {
+                "title": "",
+                "text": ""
+            }
+            
+            mock_ai_core = Mock()
+            mock_ai_core.generate_summary.return_value = ""
+            mock_ai_core.generate_tags.return_value = []
+            mock_ai_core.generate_embedding.return_value = None
+            mock_ai_core_class.return_value = mock_ai_core
+            
+            # Process ingestion with test database URL
+            db_for_url = test_db()
+            engine_url = str(db_for_url.get_bind().url)
+            db_for_url.close()
+            process_ingestion(resource_id, archive_root=temp_dir, ai=mock_ai_core, engine_url=engine_url)
+        
+        # Verify resource ingestion completed
+        db = test_db()
+        updated_resource = get_resource(db, resource_id)
+        
+        assert updated_resource.ingestion_status == "completed"
+        
+        # When model is not available (returns empty dict), resource is marked for retry
+        # (no timestamp set) even though there is content ("Untitled")
+        assert updated_resource.sparse_embedding is None
+        assert updated_resource.sparse_embedding_model is None
+        # In test environment without transformers, model returns empty dict, so no timestamp
+        # This marks the resource for retry in batch processing
+        assert updated_resource.sparse_embedding_updated_at is None

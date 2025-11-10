@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
@@ -214,6 +215,51 @@ def process_ingestion(
         except Exception:
             # Embedding generation is optional, don't fail the whole ingestion
             pass
+        
+        # Phase 8: Generate sparse embedding after dense embedding
+        try:
+            from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+            sparse_service = SparseEmbeddingService(session, model_name="BAAI/bge-m3")
+            
+            # Create composite text for sparse embedding
+            text_parts = []
+            if title_final:
+                text_parts.append(title_final)
+            if description_final:
+                text_parts.append(description_final)
+            if normalized_tags:
+                subjects_text = " ".join(normalized_tags)
+                if subjects_text.strip():
+                    text_parts.append(f"Keywords: {subjects_text}")
+            
+            composite_text = " ".join(text_parts)
+            
+            if not composite_text.strip():
+                # No content to embed - set timestamp to indicate processing was attempted
+                resource.sparse_embedding = None
+                resource.sparse_embedding_model = None
+                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+            else:
+                # Generate sparse embedding
+                sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
+                if sparse_vec:
+                    # Successfully generated sparse embedding
+                    resource.sparse_embedding = json.dumps(sparse_vec)
+                    resource.sparse_embedding_model = "BAAI/bge-m3"
+                    resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+                else:
+                    # Generation returned empty (model not available or other issue)
+                    # Mark for retry by not setting sparse_embedding_updated_at
+                    resource.sparse_embedding = None
+                    resource.sparse_embedding_model = None
+                    resource.sparse_embedding_updated_at = None
+        except Exception as sparse_exc:
+            # Sparse embedding generation is optional, don't fail the whole ingestion
+            # Log error and mark resource for retry by not setting sparse_embedding_updated_at
+            print(f"Warning: Sparse embedding generation failed for {resource_id}: {sparse_exc}")
+            resource.sparse_embedding = None
+            resource.sparse_embedding_model = None
+            resource.sparse_embedding_updated_at = None
 
         # Persist updates
         resource.title = title_final
@@ -435,6 +481,51 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
         except Exception:
             # Embedding generation is optional, don't fail the update
             pass
+        
+        # Phase 8: Regenerate sparse embedding if relevant fields changed
+        try:
+            from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+            sparse_service = SparseEmbeddingService(db, model_name="BAAI/bge-m3")
+            
+            # Create composite text for sparse embedding
+            text_parts = []
+            if resource.title:
+                text_parts.append(resource.title)
+            if resource.description:
+                text_parts.append(resource.description)
+            if resource.subject:
+                subjects_text = " ".join(resource.subject)
+                if subjects_text.strip():
+                    text_parts.append(f"Keywords: {subjects_text}")
+            
+            composite_text = " ".join(text_parts)
+            
+            if not composite_text.strip():
+                # No content to embed - set timestamp to indicate processing was attempted
+                resource.sparse_embedding = None
+                resource.sparse_embedding_model = None
+                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+            else:
+                # Generate sparse embedding
+                sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
+                if sparse_vec:
+                    # Successfully generated sparse embedding
+                    resource.sparse_embedding = json.dumps(sparse_vec)
+                    resource.sparse_embedding_model = "BAAI/bge-m3"
+                    resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+                else:
+                    # Generation returned empty (model not available or other issue)
+                    # Mark for retry by not setting sparse_embedding_updated_at
+                    resource.sparse_embedding = None
+                    resource.sparse_embedding_model = None
+                    resource.sparse_embedding_updated_at = None
+        except Exception as sparse_exc:
+            # Sparse embedding generation is optional, don't fail the update
+            print(f"Warning: Sparse embedding regeneration failed for {resource.id}: {sparse_exc}")
+            # Mark for retry by not setting sparse_embedding_updated_at
+            resource.sparse_embedding = None
+            resource.sparse_embedding_model = None
+            resource.sparse_embedding_updated_at = None
 
     # Ensure updated_at moves forward
     resource.updated_at = datetime.now(timezone.utc)

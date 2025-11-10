@@ -138,6 +138,22 @@ class Resource(Base):
         server_default='[]'
     )
     
+    # Phase 8: Sparse vector embeddings for three-way hybrid search
+    sparse_embedding: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON string: {"token_id": weight, ...}
+    
+    sparse_embedding_model: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )  # Model name: "bge-m3" or "splade"
+    
+    sparse_embedding_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
     # Phase 6.5: Scholarly Metadata Fields
     # Author and Attribution
     authors: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON: [{"name": "...", "affiliation": "...", "orcid": "..."}]
@@ -208,6 +224,11 @@ class Resource(Base):
         "Annotation",
         back_populates="resource",
         cascade="all, delete-orphan"
+    )
+    
+    # Indexes for efficient queries
+    __table_args__ = (
+        Index('idx_resources_sparse_updated', 'sparse_embedding_updated_at'),
     )
     
     def __repr__(self) -> str:

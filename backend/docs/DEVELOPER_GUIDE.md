@@ -1098,6 +1098,824 @@ CREATE INDEX idx_annotations_user_resource ON annotations(user_id, resource_id);
 CREATE INDEX idx_annotations_created ON annotations(created_at);
 ```
 
+### Taxonomy Service Architecture (Phase 8.5)
+
+The taxonomy service manages hierarchical category trees with parent-child relationships using the materialized path pattern for efficient queries.
+
+#### Database Models
+
+**TaxonomyNode Model:**
+```python
+class TaxonomyNode(Base):
+    __tablename__ = "taxonomy_nodes"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
+    parent_id = Column(UUID, ForeignKey("taxonomy_nodes.id", ondelete="CASCADE"), nullable=True, index=True)
+    level = Column(Integer, nullable=False, default=0)
+    path = Column(String(1000), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    keywords = Column(JSON, nullable=True)
+    resource_count = Column(Integer, nullable=False, default=0)
+    descendant_resource_count = Column(Integer, nullable=False, default=0)
+    is_leaf = Column(Boolean, nullable=False, default=True)
+    allow_resources = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
+    
+    # Relationships
+    parent = relationship("TaxonomyNode", remote_side=[id], back_populates="children")
+    children = relationship("TaxonomyNode", back_populates="parent", cascade="all, delete-orphan")
+    
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('level >= 0', name='check_level_non_negative'),
+    )
+```
+
+**ResourceTaxonomy Association Model:**
+```python
+class ResourceTaxonomy(Base):
+    __tablename__ = "resource_taxonomy"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    resource_id = Column(UUID, ForeignKey("resources.id", ondelete="CASCADE"), nullable=False, index=True)
+    taxonomy_node_id = Column(UUID, ForeignKey("taxonomy_nodes.id", ondelete="CASCADE"), nullable=False, index=True)
+    confidence = Column(Float, nullable=False)
+    is_predicted = Column(Boolean, nullable=False, default=True)
+    predicted_by = Column(String(50), nullable=True)
+    needs_review = Column(Boolean, nullable=False, default=False, index=True)
+    review_priority = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
+    
+    # Relationships
+    resource = relationship("Resource", back_populates="taxonomy_classifications")
+    taxonomy_node = relationship("TaxonomyNode")
+    
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('confidence >= 0.0 AND confidence <= 1.0', name='check_confidence_range'),
+    )
+```
+
+#### Materialized Path Pattern
+
+The taxonomy uses materialized paths for efficient hierarchical queries:
+
+```python
+# Example hierarchy:
+# Computer Science (level=0, path="/computer-science")
+#   ├── Machine Learning (level=1, path="/computer-science/machine-learning")
+#   │   ├── Deep Learning (level=2, path="/computer-science/machine-learning/deep-learning")
+#   │   └── NLP (level=2, path="/computer-science/machine-learning/nlp")
+#   └── Databases (level=1, path="/computer-science/databases")
+
+def _compute_path(self, parent: Optional[TaxonomyNode], slug: str) -> str:
+    """
+    Compute materialized path for a node.
+    
+    Algorithm:
+    1. If no parent → path = "/{slug}"
+    2. If parent exists → path = "{parent.path}/{slug}"
+    
+    Example:
+    - Root: "/computer-science"
+    - Child: "/computer-science/machine-learning"
+    - Grandchild: "/computer-science/machine-learning/deep-learning"
+    """
+    if parent is None:
+        return f"/{slug}"
+    return f"{parent.path}/{slug}"
+```
+
+**Advantages:**
+- **O(1) ancestor queries**: Parse path string
+- **O(1) descendant queries**: `path LIKE 'parent_path/%'`
+- **No recursive CTEs needed**
+- **Efficient with proper indexing**
+
+**Trade-offs:**
+- Path updates on reparenting (acceptable for infrequent operations)
+- Path length limits (mitigated by slug length limits)
+
+#### Core Operations
+
+**Creating Nodes:**
+```python
+def create_node(
+    self,
+    name: str,
+    parent_id: Optional[str] = None,
+    description: Optional[str] = None,
+    keywords: Optional[List[str]] = None,
+    allow_resources: bool = True
+) -> TaxonomyNode:
+    """
+    Create taxonomy node with automatic path computation.
+    
+    Steps:
+    1. Validate parent exists (if specified)
+    2. Generate slug from name
+    3. Compute level = parent.level + 1 (or 0 for root)
+    4. Compute path = parent.path + "/" + slug
+    5. Create node
+    6. Update parent.is_leaf = False
+    
+    Performance: <10ms
+    """
+    # Validate parent
+    parent = None
+    if parent_id:
+        parent = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == parent_id).first()
+        if not parent:
+            raise ValueError(f"Parent node {parent_id} not found")
+    
+    # Generate slug
+    slug = self._slugify(name)
+    
+    # Compute level and path
+    level = parent.level + 1 if parent else 0
+    path = self._compute_path(parent, slug)
+    
+    # Create node
+    node = TaxonomyNode(
+        id=uuid.uuid4(),
+        name=name,
+        slug=slug,
+        parent_id=parent_id,
+        level=level,
+        path=path,
+        description=description,
+        keywords=json.dumps(keywords) if keywords else None,
+        allow_resources=allow_resources
+    )
+    
+    self.db.add(node)
+    
+    # Update parent
+    if parent:
+        parent.is_leaf = False
+    
+    self.db.commit()
+    return node
+```
+
+**Moving Nodes (Reparenting):**
+```python
+def move_node(self, node_id: str, new_parent_id: Optional[str]) -> TaxonomyNode:
+    """
+    Move node to different parent with circular reference prevention.
+    
+    Steps:
+    1. Validate node exists
+    2. Prevent circular references (check if new_parent is descendant)
+    3. Update parent_id
+    4. Recalculate level
+    5. Recalculate path
+    6. Update all descendants' levels and paths
+    
+    Performance: O(descendants) - typically <50ms
+    """
+    node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
+    if not node:
+        raise ValueError(f"Node {node_id} not found")
+    
+    # Prevent circular references
+    if new_parent_id and self._is_descendant(new_parent_id, node_id):
+        raise ValueError("Cannot move node to its own descendant")
+    
+    # Get new parent
+    new_parent = None
+    if new_parent_id:
+        new_parent = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == new_parent_id).first()
+        if not new_parent:
+            raise ValueError(f"New parent {new_parent_id} not found")
+    
+    # Update node
+    node.parent_id = new_parent_id
+    node.level = new_parent.level + 1 if new_parent else 0
+    node.path = self._compute_path(new_parent, node.slug)
+    
+    # Update descendants
+    self._update_descendants(node)
+    
+    self.db.commit()
+    return node
+
+def _is_descendant(self, potential_descendant_id: str, ancestor_id: str) -> bool:
+    """Check if potential_descendant is a descendant of ancestor."""
+    descendant = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == potential_descendant_id).first()
+    if not descendant:
+        return False
+    
+    ancestor = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == ancestor_id).first()
+    if not ancestor:
+        return False
+    
+    # Check if descendant's path starts with ancestor's path
+    return descendant.path.startswith(ancestor.path + "/")
+```
+
+**Hierarchical Queries:**
+```python
+def get_ancestors(self, node_id: str) -> List[TaxonomyNode]:
+    """
+    Get all ancestors using materialized path.
+    
+    Algorithm:
+    1. Get node
+    2. Parse path: "/a/b/c" → ["a", "b", "c"]
+    3. Query nodes by slugs
+    4. Return in hierarchical order
+    
+    Performance: O(depth) - typically <10ms
+    """
+    node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
+    if not node:
+        return []
+    
+    # Parse path
+    slugs = [s for s in node.path.split("/") if s]
+    
+    # Query ancestors
+    ancestors = []
+    for i in range(len(slugs)):
+        path = "/" + "/".join(slugs[:i+1])
+        ancestor = self.db.query(TaxonomyNode).filter(TaxonomyNode.path == path).first()
+        if ancestor:
+            ancestors.append(ancestor)
+    
+    return ancestors
+
+def get_descendants(self, node_id: str) -> List[TaxonomyNode]:
+    """
+    Get all descendants using path pattern matching.
+    
+    Algorithm:
+    1. Get node
+    2. Query nodes with path LIKE 'node.path/%'
+    3. Return all matches
+    
+    Performance: O(1) query - typically <10ms
+    """
+    node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
+    if not node:
+        return []
+    
+    # Query descendants
+    descendants = (
+        self.db.query(TaxonomyNode)
+        .filter(TaxonomyNode.path.like(f"{node.path}/%"))
+        .all()
+    )
+    
+    return descendants
+```
+
+**Tree Retrieval:**
+```python
+def get_tree(
+    self,
+    root_id: Optional[str] = None,
+    max_depth: Optional[int] = None
+) -> List[Dict]:
+    """
+    Retrieve taxonomy tree as nested structure.
+    
+    Algorithm:
+    1. Query root nodes (or specific root)
+    2. Recursively build tree structure
+    3. Limit depth if specified
+    
+    Performance: O(nodes) - typically <50ms for depth 5
+    """
+    # Get root nodes
+    if root_id:
+        roots = [self.db.query(TaxonomyNode).filter(TaxonomyNode.id == root_id).first()]
+    else:
+        roots = self.db.query(TaxonomyNode).filter(TaxonomyNode.parent_id.is_(None)).all()
+    
+    # Build tree
+    def build_subtree(node: TaxonomyNode, current_depth: int = 0) -> Dict:
+        result = {
+            "id": str(node.id),
+            "name": node.name,
+            "slug": node.slug,
+            "level": node.level,
+            "path": node.path,
+            "resource_count": node.resource_count,
+            "descendant_resource_count": node.descendant_resource_count,
+            "children": []
+        }
+        
+        # Check depth limit
+        if max_depth is not None and current_depth >= max_depth:
+            return result
+        
+        # Add children
+        for child in node.children:
+            result["children"].append(build_subtree(child, current_depth + 1))
+        
+        return result
+    
+    return [build_subtree(root) for root in roots if root]
+```
+
+#### Resource Classification
+
+```python
+def classify_resource(
+    self,
+    resource_id: str,
+    taxonomy_node_ids: List[str],
+    confidence_scores: Dict[str, float],
+    is_predicted: bool = True,
+    predicted_by: Optional[str] = None
+) -> None:
+    """
+    Assign taxonomy classifications to resource.
+    
+    Steps:
+    1. Remove existing predicted classifications
+    2. Add new classifications with metadata
+    3. Flag low confidence (<0.7) for review
+    4. Compute review priority for flagged items
+    5. Update resource counts for affected nodes
+    
+    Performance: <20ms
+    """
+    # Remove existing predicted classifications
+    if is_predicted:
+        self.db.query(ResourceTaxonomy).filter(
+            ResourceTaxonomy.resource_id == resource_id,
+            ResourceTaxonomy.is_predicted == True
+        ).delete()
+    
+    # Add new classifications
+    for node_id in taxonomy_node_ids:
+        confidence = confidence_scores.get(node_id, 1.0)
+        needs_review = confidence < 0.7
+        review_priority = (1.0 - confidence) if needs_review else None
+        
+        classification = ResourceTaxonomy(
+            id=uuid.uuid4(),
+            resource_id=resource_id,
+            taxonomy_node_id=node_id,
+            confidence=confidence,
+            is_predicted=is_predicted,
+            predicted_by=predicted_by,
+            needs_review=needs_review,
+            review_priority=review_priority
+        )
+        
+        self.db.add(classification)
+    
+    # Update resource counts
+    self._update_resource_counts(taxonomy_node_ids)
+    
+    self.db.commit()
+```
+
+### ML Classification Service Architecture (Phase 8.5)
+
+The ML classification service provides transformer-based classification with semi-supervised learning and active learning capabilities.
+
+#### Service Initialization
+
+```python
+class MLClassificationService:
+    def __init__(
+        self,
+        db: Session,
+        model_name: str = "distilbert-base-uncased",
+        model_version: str = "v1.0"
+    ):
+        """
+        Initialize ML classification service with lazy model loading.
+        
+        Components:
+        - model: Transformer model (loaded on first prediction)
+        - tokenizer: Text tokenizer (loaded with model)
+        - label_map: Taxonomy ID to model index mapping
+        - device: CUDA or CPU
+        """
+        self.db = db
+        self.model_name = model_name
+        self.model_version = model_version
+        self.model = None
+        self.tokenizer = None
+        self.label_map = {}
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+```
+
+#### Model Training
+
+```python
+def fine_tune(
+    self,
+    labeled_data: List[Tuple[str, List[str]]],
+    unlabeled_data: Optional[List[str]] = None,
+    epochs: int = 3,
+    batch_size: int = 16,
+    learning_rate: float = 2e-5
+) -> Dict[str, float]:
+    """
+    Fine-tune BERT model with optional semi-supervised learning.
+    
+    Algorithm:
+    1. Build label mapping from unique taxonomy IDs
+    2. Convert multi-label to multi-hot encoding
+    3. Split train/validation (80/20)
+    4. Tokenize texts (max_length=512)
+    5. Create PyTorch datasets
+    6. Configure Hugging Face Trainer
+    7. Train model with evaluation
+    8. If unlabeled data provided, perform semi-supervised iteration
+    9. Save model, tokenizer, and label map
+    
+    Performance: ~10 minutes for 500 examples on GPU
+    """
+    from transformers import (
+        AutoTokenizer,
+        AutoModelForSequenceClassification,
+        Trainer,
+        TrainingArguments
+    )
+    from sklearn.model_selection import train_test_split
+    
+    # Build label mapping
+    all_labels = set()
+    for _, labels in labeled_data:
+        all_labels.update(labels)
+    
+    self.label_map = {label: idx for idx, label in enumerate(sorted(all_labels))}
+    num_labels = len(self.label_map)
+    
+    # Convert to multi-hot encoding
+    texts = [text for text, _ in labeled_data]
+    labels = []
+    for _, label_list in labeled_data:
+        multi_hot = [0.0] * num_labels
+        for label in label_list:
+            multi_hot[self.label_map[label]] = 1.0
+        labels.append(multi_hot)
+    
+    # Split train/validation
+    train_texts, val_texts, train_labels, val_labels = train_test_split(
+        texts, labels, test_size=0.2, random_state=42
+    )
+    
+    # Load tokenizer and model
+    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+    self.model = AutoModelForSequenceClassification.from_pretrained(
+        self.model_name,
+        num_labels=num_labels,
+        problem_type="multi_label_classification"
+    )
+    
+    # Tokenize
+    train_encodings = self.tokenizer(
+        train_texts,
+        truncation=True,
+        padding=True,
+        max_length=512
+    )
+    val_encodings = self.tokenizer(
+        val_texts,
+        truncation=True,
+        padding=True,
+        max_length=512
+    )
+    
+    # Create datasets
+    train_dataset = MultiLabelDataset(train_encodings, train_labels)
+    val_dataset = MultiLabelDataset(val_encodings, val_labels)
+    
+    # Training arguments
+    training_args = TrainingArguments(
+        output_dir=f"./models/classification/{self.model_version}",
+        num_train_epochs=epochs,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
+        learning_rate=learning_rate,
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="f1",
+        logging_dir="./logs"
+    )
+    
+    # Trainer
+    trainer = Trainer(
+        model=self.model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=self._compute_metrics
+    )
+    
+    # Train
+    trainer.train()
+    
+    # Evaluate
+    metrics = trainer.evaluate()
+    
+    # Semi-supervised learning
+    if unlabeled_data:
+        self._semi_supervised_iteration(
+            labeled_data,
+            unlabeled_data,
+            confidence_threshold=0.9
+        )
+    
+    # Save model
+    self.model.save_pretrained(f"./models/classification/{self.model_version}")
+    self.tokenizer.save_pretrained(f"./models/classification/{self.model_version}")
+    
+    # Save label map
+    with open(f"./models/classification/{self.model_version}/label_map.json", "w") as f:
+        json.dump(self.label_map, f)
+    
+    return metrics
+```
+
+#### Semi-Supervised Learning
+
+```python
+def _semi_supervised_iteration(
+    self,
+    labeled_data: List[Tuple[str, List[str]]],
+    unlabeled_data: List[str],
+    confidence_threshold: float = 0.9
+) -> None:
+    """
+    Perform one iteration of semi-supervised learning using pseudo-labeling.
+    
+    Algorithm:
+    1. Predict labels for unlabeled data
+    2. Filter predictions with confidence >= threshold
+    3. Add high-confidence predictions as pseudo-labeled examples
+    4. Combine with original labeled data
+    5. Re-train model for 1 epoch
+    
+    Expected: 10-30% of unlabeled data becomes pseudo-labeled
+    """
+    # Predict on unlabeled data
+    predictions = self.predict_batch(unlabeled_data, top_k=3)
+    
+    # Filter high-confidence predictions
+    pseudo_labeled = []
+    for text, preds in zip(unlabeled_data, predictions):
+        high_conf_labels = [
+            label for label, conf in preds.items()
+            if conf >= confidence_threshold
+        ]
+        if high_conf_labels:
+            pseudo_labeled.append((text, high_conf_labels))
+    
+    print(f"Generated {len(pseudo_labeled)} pseudo-labeled examples from {len(unlabeled_data)} unlabeled")
+    
+    # Combine with labeled data
+    combined_data = labeled_data + pseudo_labeled
+    
+    # Re-train for 1 epoch
+    # (Implementation similar to fine_tune but with epochs=1)
+```
+
+#### Inference
+
+```python
+def predict(self, text: str, top_k: int = 5) -> Dict[str, float]:
+    """
+    Predict taxonomy categories for single text.
+    
+    Algorithm:
+    1. Load model if not loaded (lazy loading)
+    2. Tokenize text
+    3. Forward pass through model
+    4. Apply sigmoid activation
+    5. Get top-K predictions
+    6. Convert indices to taxonomy node IDs
+    
+    Performance: <100ms per prediction
+    """
+    # Lazy load model
+    if self.model is None:
+        self._load_model()
+    
+    # Tokenize
+    inputs = self.tokenizer(
+        text,
+        truncation=True,
+        padding=True,
+        max_length=512,
+        return_tensors="pt"
+    ).to(self.device)
+    
+    # Predict
+    with torch.no_grad():
+        outputs = self.model(**inputs)
+        logits = outputs.logits
+        probs = torch.sigmoid(logits)[0]
+    
+    # Get top-K
+    top_k_values, top_k_indices = torch.topk(probs, min(top_k, len(probs)))
+    
+    # Convert to taxonomy IDs
+    reverse_label_map = {idx: label for label, idx in self.label_map.items()}
+    predictions = {}
+    for idx, prob in zip(top_k_indices.cpu().numpy(), top_k_values.cpu().numpy()):
+        taxonomy_id = reverse_label_map[int(idx)]
+        predictions[taxonomy_id] = float(prob)
+    
+    return predictions
+
+def predict_batch(self, texts: List[str], top_k: int = 5) -> List[Dict[str, float]]:
+    """
+    Batch prediction for efficiency.
+    
+    Algorithm:
+    1. Process in batches (32 for GPU, 8 for CPU)
+    2. Tokenize batch
+    3. Forward pass with batch
+    4. Apply sigmoid and get top-K for each
+    
+    Performance: ~400ms for 32 texts on GPU
+    """
+    # Determine batch size
+    batch_size = 32 if self.device == "cuda" else 8
+    
+    results = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i+batch_size]
+        
+        # Tokenize batch
+        inputs = self.tokenizer(
+            batch,
+            truncation=True,
+            padding=True,
+            max_length=512,
+            return_tensors="pt"
+        ).to(self.device)
+        
+        # Predict
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            logits = outputs.logits
+            probs = torch.sigmoid(logits)
+        
+        # Process each text in batch
+        for text_probs in probs:
+            top_k_values, top_k_indices = torch.topk(text_probs, min(top_k, len(text_probs)))
+            
+            reverse_label_map = {idx: label for label, idx in self.label_map.items()}
+            predictions = {}
+            for idx, prob in zip(top_k_indices.cpu().numpy(), top_k_values.cpu().numpy()):
+                taxonomy_id = reverse_label_map[int(idx)]
+                predictions[taxonomy_id] = float(prob)
+            
+            results.append(predictions)
+    
+    return results
+```
+
+#### Active Learning
+
+```python
+def identify_uncertain_samples(
+    self,
+    resource_ids: Optional[List[str]] = None,
+    limit: int = 100
+) -> List[Tuple[str, float]]:
+    """
+    Identify resources with uncertain classifications for human review.
+    
+    Algorithm:
+    1. Query resources (prioritize predicted classifications)
+    2. Predict classifications for resources
+    3. Compute uncertainty metrics:
+       - Entropy: -Σ(p * log(p))
+       - Margin: difference between top-2 predictions
+       - Max confidence: highest probability
+    4. Combined uncertainty: entropy * (1 - margin) * (1 - max_conf)
+    5. Sort by uncertainty descending
+    6. Return top-N most uncertain
+    
+    Performance: <5s for 1000 resources
+    """
+    # Query resources
+    query = self.db.query(Resource)
+    if resource_ids:
+        query = query.filter(Resource.id.in_(resource_ids))
+    
+    resources = query.limit(limit * 2).all()  # Get more than needed
+    
+    # Compute uncertainty for each
+    uncertainties = []
+    for resource in resources:
+        text = f"{resource.title} {resource.description or ''}"
+        predictions = self.predict(text, top_k=10)
+        
+        if not predictions:
+            continue
+        
+        # Compute metrics
+        probs = list(predictions.values())
+        
+        # Entropy
+        entropy = -sum(p * np.log(p + 1e-10) for p in probs)
+        
+        # Margin
+        sorted_probs = sorted(probs, reverse=True)
+        margin = sorted_probs[0] - sorted_probs[1] if len(sorted_probs) > 1 else 0
+        
+        # Max confidence
+        max_conf = max(probs)
+        
+        # Combined uncertainty
+        uncertainty = entropy * (1 - margin) * (1 - max_conf)
+        
+        uncertainties.append((str(resource.id), uncertainty))
+    
+    # Sort and return top N
+    uncertainties.sort(key=lambda x: x[1], reverse=True)
+    return uncertainties[:limit]
+```
+
+#### Integration Points
+
+**Resource Ingestion Pipeline:**
+```python
+# In resource_service.py
+async def ingest_resource(self, url: str) -> Resource:
+    # ... content extraction ...
+    # ... embedding generation ...
+    
+    # ML Classification (Phase 8.5)
+    if self.use_ml:
+        background_tasks.add_task(
+            self._classify_resource_ml,
+            resource.id
+        )
+    
+    # ... quality scoring ...
+    return resource
+
+async def _classify_resource_ml(self, resource_id: str):
+    """Background task for ML classification."""
+    ml_service = MLClassificationService(self.db)
+    taxonomy_service = TaxonomyService(self.db)
+    
+    # Get resource
+    resource = self.db.query(Resource).filter(Resource.id == resource_id).first()
+    
+    # Predict
+    text = f"{resource.title} {resource.description or ''}"
+    predictions = ml_service.predict(text, top_k=5)
+    
+    # Filter by confidence threshold
+    filtered = {
+        node_id: conf for node_id, conf in predictions.items()
+        if conf >= 0.3
+    }
+    
+    # Store classifications
+    taxonomy_service.classify_resource(
+        resource_id=resource_id,
+        taxonomy_node_ids=list(filtered.keys()),
+        confidence_scores=filtered,
+        is_predicted=True,
+        predicted_by=ml_service.model_version
+    )
+```
+
+#### Troubleshooting
+
+**Common Issues:**
+
+1. **CUDA Out of Memory**
+   - Reduce batch size: `batch_size=8` or `batch_size=4`
+   - Use DistilBERT instead of BERT
+   - Clear GPU cache: `torch.cuda.empty_cache()`
+
+2. **Slow Training**
+   - Enable GPU acceleration
+   - Increase batch size on GPU: `batch_size=32`
+   - Reduce epochs: `epochs=2`
+
+3. **Low Accuracy**
+   - Increase training data (aim for 500+ examples)
+   - Balance dataset across categories
+   - Use semi-supervised learning
+   - Collect feedback through active learning
+
+4. **Model Not Found**
+   - Train model first using `/taxonomy/train`
+   - Verify model saved to `models/classification/{version}/`
+   - Check model version in service initialization
+
 ### Phase 8: Three-Way Hybrid Search Architecture
 
 Phase 8 implements a state-of-the-art three-way hybrid search system that combines FTS5, dense vectors, and sparse vectors with Reciprocal Rank Fusion (RRF) and ColBERT-style reranking.

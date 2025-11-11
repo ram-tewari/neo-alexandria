@@ -182,20 +182,6 @@ def process_ingestion(
             fetched.get("url", target_url), html_for_archive, text_clean, meta, root_path
         )
 
-        # Quality
-        analyzer = get_quality_analyzer()
-        candidate_metadata = {
-            "title": title_final,
-            "description": description_final,
-            "subject": normalized_tags,
-            "creator": resource.creator,
-            "language": resource.language,
-            "type": resource.type,
-            "identifier": archive_info.get("archive_path"),
-            "source": resource.source or fetched.get("url"),
-        }
-        quality = analyzer.overall_quality_score(candidate_metadata, text_clean)
-
         # Generate embedding for Phase 4 hybrid search
         try:
             from backend.app.services.ai_core import create_composite_text
@@ -258,6 +244,49 @@ def process_ingestion(
             resource.sparse_embedding = None
             resource.sparse_embedding_model = None
             resource.sparse_embedding_updated_at = None
+        
+        # Phase 8.5: ML Classification after embedding generation, before quality scoring
+        # Execute classification as a non-blocking operation
+        try:
+            from backend.app.services.classification_service import ClassificationService
+            
+            # Initialize classification service with ML enabled
+            classification_service = ClassificationService(
+                db=session,
+                use_ml=True,
+                confidence_threshold=0.3
+            )
+            
+            # Perform ML classification
+            # This will predict taxonomy nodes and store them with confidence scores
+            classification_result = classification_service.classify_resource(
+                resource_id=resource.id,
+                use_ml=True
+            )
+            
+            print(f"ML classification completed for resource {resource_id}: "
+                  f"{len(classification_result.get('classifications', []))} classifications, "
+                  f"method={classification_result.get('method')}")
+            
+        except Exception as classification_exc:
+            # Classification is optional and should not block ingestion
+            # Log the error and continue with the ingestion process
+            print(f"Warning: ML classification failed for resource {resource_id}: {classification_exc}")
+            # Continue with ingestion - classification can be retried later
+
+        # Quality
+        analyzer = get_quality_analyzer()
+        candidate_metadata = {
+            "title": title_final,
+            "description": description_final,
+            "subject": normalized_tags,
+            "creator": resource.creator,
+            "language": resource.language,
+            "type": resource.type,
+            "identifier": archive_info.get("archive_path"),
+            "source": resource.source or fetched.get("url"),
+        }
+        quality = analyzer.overall_quality_score(candidate_metadata, text_clean)
 
         # Persist updates
         resource.title = title_final

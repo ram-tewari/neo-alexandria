@@ -771,6 +771,634 @@ Alternative endpoint for retrieving the hierarchical classification tree.
 }
 ```
 
+### Taxonomy Management (Phase 8.5)
+
+The taxonomy management endpoints provide full CRUD operations for hierarchical taxonomy trees with parent-child relationships, materialized paths for efficient queries, and resource classification support.
+
+#### POST /taxonomy/nodes
+
+Create a new taxonomy node in the hierarchical tree.
+
+**Request Body:**
+```json
+{
+  "name": "Machine Learning",
+  "parent_id": "550e8400-e29b-41d4-a716-446655440000",
+  "description": "ML and deep learning topics",
+  "keywords": ["neural networks", "deep learning"],
+  "allow_resources": true
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable category name |
+| `parent_id` | string | No | UUID of parent node (null for root nodes) |
+| `description` | string | No | Category description |
+| `keywords` | array[string] | No | Related keywords for the category |
+| `allow_resources` | boolean | No | Whether resources can be assigned (default: true) |
+
+**Response (200 OK):**
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "name": "Machine Learning",
+  "slug": "machine-learning",
+  "parent_id": "550e8400-e29b-41d4-a716-446655440000",
+  "level": 1,
+  "path": "/computer-science/machine-learning",
+  "description": "ML and deep learning topics",
+  "keywords": ["neural networks", "deep learning"],
+  "resource_count": 0,
+  "descendant_resource_count": 0,
+  "is_leaf": true,
+  "allow_resources": true,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T10:00:00Z"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/nodes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Machine Learning",
+    "description": "ML and deep learning topics",
+    "keywords": ["neural networks", "deep learning"]
+  }'
+```
+
+#### PUT /taxonomy/nodes/{node_id}
+
+Update taxonomy node metadata (name, description, keywords, allow_resources).
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `node_id` | string | Taxonomy node UUID |
+
+**Request Body:**
+```json
+{
+  "name": "Deep Learning",
+  "description": "Neural networks with multiple layers",
+  "keywords": ["CNN", "RNN", "transformers"],
+  "allow_resources": true
+}
+```
+
+**Note:** To change the parent, use the move endpoint instead.
+
+**Response (200 OK):**
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "name": "Deep Learning",
+  "slug": "deep-learning",
+  "parent_id": "550e8400-e29b-41d4-a716-446655440000",
+  "level": 1,
+  "path": "/computer-science/deep-learning",
+  "description": "Neural networks with multiple layers",
+  "keywords": ["CNN", "RNN", "transformers"],
+  "resource_count": 5,
+  "descendant_resource_count": 12,
+  "is_leaf": false,
+  "allow_resources": true,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T11:00:00Z"
+}
+```
+
+**Example:**
+```bash
+curl -X PUT http://127.0.0.1:8000/taxonomy/nodes/{node_id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Updated description",
+    "keywords": ["new", "keywords"]
+  }'
+```
+
+#### DELETE /taxonomy/nodes/{node_id}
+
+Delete a taxonomy node with optional cascade deletion of descendants.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `node_id` | string | Taxonomy node UUID |
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `cascade` | boolean | Delete descendants vs reparent children | false |
+
+**Response (200 OK):**
+```json
+{
+  "deleted": true,
+  "message": "Taxonomy node deleted successfully"
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "detail": "Cannot delete taxonomy node with 15 assigned resources"
+}
+```
+
+**Behavior:**
+- If `cascade=false`: Child nodes are reparented to the deleted node's parent
+- If `cascade=true`: All descendant nodes are deleted recursively
+- Deletion fails if the node has assigned resources (must be removed first)
+
+**Example:**
+```bash
+# Delete node and reparent children
+curl -X DELETE "http://127.0.0.1:8000/taxonomy/nodes/{node_id}"
+
+# Delete node and all descendants
+curl -X DELETE "http://127.0.0.1:8000/taxonomy/nodes/{node_id}?cascade=true"
+```
+
+#### POST /taxonomy/nodes/{node_id}/move
+
+Move a taxonomy node to a different parent (reparenting).
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `node_id` | string | Taxonomy node UUID to move |
+
+**Request Body:**
+```json
+{
+  "new_parent_id": "770e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `new_parent_id` | string | Yes | UUID of new parent (null for root) |
+
+**Response (200 OK):**
+```json
+{
+  "moved": true,
+  "message": "Node moved successfully",
+  "node": {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "name": "Machine Learning",
+    "parent_id": "770e8400-e29b-41d4-a716-446655440002",
+    "level": 2,
+    "path": "/science/computer-science/machine-learning"
+  }
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "detail": "Cannot move node to its own descendant (circular reference)"
+}
+```
+
+**Validation:**
+- Prevents circular references (moving to own descendant)
+- Prevents self-parenting
+- Automatically updates level and path for node and all descendants
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/nodes/{node_id}/move \
+  -H "Content-Type: application/json" \
+  -d '{"new_parent_id": "{new_parent_id}"}'
+```
+
+#### GET /taxonomy/tree
+
+Retrieve the hierarchical taxonomy tree as nested JSON structure.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `root_id` | string | Starting node UUID (null for all roots) | null |
+| `max_depth` | integer | Maximum tree depth to retrieve | null |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Computer Science",
+    "slug": "computer-science",
+    "parent_id": null,
+    "level": 0,
+    "path": "/computer-science",
+    "description": "Computing and software topics",
+    "keywords": ["programming", "algorithms"],
+    "resource_count": 10,
+    "descendant_resource_count": 45,
+    "is_leaf": false,
+    "allow_resources": true,
+    "children": [
+      {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "Machine Learning",
+        "slug": "machine-learning",
+        "parent_id": "550e8400-e29b-41d4-a716-446655440000",
+        "level": 1,
+        "path": "/computer-science/machine-learning",
+        "description": "ML and AI topics",
+        "keywords": ["neural networks", "deep learning"],
+        "resource_count": 15,
+        "descendant_resource_count": 35,
+        "is_leaf": false,
+        "allow_resources": true,
+        "children": [
+          {
+            "id": "770e8400-e29b-41d4-a716-446655440002",
+            "name": "Deep Learning",
+            "slug": "deep-learning",
+            "parent_id": "660e8400-e29b-41d4-a716-446655440001",
+            "level": 2,
+            "path": "/computer-science/machine-learning/deep-learning",
+            "description": "Neural networks with multiple layers",
+            "keywords": ["CNN", "RNN", "transformers"],
+            "resource_count": 20,
+            "descendant_resource_count": 20,
+            "is_leaf": true,
+            "allow_resources": true,
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+**Example:**
+```bash
+# Get full tree
+curl "http://127.0.0.1:8000/taxonomy/tree"
+
+# Get subtree from specific node
+curl "http://127.0.0.1:8000/taxonomy/tree?root_id={node_id}"
+
+# Get tree with depth limit
+curl "http://127.0.0.1:8000/taxonomy/tree?max_depth=3"
+```
+
+#### GET /taxonomy/nodes/{node_id}/ancestors
+
+Get all ancestor nodes for breadcrumb trail navigation.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `node_id` | string | Taxonomy node UUID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Computer Science",
+    "slug": "computer-science",
+    "level": 0,
+    "path": "/computer-science"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "name": "Machine Learning",
+    "slug": "machine-learning",
+    "level": 1,
+    "path": "/computer-science/machine-learning"
+  },
+  {
+    "id": "770e8400-e29b-41d4-a716-446655440002",
+    "name": "Deep Learning",
+    "slug": "deep-learning",
+    "level": 2,
+    "path": "/computer-science/machine-learning/deep-learning"
+  }
+]
+```
+
+**Performance:** O(depth) using materialized path, typically <10ms
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/taxonomy/nodes/{node_id}/ancestors"
+```
+
+#### GET /taxonomy/nodes/{node_id}/descendants
+
+Get all descendant nodes at any depth below the specified node.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `node_id` | string | Taxonomy node UUID |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": "770e8400-e29b-41d4-a716-446655440002",
+    "name": "Deep Learning",
+    "slug": "deep-learning",
+    "parent_id": "660e8400-e29b-41d4-a716-446655440001",
+    "level": 2,
+    "path": "/computer-science/machine-learning/deep-learning",
+    "resource_count": 20,
+    "descendant_resource_count": 20
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440003",
+    "name": "Natural Language Processing",
+    "slug": "natural-language-processing",
+    "parent_id": "660e8400-e29b-41d4-a716-446655440001",
+    "level": 2,
+    "path": "/computer-science/machine-learning/nlp",
+    "resource_count": 15,
+    "descendant_resource_count": 15
+  }
+]
+```
+
+**Performance:** O(1) query using path pattern matching, typically <10ms
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/taxonomy/nodes/{node_id}/descendants"
+```
+
+### ML Classification (Phase 8.5)
+
+The ML classification endpoints provide transformer-based resource classification with confidence scores, active learning for continuous improvement, and model training capabilities.
+
+#### POST /taxonomy/classify/{resource_id}
+
+Classify a resource using the fine-tuned ML model.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resource_id` | string | Resource UUID to classify |
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "accepted",
+  "message": "Classification task enqueued",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Background Processing:**
+1. Load ML model (lazy loading on first request)
+2. Extract resource content (title + description + full text)
+3. Predict taxonomy categories with confidence scores
+4. Filter predictions (confidence >= 0.3)
+5. Store classifications in database
+6. Flag low-confidence predictions (< 0.7) for review
+7. Update taxonomy node resource counts
+
+**Classification Results:**
+After processing, classifications are stored with:
+- Taxonomy node IDs
+- Confidence scores (0.0-1.0)
+- Model version identifier
+- `is_predicted=true` flag
+- `needs_review=true` if confidence < 0.7
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/taxonomy/classify/{resource_id}"
+```
+
+#### GET /taxonomy/active-learning/uncertain
+
+Get resources with uncertain classifications for human review (active learning).
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Number of samples to return (1-1000) | 100 |
+
+**Response (200 OK):**
+```json
+[
+  {
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Introduction to Neural Networks",
+    "uncertainty_score": 0.87,
+    "predicted_categories": [
+      {
+        "taxonomy_node_id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "Machine Learning",
+        "confidence": 0.65
+      },
+      {
+        "taxonomy_node_id": "770e8400-e29b-41d4-a716-446655440002",
+        "name": "Deep Learning",
+        "confidence": 0.62
+      }
+    ]
+  },
+  {
+    "resource_id": "660e8400-e29b-41d4-a716-446655440005",
+    "title": "Data Structures and Algorithms",
+    "uncertainty_score": 0.82,
+    "predicted_categories": [
+      {
+        "taxonomy_node_id": "880e8400-e29b-41d4-a716-446655440003",
+        "name": "Algorithms",
+        "confidence": 0.58
+      }
+    ]
+  }
+]
+```
+
+**Uncertainty Metrics:**
+The system computes uncertainty using three metrics:
+- **Entropy**: Measures prediction uncertainty across all classes
+- **Margin**: Difference between top-2 predictions (small = uncertain)
+- **Confidence**: Maximum probability (low = uncertain)
+
+Combined score: `entropy * (1 - margin) * (1 - max_confidence)`
+
+**Use Case:** Present these resources to human reviewers for labeling to improve model accuracy with minimal effort.
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/taxonomy/active-learning/uncertain?limit=50"
+```
+
+#### POST /taxonomy/active-learning/feedback
+
+Submit human classification feedback to improve the model.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "correct_taxonomy_ids": [
+    "660e8400-e29b-41d4-a716-446655440001",
+    "770e8400-e29b-41d4-a716-446655440002"
+  ]
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | Yes | Resource UUID |
+| `correct_taxonomy_ids` | array[string] | Yes | Correct taxonomy node UUIDs |
+
+**Response (200 OK):**
+```json
+{
+  "updated": true,
+  "message": "Feedback recorded successfully",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "manual_labels_count": 87,
+  "retraining_threshold": 100,
+  "retraining_recommended": false
+}
+```
+
+**Behavior:**
+1. Remove existing predicted classifications for the resource
+2. Add human-labeled classifications with `confidence=1.0` and `is_predicted=false`
+3. Check if retraining threshold reached (100 new manual labels)
+4. Return recommendation to retrain model if threshold met
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/active-learning/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "{resource_id}",
+    "correct_taxonomy_ids": ["{node_id_1}", "{node_id_2}"]
+  }'
+```
+
+#### POST /taxonomy/train
+
+Initiate ML model fine-tuning with labeled and unlabeled data.
+
+**Request Body:**
+```json
+{
+  "labeled_data": [
+    {
+      "text": "Introduction to neural networks and backpropagation algorithms",
+      "taxonomy_ids": [
+        "660e8400-e29b-41d4-a716-446655440001",
+        "770e8400-e29b-41d4-a716-446655440002"
+      ]
+    },
+    {
+      "text": "Database normalization and SQL query optimization",
+      "taxonomy_ids": [
+        "880e8400-e29b-41d4-a716-446655440003"
+      ]
+    }
+  ],
+  "unlabeled_texts": [
+    "Article about convolutional neural networks for image recognition",
+    "Tutorial on recurrent neural networks and LSTM architectures"
+  ],
+  "epochs": 3,
+  "batch_size": 16,
+  "learning_rate": 2e-5
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `labeled_data` | array[object] | Yes | Training examples with text and taxonomy IDs |
+| `unlabeled_texts` | array[string] | No | Unlabeled texts for semi-supervised learning |
+| `epochs` | integer | No | Training epochs (default: 3) |
+| `batch_size` | integer | No | Batch size (default: 16) |
+| `learning_rate` | float | No | Learning rate (default: 2e-5) |
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "accepted",
+  "message": "Training task enqueued",
+  "training_id": "990e8400-e29b-41d4-a716-446655440004",
+  "labeled_examples": 150,
+  "unlabeled_examples": 5000,
+  "estimated_duration_minutes": 15
+}
+```
+
+**Background Processing:**
+1. Build label mapping from unique taxonomy IDs
+2. Convert multi-label to multi-hot encoding
+3. Split train/validation (80/20)
+4. Tokenize texts (max_length=512)
+5. Fine-tune BERT/DistilBERT model
+6. If unlabeled data provided, perform semi-supervised iteration:
+   - Predict on unlabeled data
+   - Filter high-confidence predictions (>= 0.9)
+   - Add pseudo-labels to training set
+   - Re-train for 1 epoch
+7. Evaluate on validation set (F1, precision, recall)
+8. Save model checkpoint with version identifier
+9. Save label mapping as JSON
+
+**Semi-Supervised Learning:**
+When unlabeled data is provided, the system uses pseudo-labeling:
+- High-confidence predictions (>= 0.9) on unlabeled data become training examples
+- Enables effective training with <500 labeled examples
+- Leverages large unlabeled corpus for improved generalization
+
+**Model Versioning:**
+- Models saved to `models/classification/{version}/`
+- Version format: `v{major}.{minor}`
+- Includes model weights, tokenizer, and label mapping
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/train \
+  -H "Content-Type: application/json" \
+  -d '{
+    "labeled_data": [
+      {
+        "text": "Machine learning tutorial",
+        "taxonomy_ids": ["{ml_node_id}"]
+      }
+    ],
+    "epochs": 3,
+    "batch_size": 16
+  }'
+```
+
 ### Curation and Quality Control
 
 #### GET /curation/review-queue

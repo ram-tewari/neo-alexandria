@@ -468,3 +468,24 @@ def single_resource_library(test_db):
     db.delete(subject)
     db.commit()
     db.close()
+
+
+@pytest.fixture(autouse=True)
+def reset_prometheus_registry():
+    """Reset Prometheus registry before each test to avoid duplicate metric registration."""
+    from prometheus_client import REGISTRY
+    
+    # Store collectors to re-register after clearing
+    collectors = list(REGISTRY._collector_to_names.keys())
+    
+    yield
+    
+    # Clear all collectors after test
+    try:
+        for collector in collectors:
+            try:
+                REGISTRY.unregister(collector)
+            except Exception:
+                pass  # Ignore if already unregistered
+    except Exception:
+        pass  # Ignore any errors during cleanup

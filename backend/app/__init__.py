@@ -34,6 +34,7 @@ from .routers.recommendation import router as recommendation_router
 from .routers.citations import router as citations_router
 from .routers.collections import router as collections_router
 from .routers.annotations import router as annotations_router
+from .routers.taxonomy import router as taxonomy_router
 from .monitoring import setup_monitoring
 
 
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(citations_router)
     app.include_router(collections_router)
     app.include_router(annotations_router)
+    app.include_router(taxonomy_router)
     
     # Set up performance monitoring
     setup_monitoring(app)

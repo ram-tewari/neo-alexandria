@@ -502,6 +502,158 @@ class Collection(Base):
         return f"<Collection(id={self.id!r}, name={self.name!r}, owner_id={self.owner_id!r}, visibility={self.visibility!r})>"
 
 
+class TaxonomyNode(Base):
+    """
+    Hierarchical taxonomy tree node for ML-based classification.
+    
+    Implements materialized path pattern for efficient hierarchical queries.
+    Supports multi-level taxonomy with parent-child relationships.
+    """
+    
+    __tablename__ = "taxonomy_nodes"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Core metadata
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    
+    # Hierarchical structure
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("taxonomy_nodes.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+    level: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    path: Mapped[str] = mapped_column(String(1000), nullable=False)  # Materialized path: "/parent/child"
+    
+    # Additional metadata
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    keywords: Mapped[List[str] | None] = mapped_column(JSON, nullable=True)
+    
+    # Cached resource counts
+    resource_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    descendant_resource_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    
+    # Metadata flags
+    is_leaf: Mapped[bool] = mapped_column(Integer, nullable=False, default=1, server_default='1')  # SQLite uses 0/1 for bool
+    allow_resources: Mapped[bool] = mapped_column(Integer, nullable=False, default=1, server_default='1')
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    # Self-referential: parent node
+    parent: Mapped["TaxonomyNode"] = relationship(
+        "TaxonomyNode",
+        remote_side=[id],
+        back_populates="children",
+        foreign_keys=[parent_id]
+    )
+    
+    # Self-referential: child nodes
+    children: Mapped[List["TaxonomyNode"]] = relationship(
+        "TaxonomyNode",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        foreign_keys=[parent_id]
+    )
+    
+    # Indexes for efficient queries
+    __table_args__ = (
+        Index('idx_taxonomy_parent_id', 'parent_id'),
+        Index('idx_taxonomy_path', 'path'),
+        Index('idx_taxonomy_slug', 'slug', unique=True),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<TaxonomyNode(id={self.id!r}, name={self.name!r}, path={self.path!r})>"
+
+
+class ResourceTaxonomy(Base):
+    """
+    Association table for many-to-many Resource-Taxonomy relationship.
+    
+    Stores ML classification results with confidence scores and metadata.
+    Supports both predicted (ML) and manual classifications.
+    """
+    
+    __tablename__ = "resource_taxonomy"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign keys
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    taxonomy_node_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("taxonomy_nodes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Classification metadata
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default='0.0')
+    is_predicted: Mapped[bool] = mapped_column(Integer, nullable=False, default=1, server_default='1')  # SQLite uses 0/1 for bool
+    predicted_by: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Model version or "manual"
+    
+    # Active learning metadata
+    needs_review: Mapped[bool] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    review_priority: Mapped[float | None] = mapped_column(Float, nullable=True)
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    resource: Mapped["Resource"] = relationship("Resource")
+    taxonomy_node: Mapped["TaxonomyNode"] = relationship("TaxonomyNode")
+    
+    # Indexes for efficient queries
+    __table_args__ = (
+        Index('idx_resource_taxonomy_resource', 'resource_id'),
+        Index('idx_resource_taxonomy_taxonomy', 'taxonomy_node_id'),
+        Index('idx_resource_taxonomy_needs_review', 'needs_review'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<ResourceTaxonomy(id={self.id!r}, resource_id={self.resource_id!r}, taxonomy_node_id={self.taxonomy_node_id!r}, confidence={self.confidence})>"
+
+
 class Annotation(Base):
     """
     User annotations on resource content with text highlighting and notes.

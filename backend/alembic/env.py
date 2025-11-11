@@ -18,7 +18,12 @@ for _p in (_project_root, _pkg_dir):
 # Import our models and settings
 from backend.app.config.settings import get_settings  # noqa: E402
 from backend.app.database.base import Base  # noqa: E402
-from backend.app.database.models import Resource, ClassificationCode  # noqa: F401, E402
+from backend.app.database.models import (  # noqa: F401, E402
+    Resource, 
+    ClassificationCode, 
+    TaxonomyNode, 
+    ResourceTaxonomy
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

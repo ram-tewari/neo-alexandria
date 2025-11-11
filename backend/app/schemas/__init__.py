@@ -10,5 +10,6 @@ Schemas:
 - search: Search request and response models
 - graph: Knowledge graph data models
 - recommendation: Recommendation request and response models
+- taxonomy: Taxonomy and ML classification schemas (Phase 8.5)
 """
 

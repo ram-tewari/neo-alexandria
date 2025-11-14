@@ -1,11 +1,37 @@
 .resource-card {
-  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .resource-card:hover {
-  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.12),
-              0 0 30px rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 20px 40px rgba(168, 85, 247, 0.25),
+              0 0 40px rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.resource-card:hover::before {
+  opacity: 1;
+}
+
+.resource-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .resource-grid {

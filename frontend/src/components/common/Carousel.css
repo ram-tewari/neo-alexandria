@@ -19,6 +19,16 @@
   );
 }
 
+/* Keep carousel scrollable but hide scrollbar */
+.carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 .carousel-content {
   display: flex;
   gap: 1.5rem;

@@ -1,12 +1,19 @@
 :root {
-  /* Primary Colors */
+  /* Primary Colors - Deep Charcoal (Cursor-inspired) */
   --primary-black: #0a0a0a;
   --primary-white: #ffffff;
+  --secondary-bg: #1a1a1a;
   
-  /* Accent Colors */
-  --accent-blue: #3b82f6;
-  --accent-blue-light: #60a5fa;
-  --accent-cyan: #06b6d4;
+  /* Accent Colors - Purple Focus */
+  --accent-purple: #a855f7;
+  --accent-purple-light: #c084fc;
+  --accent-purple-dark: #9333ea;
+  --accent-pink: #ec4899;
+  
+  /* Legacy blue variables (now purple) for compatibility */
+  --accent-blue: #a855f7;
+  --accent-blue-light: #c084fc;
+  --accent-cyan: #ec4899;
   
   /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.03);
@@ -14,11 +21,11 @@
   --glass-shadow: rgba(0, 0, 0, 0.5);
   
   /* Grays */
-  --gray-400: #a3a3a3;
-  --gray-600: #525252;
+  --gray-400: #a1a1aa;
+  --gray-600: #71717a;
   
   /* Semantic Colors */
-  --color-purple: #8b5cf6;
+  --color-purple: #a855f7;
   --color-teal: #14b8a6;
   --color-yellow: #fbbf24;
   

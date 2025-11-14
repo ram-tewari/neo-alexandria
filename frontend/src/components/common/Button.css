@@ -29,14 +29,14 @@
 }
 
 .btn-primary {
-  background: var(--accent-blue);
+  background: var(--accent-purple);
   color: var(--primary-white);
 }
 
 .btn-primary:hover {
-  background: var(--accent-blue-light);
+  background: var(--accent-purple-light);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
 }
 
 .btn-secondary {

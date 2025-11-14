@@ -15,27 +15,26 @@ body {
   line-height: 1.5;
 }
 
-/* Custom scrollbar */
+/* Hide scrollbar globally while keeping scroll functionality */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
+  height: 0px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
+/* Firefox */
+* {
+  scrollbar-width: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--accent-blue);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-blue-light);
+/* IE and Edge */
+* {
+  -ms-overflow-style: none;
 }
 
 /* Focus visible styles */
 *:focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-purple);
   outline-offset: 2px;
 }
 

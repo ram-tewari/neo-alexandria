@@ -44,19 +44,23 @@
 }
 
 .stat-icon-wrapper.blue {
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(168, 85, 247, 0.2);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
 
 .stat-icon-wrapper.cyan {
-  background: rgba(6, 182, 212, 0.2);
+  background: rgba(236, 72, 153, 0.2);
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
 }
 
 .stat-icon-wrapper.purple {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(168, 85, 247, 0.2);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
 
 .stat-icon-wrapper.teal {
-  background: rgba(20, 184, 166, 0.2);
+  background: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .stat-icon {

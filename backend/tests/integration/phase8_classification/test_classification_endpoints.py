@@ -72,16 +72,16 @@ def setup_test_db():
         id=uuid.uuid4(),
         title="Introduction to Neural Networks",
         description="A comprehensive guide to neural networks and deep learning",
-        url="https://example.com/neural-networks",
-        resource_type="article"
+        source="https://example.com/neural-networks",
+        type="article"
     )
     
     resource2 = Resource(
         id=uuid.uuid4(),
         title="Python Programming Basics",
         description="Learn Python programming from scratch",
-        url="https://example.com/python-basics",
-        resource_type="article"
+        source="https://example.com/python-basics",
+        type="article"
     )
     
     db.add(resource1)

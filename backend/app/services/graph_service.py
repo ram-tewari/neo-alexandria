@@ -570,6 +570,28 @@ class GraphService:
                 weight=1.0,
                 key="citation"
             )
+            
+            # Also persist to GraphEdge table if not exists
+            existing_edge = self.db.query(GraphEdge).filter(
+                GraphEdge.source_resource_id == citation.source_resource_id,
+                GraphEdge.target_resource_id == citation.target_resource_id,
+                GraphEdge.edge_type == "citation"
+            ).first()
+            
+            if not existing_edge:
+                graph_edge = GraphEdge(
+                    source_resource_id=citation.source_resource_id,
+                    target_resource_id=citation.target_resource_id,
+                    edge_type="citation",
+                    weight=1.0
+                )
+                self.db.add(graph_edge)
+        
+        # Commit any new edges
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
         
         # Add edges from GraphEdge table
         graph_edges = self.db.query(GraphEdge).all()
@@ -632,11 +654,14 @@ class GraphService:
                     neighbors.append({
                         'resource_id': neighbor,
                         'hops': 1,
+                        'distance': 1,
                         'path': [resource_id, neighbor],
                         'edge_types': [edge_type],
                         'total_weight': weight,
+                        'score': weight,
                         'edge_type': edge_type,
-                        'weight': weight
+                        'weight': weight,
+                        'intermediate': None
                     })
         
         elif hops == 2:
@@ -680,9 +705,12 @@ class GraphService:
                             neighbors.append({
                                 'resource_id': neighbor2,
                                 'hops': 2,
+                                'distance': 2,
                                 'path': [resource_id, neighbor1, neighbor2],
                                 'edge_types': [edge_type_1, edge_type_2],
                                 'total_weight': total_weight,
+                                'score': total_weight,
+                                'intermediate': neighbor1,
                                 'intermediate_nodes': [neighbor1]
                             })
         
@@ -694,3 +722,152 @@ class GraphService:
             neighbors = neighbors[:limit]
         
         return neighbors
+
+    
+    def create_coauthorship_edges(self):
+        """Create co-authorship edges for resources sharing authors."""
+        from backend.app.database.models import Resource, GraphEdge
+        import json
+        
+        # Get all resources with authors
+        resources = self.db.query(Resource).filter(
+            Resource.authors.isnot(None)
+        ).all()
+        
+        # Build author to resources mapping
+        author_resources = {}
+        for resource in resources:
+            if resource.authors:
+                try:
+                    authors_list = json.loads(resource.authors) if isinstance(resource.authors, str) else resource.authors
+                    for author_obj in authors_list:
+                        author_name = author_obj.get('name') if isinstance(author_obj, dict) else str(author_obj)
+                        if author_name not in author_resources:
+                            author_resources[author_name] = []
+                        author_resources[author_name].append(resource.id)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        
+        # Create edges between resources sharing authors
+        edges_created = 0
+        for author, resource_ids in author_resources.items():
+            if len(resource_ids) < 2:
+                continue
+            
+            # Create edges between all pairs
+            for i, res_id_1 in enumerate(resource_ids):
+                for res_id_2 in resource_ids[i+1:]:
+                    # Check if edge already exists
+                    existing = self.db.query(GraphEdge).filter(
+                        GraphEdge.source_resource_id == res_id_1,
+                        GraphEdge.target_resource_id == res_id_2,
+                        GraphEdge.edge_type == "co_authorship"
+                    ).first()
+                    
+                    if not existing:
+                        edge = GraphEdge(
+                            source_resource_id=res_id_1,
+                            target_resource_id=res_id_2,
+                            edge_type="co_authorship",
+                            weight=1.0
+                        )
+                        self.db.add(edge)
+                        edges_created += 1
+        
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+        
+        return edges_created
+    
+    def create_subject_similarity_edges(self, min_shared_subjects: int = 1):
+        """Create subject similarity edges for resources sharing subjects."""
+        from backend.app.database.models import Resource, GraphEdge
+        
+        # Get all resources with subjects
+        resources = self.db.query(Resource).filter(
+            Resource.subject.isnot(None)
+        ).all()
+        
+        edges_created = 0
+        for i, res1 in enumerate(resources):
+            if not res1.subject or len(res1.subject) == 0:
+                continue
+                
+            for res2 in resources[i+1:]:
+                if not res2.subject or len(res2.subject) == 0:
+                    continue
+                
+                # Calculate shared subjects
+                shared = set(res1.subject).intersection(set(res2.subject))
+                if len(shared) >= min_shared_subjects:
+                    # Check if edge already exists
+                    existing = self.db.query(GraphEdge).filter(
+                        GraphEdge.source_resource_id == res1.id,
+                        GraphEdge.target_resource_id == res2.id,
+                        GraphEdge.edge_type == "subject"
+                    ).first()
+                    
+                    if not existing:
+                        # Weight based on number of shared subjects
+                        weight = min(1.0, len(shared) * 0.3)
+                        edge = GraphEdge(
+                            source_resource_id=res1.id,
+                            target_resource_id=res2.id,
+                            edge_type="subject",
+                            weight=weight
+                        )
+                        self.db.add(edge)
+                        edges_created += 1
+        
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+        
+        return edges_created
+    
+    def create_temporal_edges(self, max_year_diff: int = 2):
+        """Create temporal edges for resources published close in time."""
+        from backend.app.database.models import Resource, GraphEdge
+        
+        # Get all resources with publication years
+        resources = self.db.query(Resource).filter(
+            Resource.publication_year.isnot(None)
+        ).order_by(Resource.publication_year).all()
+        
+        edges_created = 0
+        for i, res1 in enumerate(resources):
+            for res2 in resources[i+1:]:
+                year_diff = abs(res1.publication_year - res2.publication_year)
+                
+                if year_diff <= max_year_diff:
+                    # Check if edge already exists
+                    existing = self.db.query(GraphEdge).filter(
+                        GraphEdge.source_resource_id == res1.id,
+                        GraphEdge.target_resource_id == res2.id,
+                        GraphEdge.edge_type == "temporal"
+                    ).first()
+                    
+                    if not existing:
+                        # Weight inversely proportional to year difference
+                        weight = 1.0 - (year_diff / (max_year_diff + 1))
+                        edge = GraphEdge(
+                            source_resource_id=res1.id,
+                            target_resource_id=res2.id,
+                            edge_type="temporal",
+                            weight=weight
+                        )
+                        self.db.add(edge)
+                        edges_created += 1
+                else:
+                    # Resources are sorted by year, so we can break
+                    break
+        
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+        
+        return edges_created

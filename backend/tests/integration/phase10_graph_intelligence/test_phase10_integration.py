@@ -104,9 +104,10 @@ class TestEndToEndDiscoveryWorkflow:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
-                structural_embedding=[0.05 * i for i in range(128)],
-                embedding_method="graph2vec",
-                embedding_version="v1.0"
+                embedding=[0.05 * i for i in range(128)],
+                embedding_model="graph2vec",
+                dimensions=128,
+                structural_embedding=[0.05 * i for i in range(128)]
             )
             db_session.add(graph_embedding)
         
@@ -247,10 +248,11 @@ class TestRecommendationIntegration:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
+                embedding=[0.1 * i for i in range(128)],
+                embedding_model="fusion",
+                dimensions=128,
                 structural_embedding=[0.05 * i for i in range(128)],
-                fusion_embedding=[0.1 * i for i in range(128)],
-                embedding_method="fusion",
-                embedding_version="v1.0"
+                fusion_embedding=[0.1 * i for i in range(128)]
             )
             db_session.add(graph_embedding)
         

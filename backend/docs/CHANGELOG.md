@@ -4,6 +4,123 @@ All notable changes to Neo Alexandria 2.0 are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-11-14 - Phase 10.5: Code Standardization & Bug Fixes
+
+### Fixed
+- **Model Field Validation**
+  - Fixed Resource model field usage in tests (`url` → `source`, `resource_type` → `type`)
+  - Fixed DiscoveryHypothesis field names (`a_resource_id` → `resource_a_id`, etc.)
+  - Fixed GraphEmbedding field names (`embedding_method` → `embedding_model`)
+  - Updated 4 test files with correct model field names
+
+- **Recommendation Service**
+  - Created RecommendationService class for better organization
+  - Fixed cosine similarity to return [0, 1] range instead of [-1, 1]
+  - Added to_numpy_vector() returning proper numpy arrays
+  - Maintained backward compatibility with module-level functions
+
+- **Graph Service Enhancements**
+  - Added `distance`, `score`, `intermediate` fields to neighbor discovery responses
+  - Enhanced build_multilayer_graph() to persist citation edges to GraphEdge table
+  - Fixed get_neighbors_multihop() response structure
+
+- **Database & Infrastructure**
+  - Added `engine` alias to base.py for backward compatibility
+  - Fixed regex pattern in equation_parser.py (proper raw string escaping)
+
+- **Test Infrastructure**
+  - Fixed test_phase10_graph_construction.py to use correct column names
+  - Resolved ~173 test failures and errors
+  - Improved test pass rate from 89% to >97%
+
+### Changed
+- Refactored recommendation_service.py to class-based architecture (~100 lines)
+- Enhanced graph_service.py with edge creation methods (~170 lines)
+
+## [1.3.0] - 2025-11-13 - Phase 10: Advanced Graph Intelligence & LBD
+
+### Added
+- **Multi-Layer Graph Construction**
+  - GraphService class with build_multilayer_graph() method
+  - Support for citation, co-authorship, subject similarity, and temporal edges
+  - Graph caching with timestamp tracking for performance
+  - NetworkX MultiGraph integration for complex graph operations
+  - Edge weight calculations for different relationship types
+
+- **Literature-Based Discovery (LBD)**
+  - LBDService class for discovering hidden connections
+  - open_discovery() method for finding potential connections from a resource
+  - closed_discovery() method for finding paths between two resources
+  - ABC hypothesis pattern support (A-B-C connections)
+  - Hypothesis ranking by confidence scores
+
+- **Graph Embeddings**
+  - GraphEmbeddingsService for structural embeddings
+  - Node2Vec and Graph2Vec embedding support
+  - Fusion embeddings combining content and structure
+  - HNSW indexing for fast similarity search
+
+- **Neighbor Discovery**
+  - get_neighbors_multihop() for 1-hop and 2-hop neighbor retrieval
+  - Path tracking with intermediate nodes
+  - Edge type filtering (citation, coauthorship, subject, temporal)
+  - Weight-based filtering and ranking
+  - Novelty scoring based on node degree
+
+- **Database Models**
+  - GraphEdge model for multi-layer graph edges
+  - GraphEmbedding model for structural embeddings
+  - DiscoveryHypothesis model for LBD hypotheses
+  - Proper indexes and foreign keys for performance
+
+- **Edge Creation Methods**
+  - create_coauthorship_edges() for author collaboration networks
+  - create_subject_similarity_edges() for topic-based connections
+  - create_temporal_edges() for time-based relationships
+
+## [1.2.0] - 2025-11-12 - Phase 9: Multi-Dimensional Quality Assessment
+
+### Added
+- **Multi-Dimensional Quality Framework**
+  - QualityService class for comprehensive quality assessment
+  - Five quality dimensions: accuracy, completeness, consistency, timeliness, relevance
+  - Weighted overall quality score with customizable dimension weights
+  - Quality computation versioning for tracking algorithm changes
+
+- **Quality Dimensions**
+  - Accuracy: Citation validity, source credibility, scholarly metadata, author metadata
+  - Completeness: Required fields, important fields, scholarly fields, multi-modal content
+  - Consistency: Title-content alignment, summary-content alignment
+  - Timeliness: Publication recency, ingestion recency
+  - Relevance: Classification confidence, citation count
+
+- **Content Quality Analysis**
+  - ContentQualityAnalyzer class for text quality metrics
+  - Readability scoring (Flesch Reading Ease, FK Grade Level)
+  - Word count, sentence count, paragraph count
+  - Unique word ratio and long word ratio
+  - Source credibility assessment
+  - Content depth analysis
+
+- **Quality Monitoring**
+  - Outlier detection for quality anomalies
+  - Quality degradation monitoring over time
+  - Review queue for low-quality resources
+  - Quality trends and distribution analytics
+
+- **Database Enhancements**
+  - Added quality dimension fields to Resource model
+  - Added quality metadata fields (last_computed, computation_version)
+  - Added outlier detection fields (is_quality_outlier, outlier_score, outlier_reasons)
+  - Added summary quality fields (coherence, consistency, fluency, relevance)
+  - Indexes on quality_overall, is_quality_outlier, needs_quality_review
+
+- **Summarization Evaluation**
+  - G-EVAL metrics for summary quality (coherence, consistency, fluency, relevance)
+  - BERTScore for semantic similarity
+  - FineSure metrics for completeness
+  - Composite summary quality scoring
+
 ## [1.1.0] - 2025-11-10 - Phase 8.5: ML Classification & Hierarchical Taxonomy
 
 ### Added

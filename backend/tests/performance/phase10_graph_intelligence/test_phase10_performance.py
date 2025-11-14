@@ -239,10 +239,11 @@ class TestHNSWQueryPerformance:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
+                embedding=[0.01 * (i % 128)] * 128,
+                embedding_model="fusion",
+                dimensions=128,
                 structural_embedding=[0.01 * (i % 128)] * 128,
-                fusion_embedding=[0.01 * (i % 128)] * 128,
-                embedding_method="fusion",
-                embedding_version="v1.0"
+                fusion_embedding=[0.01 * (i % 128)] * 128
             )
             db_session.add(graph_embedding)
             
@@ -400,9 +401,10 @@ class TestMemoryUsage:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
-                fusion_embedding=[0.01] * 128,
-                embedding_method="fusion",
-                embedding_version="v1.0"
+                embedding=[0.01] * 128,
+                embedding_model="fusion",
+                dimensions=128,
+                fusion_embedding=[0.01] * 128
             )
             db_session.add(graph_embedding)
         

@@ -58,6 +58,9 @@ sync_engine = create_engine(
     echo=True if settings.ENV == "dev" else False,
 )
 
+# Alias for backward compatibility
+engine = sync_engine
+
 # Create sync sessionmaker for background tasks
 SessionLocal = sessionmaker(
     autocommit=False,

@@ -1,0 +1,62 @@
+.activity-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateX(5px);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.activity-icon-blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+.activity-icon-cyan {
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--accent-cyan);
+}
+
+.activity-icon-purple {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--color-purple);
+}
+
+.activity-icon-teal {
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--color-teal);
+}
+
+.activity-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.activity-text {
+  font-size: 0.875rem;
+  color: var(--primary-white);
+  margin: 0;
+}
+
+.activity-timestamp {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}

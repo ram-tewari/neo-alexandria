@@ -98,9 +98,15 @@ def process_ingestion(
 
     Steps: fetch, extract, AI summarize/tag, authority normalize, classify, quality, archive, persist.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     session: Optional[Session] = None
     local_session_factory = None
     increment_active_ingestions()
+    
+    logger.info(f"Starting ingestion for resource {resource_id}")
+    
     try:
         if engine_url:
             engine = create_engine(engine_url, echo=False)
@@ -118,10 +124,11 @@ def process_ingestion(
             import uuid as uuid_module
             resource_uuid = uuid_module.UUID(resource_id)
         except (ValueError, TypeError):
-            # If resource_id is not a valid UUID string, return early
+            logger.error(f"Invalid UUID format for resource_id: {resource_id}")
             return
         resource = session.query(db_models.Resource).filter(db_models.Resource.id == resource_uuid).first()
         if not resource:
+            logger.warning(f"Resource not found: {resource_id}")
             return
 
         # Mark started
@@ -130,11 +137,16 @@ def process_ingestion(
         resource.ingestion_started_at = datetime.now(timezone.utc)
         session.add(resource)
         session.commit()
+        
+        logger.info(f"Resource {resource_id} marked as processing, starting fetch from {resource.source}")
 
         target_url = resource.source or ""
+        logger.info(f"Fetching content from {target_url}")
         fetched = ce.fetch_url(target_url)
+        logger.info(f"Content fetched successfully, extracting text")
         extracted = ce.extract_from_fetched(fetched)
         text_clean = clean_text(extracted.get("text", ""))
+        logger.info(f"Text extracted and cleaned, length: {len(text_clean)} characters")
 
         # AI - let exceptions propagate to trigger failure path
         # Resolve AICore dynamically from this module to honor test patching
@@ -177,10 +189,21 @@ def process_ingestion(
         }
         root_path = archive_root or ARCHIVE_ROOT
         root_path = root_path if isinstance(root_path, Path) else Path(str(root_path))
+        
+        # Ensure archive root directory exists (create if needed)
+        # archive_local will handle detailed validation and error reporting
+        try:
+            root_path.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Archive root ready: {root_path}")
+        except Exception as mkdir_exc:
+            logger.error(f"Failed to create archive root {root_path}: {str(mkdir_exc)}")
+            # Don't raise - let archive_local handle it and provide better error context
+        
         html_for_archive = fetched.get("html") or ""
         archive_info = ce.archive_local(
             fetched.get("url", target_url), html_for_archive, text_clean, meta, root_path
         )
+        logger.info(f"Content archived to {archive_info.get('archive_path')}")
 
         # Generate embedding for Phase 4 hybrid search
         try:
@@ -274,7 +297,7 @@ def process_ingestion(
             print(f"Warning: ML classification failed for resource {resource_id}: {classification_exc}")
             # Continue with ingestion - classification can be retried later
 
-        # Quality
+        # Quality - Legacy scoring for backward compatibility
         analyzer = get_quality_analyzer()
         candidate_metadata = {
             "title": title_final,
@@ -286,7 +309,7 @@ def process_ingestion(
             "identifier": archive_info.get("archive_path"),
             "source": resource.source or fetched.get("url"),
         }
-        quality = analyzer.overall_quality_score(candidate_metadata, text_clean)
+        quality = analyzer.overall_quality(candidate_metadata, text_clean)
 
         # Persist updates
         resource.title = title_final
@@ -303,8 +326,49 @@ def process_ingestion(
         session.add(resource)
         session.commit()
         
+        # Phase 9: Multi-dimensional quality assessment
+        # Execute after embedding generation and ML classification
+        # Handle errors gracefully without blocking ingestion
+        try:
+            from backend.app.services.quality_service import QualityService
+            
+            quality_service = QualityService(db=session)
+            quality_result = quality_service.compute_quality(resource.id)
+            
+            print(f"Phase 9 quality assessment completed for resource {resource_id}: "
+                  f"overall={quality_result.get('overall', 0.0):.2f}, "
+                  f"accuracy={quality_result.get('accuracy', 0.0):.2f}, "
+                  f"completeness={quality_result.get('completeness', 0.0):.2f}")
+            
+        except Exception as quality_exc:
+            # Quality assessment is optional and should not block ingestion
+            # Log the error and continue - quality can be computed later
+            print(f"Warning: Phase 9 quality assessment failed for resource {resource_id}: {quality_exc}")
+        
+        # Phase 9: Summarization evaluation
+        # Execute after quality assessment if summary was generated
+        # Use use_g_eval=False by default to avoid API costs
+        if summary and summary.strip():
+            try:
+                from backend.app.services.summarization_evaluator import SummarizationEvaluator
+                
+                summarization_evaluator = SummarizationEvaluator(db=session)
+                summary_result = summarization_evaluator.evaluate_summary(
+                    resource_id=resource.id,
+                    use_g_eval=False  # Default to False to avoid OpenAI API costs
+                )
+                
+                print(f"Phase 9 summarization evaluation completed for resource {resource_id}: "
+                      f"overall={summary_result.get('overall', 0.0):.2f}")
+                
+            except Exception as summary_exc:
+                # Summarization evaluation is optional and should not block ingestion
+                # Log the error and continue - evaluation can be done later
+                print(f"Warning: Phase 9 summarization evaluation failed for resource {resource_id}: {summary_exc}")
+        
         # Track successful ingestion
         track_ingestion_success()
+        logger.info(f"Ingestion completed successfully for resource {resource_id}")
         
         # Phase 6: Extract citations if content type supports it
         try:
@@ -320,6 +384,7 @@ def process_ingestion(
             print(f"Warning: Citation extraction failed for {resource_id}: {citation_exc}")
 
     except Exception as exc:  # pragma: no cover - error path
+        logger.error(f"Ingestion failed for resource {resource_id}: {type(exc).__name__}: {str(exc)}", exc_info=True)
         if session is not None:
             try:
                 # Convert string resource_id back to UUID for proper comparison
@@ -334,11 +399,12 @@ def process_ingestion(
                     resource.ingestion_completed_at = datetime.now(timezone.utc)
                     session.add(resource)
                     session.commit()
+                    logger.info(f"Resource {resource_id} marked as failed with error: {str(exc)}")
                     
                     # Track failed ingestion
                     track_ingestion_failure(type(exc).__name__)
-            except Exception:
-                pass
+            except Exception as commit_exc:
+                logger.error(f"Failed to update resource status for {resource_id}: {str(commit_exc)}")
     finally:
         decrement_active_ingestions()
         if session is not None:
@@ -481,20 +547,33 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     embedding_fields_changed = False
     embedding_affecting_fields = {"title", "description", "subject"}
     
+    # Track if fields that affect quality have changed
+    quality_fields_changed = False
+    quality_affecting_fields = {
+        "title", "description", "subject", "content", 
+        "creator", "publisher", "date_created", "publication_year",
+        "doi", "pmid", "arxiv_id", "journal", "affiliations", "funding_sources"
+    }
+    
     # Assign allowed fields with authority normalization on certain fields
     authority = get_authority_control(db)
     for key, value in updates.items():
         if key == "subject" and isinstance(value, list):
             setattr(resource, key, authority.normalize_subjects(value))
             embedding_fields_changed = True
+            quality_fields_changed = True
         elif key == "creator":
             setattr(resource, key, authority.normalize_creator(value))
+            quality_fields_changed = True
         elif key == "publisher":
             setattr(resource, key, authority.normalize_publisher(value))
+            quality_fields_changed = True
         else:
             setattr(resource, key, value)
             if key in embedding_affecting_fields:
                 embedding_fields_changed = True
+            if key in quality_affecting_fields:
+                quality_fields_changed = True
 
     # Regenerate embedding if relevant fields changed
     if embedding_fields_changed:
@@ -560,6 +639,23 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     db.add(resource)
     db.commit()
     db.refresh(resource)
+    
+    # Phase 9: Recompute quality if quality-affecting fields changed
+    if quality_fields_changed:
+        try:
+            from backend.app.services.quality_service import QualityService
+            
+            quality_service = QualityService(db=db)
+            quality_result = quality_service.compute_quality(resource.id)
+            
+            print(f"Phase 9 quality recomputed for resource {resource_id}: "
+                  f"overall={quality_result.get('overall', 0.0):.2f}")
+            
+        except Exception as quality_exc:
+            # Quality recomputation is optional and should not block update
+            # Log the error and continue - quality can be computed later
+            print(f"Warning: Phase 9 quality recomputation failed for resource {resource_id}: {quality_exc}")
+    
     return resource
 
 

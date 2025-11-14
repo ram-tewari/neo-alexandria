@@ -11,7 +11,7 @@ Related files:
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -68,7 +68,7 @@ class TaxonomyNodeResponse(BaseModel):
                         import json
                         try:
                             data[key] = json.loads(value)
-                        except:
+                        except (json.JSONDecodeError, TypeError):
                             data[key] = []
                     else:
                         data[key] = value if isinstance(value, list) else []

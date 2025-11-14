@@ -518,3 +518,179 @@ def generate_global_overview(
             nodes.append(node)
     
     return KnowledgeGraph(nodes=nodes, edges=edges)
+
+
+
+# Phase 10: Multi-layer Graph Construction
+class GraphService:
+    """Service for Phase 10 multi-layer graph construction and neighbor discovery."""
+    
+    def __init__(self, db: Session):
+        self.db = db
+        self._graph_cache = None
+        self._cache_timestamp = None
+    
+    def build_multilayer_graph(self, refresh_cache: bool = False):
+        """
+        Build multi-layer graph with citation, coauthorship, subject, and temporal edges.
+        
+        Returns a NetworkX MultiGraph object.
+        """
+        try:
+            import networkx as nx
+        except ImportError:
+            # Return a simple dict-based graph structure if networkx not available
+            return {"nodes": [], "edges": []}
+        
+        # Check cache
+        if not refresh_cache and self._graph_cache is not None:
+            return self._graph_cache
+        
+        G = nx.MultiGraph()
+        
+        # Add all resources as nodes
+        from backend.app.database.models import Resource, Citation, GraphEdge
+        resources = self.db.query(Resource).all()
+        
+        for resource in resources:
+            G.add_node(str(resource.id), 
+                      title=resource.title,
+                      type=resource.type)
+        
+        # Add citation edges from Citation table
+        citations = self.db.query(Citation).filter(
+            Citation.target_resource_id.isnot(None)
+        ).all()
+        
+        for citation in citations:
+            G.add_edge(
+                str(citation.source_resource_id),
+                str(citation.target_resource_id),
+                edge_type="citation",
+                weight=1.0,
+                key="citation"
+            )
+        
+        # Add edges from GraphEdge table
+        graph_edges = self.db.query(GraphEdge).all()
+        for edge in graph_edges:
+            G.add_edge(
+                str(edge.source_resource_id),
+                str(edge.target_resource_id),
+                edge_type=edge.edge_type,
+                weight=edge.weight,
+                key=edge.edge_type
+            )
+        
+        # Cache the graph
+        self._graph_cache = G
+        from datetime import datetime, timezone
+        self._cache_timestamp = datetime.now(timezone.utc)
+        
+        return G
+    
+    def get_neighbors_multihop(self, resource_id: str, hops: int = 1,
+                              edge_types: Optional[List[str]] = None,
+                              min_weight: float = 0.0,
+                              limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Get multi-hop neighbors with filtering and ranking.
+        
+        Args:
+            resource_id: Source resource ID
+            hops: Number of hops (1 or 2)
+            edge_types: Filter by edge types (e.g., ['citation', 'coauthorship'])
+            min_weight: Minimum edge weight threshold
+            limit: Maximum number of neighbors to return
+            
+        Returns:
+            List of neighbor dictionaries with paths and scores
+        """
+        G = self.build_multilayer_graph()
+        
+        if not G.has_node(resource_id):
+            return []
+        
+        neighbors = []
+        
+        if hops == 1:
+            # Get direct neighbors
+            for neighbor in G.neighbors(resource_id):
+                # Get all edges between source and neighbor
+                edge_data = G.get_edge_data(resource_id, neighbor)
+                
+                for key, data in edge_data.items():
+                    edge_type = data.get('edge_type', 'unknown')
+                    weight = data.get('weight', 1.0)
+                    
+                    # Apply filters
+                    if edge_types and edge_type not in edge_types:
+                        continue
+                    if weight < min_weight:
+                        continue
+                    
+                    neighbors.append({
+                        'resource_id': neighbor,
+                        'hops': 1,
+                        'path': [resource_id, neighbor],
+                        'edge_types': [edge_type],
+                        'total_weight': weight,
+                        'edge_type': edge_type,
+                        'weight': weight
+                    })
+        
+        elif hops == 2:
+            # Get 2-hop neighbors
+            visited = {resource_id}
+            
+            for neighbor1 in G.neighbors(resource_id):
+                if neighbor1 in visited:
+                    continue
+                    
+                # Get edge data for first hop
+                edge_data_1 = G.get_edge_data(resource_id, neighbor1)
+                
+                for key1, data1 in edge_data_1.items():
+                    edge_type_1 = data1.get('edge_type', 'unknown')
+                    weight_1 = data1.get('weight', 1.0)
+                    
+                    if edge_types and edge_type_1 not in edge_types:
+                        continue
+                    if weight_1 < min_weight:
+                        continue
+                    
+                    # Explore second hop
+                    for neighbor2 in G.neighbors(neighbor1):
+                        if neighbor2 == resource_id or neighbor2 in visited:
+                            continue
+                        
+                        edge_data_2 = G.get_edge_data(neighbor1, neighbor2)
+                        
+                        for key2, data2 in edge_data_2.items():
+                            edge_type_2 = data2.get('edge_type', 'unknown')
+                            weight_2 = data2.get('weight', 1.0)
+                            
+                            if edge_types and edge_type_2 not in edge_types:
+                                continue
+                            if weight_2 < min_weight:
+                                continue
+                            
+                            total_weight = weight_1 * weight_2
+                            
+                            neighbors.append({
+                                'resource_id': neighbor2,
+                                'hops': 2,
+                                'path': [resource_id, neighbor1, neighbor2],
+                                'edge_types': [edge_type_1, edge_type_2],
+                                'total_weight': total_weight,
+                                'intermediate_nodes': [neighbor1]
+                            })
+        
+        # Sort by total_weight descending
+        neighbors.sort(key=lambda x: x.get('total_weight', 0), reverse=True)
+        
+        # Apply limit
+        if limit:
+            neighbors = neighbors[:limit]
+        
+        return neighbors

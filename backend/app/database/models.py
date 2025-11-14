@@ -193,6 +193,29 @@ class Resource(Base):
     extraction_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     requires_manual_review: Mapped[bool] = mapped_column(Integer, nullable=False, default=0, server_default='0')  # SQLite uses 0/1 for bool
     
+    # Phase 9: Enhanced Quality Control Fields
+    quality_accuracy: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_completeness: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_consistency: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_timeliness: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_relevance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_overall: Mapped[float | None] = mapped_column(Float, nullable=True)
+    quality_weights: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    quality_last_computed: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    quality_computation_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    
+    # Quality outlier detection
+    is_quality_outlier: Mapped[bool] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    outlier_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    outlier_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    needs_quality_review: Mapped[bool] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    
+    # Summary quality fields
+    summary_coherence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    summary_consistency: Mapped[float | None] = mapped_column(Float, nullable=True)
+    summary_fluency: Mapped[float | None] = mapped_column(Float, nullable=True)
+    summary_relevance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    
     # OCR Metadata
     is_ocr_processed: Mapped[bool] = mapped_column(Integer, nullable=False, default=0, server_default='0')
     ocr_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -780,3 +803,228 @@ class Annotation(Base):
     def __repr__(self) -> str:
         note_preview = f", note={self.note[:30]!r}..." if self.note and len(self.note) > 30 else f", note={self.note!r}" if self.note else ""
         return f"<Annotation(id={self.id!r}, resource_id={self.resource_id!r}, user_id={self.user_id!r}{note_preview})>"
+
+
+
+class GraphEdge(Base):
+    """
+    Multi-layer graph edge for Phase 10 knowledge graph.
+    
+    Supports multiple edge types: citation, coauthorship, subject similarity, temporal.
+    """
+    
+    __tablename__ = "graph_edges"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Edge endpoints
+    source_resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    target_resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Edge metadata
+    edge_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True
+    )  # 'citation', 'coauthorship', 'subject', 'temporal'
+    weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    edge_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    
+    # Aliases for backward compatibility
+    @property
+    def source_id(self):
+        """Alias for source_resource_id."""
+        return self.source_resource_id
+    
+    @source_id.setter
+    def source_id(self, value):
+        self.source_resource_id = value
+    
+    @property
+    def target_id(self):
+        """Alias for target_resource_id."""
+        return self.target_resource_id
+    
+    @target_id.setter
+    def target_id(self, value):
+        self.target_resource_id = value
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_graph_edges_source', 'source_resource_id'),
+        Index('idx_graph_edges_target', 'target_resource_id'),
+        Index('idx_graph_edges_type', 'edge_type'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<GraphEdge(id={self.id!r}, type={self.edge_type!r}, source={self.source_resource_id!r}, target={self.target_resource_id!r})>"
+
+
+class GraphEmbedding(Base):
+    """
+    Graph embeddings for Phase 10 structural analysis.
+    
+    Stores Node2Vec or similar graph embedding representations.
+    """
+    
+    __tablename__ = "graph_embeddings"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Resource reference
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    
+    # Embedding data
+    embedding: Mapped[List[float]] = mapped_column(
+        JSON,
+        nullable=False
+    )
+    embedding_model: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False
+    )  # 'node2vec', 'deepwalk', etc.
+    
+    # Metadata
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    
+    # Additional embedding types (aliases for backward compatibility)
+    structural_embedding: Mapped[List[float] | None] = mapped_column(
+        JSON,
+        nullable=True
+    )
+    fusion_embedding: Mapped[List[float] | None] = mapped_column(
+        JSON,
+        nullable=True
+    )
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    def __repr__(self) -> str:
+        return f"<GraphEmbedding(id={self.id!r}, resource_id={self.resource_id!r}, model={self.embedding_model!r})>"
+
+
+class DiscoveryHypothesis(Base):
+    """
+    Literature-based discovery hypothesis for Phase 10.
+    
+    Stores potential connections discovered through graph analysis.
+    """
+    
+    __tablename__ = "discovery_hypotheses"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Hypothesis components
+    concept_a: Mapped[str] = mapped_column(String, nullable=False)
+    concept_b: Mapped[str] = mapped_column(String, nullable=False)
+    linking_concept: Mapped[str | None] = mapped_column(String, nullable=True)
+    
+    # Resource references (for ABC discovery pattern)
+    resource_a_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=True
+    )
+    resource_b_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=True
+    )
+    resource_c_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=True
+    )
+    
+    # Supporting evidence
+    supporting_resources: Mapped[str] = mapped_column(Text, nullable=False)  # JSON array of resource IDs
+    confidence_score: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    # Aliases for backward compatibility
+    @property
+    def a_resource_id(self):
+        """Alias for resource_a_id."""
+        return self.resource_a_id
+    
+    @a_resource_id.setter
+    def a_resource_id(self, value):
+        self.resource_a_id = value
+    
+    @property
+    def b_resource_id(self):
+        """Alias for resource_b_id."""
+        return self.resource_b_id
+    
+    @b_resource_id.setter
+    def b_resource_id(self, value):
+        self.resource_b_id = value
+    
+    # Hypothesis metadata
+    hypothesis_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'abc', 'direct', 'temporal', etc.
+    status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="pending"
+    )  # 'pending', 'validated', 'rejected'
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    
+    def __repr__(self) -> str:
+        return f"<DiscoveryHypothesis(id={self.id!r}, {self.concept_a!r} -> {self.concept_b!r}, confidence={self.confidence_score})>"

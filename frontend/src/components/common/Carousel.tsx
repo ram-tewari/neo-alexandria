@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
 import './Carousel.css';
 
 interface CarouselProps {
@@ -10,9 +10,26 @@ interface CarouselProps {
 
 export const Carousel = ({ children, speed = 30, pauseOnHover = true }: CarouselProps) => {
   const [isPaused, setIsPaused] = useState(false);
+  const x = useMotionValue(0);
   
-  // Calculate duration based on number of items and speed (lower speed = faster)
-  const duration = children.length * (60 / speed);
+  // Calculate speed in pixels per frame (assuming 60fps)
+  const pixelsPerFrame = speed / 60;
+
+  useAnimationFrame(() => {
+    if (!isPaused) {
+      const currentX = x.get();
+      // Move left continuously
+      const newX = currentX - pixelsPerFrame;
+      
+      // Reset when we've scrolled through half the content (one set of children)
+      // This creates the seamless loop effect
+      if (newX <= -100 * children.length) {
+        x.set(0);
+      } else {
+        x.set(newX);
+      }
+    }
+  });
 
   return (
     <div 
@@ -22,17 +39,7 @@ export const Carousel = ({ children, speed = 30, pauseOnHover = true }: Carousel
     >
       <motion.div
         className="carousel-content"
-        animate={{
-          x: isPaused ? undefined : [0, -100 * children.length],
-        }}
-        transition={{
-          x: {
-            repeat: Infinity,
-            repeatType: "loop",
-            duration: duration,
-            ease: "linear",
-          },
-        }}
+        style={{ x }}
       >
         {/* Render items twice for seamless loop */}
         {children.map((child, index) => (

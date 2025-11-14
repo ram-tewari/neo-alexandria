@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
 import './Carousel.css';
 

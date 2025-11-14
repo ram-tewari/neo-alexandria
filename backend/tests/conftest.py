@@ -33,6 +33,9 @@ def test_db():
     
     try:
         engine = create_engine(f"sqlite:///{temp_db.name}", echo=False)
+        # Drop all tables first to ensure clean schema
+        Base.metadata.drop_all(engine)
+        # Create all tables with current schema
         Base.metadata.create_all(engine)
         TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         

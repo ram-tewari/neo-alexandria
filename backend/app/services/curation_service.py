@@ -90,10 +90,10 @@ class CurationInterface:
         content = CurationInterface._read_resource_text(resource)
 
         meta_score = analyzer.metadata_completeness(resource)
-        readability = analyzer.content_readability(content)
+        readability = analyzer.text_readability(content)
         credibility = analyzer.source_credibility(getattr(resource, "source", None) or getattr(resource, "identifier", None))
         depth = analyzer.content_depth(content)
-        overall = analyzer.overall_quality_score(resource, content)
+        overall = analyzer.overall_quality(resource, content)
         level = analyzer.quality_level(overall)
 
         return {
@@ -170,7 +170,7 @@ class CurationInterface:
                 failed.append(rid)
                 continue
             content = CurationInterface._read_resource_text(resource)
-            new_score = analyzer.overall_quality_score(resource, content)
+            new_score = analyzer.overall_quality(resource, content)
             resource.quality_score = float(new_score)
             resource.updated_at = datetime.now(timezone.utc)
             db.add(resource)

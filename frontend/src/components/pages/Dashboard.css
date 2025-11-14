@@ -14,7 +14,7 @@
   font-size: 2.25rem;
   font-weight: 700;
   margin-bottom: 0.625rem;
-  background: linear-gradient(135deg, var(--primary-white), var(--accent-blue-light));
+  background: linear-gradient(135deg, var(--primary-white), var(--accent-purple-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

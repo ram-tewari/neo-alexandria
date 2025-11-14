@@ -3,8 +3,8 @@ import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
 import { StatCard } from '../cards/StatCard';
 import { ResourceCard } from '../cards/ResourceCard';
-import { ActivityCard } from '../cards/ActivityCard';
 import { Carousel } from '../common/Carousel';
+import { MiniKnowledgeGraph } from '../common/MiniKnowledgeGraph';
 import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
 import type { StatData, Resource } from '../../types';
 import './Dashboard.css';
@@ -44,14 +44,6 @@ const resources: Resource[] = [
     tags: ['Data Science', 'Analytics'],
     type: 'book',
   },
-];
-
-const activities = [
-  { iconName: 'book' as const, text: 'Started reading "Introduction to Neural Networks"', timestamp: '2 hours ago', color: 'blue' as const },
-  { iconName: 'book' as const, text: 'Added 3 annotations to "Quantum Computing Explained"', timestamp: '5 hours ago', color: 'purple' as const },
-  { iconName: 'star' as const, text: 'Saved "Data Science Fundamentals" to Favorites', timestamp: '1 day ago', color: 'cyan' as const },
-  { iconName: 'trending' as const, text: 'Created citation link between 2 resources', timestamp: '2 days ago', color: 'teal' as const },
-  { iconName: 'chart' as const, text: 'Created new collection "Machine Learning"', timestamp: '3 days ago', color: 'blue' as const },
 ];
 
 export const Dashboard = () => {
@@ -101,14 +93,10 @@ export const Dashboard = () => {
 
       <div className="activity-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Recent Activity</h2>
-          <Button variant="secondary" size="sm">View All</Button>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Knowledge Network</h2>
+          <Button variant="secondary" size="sm">Explore Graph</Button>
         </div>
-        <div className="activity-list">
-          {activities.map((activity, index) => (
-            <ActivityCard key={index} {...activity} />
-          ))}
-        </div>
+        <MiniKnowledgeGraph />
       </div>
     </motion.div>
   );

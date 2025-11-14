@@ -51,7 +51,7 @@
   top: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
   filter: blur(10px);
   z-index: -1;
   pointer-events: none;
@@ -64,14 +64,14 @@
   top: 0;
   height: 100%;
   width: 3px;
-  background: var(--accent-blue);
+  background: var(--accent-purple);
   transform: translateX(-100%);
   transition: transform 0.2s ease;
 }
 
 .sidebar-item:hover,
 .sidebar-item.active {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(168, 85, 247, 0.1);
   color: var(--primary-white);
 }
 

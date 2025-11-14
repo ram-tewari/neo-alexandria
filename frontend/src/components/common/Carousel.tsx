@@ -36,10 +36,21 @@ export const Carousel = ({ children, speed = 30, pauseOnHover = true }: Carousel
       className="carousel-container"
       onMouseEnter={() => pauseOnHover && setIsPaused(true)}
       onMouseLeave={() => pauseOnHover && setIsPaused(false)}
+      style={{ 
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        cursor: 'grab',
+        userSelect: 'none'
+      }}
     >
       <motion.div
         className="carousel-content"
         style={{ x }}
+        drag="x"
+        dragConstraints={{ left: -100 * children.length, right: 0 }}
+        dragElastic={0.1}
+        onDragStart={() => setIsPaused(true)}
+        onDragEnd={() => setIsPaused(false)}
       >
         {/* Render items twice for seamless loop */}
         {children.map((child, index) => (

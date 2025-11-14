@@ -3,6 +3,7 @@ import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
 import { Tag } from '../common/Tag';
 import { ResourceCard } from '../cards/ResourceCard';
+import { GradientOrbs } from '../background/GradientOrbs';
 import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
 import type { Resource } from '../../types';
 import './Library.css';
@@ -69,13 +70,14 @@ const activeFilters = ['AI', 'Tutorial'];
 export const Library = () => {
   return (
     <motion.div
-      className="container"
+      className="container library-container"
       variants={pageVariants}
       initial="initial"
       animate="animate"
       exit="exit"
     >
-      <div className="page-header">
+      <GradientOrbs />
+      <div className="page-header" style={{ position: 'relative', zIndex: 1 }}>
         <h1 className="page-title">Library</h1>
         <p className="page-subtitle">Browse and manage your knowledge resources.</p>
       </div>

@@ -1,20 +1,24 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useNavigationStore } from '../../store/navigationStore';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { sidebarItemVariants } from '../../animations/variants';
+import { Icon } from '../common/Icon';
+import { icons } from '../../config/icons';
 import type { SidebarItem } from '../../types';
 import './Sidebar.css';
 
 const mainItems: SidebarItem[] = [
-  { icon: 'fas fa-home', label: 'Dashboard', path: '/' },
-  { icon: 'fas fa-book', label: 'Library', path: '/library' },
-  { icon: 'fas fa-search', label: 'Search', path: '/search' },
-  { icon: 'fas fa-project-diagram', label: 'Knowledge Graph', path: '/graph' },
+  { iconName: 'dashboard', label: 'Dashboard', path: '/' },
+  { iconName: 'library', label: 'Library', path: '/library' },
+  { iconName: 'search', label: 'Search', path: '/search' },
+  { iconName: 'graph', label: 'Knowledge Graph', path: '/graph' },
 ];
 
 const collections: SidebarItem[] = [
-  { icon: 'fas fa-star', label: 'Favorites', path: '/favorites' },
-  { icon: 'fas fa-clock', label: 'Recent', path: '/recent' },
-  { icon: 'fas fa-bookmark', label: 'Read Later', path: '/read-later' },
+  { iconName: 'favorites', label: 'Favorites', path: '/favorites' },
+  { iconName: 'recent', label: 'Recent', path: '/recent' },
+  { iconName: 'readLater', label: 'Read Later', path: '/read-later' },
 ];
 
 export const Sidebar = () => {
@@ -39,40 +43,68 @@ export const Sidebar = () => {
         <div className="sidebar-glass">
         <div className="sidebar-section">
           <div className="sidebar-title">Main</div>
-          {mainItems.map((item) => (
-            <a
-              key={item.path}
-              href="#"
-              className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-              aria-current={location.pathname === item.path ? 'page' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation(item.path);
-              }}
-            >
-              <i className={item.icon} aria-hidden="true"></i>
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {mainItems.map((item) => {
+            const IconComponent = icons[item.iconName];
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <motion.a
+                key={item.path}
+                href="#"
+                className={`sidebar-item ${isActive ? 'active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigation(item.path);
+                }}
+                variants={sidebarItemVariants}
+                initial="rest"
+                whileHover="hover"
+              >
+                <motion.div 
+                  className="sidebar-item-glow"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <Icon icon={IconComponent} size={20} />
+                <span>{item.label}</span>
+              </motion.a>
+            );
+          })}
         </div>
 
         <div className="sidebar-section">
           <div className="sidebar-title">Collections</div>
-          {collections.map((item) => (
-            <a
-              key={item.path}
-              href="#"
-              className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-              aria-current={location.pathname === item.path ? 'page' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigation(item.path);
-              }}
-            >
-              <i className={item.icon} aria-hidden="true"></i>
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {collections.map((item) => {
+            const IconComponent = icons[item.iconName];
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <motion.a
+                key={item.path}
+                href="#"
+                className={`sidebar-item ${isActive ? 'active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigation(item.path);
+                }}
+                variants={sidebarItemVariants}
+                initial="rest"
+                whileHover="hover"
+              >
+                <motion.div 
+                  className="sidebar-item-glow"
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <Icon icon={IconComponent} size={20} />
+                <span>{item.label}</span>
+              </motion.a>
+            );
+          })}
         </div>
       </div>
     </aside>

@@ -1,5 +1,5 @@
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -8,7 +8,24 @@
   align-items: center;
   gap: 0.5rem;
   border: none;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.ripple {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .btn-primary {
@@ -23,12 +40,13 @@
 }
 
 .btn-secondary {
-  background: var(--glass-bg);
-  color: var(--primary-white);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gray-400);
   border: 1px solid var(--glass-border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--accent-blue);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--primary-white);
 }

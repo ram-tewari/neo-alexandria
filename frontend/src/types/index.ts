@@ -1,3 +1,5 @@
+import { IconName } from '../config/icons';
+
 export interface Resource {
   title: string;
   description: string;
@@ -14,20 +16,20 @@ export interface NavLink {
 }
 
 export interface SidebarItem {
-  icon: string;
+  iconName: IconName;
   label: string;
   path: string;
 }
 
 export interface StatData {
-  icon: string;
-  value: string | number;
+  iconName: IconName;
+  value: number;
   label: string;
   color: 'blue' | 'cyan' | 'purple' | 'teal';
 }
 
 export interface Activity {
-  icon: string;
+  iconName: IconName;
   color: string;
   text: string;
   time: string;

@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
 import { Tag } from '../common/Tag';
 import { ResourceCard } from '../cards/ResourceCard';
+import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
 import type { Resource } from '../../types';
 import './Library.css';
 
@@ -66,7 +68,13 @@ const activeFilters = ['AI', 'Tutorial'];
 
 export const Library = () => {
   return (
-    <div className="container">
+    <motion.div
+      className="container"
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
       <div className="page-header">
         <h1 className="page-title">Library</h1>
         <p className="page-subtitle">Browse and manage your knowledge resources.</p>
@@ -75,9 +83,9 @@ export const Library = () => {
       <div className="library-toolbar">
         <SearchInput placeholder="Search library..." />
         <div className="toolbar-actions">
-          <Button variant="secondary" icon="fas fa-filter">Filter</Button>
-          <Button variant="secondary" icon="fas fa-sort">Sort</Button>
-          <Button variant="primary" icon="fas fa-plus">Add Resource</Button>
+          <Button variant="secondary" iconName="filter">Filter</Button>
+          <Button variant="secondary" iconName="sort">Sort</Button>
+          <Button variant="primary" iconName="add">Add Resource</Button>
         </div>
       </div>
 
@@ -86,15 +94,22 @@ export const Library = () => {
           <Tag key={index} label={filter} variant="blue" />
         ))}
         <button className="clear-filters">
-          <i className="fas fa-times"></i> Clear all
+          Clear all
         </button>
       </div>
 
-      <div className="resource-grid">
+      <motion.div
+        className="resource-grid"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         {resources.map((resource, index) => (
-          <ResourceCard key={index} resource={resource} delay={index * 0.1} />
+          <motion.div key={index} variants={staggerItem}>
+            <ResourceCard resource={resource} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="pagination">
         <div className="pagination-info">
@@ -102,7 +117,7 @@ export const Library = () => {
         </div>
         <div className="pagination-controls">
           <button className="pagination-btn" disabled>
-            <i className="fas fa-chevron-left"></i>
+            ‹
           </button>
           <button className="pagination-btn active">1</button>
           <button className="pagination-btn">2</button>
@@ -110,10 +125,10 @@ export const Library = () => {
           <span className="pagination-dots">...</span>
           <button className="pagination-btn">88</button>
           <button className="pagination-btn">
-            <i className="fas fa-chevron-right"></i>
+            ›
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

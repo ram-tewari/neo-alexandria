@@ -1,16 +1,19 @@
+import { motion } from 'framer-motion';
 import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
 import { StatCard } from '../cards/StatCard';
 import { ResourceCard } from '../cards/ResourceCard';
 import { ActivityCard } from '../cards/ActivityCard';
+import { Carousel } from '../common/Carousel';
+import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
 import type { StatData, Resource } from '../../types';
 import './Dashboard.css';
 
 const stats: StatData[] = [
-  { icon: 'fas fa-book', value: '524', label: 'Resources', color: 'blue' },
-  { icon: 'fas fa-tags', value: '86', label: 'Collections', color: 'cyan' },
-  { icon: 'fas fa-sticky-note', value: '142', label: 'Annotations', color: 'purple' },
-  { icon: 'fas fa-link', value: '38', label: 'Citations', color: 'teal' },
+  { iconName: 'library', value: 524, label: 'Resources', color: 'blue' },
+  { iconName: 'chart', value: 86, label: 'Collections', color: 'cyan' },
+  { iconName: 'book', value: 142, label: 'Annotations', color: 'purple' },
+  { iconName: 'trending', value: 38, label: 'Citations', color: 'teal' },
 ];
 
 const resources: Resource[] = [
@@ -44,45 +47,62 @@ const resources: Resource[] = [
 ];
 
 const activities = [
-  { icon: 'fas fa-book-open', text: 'Started reading "Introduction to Neural Networks"', timestamp: '2 hours ago', color: 'blue' as const },
-  { icon: 'fas fa-sticky-note', text: 'Added 3 annotations to "Quantum Computing Explained"', timestamp: '5 hours ago', color: 'purple' as const },
-  { icon: 'fas fa-star', text: 'Saved "Data Science Fundamentals" to Favorites', timestamp: '1 day ago', color: 'cyan' as const },
-  { icon: 'fas fa-link', text: 'Created citation link between 2 resources', timestamp: '2 days ago', color: 'teal' as const },
-  { icon: 'fas fa-tags', text: 'Created new collection "Machine Learning"', timestamp: '3 days ago', color: 'blue' as const },
+  { iconName: 'book' as const, text: 'Started reading "Introduction to Neural Networks"', timestamp: '2 hours ago', color: 'blue' as const },
+  { iconName: 'book' as const, text: 'Added 3 annotations to "Quantum Computing Explained"', timestamp: '5 hours ago', color: 'purple' as const },
+  { iconName: 'star' as const, text: 'Saved "Data Science Fundamentals" to Favorites', timestamp: '1 day ago', color: 'cyan' as const },
+  { iconName: 'trending' as const, text: 'Created citation link between 2 resources', timestamp: '2 days ago', color: 'teal' as const },
+  { iconName: 'chart' as const, text: 'Created new collection "Machine Learning"', timestamp: '3 days ago', color: 'blue' as const },
 ];
 
 export const Dashboard = () => {
   return (
-    <div className="container">
+    <motion.div
+      className="container"
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
       <div className="page-header">
         <h1 className="page-title">Welcome back, User</h1>
         <p className="page-subtitle">Here's what's happening in your knowledge space today.</p>
       </div>
 
-      <SearchInput placeholder="Search resources, tags, or topics..." />
-
-      <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} delay={index * 0.1} />
-        ))}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <SearchInput placeholder="Search resources, tags, or topics..." />
       </div>
 
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Recommended for You</h2>
-          <Button variant="secondary" icon="fas fa-sync-alt">Refresh</Button>
+      <motion.div
+        className="stats-grid"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        {stats.map((stat, index) => (
+          <motion.div key={index} variants={staggerItem}>
+            <StatCard {...stat} />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <div style={{ marginBottom: '3rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Recommended for You</h2>
+          <Button variant="secondary" size="sm">Refresh</Button>
         </div>
-        <div className="resource-grid">
+        <Carousel speed={20} pauseOnHover={true}>
           {resources.map((resource, index) => (
-            <ResourceCard key={index} resource={resource} delay={index * 0.15} />
+            <div key={index} style={{ width: '380px' }}>
+              <ResourceCard resource={resource} />
+            </div>
           ))}
-        </div>
+        </Carousel>
       </div>
 
       <div className="activity-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Recent Activity</h2>
-          <Button variant="secondary">View All</Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Recent Activity</h2>
+          <Button variant="secondary" size="sm">View All</Button>
         </div>
         <div className="activity-list">
           {activities.map((activity, index) => (
@@ -90,6 +110,6 @@ export const Dashboard = () => {
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

@@ -1,6 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
 import { useNavigationStore } from '../../store/navigationStore';
+import { Icon } from '../common/Icon';
+import { icons } from '../../config/icons';
 import type { NavLink } from '../../types';
 import './Navbar.css';
 
@@ -20,24 +23,31 @@ export const Navbar = () => {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
       <div className="navbar-glass">
         <div className="nav-content">
-          <button 
+          <motion.button 
             className="mobile-menu-toggle"
             onClick={toggleSidebar}
             aria-label="Toggle menu"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <i className="fas fa-bars"></i>
-          </button>
+            <Icon icon={icons.menu} size={20} />
+          </motion.button>
 
-          <div className="nav-logo" onClick={() => navigate('/')}>
+          <motion.div 
+            className="nav-logo" 
+            onClick={() => navigate('/')}
+            whileHover={{ scale: 1.05 }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="logo-icon">
-              <i className="fas fa-brain" style={{ color: 'white' }}></i>
+              <Icon icon={icons.brain} size={24} color="white" />
             </div>
             <span className="logo-text">Neo Alexandria</span>
-          </div>
+          </motion.div>
 
           <div className="nav-links">
             {navLinks.map((link) => (
-              <a
+              <motion.a
                 key={link.path}
                 href="#"
                 className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
@@ -46,20 +56,30 @@ export const Navbar = () => {
                   e.preventDefault();
                   navigate(link.path);
                 }}
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.2 }}
               >
                 {link.label}
-              </a>
+              </motion.a>
             ))}
           </div>
 
           <div className="nav-actions">
-            <button className="notification-btn" aria-label="Notifications">
-              <i className="fas fa-bell"></i>
+            <motion.button 
+              className="notification-btn" 
+              aria-label="Notifications"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Icon icon={icons.notification} size={20} />
               <span className="notification-badge">3</span>
-            </button>
-            <div className="user-avatar">
+            </motion.button>
+            <motion.div 
+              className="user-avatar"
+              whileHover={{ scale: 1.1 }}
+            >
               <img src="https://i.pravatar.cc/100?img=12" alt="User" />
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

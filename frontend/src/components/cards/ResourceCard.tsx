@@ -1,5 +1,9 @@
 import { memo } from 'react';
+import { motion } from 'framer-motion';
 import type { Resource } from '../../types';
+import { cardHoverVariants } from '../../animations/variants';
+import { Icon } from '../common/Icon';
+import { icons } from '../../config/icons';
 import { Tag } from '../common/Tag';
 import './ResourceCard.css';
 
@@ -11,11 +15,11 @@ interface ResourceCardProps {
 export const ResourceCard = memo(({ resource, delay = 0 }: ResourceCardProps) => {
   const getTypeIcon = () => {
     switch (resource.type) {
-      case 'article': return 'fas fa-file-alt';
-      case 'video': return 'fas fa-video';
-      case 'book': return 'fas fa-book';
-      case 'paper': return 'fas fa-newspaper';
-      default: return 'fas fa-file';
+      case 'article': return icons.article;
+      case 'video': return icons.video;
+      case 'book': return icons.book;
+      case 'paper': return icons.paper;
+      default: return icons.article;
     }
   };
 
@@ -29,14 +33,23 @@ export const ResourceCard = memo(({ resource, delay = 0 }: ResourceCardProps) =>
     }
   };
 
+  const typeIcon = getTypeIcon();
+
   return (
-    <div className="card resource-card float-animation fade-in" style={{ animationDelay: `${delay}s` }}>
+    <motion.div
+      className="card resource-card float-animation"
+      variants={cardHoverVariants}
+      initial="rest"
+      whileHover="hover"
+      whileTap={{ scale: 0.98 }}
+      style={{ animationDelay: `${delay}s` }}
+    >
       <div className="resource-header">
         <div className="resource-type-icon" style={{ background: getTypeColor() }}>
-          <i className={getTypeIcon()} style={{ color: 'var(--accent-blue-light)' }}></i>
+          <Icon icon={typeIcon} size={20} />
         </div>
         <div className="resource-rating">
-          <i className="fas fa-star"></i>
+          <Icon icon={icons.star} size={16} />
           <span>{resource.rating}</span>
         </div>
       </div>
@@ -52,14 +65,14 @@ export const ResourceCard = memo(({ resource, delay = 0 }: ResourceCardProps) =>
       
       <div className="resource-meta">
         <div className="resource-author">
-          <i className="fas fa-user"></i>
+          <Icon icon={icons.user} size={16} />
           <span>{resource.author}</span>
         </div>
         <div className="resource-time">
-          <i className="fas fa-clock"></i>
+          <Icon icon={icons.clock} size={16} />
           <span>{resource.readTime} min</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 });

@@ -1,0 +1,61 @@
+.carousel-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 2rem 0;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+}
+
+.carousel-content {
+  display: flex;
+  gap: 1.5rem;
+  width: fit-content;
+  will-change: transform;
+}
+
+.carousel-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+/* Logo styling for carousel items */
+.carousel-logo {
+  height: 40px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  filter: grayscale(100%);
+}
+
+.carousel-logo:hover {
+  opacity: 1;
+  transform: scale(1.05);
+  filter: grayscale(0%);
+}
+
+/* Text carousel items */
+.carousel-text {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--gray-400);
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.carousel-text:hover {
+  color: var(--primary-white);
+}

@@ -310,8 +310,15 @@ class TestClassificationAPI:
         resp = client.get("/classification/tree")
         assert resp.status_code == 200
         data = resp.json()
+        # Response should have a 'tree' key with an array of nodes
+        assert "tree" in data
+        assert isinstance(data["tree"], list)
+        
+        # Extract codes from tree array
+        codes = {node["code"]: node for node in data["tree"]}
+        
         # Should include top-level codes like 000 and 400
-        assert "000" in data
-        assert data["000"]["title"].lower().startswith("computer")
-        assert "400" in data
-        assert data["400"]["title"].lower().startswith("language")
+        assert "000" in codes
+        assert codes["000"]["name"].lower().startswith("computer")
+        assert "400" in codes
+        assert codes["400"]["name"].lower().startswith("language")

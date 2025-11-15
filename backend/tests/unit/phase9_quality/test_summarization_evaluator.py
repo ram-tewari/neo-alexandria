@@ -26,12 +26,12 @@ def resource_with_summary(db_session: Session):
     """Create resource with summary for testing."""
     resource = Resource(
         title="Machine Learning Quality Assessment",
-        url="https://example.com/ml-quality",
-        content="This is a comprehensive article about machine learning quality assessment techniques. "
-                "It covers various metrics, evaluation methods, and best practices for ensuring "
-                "high-quality machine learning models in production environments.",
-        summary="Article about ML quality assessment covering metrics and best practices.",
-        resource_type="article"
+        source="https://example.com/ml-quality",
+        description="This is a comprehensive article about machine learning quality assessment techniques. "
+                    "It covers various metrics, evaluation methods, and best practices for ensuring "
+                    "high-quality machine learning models in production environments.",
+        creator="Article about ML quality assessment covering metrics and best practices.",
+        type="article"
     )
     db_session.add(resource)
     db_session.commit()
@@ -110,10 +110,7 @@ class TestGEvalMethods:
     
     def test_g_eval_without_api_key(self, evaluator):
         """Test G-Eval returns fallback when no API key."""
-        score = evaluator.g_eval_coherence(
-            "Test summary",
-            "Test reference text"
-        )
+        score = evaluator.g_eval_coherence("Test summary")
         
         assert score == 0.7  # Fallback score
     
@@ -319,15 +316,16 @@ class TestEvaluateSummary:
         """Test evaluate_summary raises error when no summary exists."""
         resource = Resource(
             title="No Summary",
-            url="https://example.com/no-summary",
-            content="Content without summary",
-            resource_type="article"
+            source="https://example.com/no-summary",
+            description="Content without summary",
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
         
-        with pytest.raises(ValueError, match="No summary"):
-            evaluator.evaluate_summary(resource.id)
+        result = evaluator.evaluate_summary(resource.id)
+        assert "error" in result
+        assert "no summary" in result["error"].lower()
     
     def test_evaluate_summary_composite_calculation(self, evaluator, resource_with_summary, db_session):
         """Test composite score calculation uses correct weights."""

@@ -175,8 +175,11 @@ def process_ingestion(
             title_final = extracted_title
         else:
             title_final = resource.title or extracted_title or "Untitled"
-        # Prefer user-provided description over AI summary
+        # Prefer user-provided description over AI summary, with fallback to extracted text snippet
         description_final = resource.description or summary or None
+        if not description_final and text_clean:
+            # Use first 200 characters of text as fallback description
+            description_final = text_clean[:200].strip() + ("..." if len(text_clean) > 200 else "")
         classification_code = classifier.auto_classify(title_final, description_final, normalized_tags)
 
         # Archive
@@ -316,15 +319,18 @@ def process_ingestion(
         resource.description = description_final
         resource.subject = normalized_tags
         resource.classification_code = classification_code
-        resource.identifier = archive_info.get("archive_path")
+        # Ensure identifier is set (archive path or source URL as fallback)
+        resource.identifier = archive_info.get("archive_path") or resource.source or fetched.get("url")
         resource.source = resource.source or fetched.get("url")
-        resource.quality_score = float(quality)
+        # Set legacy quality score (will be updated by Phase 9 if successful)
+        resource.quality_score = float(quality) if quality > 0 else 0.5  # Default to 0.5 if legacy score is 0
         resource.date_modified = resource.date_modified or datetime.now(timezone.utc)
         resource.ingestion_status = "completed"
         resource.ingestion_completed_at = datetime.now(timezone.utc)
         resource.format = fetched.get("content_type")  # Store content type for citation extraction
         session.add(resource)
         session.commit()
+        session.refresh(resource)  # Refresh to get updated values
         
         # Phase 9: Multi-dimensional quality assessment
         # Execute after embedding generation and ML classification
@@ -335,6 +341,16 @@ def process_ingestion(
             quality_service = QualityService(db=session)
             quality_result = quality_service.compute_quality(resource.id)
             
+            # Refresh resource to get updated quality fields from compute_quality
+            session.refresh(resource)
+            
+            # Update legacy quality_score to match quality_overall for backward compatibility
+            if quality_result and quality_result.get('overall') is not None:
+                resource.quality_score = float(quality_result.get('overall', 0.0))
+                session.add(resource)
+                session.commit()
+                session.refresh(resource)
+            
             print(f"Phase 9 quality assessment completed for resource {resource_id}: "
                   f"overall={quality_result.get('overall', 0.0):.2f}, "
                   f"accuracy={quality_result.get('accuracy', 0.0):.2f}, "
@@ -344,6 +360,12 @@ def process_ingestion(
             # Quality assessment is optional and should not block ingestion
             # Log the error and continue - quality can be computed later
             print(f"Warning: Phase 9 quality assessment failed for resource {resource_id}: {quality_exc}")
+            # Ensure quality_score is not 0.0 even if Phase 9 fails - use legacy score
+            if resource.quality_score == 0.0:
+                resource.quality_score = float(quality) if quality > 0 else 0.5
+                session.add(resource)
+                session.commit()
+                session.refresh(resource)
         
         # Phase 9: Summarization evaluation
         # Execute after quality assessment if summary was generated

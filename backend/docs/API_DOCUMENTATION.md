@@ -3654,3 +3654,694 @@ renderGraph(graph.nodes, graph.edges);
 ---
 
 ## Phase 8: Three-Way Hybrid Search Endpoints
+
+
+---
+
+## Phase 9: Multi-Dimensional Quality Assessment Endpoints
+
+Phase 9 introduces comprehensive quality assessment endpoints for evaluating resources across multiple dimensions, detecting quality outliers, monitoring quality degradation, and evaluating summary quality using state-of-the-art metrics.
+
+### Quality Assessment Endpoints
+
+#### GET /resources/{id}/quality-details
+
+Retrieve full quality dimension breakdown for a resource.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Resource UUID |
+
+**Response (200 OK):**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "quality_dimensions": {
+    "accuracy": 0.75,
+    "completeness": 0.82,
+    "consistency": 0.88,
+    "timeliness": 0.65,
+    "relevance": 0.79
+  },
+  "quality_overall": 0.77,
+  "quality_weights": {
+    "accuracy": 0.30,
+    "completeness": 0.25,
+    "consistency": 0.20,
+    "timeliness": 0.15,
+    "relevance": 0.10
+  },
+  "quality_last_computed": "2025-11-10T12:00:00Z",
+  "quality_computation_version": "v2.0",
+  "is_quality_outlier": false,
+  "outlier_score": null,
+  "outlier_reasons": null,
+  "needs_quality_review": false
+}
+```
+
+**Example:**
+```bash
+curl http://127.0.0.1:8000/resources/550e8400-e29b-41d4-a716-446655440000/quality-details
+```
+
+**Quality Dimensions Explained:**
+- **Accuracy (0.0-1.0)**: Citation validity, source credibility, scholarly metadata presence
+- **Completeness (0.0-1.0)**: Metadata coverage, content depth, multi-modal content
+- **Consistency (0.0-1.0)**: Title-content alignment, internal coherence
+- **Timeliness (0.0-1.0)**: Publication recency, content freshness
+- **Relevance (0.0-1.0)**: Classification confidence, citation count
+
+---
+
+#### POST /quality/recalculate
+
+Trigger quality recomputation for one or more resources with optional custom weights.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_ids": ["uuid1", "uuid2"],
+  "weights": {
+    "accuracy": 0.35,
+    "completeness": 0.25,
+    "consistency": 0.20,
+    "timeliness": 0.10,
+    "relevance": 0.10
+  }
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | No | Single resource UUID to recompute |
+| `resource_ids` | array[string] | No | Multiple resource UUIDs to recompute |
+| `weights` | object | No | Custom dimension weights (must sum to 1.0) |
+
+**Note:** Must provide either `resource_id` or `resource_ids`, not both.
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued",
+  "message": "Quality computation queued for background processing"
+}
+```
+
+**Example:**
+```bash
+# Recalculate single resource with default weights
+curl -X POST http://127.0.0.1:8000/quality/recalculate \
+  -H "Content-Type: application/json" \
+  -d '{"resource_id": "550e8400-e29b-41d4-a716-446655440000"}'
+
+# Recalculate multiple resources with custom weights
+curl -X POST http://127.0.0.1:8000/quality/recalculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": ["uuid1", "uuid2", "uuid3"],
+    "weights": {
+      "accuracy": 0.40,
+      "completeness": 0.30,
+      "consistency": 0.15,
+      "timeliness": 0.10,
+      "relevance": 0.05
+    }
+  }'
+```
+
+**Custom Weights Validation:**
+- All five dimensions must be specified
+- Weights must sum to 1.0 (±0.01 tolerance)
+- Each weight must be between 0.0 and 1.0
+
+---
+
+#### GET /quality/outliers
+
+Retrieve paginated list of detected quality outliers with filtering options.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `page` | integer | Page number (1-indexed) | 1 |
+| `limit` | integer | Results per page (1-100) | 50 |
+| `min_outlier_score` | float | Minimum anomaly score (-1.0 to 1.0) | null |
+| `reason` | string | Filter by specific outlier reason | null |
+
+**Outlier Reasons:**
+- `low_accuracy` - Accuracy dimension < 0.3
+- `low_completeness` - Completeness dimension < 0.3
+- `low_consistency` - Consistency dimension < 0.3
+- `low_timeliness` - Timeliness dimension < 0.3
+- `low_relevance` - Relevance dimension < 0.3
+- `low_summary_coherence` - Summary coherence < 0.3
+- `low_summary_consistency` - Summary consistency < 0.3
+- `low_summary_fluency` - Summary fluency < 0.3
+- `low_summary_relevance` - Summary relevance < 0.3
+
+**Response (200 OK):**
+```json
+{
+  "total": 42,
+  "page": 1,
+  "limit": 50,
+  "outliers": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "quality_overall": 0.35,
+      "outlier_score": -0.82,
+      "outlier_reasons": ["low_accuracy", "low_completeness"],
+      "needs_quality_review": true,
+      "quality_last_computed": "2025-11-10T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get all outliers
+curl "http://127.0.0.1:8000/quality/outliers?limit=20"
+
+# Filter by outlier reason
+curl "http://127.0.0.1:8000/quality/outliers?reason=low_accuracy"
+
+# Filter by minimum outlier score
+curl "http://127.0.0.1:8000/quality/outliers?min_outlier_score=-0.5"
+```
+
+**Outlier Score Interpretation:**
+- Lower scores indicate higher anomaly likelihood
+- Scores < -0.5 are typically significant outliers
+- Uses Isolation Forest algorithm with contamination=0.1
+
+---
+
+#### GET /quality/degradation
+
+Monitor quality degradation over time by comparing historical scores.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `time_window_days` | integer | Lookback period in days | 30 |
+
+**Response (200 OK):**
+```json
+{
+  "time_window_days": 30,
+  "degraded_count": 15,
+  "degraded_resources": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "old_quality": 0.85,
+      "new_quality": 0.62,
+      "degradation_pct": 27.1,
+      "quality_last_computed": "2025-10-15T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Monitor degradation over 30 days
+curl "http://127.0.0.1:8000/quality/degradation?time_window_days=30"
+
+# Monitor degradation over 90 days
+curl "http://127.0.0.1:8000/quality/degradation?time_window_days=90"
+```
+
+**Degradation Detection:**
+- Compares current quality to historical quality
+- Flags resources with >20% quality drop
+- Automatically sets `needs_quality_review` flag
+- Common causes: broken links, outdated content, metadata corruption
+
+---
+
+#### POST /summaries/{id}/evaluate
+
+Trigger summary quality evaluation for a resource using G-Eval, FineSurE, and BERTScore metrics.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Resource UUID |
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `use_g_eval` | boolean | Use GPT-4 for G-Eval metrics | false |
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued",
+  "message": "Summary evaluation queued for background processing"
+}
+```
+
+**Example:**
+```bash
+# Evaluate without G-Eval (fast, no API cost)
+curl -X POST "http://127.0.0.1:8000/summaries/550e8400-e29b-41d4-a716-446655440000/evaluate?use_g_eval=false"
+
+# Evaluate with G-Eval (slower, requires OpenAI API key)
+curl -X POST "http://127.0.0.1:8000/summaries/550e8400-e29b-41d4-a716-446655440000/evaluate?use_g_eval=true"
+```
+
+**Evaluation Metrics:**
+- **G-Eval (optional)**: Coherence, consistency, fluency, relevance (1-5 scale, normalized to 0.0-1.0)
+- **FineSurE**: Completeness and conciseness (0.0-1.0)
+- **BERTScore**: Semantic similarity F1 score (0.0-1.0)
+- **Composite Score**: Weighted average of all metrics
+
+**Performance:**
+- Without G-Eval: <2 seconds per resource
+- With G-Eval: <10 seconds per resource (OpenAI API latency)
+
+---
+
+#### GET /quality/distribution
+
+Retrieve quality score distribution histogram with statistics.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `bins` | integer | Number of histogram bins (1-50) | 10 |
+| `dimension` | string | Dimension or "overall" | overall |
+
+**Dimension Options:**
+- `overall` - Overall quality score
+- `accuracy` - Accuracy dimension
+- `completeness` - Completeness dimension
+- `consistency` - Consistency dimension
+- `timeliness` - Timeliness dimension
+- `relevance` - Relevance dimension
+
+**Response (200 OK):**
+```json
+{
+  "dimension": "overall",
+  "bins": 10,
+  "distribution": [
+    {"range": "0.0-0.1", "count": 5},
+    {"range": "0.1-0.2", "count": 12},
+    {"range": "0.2-0.3", "count": 28},
+    {"range": "0.3-0.4", "count": 45},
+    {"range": "0.4-0.5", "count": 67},
+    {"range": "0.5-0.6", "count": 89},
+    {"range": "0.6-0.7", "count": 102},
+    {"range": "0.7-0.8", "count": 78},
+    {"range": "0.8-0.9", "count": 45},
+    {"range": "0.9-1.0", "count": 23}
+  ],
+  "statistics": {
+    "mean": 0.65,
+    "median": 0.68,
+    "std_dev": 0.18,
+    "min": 0.12,
+    "max": 0.98,
+    "total_resources": 494
+  }
+}
+```
+
+**Example:**
+```bash
+# Get overall quality distribution
+curl "http://127.0.0.1:8000/quality/distribution?bins=10&dimension=overall"
+
+# Get accuracy dimension distribution
+curl "http://127.0.0.1:8000/quality/distribution?bins=20&dimension=accuracy"
+```
+
+---
+
+#### GET /quality/trends
+
+Retrieve quality trends over time with configurable granularity.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `granularity` | string | Time period: daily, weekly, monthly | weekly |
+| `start_date` | date | Start of time range (ISO 8601) | 90 days ago |
+| `end_date` | date | End of time range (ISO 8601) | today |
+| `dimension` | string | Dimension or "overall" | overall |
+
+**Response (200 OK):**
+```json
+{
+  "dimension": "overall",
+  "granularity": "weekly",
+  "start_date": "2025-08-01",
+  "end_date": "2025-11-14",
+  "data_points": [
+    {
+      "period": "2025-W31",
+      "avg_quality": 0.72,
+      "resource_count": 145,
+      "date": "2025-08-03"
+    },
+    {
+      "period": "2025-W32",
+      "avg_quality": 0.74,
+      "resource_count": 167,
+      "date": "2025-08-10"
+    },
+    {
+      "period": "2025-W33",
+      "avg_quality": 0.71,
+      "resource_count": 189,
+      "date": "2025-08-17"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get weekly quality trends
+curl "http://127.0.0.1:8000/quality/trends?granularity=weekly&dimension=overall"
+
+# Get daily accuracy trends for last 30 days
+curl "http://127.0.0.1:8000/quality/trends?granularity=daily&dimension=accuracy&start_date=2025-10-15&end_date=2025-11-14"
+
+# Get monthly completeness trends
+curl "http://127.0.0.1:8000/quality/trends?granularity=monthly&dimension=completeness"
+```
+
+---
+
+#### GET /quality/dimensions
+
+Retrieve average scores per dimension across all resources.
+
+**Response (200 OK):**
+```json
+{
+  "dimensions": {
+    "accuracy": {
+      "avg": 0.75,
+      "min": 0.12,
+      "max": 0.98,
+      "std_dev": 0.15
+    },
+    "completeness": {
+      "avg": 0.68,
+      "min": 0.25,
+      "max": 0.95,
+      "std_dev": 0.18
+    },
+    "consistency": {
+      "avg": 0.82,
+      "min": 0.45,
+      "max": 0.99,
+      "std_dev": 0.12
+    },
+    "timeliness": {
+      "avg": 0.58,
+      "min": 0.10,
+      "max": 0.95,
+      "std_dev": 0.22
+    },
+    "relevance": {
+      "avg": 0.71,
+      "min": 0.30,
+      "max": 0.92,
+      "std_dev": 0.14
+    }
+  },
+  "overall": {
+    "avg": 0.71,
+    "min": 0.28,
+    "max": 0.96,
+    "std_dev": 0.16
+  },
+  "total_resources": 1247,
+  "resources_with_quality": 1247
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/quality/dimensions"
+```
+
+**Use Cases:**
+- Dashboard overview of quality metrics
+- Identify dimensions needing improvement
+- Compare quality across different resource types
+- Monitor quality trends over time
+
+---
+
+#### GET /quality/review-queue
+
+Retrieve resources flagged for quality review with priority ranking.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `page` | integer | Page number (1-indexed) | 1 |
+| `limit` | integer | Results per page (1-100) | 50 |
+| `sort_by` | string | Sort field | outlier_score |
+
+**Sort Options:**
+- `outlier_score` - Most anomalous first (lowest scores)
+- `quality_overall` - Lowest quality first
+- `updated_at` - Most recently updated first
+
+**Response (200 OK):**
+```json
+{
+  "total": 87,
+  "page": 1,
+  "limit": 50,
+  "review_queue": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "quality_overall": 0.35,
+      "is_quality_outlier": true,
+      "outlier_score": -0.82,
+      "outlier_reasons": ["low_accuracy", "low_completeness"],
+      "quality_last_computed": "2025-11-10T12:00:00Z",
+      "updated_at": "2025-11-10T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get review queue sorted by outlier score
+curl "http://127.0.0.1:8000/quality/review-queue?limit=20&sort_by=outlier_score"
+
+# Get review queue sorted by quality
+curl "http://127.0.0.1:8000/quality/review-queue?sort_by=quality_overall"
+
+# Get recently flagged resources
+curl "http://127.0.0.1:8000/quality/review-queue?sort_by=updated_at"
+```
+
+**Review Queue Population:**
+- Automatically populated by outlier detection
+- Populated by quality degradation monitoring
+- Can be manually flagged via resource updates
+- Cleared when resource quality improves
+
+---
+
+### Quality Assessment Integration
+
+#### Automatic Quality Computation
+
+Quality is automatically computed during resource ingestion:
+
+```python
+# In resource_service.py process_ingestion()
+# After successful ingestion:
+background_tasks.add_task(quality_service.compute_quality, resource_id)
+```
+
+#### Quality-Filtered Recommendations
+
+Recommendations automatically filter by quality:
+
+```python
+# Exclude low-quality resources
+recommendations = recommendation_service.generate_recommendations(
+    user_id=user_id,
+    min_quality=0.5,  # Filter out quality < 0.5
+    exclude_outliers=True  # Exclude quality outliers
+)
+```
+
+#### Scheduled Quality Monitoring
+
+Set up scheduled tasks for quality monitoring:
+
+```bash
+# Daily outlier detection (cron job at 2 AM)
+0 2 * * * curl -X POST http://127.0.0.1:8000/admin/quality/detect-outliers
+
+# Weekly degradation monitoring (cron job Sunday at 3 AM)
+0 3 * * 0 curl -X GET http://127.0.0.1:8000/quality/degradation?time_window_days=7
+```
+
+---
+
+### Quality Metrics Reference
+
+#### Quality Dimension Algorithms
+
+**Accuracy Computation:**
+```
+accuracy = 0.5 (baseline)
+  + 0.20 * (valid_citations / total_citations)
+  + 0.15 * (1 if credible_domain else 0)
+  + 0.15 * (1 if has_academic_identifier else 0)
+  + 0.10 * (1 if has_authors else 0)
+```
+
+**Completeness Computation:**
+```
+completeness = 0.0
+  + 0.30 * (filled_required_fields / 3)
+  + 0.30 * (filled_important_fields / 4)
+  + 0.20 * (filled_scholarly_fields / 4)
+  + 0.20 * (multimodal_content_score / 3)
+```
+
+**Consistency Computation:**
+```
+consistency = 0.7 (baseline)
+  + 0.15 * title_content_overlap
+  + 0.15 * (1 if good_compression_ratio else 0)
+```
+
+**Timeliness Computation:**
+```
+age_years = current_year - publication_year
+recency_score = max(0.0, 1.0 - (age_years / 20))
+timeliness = recency_score + (0.1 if ingested_within_30_days else 0)
+```
+
+**Relevance Computation:**
+```
+relevance = 0.5 (baseline)
+  + 0.20 * avg_classification_confidence
+  + 0.30 * min(0.3, log10(citation_count + 1) / 10)
+```
+
+#### Summary Quality Metrics
+
+**G-Eval Metrics (1-5 scale, normalized to 0.0-1.0):**
+- **Coherence**: Logical flow and structure
+- **Consistency**: Factual alignment with source
+- **Fluency**: Grammatical correctness
+- **Relevance**: Key information capture
+
+**FineSurE Metrics (0.0-1.0):**
+- **Completeness**: Coverage of key information (expect 15% overlap)
+- **Conciseness**: Information density (optimal 5-15% compression)
+
+**BERTScore (0.0-1.0):**
+- **F1 Score**: Token-level semantic similarity using BERT embeddings
+
+**Composite Summary Quality:**
+```
+summary_quality_overall = 
+  0.20 * coherence +
+  0.20 * consistency +
+  0.15 * fluency +
+  0.15 * relevance +
+  0.15 * completeness +
+  0.05 * conciseness +
+  0.10 * bertscore
+```
+
+---
+
+### Performance Characteristics
+
+**Quality Computation:**
+- Single resource: <1 second (excluding G-Eval)
+- Batch (100 resources): <100 seconds
+- Target throughput: 100 resources/minute
+
+**Summarization Evaluation:**
+- Without G-Eval: <2 seconds per resource
+- With G-Eval: <10 seconds per resource (OpenAI API latency)
+- BERTScore: <3 seconds per resource
+
+**Outlier Detection:**
+- 1000 resources: <30 seconds
+- Feature matrix construction: <5 seconds
+- Isolation Forest training: <10 seconds
+- Prediction: <5 seconds
+
+**API Response Times:**
+- GET /quality/details: <100ms
+- GET /quality/outliers: <200ms (paginated)
+- GET /quality/distribution: <500ms (aggregation)
+- GET /quality/trends: <1 second (time-series aggregation)
+
+---
+
+### Error Handling
+
+**Missing Resource:**
+```json
+{
+  "detail": "Resource not found",
+  "status_code": 404
+}
+```
+
+**Invalid Weights:**
+```json
+{
+  "detail": "Weights must sum to 1.0",
+  "status_code": 422
+}
+```
+
+**No Summary for Evaluation:**
+```json
+{
+  "detail": "Resource has no summary to evaluate",
+  "status_code": 400
+}
+```
+
+**OpenAI API Error:**
+- Falls back to neutral scores (0.7) for G-Eval metrics
+- Logs error for monitoring
+- Does not fail the entire evaluation
+
+**BERTScore Error:**
+- Falls back to neutral score (0.5)
+- Logs error for monitoring
+- Does not fail the entire evaluation
+
+---

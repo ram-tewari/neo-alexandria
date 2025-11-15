@@ -87,7 +87,9 @@ class ResourceTaxonomy(Base):
 
 # Import the QualityService directly without app initialization
 import importlib.util
-spec = importlib.util.spec_from_file_location("quality_service", "backend/app/services/quality_service.py")
+import os
+quality_service_path = os.path.join(os.path.dirname(__file__), "../../../app/services/quality_service.py")
+spec = importlib.util.spec_from_file_location("quality_service", quality_service_path)
 quality_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(quality_module)
 QualityService = quality_module.QualityService

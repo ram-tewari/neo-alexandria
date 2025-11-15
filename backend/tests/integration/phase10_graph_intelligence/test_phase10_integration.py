@@ -7,7 +7,7 @@ Tests end-to-end workflows including:
 """
 
 import pytest
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from backend.app.database.models import Resource, Citation, GraphEdge, GraphEmbedding, DiscoveryHypothesis
 from backend.app.services.graph_service import GraphService
 from backend.app.services.graph_embeddings_service import GraphEmbeddingsService
@@ -38,7 +38,16 @@ def test_resources(test_db):
         db_session.add(resource)
     
     db_session.commit()
-    return resources
+    
+    # Refresh all resources to keep them attached to the session
+    for resource in resources:
+        db_session.refresh(resource)
+    
+    # Keep session open by yielding instead of returning
+    yield resources
+    
+    # Cleanup after test
+    db_session.close()
 
 
 @pytest.fixture
@@ -67,7 +76,16 @@ def test_citations(test_db, test_resources):
         db_session.add(citation)
     
     db_session.commit()
-    return citations
+    
+    # Refresh all citations to keep them attached to the session
+    for citation in citations:
+        db_session.refresh(citation)
+    
+    # Keep session open by yielding instead of returning
+    yield citations
+    
+    # Cleanup after test
+    db_session.close()
 
 
 class TestEndToEndDiscoveryWorkflow:
@@ -84,6 +102,11 @@ class TestEndToEndDiscoveryWorkflow:
         6. Verify edge weight updates
         """
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         # Step 1: Build multi-layer graph
         graph_service = GraphService(db_session)
         graph = graph_service.build_multilayer_graph(refresh_cache=True)
@@ -117,10 +140,15 @@ class TestEndToEndDiscoveryWorkflow:
         embeddings_service.compute_fusion_embeddings(alpha=0.5)
         
         # Verify fusion embeddings created
-        fusion_count = db_session.query(GraphEmbedding).filter(
+        fusion_embeddings = db_session.query(GraphEmbedding).filter(
             GraphEmbedding.fusion_embedding.isnot(None)
-        ).count()
-        assert fusion_count == 10
+        ).all()
+        
+        # Refresh embeddings to keep them attached
+        for embedding in fusion_embeddings:
+            db_session.refresh(embedding)
+        
+        assert len(fusion_embeddings) == 10
         
         # Step 4: Perform open discovery from resource 0
         lbd_service = LBDService(db_session)
@@ -145,18 +173,25 @@ class TestEndToEndDiscoveryWorkflow:
         # Step 5: Validate hypothesis
         # Query the hypothesis record from database (it was stored by open_discovery)
         hypothesis_record = db_session.query(DiscoveryHypothesis).filter(
-            DiscoveryHypothesis.a_resource_id == test_resources[0].id,
-            DiscoveryHypothesis.c_resource_id == test_resources[2].id,
+            DiscoveryHypothesis.resource_a_id == test_resources[0].id,
+            DiscoveryHypothesis.resource_c_id == test_resources[2].id,
             DiscoveryHypothesis.hypothesis_type == "open"
         ).first()
         
         assert hypothesis_record is not None
+        
+        # Refresh to ensure object is attached to session
+        db_session.refresh(hypothesis_record)
         
         # Get initial edge weights
         initial_edges = db_session.query(GraphEdge).filter(
             GraphEdge.source_id == test_resources[0].id,
             GraphEdge.target_id == test_resources[1].id
         ).all()
+        
+        # Refresh edges to keep them attached
+        for edge in initial_edges:
+            db_session.refresh(edge)
         
         initial_weights = {e.edge_type: e.weight for e in initial_edges}
         
@@ -178,6 +213,10 @@ class TestEndToEndDiscoveryWorkflow:
             GraphEdge.target_id == test_resources[1].id
         ).all()
         
+        # Refresh edges to ensure they're attached
+        for edge in updated_edges:
+            db_session.refresh(edge)
+        
         for edge in updated_edges:
             if edge.edge_type in initial_weights:
                 assert edge.weight > initial_weights[edge.edge_type]
@@ -185,6 +224,11 @@ class TestEndToEndDiscoveryWorkflow:
     def test_closed_discovery_workflow(self, test_db, test_resources, test_citations):
         """Test closed discovery connecting two known resources."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         # Build graph
         graph_service = GraphService(db_session)
         graph_service.build_multilayer_graph(refresh_cache=True)
@@ -216,6 +260,11 @@ class TestRecommendationIntegration:
     def test_graph_based_recommendations(self, test_db, test_resources, test_citations):
         """Test graph-based recommendations include 2-hop neighbors."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         # Build graph
         graph_service = GraphService(db_session)
         graph_service.build_multilayer_graph(refresh_cache=True)
@@ -239,6 +288,11 @@ class TestRecommendationIntegration:
     def test_recommendation_fusion(self, test_db, test_resources, test_citations):
         """Test fusion of content-based and graph-based recommendations."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         # Build graph
         graph_service = GraphService(db_session)
         graph_service.build_multilayer_graph(refresh_cache=True)
@@ -279,6 +333,11 @@ class TestRecommendationIntegration:
     def test_hypothesis_based_recommendations(self, test_db, test_resources, test_citations):
         """Test recommendations include LBD hypotheses."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         # Build graph
         graph_service = GraphService(db_session)
         graph_service.build_multilayer_graph(refresh_cache=True)
@@ -312,6 +371,11 @@ class TestGraphCaching:
     def test_graph_cache_reuse(self, test_db, test_resources, test_citations):
         """Test that graph is cached and reused."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         graph_service = GraphService(db_session)
         
         # First build
@@ -327,6 +391,11 @@ class TestGraphCaching:
     def test_graph_cache_invalidation(self, test_db, test_resources, test_citations):
         """Test that cache is invalidated when graph changes."""
         db_session = test_db()
+        
+        # Merge test resources into this session to ensure they're attached
+        test_resources = [db_session.merge(r) for r in test_resources]
+        test_citations = [db_session.merge(c) for c in test_citations]
+        
         graph_service = GraphService(db_session)
         
         # Build initial graph

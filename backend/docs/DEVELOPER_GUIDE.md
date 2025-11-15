@@ -2636,6 +2636,782 @@ def recommend_based_on_annotations(
     # ... (see recommendation_service.py for full implementation)
 ```
 
+### Phase 9: Multi-Dimensional Quality Assessment Architecture
+
+Phase 9 introduces a sophisticated quality assessment framework that evaluates resources across multiple dimensions, detects quality outliers, monitors quality degradation, and evaluates summary quality using state-of-the-art metrics.
+
+#### Quality Service Architecture
+
+The `QualityService` class implements multi-dimensional quality assessment with five independent quality dimensions:
+
+```python
+class QualityService:
+    """
+    Multi-dimensional quality assessment service.
+    
+    Computes quality scores across five dimensions:
+    - Accuracy: Citation validity, source credibility, scholarly metadata
+    - Completeness: Metadata coverage, content depth, multi-modal content
+    - Consistency: Title-content alignment, internal coherence
+    - Timeliness: Publication recency, content freshness
+    - Relevance: Classification confidence, citation count
+    """
+    
+    def __init__(self, db: Session, quality_version: str = "v2.0"):
+        self.db = db
+        self.quality_version = quality_version
+        self.default_weights = {
+            "accuracy": 0.30,
+            "completeness": 0.25,
+            "consistency": 0.20,
+            "timeliness": 0.15,
+            "relevance": 0.10
+        }
+```
+
+**Key Methods:**
+
+##### compute_quality()
+
+Computes multi-dimensional quality scores for a resource:
+
+```python
+def compute_quality(
+    self,
+    resource_id: str,
+    weights: Optional[Dict[str, float]] = None
+) -> Dict[str, float]:
+    """
+    Compute quality scores for a resource.
+    
+    Algorithm:
+    1. Fetch resource from database
+    2. Validate custom weights (if provided)
+    3. Compute each dimension score:
+       - _compute_accuracy()
+       - _compute_completeness()
+       - _compute_consistency()
+       - _compute_timeliness()
+       - _compute_relevance()
+    4. Compute weighted overall score
+    5. Update resource with all scores
+    6. Return dimension scores
+    
+    Performance: <1 second per resource
+    """
+    resource = self.db.query(Resource).filter(Resource.id == resource_id).first()
+    if not resource:
+        raise ValueError("Resource not found")
+    
+    # Use custom or default weights
+    weights = weights or self.default_weights
+    self._validate_weights(weights)
+    
+    # Compute dimension scores
+    accuracy = self._compute_accuracy(resource)
+    completeness = self._compute_completeness(resource)
+    consistency = self._compute_consistency(resource)
+    timeliness = self._compute_timeliness(resource)
+    relevance = self._compute_relevance(resource)
+    
+    # Compute weighted overall score
+    overall = (
+        weights["accuracy"] * accuracy +
+        weights["completeness"] * completeness +
+        weights["consistency"] * consistency +
+        weights["timeliness"] * timeliness +
+        weights["relevance"] * relevance
+    )
+    
+    # Update resource
+    resource.quality_accuracy = accuracy
+    resource.quality_completeness = completeness
+    resource.quality_consistency = consistency
+    resource.quality_timeliness = timeliness
+    resource.quality_relevance = relevance
+    resource.quality_overall = overall
+    resource.quality_weights = json.dumps(weights)
+    resource.quality_last_computed = datetime.utcnow()
+    resource.quality_computation_version = self.quality_version
+    resource.quality_score = overall  # Backward compatibility
+    
+    self.db.commit()
+    
+    return {
+        "accuracy": accuracy,
+        "completeness": completeness,
+        "consistency": consistency,
+        "timeliness": timeliness,
+        "relevance": relevance,
+        "overall": overall
+    }
+```
+
+##### Quality Dimension Computation Methods
+
+**Accuracy Dimension:**
+```python
+def _compute_accuracy(self, resource: Resource) -> float:
+    """
+    Compute accuracy dimension score.
+    
+    Factors:
+    - Citation validity (20%): Ratio of valid citations
+    - Source credibility (15%): Domain reputation
+    - Scholarly metadata (15%): DOI, PMID, arXiv presence
+    - Author metadata (10%): Author information presence
+    
+    Baseline: 0.5 (neutral for resources without citations)
+    """
+    score = 0.5  # Neutral baseline
+    
+    # Citation validity (Phase 6 integration)
+    citations = resource.citations_outbound
+    if citations:
+        valid_count = sum(1 for c in citations if c.target_resource_id is not None)
+        score += 0.2 * (valid_count / len(citations))
+    
+    # Source credibility
+    if resource.source:
+        credible_domains = ['.edu', '.gov', '.org', 'arxiv.org', 'doi.org']
+        if any(domain in resource.source for domain in credible_domains):
+            score += 0.15
+    
+    # Scholarly metadata (Phase 6.5 integration)
+    if resource.doi or resource.pmid or resource.arxiv_id:
+        score += 0.15
+    
+    # Author metadata
+    if resource.creator or resource.authors:
+        score += 0.10
+    
+    return min(score, 1.0)
+```
+
+**Completeness Dimension:**
+```python
+def _compute_completeness(self, resource: Resource) -> float:
+    """
+    Compute completeness dimension score.
+    
+    Factors:
+    - Required fields (30%): title, content, url
+    - Important fields (30%): summary, tags, authors, publication_year
+    - Scholarly fields (20%): doi, journal, affiliations, funding
+    - Multi-modal content (20%): equations, tables, figures
+    """
+    score = 0.0
+    
+    # Required fields
+    required = [resource.title, resource.content, resource.source]
+    filled_required = sum(1 for field in required if field)
+    score += 0.3 * (filled_required / 3)
+    
+    # Important fields
+    important = [resource.summary, resource.subject, resource.creator, resource.publication_year]
+    filled_important = sum(1 for field in important if field)
+    score += 0.3 * (filled_important / 4)
+    
+    # Scholarly fields
+    scholarly = [resource.doi, resource.journal, resource.affiliations, resource.funding_sources]
+    filled_scholarly = sum(1 for field in scholarly if field)
+    score += 0.2 * (filled_scholarly / 4)
+    
+    # Multi-modal content
+    multimodal_score = (
+        (1 if resource.has_equations else 0) +
+        (1 if resource.has_tables else 0) +
+        (1 if resource.has_figures else 0)
+    ) / 3
+    score += 0.2 * multimodal_score
+    
+    return score
+```
+
+**Consistency Dimension:**
+```python
+def _compute_consistency(self, resource: Resource) -> float:
+    """
+    Compute consistency dimension score.
+    
+    Factors:
+    - Title-content alignment (15%): Keyword overlap
+    - Summary-content alignment (15%): Compression ratio
+    
+    Baseline: 0.7 (optimistic - assume consistent unless proven otherwise)
+    """
+    score = 0.7  # Optimistic baseline
+    
+    # Title-content alignment
+    if resource.title and resource.content:
+        title_words = set(resource.title.lower().split())
+        content_words = set(resource.content.lower().split()[:500])
+        overlap = len(title_words & content_words) / len(title_words) if title_words else 0
+        score += 0.15 * overlap
+    
+    # Summary-content alignment
+    if resource.summary and resource.content:
+        compression_ratio = len(resource.summary.split()) / len(resource.content.split())
+        if 0.05 <= compression_ratio <= 0.15:  # Good summary length
+            score += 0.15
+    
+    return min(score, 1.0)
+```
+
+**Timeliness Dimension:**
+```python
+def _compute_timeliness(self, resource: Resource) -> float:
+    """
+    Compute timeliness dimension score.
+    
+    Factors:
+    - Publication recency: Decay function (20 year half-life)
+    - Ingestion recency (10%): Bonus for recently ingested
+    
+    Baseline: 0.5 (neutral for undated content)
+    """
+    score = 0.5  # Neutral for undated content
+    
+    if resource.publication_year:
+        current_year = datetime.now().year
+        age_years = current_year - resource.publication_year
+        
+        if age_years <= 0:
+            recency_score = 1.0
+        else:
+            # Decay function: 20 year half-life
+            recency_score = max(0.0, 1.0 - (age_years / 20))
+        
+        score = recency_score
+    
+    # Ingestion recency bonus
+    if resource.created_at:
+        days_since_ingestion = (datetime.utcnow() - resource.created_at).days
+        if days_since_ingestion <= 30:
+            score += 0.1
+    
+    return min(score, 1.0)
+```
+
+**Relevance Dimension:**
+```python
+def _compute_relevance(self, resource: Resource) -> float:
+    """
+    Compute relevance dimension score.
+    
+    Factors:
+    - Classification confidence (20%): Phase 8.5 ML classification
+    - Citation count (30%): Logarithmic scaling
+    
+    Baseline: 0.5 (neutral)
+    """
+    score = 0.5  # Neutral baseline
+    
+    # Classification confidence (Phase 8.5 integration)
+    if resource.taxonomy_classifications:
+        avg_confidence = sum(tc.confidence for tc in resource.taxonomy_classifications) / len(resource.taxonomy_classifications)
+        score += 0.2 * avg_confidence
+    
+    # Citation count (Phase 6 integration)
+    if resource.citations_inbound:
+        citation_count = len(resource.citations_inbound)
+        citation_score = min(0.3, math.log10(citation_count + 1) / 10)
+        score += citation_score
+    
+    return min(score, 1.0)
+```
+
+#### Outlier Detection with Isolation Forest
+
+The quality service uses Isolation Forest for anomaly detection:
+
+```python
+def detect_quality_outliers(self, batch_size: int = 1000) -> int:
+    """
+    Detect quality outliers using Isolation Forest.
+    
+    Algorithm:
+    1. Query resources with quality scores (batch)
+    2. Require minimum 10 resources for statistical validity
+    3. Build feature matrix from quality dimensions
+    4. Train Isolation Forest (contamination=0.1, n_estimators=100)
+    5. Predict anomaly scores
+    6. Identify outliers (prediction == -1)
+    7. Update resources with outlier flags
+    
+    Performance: <30 seconds for 1000 resources
+    """
+    from sklearn.ensemble import IsolationForest
+    import numpy as np
+    
+    # Query resources with quality scores
+    resources = (
+        self.db.query(Resource)
+        .filter(Resource.quality_overall.isnot(None))
+        .limit(batch_size)
+        .all()
+    )
+    
+    if len(resources) < 10:
+        raise ValueError("Insufficient resources for outlier detection (minimum 10)")
+    
+    # Build feature matrix
+    features = []
+    for resource in resources:
+        feature_vector = [
+            resource.quality_accuracy or 0.5,
+            resource.quality_completeness or 0.5,
+            resource.quality_consistency or 0.5,
+            resource.quality_timeliness or 0.5,
+            resource.quality_relevance or 0.5
+        ]
+        
+        # Add summary quality dimensions if available
+        if resource.summary_coherence:
+            feature_vector.extend([
+                resource.summary_coherence,
+                resource.summary_consistency,
+                resource.summary_fluency,
+                resource.summary_relevance
+            ])
+        
+        features.append(feature_vector)
+    
+    X = np.array(features)
+    
+    # Train Isolation Forest
+    iso_forest = IsolationForest(
+        contamination=0.1,  # Expect 10% outliers
+        n_estimators=100,
+        random_state=42
+    )
+    predictions = iso_forest.fit_predict(X)
+    anomaly_scores = iso_forest.score_samples(X)
+    
+    # Update resources
+    outlier_count = 0
+    for i, resource in enumerate(resources):
+        if predictions[i] == -1:  # Outlier detected
+            resource.is_quality_outlier = True
+            resource.outlier_score = float(anomaly_scores[i])
+            resource.outlier_reasons = json.dumps(self._identify_outlier_reasons(resource))
+            resource.needs_quality_review = True
+            outlier_count += 1
+    
+    self.db.commit()
+    return outlier_count
+```
+
+**Outlier Reason Identification:**
+```python
+def _identify_outlier_reasons(self, resource: Resource) -> List[str]:
+    """
+    Identify which dimensions are causing outlier status.
+    
+    Heuristic: Dimensions with scores <0.3 are unusual
+    """
+    reasons = []
+    
+    if resource.quality_accuracy and resource.quality_accuracy < 0.3:
+        reasons.append("low_accuracy")
+    if resource.quality_completeness and resource.quality_completeness < 0.3:
+        reasons.append("low_completeness")
+    if resource.quality_consistency and resource.quality_consistency < 0.3:
+        reasons.append("low_consistency")
+    if resource.quality_timeliness and resource.quality_timeliness < 0.3:
+        reasons.append("low_timeliness")
+    if resource.quality_relevance and resource.quality_relevance < 0.3:
+        reasons.append("low_relevance")
+    
+    # Check summary quality dimensions
+    if resource.summary_coherence and resource.summary_coherence < 0.3:
+        reasons.append("low_summary_coherence")
+    if resource.summary_consistency and resource.summary_consistency < 0.3:
+        reasons.append("low_summary_consistency")
+    if resource.summary_fluency and resource.summary_fluency < 0.3:
+        reasons.append("low_summary_fluency")
+    if resource.summary_relevance and resource.summary_relevance < 0.3:
+        reasons.append("low_summary_relevance")
+    
+    return reasons
+```
+
+#### Quality Degradation Monitoring
+
+Monitor quality changes over time to detect content issues:
+
+```python
+def monitor_quality_degradation(self, time_window_days: int = 30) -> List[Dict]:
+    """
+    Detect quality degradation by comparing historical scores.
+    
+    Algorithm:
+    1. Compute cutoff date (now - time_window_days)
+    2. Query resources with old quality scores
+    3. Recompute quality for each resource
+    4. Compare old vs new scores
+    5. Flag resources with >20% degradation
+    
+    Use Cases:
+    - Broken links (accuracy drops)
+    - Outdated content (timeliness drops)
+    - Metadata corruption (completeness drops)
+    """
+    from datetime import timedelta
+    
+    cutoff_date = datetime.utcnow() - timedelta(days=time_window_days)
+    
+    # Query resources with old quality scores
+    resources = (
+        self.db.query(Resource)
+        .filter(Resource.quality_last_computed < cutoff_date)
+        .filter(Resource.quality_overall.isnot(None))
+        .all()
+    )
+    
+    degraded_resources = []
+    
+    for resource in resources:
+        old_quality = resource.quality_overall
+        
+        # Recompute quality
+        new_scores = self.compute_quality(resource.id)
+        new_quality = new_scores["overall"]
+        
+        # Check for degradation (>20% drop)
+        if old_quality - new_quality > 0.2:
+            degradation_pct = ((old_quality - new_quality) / old_quality) * 100
+            
+            degraded_resources.append({
+                "resource_id": str(resource.id),
+                "title": resource.title,
+                "old_quality": old_quality,
+                "new_quality": new_quality,
+                "degradation_pct": degradation_pct
+            })
+            
+            # Flag for review
+            resource.needs_quality_review = True
+    
+    self.db.commit()
+    return degraded_resources
+```
+
+#### Summarization Evaluator Service
+
+The `SummarizationEvaluator` class evaluates summary quality using state-of-the-art metrics:
+
+```python
+class SummarizationEvaluator:
+    """
+    Summary quality evaluation using G-Eval, FineSurE, and BERTScore.
+    
+    Metrics:
+    - G-Eval: LLM-based evaluation (coherence, consistency, fluency, relevance)
+    - FineSurE: Completeness and conciseness
+    - BERTScore: Semantic similarity
+    """
+    
+    def __init__(self, db: Session, openai_api_key: Optional[str] = None):
+        self.db = db
+        self.openai_api_key = openai_api_key
+        if openai_api_key:
+            import openai
+            openai.api_key = openai_api_key
+```
+
+**G-Eval Metrics (GPT-4 based):**
+```python
+def g_eval_coherence(self, summary: str) -> float:
+    """
+    Evaluate summary coherence using GPT-4.
+    
+    Prompt: Rate logical flow and structure on 1-5 scale
+    Normalization: (rating - 1) / 4 → 0.0-1.0 range
+    Fallback: 0.7 if API unavailable
+    """
+    if not self.openai_api_key:
+        return 0.7  # Fallback score
+    
+    prompt = f"""You will be given a summary. Your task is to rate the summary on coherence.
+
+Evaluation Criteria:
+Coherence (1-5) - the collective quality of all sentences. The summary should be 
+well-structured and well-organized. The summary should not just be a heap of related 
+information, but should build from sentence to sentence to a coherent body of 
+information about a topic.
+
+Evaluation Steps:
+1. Read the summary carefully.
+2. Rate the summary for coherence on a scale of 1 to 5.
+
+Summary:
+{summary}
+
+Provide only the numeric rating (1-5):"""
+    
+    try:
+        import openai
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0
+        )
+        rating = float(response.choices[0].message.content.strip())
+        return (rating - 1) / 4  # Normalize to 0.0-1.0
+    except Exception as e:
+        logger.error(f"G-Eval coherence error: {e}")
+        return 0.7  # Fallback
+```
+
+**FineSurE Metrics:**
+```python
+def finesure_completeness(self, summary: str, reference: str) -> float:
+    """
+    Measure coverage of key information.
+    
+    Algorithm:
+    1. Extract words from reference and summary
+    2. Remove stopwords
+    3. Compute overlap ratio
+    4. Expect 15% coverage for good summaries
+    """
+    stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for'}
+    
+    summary_words = set(summary.lower().split()) - stopwords
+    reference_words = set(reference.lower().split()) - stopwords
+    
+    if not reference_words:
+        return 0.5
+    
+    overlap = len(summary_words & reference_words)
+    expected_coverage = len(reference_words) * 0.15
+    
+    return min(1.0, overlap / expected_coverage)
+
+def finesure_conciseness(self, summary: str, reference: str) -> float:
+    """
+    Measure information density.
+    
+    Optimal compression ratio: 5-15% of original length
+    """
+    compression_ratio = len(summary.split()) / len(reference.split())
+    
+    if 0.05 <= compression_ratio <= 0.15:
+        return 1.0
+    elif compression_ratio < 0.05:
+        return compression_ratio / 0.05  # Too short
+    else:
+        return max(0.0, 1.0 - (compression_ratio - 0.15) / 0.35)  # Too long
+```
+
+**BERTScore Metric:**
+```python
+def bertscore_f1(self, summary: str, reference: str) -> float:
+    """
+    Compute BERTScore F1 for semantic similarity.
+    
+    Model: microsoft/deberta-xlarge-mnli
+    Fallback: 0.5 on error
+    """
+    try:
+        from bert_score import score
+        
+        P, R, F1 = score(
+            [summary],
+            [reference],
+            lang="en",
+            model_type="microsoft/deberta-xlarge-mnli"
+        )
+        
+        return float(F1[0])
+    except Exception as e:
+        logger.error(f"BERTScore error: {e}")
+        return 0.5  # Fallback
+```
+
+**Composite Evaluation:**
+```python
+def evaluate_summary(
+    self,
+    resource_id: str,
+    use_g_eval: bool = False
+) -> Dict[str, float]:
+    """
+    Comprehensive summary evaluation.
+    
+    Metrics:
+    - G-Eval (optional): coherence, consistency, fluency, relevance
+    - FineSurE: completeness, conciseness
+    - BERTScore: F1 score
+    
+    Composite score weights:
+    - coherence: 20%
+    - consistency: 20%
+    - fluency: 15%
+    - relevance: 15%
+    - completeness: 15%
+    - conciseness: 5%
+    - bertscore: 10%
+    
+    Performance:
+    - Without G-Eval: <2 seconds
+    - With G-Eval: <10 seconds (OpenAI API latency)
+    """
+    resource = self.db.query(Resource).filter(Resource.id == resource_id).first()
+    if not resource or not resource.summary:
+        raise ValueError("Resource has no summary to evaluate")
+    
+    summary = resource.summary
+    reference = resource.content or resource.title
+    
+    # G-Eval metrics (optional)
+    if use_g_eval and self.openai_api_key:
+        coherence = self.g_eval_coherence(summary)
+        consistency = self.g_eval_consistency(summary, reference)
+        fluency = self.g_eval_fluency(summary)
+        relevance = self.g_eval_relevance(summary, reference)
+    else:
+        # Fallback scores
+        coherence = consistency = fluency = relevance = 0.7
+    
+    # FineSurE metrics
+    completeness = self.finesure_completeness(summary, reference)
+    conciseness = self.finesure_conciseness(summary, reference)
+    
+    # BERTScore
+    bertscore = self.bertscore_f1(summary, reference)
+    
+    # Composite score
+    overall = (
+        0.20 * coherence +
+        0.20 * consistency +
+        0.15 * fluency +
+        0.15 * relevance +
+        0.15 * completeness +
+        0.05 * conciseness +
+        0.10 * bertscore
+    )
+    
+    # Update resource
+    resource.summary_coherence = coherence
+    resource.summary_consistency = consistency
+    resource.summary_fluency = fluency
+    resource.summary_relevance = relevance
+    resource.summary_completeness = completeness
+    resource.summary_conciseness = conciseness
+    resource.summary_bertscore = bertscore
+    resource.summary_quality_overall = overall
+    
+    self.db.commit()
+    
+    return {
+        "coherence": coherence,
+        "consistency": consistency,
+        "fluency": fluency,
+        "relevance": relevance,
+        "completeness": completeness,
+        "conciseness": conciseness,
+        "bertscore": bertscore,
+        "overall": overall
+    }
+```
+
+#### Integration with Existing Services
+
+**Resource Ingestion Integration:**
+```python
+# In resource_service.py
+async def process_ingestion(resource_id: str, background_tasks: BackgroundTasks):
+    """Process resource ingestion with quality assessment."""
+    # ... existing ingestion steps ...
+    
+    # Compute quality after content extraction
+    background_tasks.add_task(
+        quality_service.compute_quality,
+        resource_id
+    )
+```
+
+**Recommendation Service Integration:**
+```python
+# In recommendation_service.py
+def generate_recommendations(
+    self,
+    user_id: str,
+    min_quality: float = 0.5,
+    exclude_outliers: bool = True
+) -> List[Resource]:
+    """Generate recommendations with quality filtering."""
+    # Build user profile
+    profile_vector = self._generate_user_profile_vector(
+        user_id,
+        min_quality=min_quality,
+        exclude_outliers=exclude_outliers
+    )
+    
+    # Score candidates with quality boost
+    candidates = self._score_candidates(
+        profile_vector,
+        quality_boost=1.2  # 20% boost for high-quality resources
+    )
+    
+    return candidates
+```
+
+#### Extension Points for Custom Quality Dimensions
+
+The quality service is designed for extensibility:
+
+**Adding New Quality Dimensions:**
+```python
+# 1. Add database column
+# In migration file:
+op.add_column('resources', sa.Column('quality_custom_dimension', sa.Float(), nullable=True))
+
+# 2. Add computation method
+def _compute_custom_dimension(self, resource: Resource) -> float:
+    """Compute custom quality dimension."""
+    # Your custom logic here
+    return score
+
+# 3. Update compute_quality method
+def compute_quality(self, resource_id: str, weights: Optional[Dict] = None):
+    # ... existing code ...
+    custom_score = self._compute_custom_dimension(resource)
+    resource.quality_custom_dimension = custom_score
+    
+    # Update overall score calculation
+    overall = (
+        weights["accuracy"] * accuracy +
+        weights["completeness"] * completeness +
+        # ... other dimensions ...
+        weights["custom_dimension"] * custom_score
+    )
+```
+
+**Custom Outlier Detection Algorithms:**
+```python
+# Alternative to Isolation Forest
+def detect_outliers_zscore(self, threshold: float = 3.0) -> int:
+    """Detect outliers using Z-score method."""
+    import numpy as np
+    from scipy import stats
+    
+    resources = self.db.query(Resource).filter(Resource.quality_overall.isnot(None)).all()
+    scores = [r.quality_overall for r in resources]
+    
+    z_scores = np.abs(stats.zscore(scores))
+    outliers = np.where(z_scores > threshold)[0]
+    
+    for idx in outliers:
+        resources[idx].is_quality_outlier = True
+        resources[idx].needs_quality_review = True
+    
+    self.db.commit()
+    return len(outliers)
+```
+
 ## Testing Framework
 
 ### Test Structure

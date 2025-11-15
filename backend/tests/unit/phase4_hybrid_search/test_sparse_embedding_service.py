@@ -59,6 +59,10 @@ class TestSparseEmbeddingService:
         mock_values.__len__ = Mock(return_value=5)
         mock_values.min.return_value = 0.1
         mock_values.max.return_value = 0.9
+        # Mock the > operator for mask creation
+        mock_mask = MagicMock()
+        mock_mask.__len__ = Mock(return_value=5)
+        mock_values.__gt__ = Mock(return_value=mock_mask)
         mock_values.__getitem__ = Mock(return_value=mock_values)
         mock_values.tolist.return_value = [0.9, 0.7, 0.5, 0.3, 0.1]
         mock_indices.__getitem__ = Mock(return_value=mock_indices)
@@ -69,6 +73,7 @@ class TestSparseEmbeddingService:
         mock_torch.sum.return_value.squeeze.return_value = mock_sparse_vec
         mock_torch.log.return_value = mock_hidden_states
         mock_torch.relu.return_value = mock_hidden_states
+        mock_torch.ones_like.return_value = mock_values
         
         # Mock model and tokenizer
         mock_tokenizer = MagicMock()
@@ -90,8 +95,8 @@ class TestSparseEmbeddingService:
             
             result = service.generate_sparse_embedding("test text")
             
-            # Verify result is a dictionary or empty dict (if model not loaded)
-            assert isinstance(result, dict) or result == {}
+            # Verify result is a dictionary (should return dict with mocked values)
+            assert isinstance(result, dict)
     
     def test_generate_sparse_embeddings_batch_empty_list(self, service):
         """Test batch generation with empty list."""

@@ -5,13 +5,93 @@ import tempfile
 from pathlib import Path
 from typing import Generator
 from unittest.mock import patch
+import logging
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
 from backend.app.database.base import Base, get_db, get_sync_db
 from backend.app.main import app
+
+# Configure logging for database initialization
+logger = logging.getLogger(__name__)
+
+
+def ensure_database_schema(engine):
+    """
+    Ensure database schema is current before tests run.
+    
+    This helper verifies that all model fields exist in the database schema
+    and creates/updates tables as needed. It handles:
+    - Creating all tables if they don't exist
+    - Applying Alembic migrations to ensure schema is current
+    - Verifying critical fields (sparse_embedding, description, publisher)
+    - Applying schema updates for test databases
+    
+    Args:
+        engine: SQLAlchemy engine instance
+    """
+    try:
+        # First, ensure all tables exist
+        Base.metadata.create_all(engine)
+        
+        # Apply Alembic migrations to ensure schema is current
+        try:
+            from alembic import command
+            from alembic.config import Config
+            import os
+            
+            # Get the backend directory path
+            backend_dir = Path(__file__).parent.parent
+            alembic_ini_path = backend_dir / "alembic.ini"
+            
+            if alembic_ini_path.exists():
+                # Create Alembic config
+                alembic_cfg = Config(str(alembic_ini_path))
+                
+                # Set the database URL for this test engine
+                alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
+                
+                # Apply all migrations up to head
+                with engine.begin() as connection:
+                    alembic_cfg.attributes['connection'] = connection
+                    command.upgrade(alembic_cfg, "head")
+                
+                logger.info("Alembic migrations applied successfully")
+            else:
+                logger.warning(f"Alembic config not found at {alembic_ini_path}")
+        except Exception as migration_error:
+            logger.warning(f"Could not apply Alembic migrations: {migration_error}")
+            # Continue without migrations - tables are already created
+        
+        # Verify critical Resource model fields exist
+        inspector = inspect(engine)
+        
+        if 'resources' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('resources')}
+            required_fields = {'sparse_embedding', 'description', 'publisher'}
+            missing_fields = required_fields - columns
+            
+            if missing_fields:
+                logger.warning(f"Missing fields in resources table after migrations: {missing_fields}")
+                # Drop and recreate to ensure schema is current
+                Base.metadata.drop_all(engine)
+                Base.metadata.create_all(engine)
+                logger.info("Database schema recreated with current model definitions")
+            else:
+                logger.debug("All required Resource fields verified in database schema")
+        else:
+            logger.info("Resources table created")
+            
+    except Exception as e:
+        logger.error(f"Error ensuring database schema: {e}")
+        # Fallback: try to create all tables
+        try:
+            Base.metadata.create_all(engine)
+        except Exception as create_error:
+            logger.error(f"Failed to create tables: {create_error}")
+            raise
 
 
 @pytest.fixture
@@ -23,7 +103,16 @@ def temp_dir() -> Generator[Path, None, None]:
 
 @pytest.fixture
 def test_db():
-    """Create a file-based SQLite database for testing."""
+    """
+    Create a file-based SQLite database for testing with current schema.
+    
+    This fixture:
+    - Creates a temporary SQLite database file
+    - Ensures all tables are created with current model definitions
+    - Verifies critical fields exist (sparse_embedding, description, publisher)
+    - Provides session factory for test database operations
+    - Cleans up database file after tests complete
+    """
     import tempfile
     import os
     
@@ -33,10 +122,10 @@ def test_db():
     
     try:
         engine = create_engine(f"sqlite:///{temp_db.name}", echo=False)
-        # Drop all tables first to ensure clean schema
-        Base.metadata.drop_all(engine)
-        # Create all tables with current schema
-        Base.metadata.create_all(engine)
+        
+        # Use the database initialization helper to ensure schema is current
+        ensure_database_schema(engine)
+        
         TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
         def override_get_db():
@@ -138,6 +227,23 @@ def sample_resource_data():
         "language": "en",
         "type": "article"
     }
+
+
+@pytest.fixture
+def db_session(test_db):
+    """
+    Create a database session for unit tests.
+    
+    This fixture provides a session that can be used in unit tests
+    that need database access. It uses the test_db fixture to ensure
+    proper schema initialization.
+    """
+    session = test_db()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
 
 
 @pytest.fixture
@@ -346,30 +452,37 @@ def mock_ddgs_search():
         },
     ]
     
-    with patch('backend.app.services.recommendation_service.DDGS') as mock_ddgs:
-        class MockDDGS:
-            def __init__(self, *args, **kwargs):
-                pass
+    # Try to patch DDGS if it exists in recommendation_service
+    # If it doesn't exist, skip the patch (recommendation service may not use DDGS)
+    try:
+        with patch('backend.app.services.recommendation_service.DDGS') as mock_ddgs:
+            class MockDDGS:
+                def __init__(self, *args, **kwargs):
+                    pass
+                
+                def __enter__(self):
+                    return self
+                
+                def __exit__(self, exc_type, exc_val, exc_tb):
+                    return False
+                
+                def text(self, query, max_results):
+                    # Return results based on query relevance
+                    if "machine learning" in query.lower() or "ml" in query.lower():
+                        return mock_results[:2]  # ML-related results
+                    elif "python" in query.lower():
+                        return mock_results[1:3]  # Python-related results
+                    elif "ai" in query.lower() or "artificial intelligence" in query.lower():
+                        return mock_results[2:4]  # AI-related results
+                    else:
+                        return mock_results[:max_results]  # Generic results
             
-            def __enter__(self):
-                return self
-            
-            def __exit__(self, exc_type, exc_val, exc_tb):
-                return False
-            
-            def text(self, query, max_results):
-                # Return results based on query relevance
-                if "machine learning" in query.lower() or "ml" in query.lower():
-                    return mock_results[:2]  # ML-related results
-                elif "python" in query.lower():
-                    return mock_results[1:3]  # Python-related results
-                elif "ai" in query.lower() or "artificial intelligence" in query.lower():
-                    return mock_results[2:4]  # AI-related results
-                else:
-                    return mock_results[:max_results]  # Generic results
-        
-        mock_ddgs.return_value = MockDDGS()
-        yield mock_ddgs
+            mock_ddgs.return_value = MockDDGS()
+            yield mock_ddgs
+    except AttributeError:
+        # DDGS doesn't exist in recommendation_service, yield None
+        # Tests using this fixture should handle None gracefully
+        yield None
 
 
 @pytest.fixture
@@ -492,3 +605,269 @@ def reset_prometheus_registry():
                 pass  # Ignore if already unregistered
     except Exception:
         pass  # Ignore any errors during cleanup
+
+
+# ============================================================================
+# Task 10: Improved Test Fixture Reliability
+# ============================================================================
+
+@pytest.fixture
+def valid_resource(test_db):
+    """
+    Create a comprehensive resource fixture with all required fields populated.
+    
+    This fixture provides a resource with:
+    - Non-zero quality_score (0.85)
+    - Valid dense embedding (384-dimensional)
+    - Valid sparse embedding (JSON string format)
+    - All commonly tested fields populated
+    - Proper session management (refreshed after commit)
+    
+    Requirements: 6.1, 6.2, 6.3, 6.4
+    """
+    from datetime import datetime, timezone
+    from backend.app.database.models import Resource
+    import json
+    
+    db = test_db()
+    
+    # Create resource with all commonly tested fields
+    resource = Resource(
+        # Core Dublin Core fields
+        title="Comprehensive Test Resource",
+        description="A detailed test resource with all fields populated for reliable testing",
+        creator="Test Author",
+        publisher="Test Publisher",
+        contributor="Test Contributor",
+        type="article",
+        format="text/html",
+        language="en",
+        source="https://example.com/test-resource",
+        identifier="test-resource-001",
+        
+        # Multi-valued fields
+        subject=["Machine Learning", "Artificial Intelligence", "Data Science"],
+        relation=["related-resource-001", "related-resource-002"],
+        
+        # Classification and status
+        classification_code="004",  # Computer science
+        read_status="unread",
+        
+        # Quality scores - non-zero for realistic testing
+        quality_score=0.85,
+        quality_accuracy=0.88,
+        quality_completeness=0.90,
+        quality_consistency=0.82,
+        quality_timeliness=0.85,
+        quality_relevance=0.87,
+        quality_overall=0.85,
+        quality_last_computed=datetime.now(timezone.utc),
+        quality_computation_version="1.0",
+        
+        # Valid embeddings for vector operations
+        embedding=[0.1] * 384,  # 384-dimensional dense embedding
+        sparse_embedding=json.dumps({"1": 0.5, "42": 0.3, "100": 0.2}),  # Valid sparse embedding
+        sparse_embedding_model="bge-m3",
+        
+        # Ingestion workflow - completed successfully
+        ingestion_status="completed",
+        ingestion_error=None,
+        ingestion_started_at=datetime.now(timezone.utc),
+        ingestion_completed_at=datetime.now(timezone.utc),
+        
+        # Scholarly metadata
+        authors=json.dumps([{"name": "Test Author", "affiliation": "Test University"}]),
+        affiliations=json.dumps(["Test University", "Research Institute"]),
+        doi="10.1234/test.2024.001",
+        publication_year=2024,
+        journal="Test Journal of Computer Science",
+        
+        # Content structure
+        equation_count=5,
+        table_count=3,
+        figure_count=2,
+        reference_count=25,
+        
+        # Metadata quality
+        metadata_completeness_score=0.95,
+        extraction_confidence=0.92,
+        requires_manual_review=False,
+        
+        # Quality outlier detection
+        is_quality_outlier=False,
+        outlier_score=None,
+        needs_quality_review=False,
+        
+        # Summary quality
+        summary_coherence=0.88,
+        summary_consistency=0.85,
+        summary_fluency=0.90,
+        summary_relevance=0.87,
+        
+        # Timestamps
+        date_created=datetime.now(timezone.utc),
+        date_modified=datetime.now(timezone.utc),
+    )
+    
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)  # Keep object attached to session
+    
+    yield resource
+    
+    # Cleanup
+    try:
+        db.delete(resource)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def resource_with_file(test_db, tmp_path):
+    """
+    Create a resource fixture with an actual archive directory on disk.
+    
+    This fixture:
+    - Creates a temporary archive directory with test files using tmp_path
+    - Sets resource.identifier to the archive path
+    - Creates required archive files (raw.html, text.txt, meta.json)
+    - Ensures files exist and are readable
+    - Cleans up files after test
+    
+    Requirements: 6.3
+    """
+    from datetime import datetime, timezone
+    from backend.app.database.models import Resource
+    import json
+    
+    db = test_db()
+    
+    # Create archive directory structure
+    archive_dir = tmp_path / "test_archive"
+    archive_dir.mkdir(exist_ok=True)
+    
+    # Create required archive files
+    (archive_dir / "raw.html").write_text("<html><body>Test content</body></html>")
+    (archive_dir / "text.txt").write_text("Test content extracted from HTML")
+    (archive_dir / "meta.json").write_text(json.dumps({
+        "url": "https://example.com/test",
+        "title": "Resource with File",
+        "extracted_at": datetime.now(timezone.utc).isoformat()
+    }))
+    
+    # Create resource with identifier pointing to archive
+    resource = Resource(
+        title="Resource with File",
+        description="Test resource with an actual archive directory on disk",
+        publisher="Test Publisher",
+        type="article",
+        language="en",
+        source="https://example.com/test",
+        
+        # Identifier stores the archive path
+        identifier=str(archive_dir),
+        
+        # Other required fields
+        subject=["Testing", "File Management"],
+        quality_score=0.80,
+        embedding=[0.1] * 384,
+        sparse_embedding=json.dumps({"1": 0.5}),
+        
+        ingestion_status="completed",
+        ingestion_completed_at=datetime.now(timezone.utc),
+        
+        classification_code="004",
+        read_status="unread",
+        
+        date_created=datetime.now(timezone.utc),
+        date_modified=datetime.now(timezone.utc),
+    )
+    
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
+    
+    yield resource
+    
+    # Cleanup
+    try:
+        db.delete(resource)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+        # File cleanup is handled by tmp_path fixture
+
+
+@pytest.fixture
+def valid_ingestion_resource(test_db):
+    """
+    Create a resource fixture that will succeed during ingestion.
+    
+    This fixture provides a resource with:
+    - Valid data that won't cause ingestion failures
+    - Proper URL format
+    - All required fields for successful processing
+    - Expected 'completed' status after ingestion
+    
+    Requirements: 6.1, 6.5
+    """
+    from datetime import datetime, timezone
+    from backend.app.database.models import Resource
+    import json
+    
+    db = test_db()
+    
+    resource = Resource(
+        # Valid URL for ingestion
+        source="https://example.com/valid-article",
+        identifier="valid-article-001",
+        
+        # Core fields
+        title="Valid Ingestion Test Article",
+        description="An article with valid data for successful ingestion testing",
+        publisher="Reliable Publisher",
+        creator="Test Author",
+        type="article",
+        language="en",
+        
+        # Multi-valued fields
+        subject=["Computer Science", "Software Engineering"],
+        
+        # Quality and classification
+        quality_score=0.75,
+        classification_code="004",
+        read_status="unread",
+        
+        # Valid embeddings
+        embedding=[0.1] * 384,
+        sparse_embedding=json.dumps({"1": 0.5, "10": 0.3}),
+        sparse_embedding_model="bge-m3",
+        
+        # Ingestion status - will be updated during processing
+        ingestion_status="pending",
+        ingestion_error=None,
+        
+        # Timestamps
+        date_created=datetime.now(timezone.utc),
+        date_modified=datetime.now(timezone.utc),
+    )
+    
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
+    
+    yield resource
+    
+    # Cleanup
+    try:
+        db.delete(resource)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()

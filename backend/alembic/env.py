@@ -76,20 +76,33 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Use settings for database URL
-    settings = get_settings()
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    # Check if a connection was provided (e.g., from test fixtures)
+    connectable = config.attributes.get('connection', None)
     
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    if connectable is None:
+        # Use settings for database URL
+        settings = get_settings()
+        configuration = config.get_section(config.config_ini_section, {})
+        configuration["sqlalchemy.url"] = settings.DATABASE_URL
+        
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+        
+        # It's an engine, need to connect
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection, target_metadata=target_metadata
+            )
 
-    with connectable.connect() as connection:
+            with context.begin_transaction():
+                context.run_migrations()
+    else:
+        # It's already a connection (from test fixture)
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connectable, target_metadata=target_metadata
         )
 
         with context.begin_transaction():

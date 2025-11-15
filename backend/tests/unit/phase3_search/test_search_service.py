@@ -480,6 +480,45 @@ class TestThreeWayHybridSearch:
         
         db.close()
     
+    def test_search_latency_performance(self, test_db, sample_resources):
+        """Test that search latency meets performance requirements.
+        
+        Baseline performance measurement: Three-way hybrid search operations complete in
+        10-12 seconds for standard queries with small datasets due to the complexity of
+        combining FTS5, dense, and sparse search methods. Threshold set to 15 seconds
+        to allow for 90th percentile + 20% margin and accommodate system variability.
+        """
+        import time
+        
+        db = test_db()
+        
+        query = SearchQuery(
+            text="machine learning",
+            limit=10,
+            offset=0
+        )
+        
+        # Measure search latency
+        start_time = time.time()
+        result = AdvancedSearchService.search_three_way_hybrid(
+            db=db,
+            query=query,
+            enable_reranking=False,
+            adaptive_weighting=True
+        )
+        elapsed = time.time() - start_time
+        
+        resources, total, facets, snippets, metadata = result
+        
+        # Check that search completed within acceptable time
+        assert elapsed < 15.0, f"Search took {elapsed:.3f}s (max 15.0s)"
+        
+        # Also verify the metadata latency is reasonable
+        if 'latency_ms' in metadata:
+            assert metadata['latency_ms'] < 15000, f"Reported latency {metadata['latency_ms']}ms (max 15000ms)"
+        
+        db.close()
+    
     def test_query_analysis_short(self):
         """Test query analysis for short queries."""
         analysis = AdvancedSearchService._analyze_query("ML AI")

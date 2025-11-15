@@ -252,7 +252,164 @@ The **[Changelog](CHANGELOG.md)** provides detailed information about:
 - Phase 4: Vector embeddings and hybrid search
 - Phase 5: Hybrid knowledge graph
 - Phase 5.5: Personalized recommendations
-- Phase 6: Citation network and link intelligence ✅
+- Phase 6: Citation network and link intelligence
+- Phase 9: Multi-dimensional quality assessment ✅
+
+## Phase 9: Multi-Dimensional Quality Assessment
+
+Phase 9 introduces a sophisticated quality assessment framework that evaluates resources across multiple dimensions and provides automated quality monitoring.
+
+### Quick Start Guide
+
+**1. Compute Quality for a Resource**
+```bash
+curl -X POST http://127.0.0.1:8000/quality/recalculate \
+  -H "Content-Type: application/json" \
+  -d '{"resource_id": "550e8400-e29b-41d4-a716-446655440000"}'
+```
+
+**2. Get Quality Details**
+```bash
+curl http://127.0.0.1:8000/resources/550e8400-e29b-41d4-a716-446655440000/quality-details
+```
+
+**3. Find Quality Outliers**
+```bash
+curl http://127.0.0.1:8000/quality/outliers?limit=20
+```
+
+**4. Monitor Quality Degradation**
+```bash
+curl http://127.0.0.1:8000/quality/degradation?time_window_days=30
+```
+
+**5. Evaluate Summary Quality**
+```bash
+curl -X POST http://127.0.0.1:8000/summaries/550e8400-e29b-41d4-a716-446655440000/evaluate?use_g_eval=false
+```
+
+### Quality Dimensions
+
+Resources are assessed across five independent dimensions:
+
+**Accuracy (30% default weight)**
+- Citation validity from Phase 6 citation data
+- Source credibility based on domain reputation (.edu, .gov, .org, arxiv.org, doi.org)
+- Scholarly metadata presence (DOI, PMID, arXiv ID)
+- Author information completeness
+
+**Completeness (25% default weight)**
+- Required fields: title, content, url
+- Important fields: summary, tags, authors, publication_year
+- Scholarly fields: doi, journal, affiliations, funding_sources
+- Multi-modal content: equations, tables, figures
+
+**Consistency (20% default weight)**
+- Title-content alignment using keyword overlap
+- Summary-content alignment using semantic similarity
+- Internal coherence without contradictions
+
+**Timeliness (15% default weight)**
+- Publication recency with 20-year decay function
+- Ingestion recency bonus for recently added content
+- Content freshness indicators
+
+**Relevance (10% default weight)**
+- Classification confidence from Phase 8.5 ML classification
+- Citation count using logarithmic scaling from Phase 6
+- Topical alignment with user interests
+
+### Summarization Evaluation Metrics
+
+Summaries are evaluated using state-of-the-art metrics:
+
+**G-Eval (LLM-based evaluation using GPT-4)**
+- **Coherence**: Logical flow and structure (1-5 scale)
+- **Consistency**: Factual alignment with source document (1-5 scale)
+- **Fluency**: Grammatical correctness and readability (1-5 scale)
+- **Relevance**: Key information capture (1-5 scale)
+
+**FineSurE (Fine-grained summarization evaluation)**
+- **Completeness**: Coverage of key information from reference (0.0-1.0)
+- **Conciseness**: Information density with optimal 5-15% compression ratio (0.0-1.0)
+
+**BERTScore (Semantic similarity)**
+- **F1 Score**: Token-level semantic similarity using BERT embeddings (0.0-1.0)
+- Model: microsoft/deberta-xlarge-mnli for high accuracy
+
+**Composite Score**: Weighted average of all metrics
+- Coherence 20%, Consistency 20%, Fluency 15%, Relevance 15%, Completeness 15%, Conciseness 5%, BERTScore 10%
+
+### Automated Quality Monitoring
+
+**Outlier Detection**
+- Uses Isolation Forest algorithm to detect anomalous quality scores
+- Processes resources in batches (default 1000)
+- Identifies specific outlier reasons (low accuracy, low completeness, etc.)
+- Automatically flags resources for human review
+
+**Quality Degradation Monitoring**
+- Compares historical quality scores to detect degradation over time
+- Configurable time window (default 30 days)
+- Detects 20% quality drops indicating content issues
+- Identifies broken links, outdated content, metadata corruption
+
+**Scheduled Tasks**
+- Daily outlier detection to maintain quality standards
+- Weekly degradation monitoring to catch content issues
+- Automatic review queue population for curator attention
+
+### Custom Quality Weights
+
+Adjust dimension weights for domain-specific priorities:
+
+**Academic Research**
+```json
+{
+  "accuracy": 0.40,
+  "completeness": 0.30,
+  "consistency": 0.15,
+  "timeliness": 0.10,
+  "relevance": 0.05
+}
+```
+
+**News/Current Events**
+```json
+{
+  "accuracy": 0.25,
+  "completeness": 0.15,
+  "consistency": 0.15,
+  "timeliness": 0.35,
+  "relevance": 0.10
+}
+```
+
+**Educational Content**
+```json
+{
+  "accuracy": 0.30,
+  "completeness": 0.20,
+  "consistency": 0.25,
+  "timeliness": 0.10,
+  "relevance": 0.15
+}
+```
+
+### Integration with Recommendations
+
+Quality scores enhance the recommendation system:
+- Filters out low-quality resources (quality_overall < 0.5)
+- Excludes quality outliers from recommendations
+- Applies 20% boost to high-quality resources (quality_overall > 0.8)
+- Weights recommendations by quality scores
+
+### Performance Characteristics
+
+- **Quality Computation**: <1 second per resource (excluding G-Eval)
+- **G-Eval Evaluation**: <10 seconds per resource (OpenAI API latency)
+- **Outlier Detection**: <30 seconds for 1000 resources
+- **Batch Processing**: 100 resources/minute throughput
 
 ## License and Legal
 
@@ -260,6 +417,6 @@ This documentation is part of the Neo Alexandria 2.0 project and is subject to t
 
 ---
 
-**Last Updated:** November 9, 2025
-**Documentation Version:** 1.1.0
-**API Version:** 0.8.0
+**Last Updated:** November 14, 2025
+**Documentation Version:** 1.2.0
+**API Version:** 1.2.0

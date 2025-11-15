@@ -105,8 +105,8 @@ class TestContentQualityAnalyzer:
         """Test reading ease normalization with middle score."""
         analyzer = ContentQualityAnalyzer()
         result = analyzer._normalize_reading_ease(45.5)
-        # (45.5 - (-30)) / (121 - (-30)) = 75.5 / 151 ≈ 0.5
-        expected = (45.5 - (-30.0)) / (121.0 - (-30.0))
+        # (45.5 - (-30)) / (100 - (-30)) = 75.5 / 130 ≈ 0.58
+        expected = (45.5 - (-30.0)) / (100.0 - (-30.0))
         assert abs(result - expected) < 0.001
     
     def test_normalize_reading_ease_extreme_high(self):
@@ -141,9 +141,10 @@ class TestContentQualityAnalyzer:
             
             result = analyzer.overall_quality(resource, text)
             
-            # metadata_completeness = 1.0, normalized_readability = 0.5
-            # 0.6 * 1.0 + 0.4 * 0.5 = 0.8
-            expected = 0.6 * 1.0 + 0.4 * 0.5
+            # metadata_completeness = 1.0, normalized_readability = (75 - (-30)) / (100 - (-30)) = 0.8077
+            # 0.6 * 1.0 + 0.4 * 0.8077 = 0.923
+            normalized_read = (75.0 - (-30.0)) / (100.0 - (-30.0))
+            expected = 0.6 * 1.0 + 0.4 * normalized_read
             assert abs(result - expected) < 0.001
     
     def test_overall_quality_without_text(self):
@@ -202,9 +203,10 @@ class TestContentQualityAnalyzer:
             
             result = analyzer.overall_quality(resource, text)
             
-            # metadata_completeness = 2/7, normalized_readability = 0.5
-            # 0.6 * (2/7) + 0.4 * 0.5
-            expected = 0.6 * (2.0 / 7.0) + 0.4 * 0.5
+            # metadata_completeness = 2/7, normalized_readability = (75 - (-30)) / (100 - (-30)) = 0.8077
+            # 0.6 * (2/7) + 0.4 * 0.8077
+            normalized_read = (75.0 - (-30.0)) / (100.0 - (-30.0))
+            expected = 0.6 * (2.0 / 7.0) + 0.4 * normalized_read
             assert abs(result - expected) < 0.001
 
     # ----------------------------

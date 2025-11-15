@@ -1,0 +1,124 @@
+{
+  "dashboard": {
+    "title": "Neo Alexandria Phase 11 - Recommendation System",
+    "tags": ["neo-alexandria", "recommendations", "phase11"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Recommendation Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(neo_alexandria_request_duration_seconds_bucket{endpoint=~\"/api/recommendations.*\"}[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(neo_alexandria_request_duration_seconds_bucket{endpoint=~\"/api/recommendations.*\"}[5m]))",
+            "legendFormat": "p50"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Latency"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(neo_alexandria_requests_total{endpoint=~\"/api/recommendations.*\"}[5m])",
+            "legendFormat": "{{endpoint}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(neo_alexandria_cache_hits_total[5m]) / (rate(neo_alexandria_cache_hits_total[5m]) + rate(neo_alexandria_cache_misses_total[5m]))",
+            "legendFormat": "{{cache_type}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Hit Rate"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(neo_alexandria_requests_total{status_code=~\"5..\"}[5m])",
+            "legendFormat": "5xx errors"
+          },
+          {
+            "expr": "rate(neo_alexandria_requests_total{status_code=~\"4..\"}[5m])",
+            "legendFormat": "4xx errors"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Errors/sec"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Database Query Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(neo_alexandria_database_query_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}} p95"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Query Time"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Active Ingestions",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "neo_alexandria_active_ingestions",
+            "legendFormat": "Active"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Count"
+          }
+        ]
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

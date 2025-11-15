@@ -1,0 +1,40 @@
+# Prometheus Configuration for Neo Alexandria Phase 11
+# 
+# This configuration file sets up Prometheus to scrape metrics from the
+# Neo Alexandria API and monitor the recommendation system.
+#
+# Usage:
+#   prometheus --config.file=prometheus_config.yml
+
+global:
+  scrape_interval: 15s  # Scrape metrics every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'neo-alexandria'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'localhost:9093'
+
+# Rule files for alerting (optional)
+# rule_files:
+#   - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Neo Alexandria API metrics
+  - job_name: 'neo-alexandria-api'
+    static_configs:
+      - targets: ['localhost:8000']  # Adjust port if needed
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -3654,3 +3654,1335 @@ renderGraph(graph.nodes, graph.edges);
 ---
 
 ## Phase 8: Three-Way Hybrid Search Endpoints
+
+
+---
+
+## Phase 9: Multi-Dimensional Quality Assessment Endpoints
+
+Phase 9 introduces comprehensive quality assessment endpoints for evaluating resources across multiple dimensions, detecting quality outliers, monitoring quality degradation, and evaluating summary quality using state-of-the-art metrics.
+
+### Quality Assessment Endpoints
+
+#### GET /resources/{id}/quality-details
+
+Retrieve full quality dimension breakdown for a resource.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Resource UUID |
+
+**Response (200 OK):**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "quality_dimensions": {
+    "accuracy": 0.75,
+    "completeness": 0.82,
+    "consistency": 0.88,
+    "timeliness": 0.65,
+    "relevance": 0.79
+  },
+  "quality_overall": 0.77,
+  "quality_weights": {
+    "accuracy": 0.30,
+    "completeness": 0.25,
+    "consistency": 0.20,
+    "timeliness": 0.15,
+    "relevance": 0.10
+  },
+  "quality_last_computed": "2025-11-10T12:00:00Z",
+  "quality_computation_version": "v2.0",
+  "is_quality_outlier": false,
+  "outlier_score": null,
+  "outlier_reasons": null,
+  "needs_quality_review": false
+}
+```
+
+**Example:**
+```bash
+curl http://127.0.0.1:8000/resources/550e8400-e29b-41d4-a716-446655440000/quality-details
+```
+
+**Quality Dimensions Explained:**
+- **Accuracy (0.0-1.0)**: Citation validity, source credibility, scholarly metadata presence
+- **Completeness (0.0-1.0)**: Metadata coverage, content depth, multi-modal content
+- **Consistency (0.0-1.0)**: Title-content alignment, internal coherence
+- **Timeliness (0.0-1.0)**: Publication recency, content freshness
+- **Relevance (0.0-1.0)**: Classification confidence, citation count
+
+---
+
+#### POST /quality/recalculate
+
+Trigger quality recomputation for one or more resources with optional custom weights.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_ids": ["uuid1", "uuid2"],
+  "weights": {
+    "accuracy": 0.35,
+    "completeness": 0.25,
+    "consistency": 0.20,
+    "timeliness": 0.10,
+    "relevance": 0.10
+  }
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | No | Single resource UUID to recompute |
+| `resource_ids` | array[string] | No | Multiple resource UUIDs to recompute |
+| `weights` | object | No | Custom dimension weights (must sum to 1.0) |
+
+**Note:** Must provide either `resource_id` or `resource_ids`, not both.
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued",
+  "message": "Quality computation queued for background processing"
+}
+```
+
+**Example:**
+```bash
+# Recalculate single resource with default weights
+curl -X POST http://127.0.0.1:8000/quality/recalculate \
+  -H "Content-Type: application/json" \
+  -d '{"resource_id": "550e8400-e29b-41d4-a716-446655440000"}'
+
+# Recalculate multiple resources with custom weights
+curl -X POST http://127.0.0.1:8000/quality/recalculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_ids": ["uuid1", "uuid2", "uuid3"],
+    "weights": {
+      "accuracy": 0.40,
+      "completeness": 0.30,
+      "consistency": 0.15,
+      "timeliness": 0.10,
+      "relevance": 0.05
+    }
+  }'
+```
+
+**Custom Weights Validation:**
+- All five dimensions must be specified
+- Weights must sum to 1.0 (±0.01 tolerance)
+- Each weight must be between 0.0 and 1.0
+
+---
+
+#### GET /quality/outliers
+
+Retrieve paginated list of detected quality outliers with filtering options.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `page` | integer | Page number (1-indexed) | 1 |
+| `limit` | integer | Results per page (1-100) | 50 |
+| `min_outlier_score` | float | Minimum anomaly score (-1.0 to 1.0) | null |
+| `reason` | string | Filter by specific outlier reason | null |
+
+**Outlier Reasons:**
+- `low_accuracy` - Accuracy dimension < 0.3
+- `low_completeness` - Completeness dimension < 0.3
+- `low_consistency` - Consistency dimension < 0.3
+- `low_timeliness` - Timeliness dimension < 0.3
+- `low_relevance` - Relevance dimension < 0.3
+- `low_summary_coherence` - Summary coherence < 0.3
+- `low_summary_consistency` - Summary consistency < 0.3
+- `low_summary_fluency` - Summary fluency < 0.3
+- `low_summary_relevance` - Summary relevance < 0.3
+
+**Response (200 OK):**
+```json
+{
+  "total": 42,
+  "page": 1,
+  "limit": 50,
+  "outliers": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "quality_overall": 0.35,
+      "outlier_score": -0.82,
+      "outlier_reasons": ["low_accuracy", "low_completeness"],
+      "needs_quality_review": true,
+      "quality_last_computed": "2025-11-10T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get all outliers
+curl "http://127.0.0.1:8000/quality/outliers?limit=20"
+
+# Filter by outlier reason
+curl "http://127.0.0.1:8000/quality/outliers?reason=low_accuracy"
+
+# Filter by minimum outlier score
+curl "http://127.0.0.1:8000/quality/outliers?min_outlier_score=-0.5"
+```
+
+**Outlier Score Interpretation:**
+- Lower scores indicate higher anomaly likelihood
+- Scores < -0.5 are typically significant outliers
+- Uses Isolation Forest algorithm with contamination=0.1
+
+---
+
+#### GET /quality/degradation
+
+Monitor quality degradation over time by comparing historical scores.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `time_window_days` | integer | Lookback period in days | 30 |
+
+**Response (200 OK):**
+```json
+{
+  "time_window_days": 30,
+  "degraded_count": 15,
+  "degraded_resources": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "old_quality": 0.85,
+      "new_quality": 0.62,
+      "degradation_pct": 27.1,
+      "quality_last_computed": "2025-10-15T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Monitor degradation over 30 days
+curl "http://127.0.0.1:8000/quality/degradation?time_window_days=30"
+
+# Monitor degradation over 90 days
+curl "http://127.0.0.1:8000/quality/degradation?time_window_days=90"
+```
+
+**Degradation Detection:**
+- Compares current quality to historical quality
+- Flags resources with >20% quality drop
+- Automatically sets `needs_quality_review` flag
+- Common causes: broken links, outdated content, metadata corruption
+
+---
+
+#### POST /summaries/{id}/evaluate
+
+Trigger summary quality evaluation for a resource using G-Eval, FineSurE, and BERTScore metrics.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Resource UUID |
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `use_g_eval` | boolean | Use GPT-4 for G-Eval metrics | false |
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "queued",
+  "message": "Summary evaluation queued for background processing"
+}
+```
+
+**Example:**
+```bash
+# Evaluate without G-Eval (fast, no API cost)
+curl -X POST "http://127.0.0.1:8000/summaries/550e8400-e29b-41d4-a716-446655440000/evaluate?use_g_eval=false"
+
+# Evaluate with G-Eval (slower, requires OpenAI API key)
+curl -X POST "http://127.0.0.1:8000/summaries/550e8400-e29b-41d4-a716-446655440000/evaluate?use_g_eval=true"
+```
+
+**Evaluation Metrics:**
+- **G-Eval (optional)**: Coherence, consistency, fluency, relevance (1-5 scale, normalized to 0.0-1.0)
+- **FineSurE**: Completeness and conciseness (0.0-1.0)
+- **BERTScore**: Semantic similarity F1 score (0.0-1.0)
+- **Composite Score**: Weighted average of all metrics
+
+**Performance:**
+- Without G-Eval: <2 seconds per resource
+- With G-Eval: <10 seconds per resource (OpenAI API latency)
+
+---
+
+#### GET /quality/distribution
+
+Retrieve quality score distribution histogram with statistics.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `bins` | integer | Number of histogram bins (1-50) | 10 |
+| `dimension` | string | Dimension or "overall" | overall |
+
+**Dimension Options:**
+- `overall` - Overall quality score
+- `accuracy` - Accuracy dimension
+- `completeness` - Completeness dimension
+- `consistency` - Consistency dimension
+- `timeliness` - Timeliness dimension
+- `relevance` - Relevance dimension
+
+**Response (200 OK):**
+```json
+{
+  "dimension": "overall",
+  "bins": 10,
+  "distribution": [
+    {"range": "0.0-0.1", "count": 5},
+    {"range": "0.1-0.2", "count": 12},
+    {"range": "0.2-0.3", "count": 28},
+    {"range": "0.3-0.4", "count": 45},
+    {"range": "0.4-0.5", "count": 67},
+    {"range": "0.5-0.6", "count": 89},
+    {"range": "0.6-0.7", "count": 102},
+    {"range": "0.7-0.8", "count": 78},
+    {"range": "0.8-0.9", "count": 45},
+    {"range": "0.9-1.0", "count": 23}
+  ],
+  "statistics": {
+    "mean": 0.65,
+    "median": 0.68,
+    "std_dev": 0.18,
+    "min": 0.12,
+    "max": 0.98,
+    "total_resources": 494
+  }
+}
+```
+
+**Example:**
+```bash
+# Get overall quality distribution
+curl "http://127.0.0.1:8000/quality/distribution?bins=10&dimension=overall"
+
+# Get accuracy dimension distribution
+curl "http://127.0.0.1:8000/quality/distribution?bins=20&dimension=accuracy"
+```
+
+---
+
+#### GET /quality/trends
+
+Retrieve quality trends over time with configurable granularity.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `granularity` | string | Time period: daily, weekly, monthly | weekly |
+| `start_date` | date | Start of time range (ISO 8601) | 90 days ago |
+| `end_date` | date | End of time range (ISO 8601) | today |
+| `dimension` | string | Dimension or "overall" | overall |
+
+**Response (200 OK):**
+```json
+{
+  "dimension": "overall",
+  "granularity": "weekly",
+  "start_date": "2025-08-01",
+  "end_date": "2025-11-14",
+  "data_points": [
+    {
+      "period": "2025-W31",
+      "avg_quality": 0.72,
+      "resource_count": 145,
+      "date": "2025-08-03"
+    },
+    {
+      "period": "2025-W32",
+      "avg_quality": 0.74,
+      "resource_count": 167,
+      "date": "2025-08-10"
+    },
+    {
+      "period": "2025-W33",
+      "avg_quality": 0.71,
+      "resource_count": 189,
+      "date": "2025-08-17"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get weekly quality trends
+curl "http://127.0.0.1:8000/quality/trends?granularity=weekly&dimension=overall"
+
+# Get daily accuracy trends for last 30 days
+curl "http://127.0.0.1:8000/quality/trends?granularity=daily&dimension=accuracy&start_date=2025-10-15&end_date=2025-11-14"
+
+# Get monthly completeness trends
+curl "http://127.0.0.1:8000/quality/trends?granularity=monthly&dimension=completeness"
+```
+
+---
+
+#### GET /quality/dimensions
+
+Retrieve average scores per dimension across all resources.
+
+**Response (200 OK):**
+```json
+{
+  "dimensions": {
+    "accuracy": {
+      "avg": 0.75,
+      "min": 0.12,
+      "max": 0.98,
+      "std_dev": 0.15
+    },
+    "completeness": {
+      "avg": 0.68,
+      "min": 0.25,
+      "max": 0.95,
+      "std_dev": 0.18
+    },
+    "consistency": {
+      "avg": 0.82,
+      "min": 0.45,
+      "max": 0.99,
+      "std_dev": 0.12
+    },
+    "timeliness": {
+      "avg": 0.58,
+      "min": 0.10,
+      "max": 0.95,
+      "std_dev": 0.22
+    },
+    "relevance": {
+      "avg": 0.71,
+      "min": 0.30,
+      "max": 0.92,
+      "std_dev": 0.14
+    }
+  },
+  "overall": {
+    "avg": 0.71,
+    "min": 0.28,
+    "max": 0.96,
+    "std_dev": 0.16
+  },
+  "total_resources": 1247,
+  "resources_with_quality": 1247
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/quality/dimensions"
+```
+
+**Use Cases:**
+- Dashboard overview of quality metrics
+- Identify dimensions needing improvement
+- Compare quality across different resource types
+- Monitor quality trends over time
+
+---
+
+#### GET /quality/review-queue
+
+Retrieve resources flagged for quality review with priority ranking.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `page` | integer | Page number (1-indexed) | 1 |
+| `limit` | integer | Results per page (1-100) | 50 |
+| `sort_by` | string | Sort field | outlier_score |
+
+**Sort Options:**
+- `outlier_score` - Most anomalous first (lowest scores)
+- `quality_overall` - Lowest quality first
+- `updated_at` - Most recently updated first
+
+**Response (200 OK):**
+```json
+{
+  "total": 87,
+  "page": 1,
+  "limit": 50,
+  "review_queue": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Resource Title",
+      "quality_overall": 0.35,
+      "is_quality_outlier": true,
+      "outlier_score": -0.82,
+      "outlier_reasons": ["low_accuracy", "low_completeness"],
+      "quality_last_computed": "2025-11-10T12:00:00Z",
+      "updated_at": "2025-11-10T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+# Get review queue sorted by outlier score
+curl "http://127.0.0.1:8000/quality/review-queue?limit=20&sort_by=outlier_score"
+
+# Get review queue sorted by quality
+curl "http://127.0.0.1:8000/quality/review-queue?sort_by=quality_overall"
+
+# Get recently flagged resources
+curl "http://127.0.0.1:8000/quality/review-queue?sort_by=updated_at"
+```
+
+**Review Queue Population:**
+- Automatically populated by outlier detection
+- Populated by quality degradation monitoring
+- Can be manually flagged via resource updates
+- Cleared when resource quality improves
+
+---
+
+### Quality Assessment Integration
+
+#### Automatic Quality Computation
+
+Quality is automatically computed during resource ingestion:
+
+```python
+# In resource_service.py process_ingestion()
+# After successful ingestion:
+background_tasks.add_task(quality_service.compute_quality, resource_id)
+```
+
+#### Quality-Filtered Recommendations
+
+Recommendations automatically filter by quality:
+
+```python
+# Exclude low-quality resources
+recommendations = recommendation_service.generate_recommendations(
+    user_id=user_id,
+    min_quality=0.5,  # Filter out quality < 0.5
+    exclude_outliers=True  # Exclude quality outliers
+)
+```
+
+#### Scheduled Quality Monitoring
+
+Set up scheduled tasks for quality monitoring:
+
+```bash
+# Daily outlier detection (cron job at 2 AM)
+0 2 * * * curl -X POST http://127.0.0.1:8000/admin/quality/detect-outliers
+
+# Weekly degradation monitoring (cron job Sunday at 3 AM)
+0 3 * * 0 curl -X GET http://127.0.0.1:8000/quality/degradation?time_window_days=7
+```
+
+---
+
+### Quality Metrics Reference
+
+#### Quality Dimension Algorithms
+
+**Accuracy Computation:**
+```
+accuracy = 0.5 (baseline)
+  + 0.20 * (valid_citations / total_citations)
+  + 0.15 * (1 if credible_domain else 0)
+  + 0.15 * (1 if has_academic_identifier else 0)
+  + 0.10 * (1 if has_authors else 0)
+```
+
+**Completeness Computation:**
+```
+completeness = 0.0
+  + 0.30 * (filled_required_fields / 3)
+  + 0.30 * (filled_important_fields / 4)
+  + 0.20 * (filled_scholarly_fields / 4)
+  + 0.20 * (multimodal_content_score / 3)
+```
+
+**Consistency Computation:**
+```
+consistency = 0.7 (baseline)
+  + 0.15 * title_content_overlap
+  + 0.15 * (1 if good_compression_ratio else 0)
+```
+
+**Timeliness Computation:**
+```
+age_years = current_year - publication_year
+recency_score = max(0.0, 1.0 - (age_years / 20))
+timeliness = recency_score + (0.1 if ingested_within_30_days else 0)
+```
+
+**Relevance Computation:**
+```
+relevance = 0.5 (baseline)
+  + 0.20 * avg_classification_confidence
+  + 0.30 * min(0.3, log10(citation_count + 1) / 10)
+```
+
+#### Summary Quality Metrics
+
+**G-Eval Metrics (1-5 scale, normalized to 0.0-1.0):**
+- **Coherence**: Logical flow and structure
+- **Consistency**: Factual alignment with source
+- **Fluency**: Grammatical correctness
+- **Relevance**: Key information capture
+
+**FineSurE Metrics (0.0-1.0):**
+- **Completeness**: Coverage of key information (expect 15% overlap)
+- **Conciseness**: Information density (optimal 5-15% compression)
+
+**BERTScore (0.0-1.0):**
+- **F1 Score**: Token-level semantic similarity using BERT embeddings
+
+**Composite Summary Quality:**
+```
+summary_quality_overall = 
+  0.20 * coherence +
+  0.20 * consistency +
+  0.15 * fluency +
+  0.15 * relevance +
+  0.15 * completeness +
+  0.05 * conciseness +
+  0.10 * bertscore
+```
+
+---
+
+### Performance Characteristics
+
+**Quality Computation:**
+- Single resource: <1 second (excluding G-Eval)
+- Batch (100 resources): <100 seconds
+- Target throughput: 100 resources/minute
+
+**Summarization Evaluation:**
+- Without G-Eval: <2 seconds per resource
+- With G-Eval: <10 seconds per resource (OpenAI API latency)
+- BERTScore: <3 seconds per resource
+
+**Outlier Detection:**
+- 1000 resources: <30 seconds
+- Feature matrix construction: <5 seconds
+- Isolation Forest training: <10 seconds
+- Prediction: <5 seconds
+
+**API Response Times:**
+- GET /quality/details: <100ms
+- GET /quality/outliers: <200ms (paginated)
+- GET /quality/distribution: <500ms (aggregation)
+- GET /quality/trends: <1 second (time-series aggregation)
+
+---
+
+### Error Handling
+
+**Missing Resource:**
+```json
+{
+  "detail": "Resource not found",
+  "status_code": 404
+}
+```
+
+**Invalid Weights:**
+```json
+{
+  "detail": "Weights must sum to 1.0",
+  "status_code": 422
+}
+```
+
+**No Summary for Evaluation:**
+```json
+{
+  "detail": "Resource has no summary to evaluate",
+  "status_code": 400
+}
+```
+
+**OpenAI API Error:**
+- Falls back to neutral scores (0.7) for G-Eval metrics
+- Logs error for monitoring
+- Does not fail the entire evaluation
+
+**BERTScore Error:**
+- Falls back to neutral score (0.5)
+- Logs error for monitoring
+- Does not fail the entire evaluation
+
+---
+
+## Phase 11: Hybrid Recommendation Engine
+
+The Phase 11 Hybrid Recommendation Engine provides personalized, intelligent recommendations by combining Neural Collaborative Filtering (NCF), content-based similarity, and graph-based discovery. The system learns from user interactions, optimizes for diversity and novelty, and adapts to individual preferences.
+
+### Key Features
+
+- **Multi-Strategy Recommendations**: Combines collaborative filtering, content similarity, and graph relationships
+- **User Profile Learning**: Automatically learns preferences from interaction history
+- **Diversity Optimization**: Uses Maximal Marginal Relevance (MMR) to prevent filter bubbles
+- **Novelty Promotion**: Surfaces lesser-known but relevant resources
+- **Cold Start Handling**: Provides relevant recommendations for new users
+- **Performance**: <200ms latency for 20 recommendations
+
+---
+
+### GET /api/recommendations
+
+Get personalized recommendations for the authenticated user using hybrid strategy.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Number of recommendations (1-100) | 20 |
+| `strategy` | string | Recommendation strategy | hybrid |
+| `diversity` | float | Diversity preference override (0.0-1.0) | user profile |
+| `min_quality` | float | Minimum quality threshold (0.0-1.0) | 0.0 |
+
+**Strategy Options:**
+- `collaborative` - Neural Collaborative Filtering only (requires ≥5 interactions)
+- `content` - Content-based similarity only
+- `graph` - Graph-based relationships only
+- `hybrid` - Combines all strategies with weighted scoring (default)
+
+**Response (200 OK):**
+```json
+{
+  "recommendations": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Advanced Machine Learning Techniques",
+      "description": "Comprehensive guide to modern ML algorithms",
+      "score": 0.87,
+      "strategy": "hybrid",
+      "scores": {
+        "collaborative": 0.92,
+        "content": 0.85,
+        "graph": 0.78,
+        "quality": 0.88,
+        "recency": 0.65
+      },
+      "rank": 1,
+      "novelty_score": 0.42,
+      "source": "https://example.com/ml-guide",
+      "classification_code": "004",
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "metadata": {
+    "total": 20,
+    "strategy": "hybrid",
+    "diversity_applied": true,
+    "gini_coefficient": 0.24,
+    "user_interactions": 47,
+    "cold_start": false
+  }
+}
+```
+
+**Hybrid Scoring Formula:**
+```
+hybrid_score = 
+  0.35 * collaborative_score +
+  0.30 * content_score +
+  0.20 * graph_score +
+  0.10 * quality_score +
+  0.05 * recency_score
+```
+
+**Example:**
+```bash
+# Get 20 hybrid recommendations
+curl "http://127.0.0.1:8000/api/recommendations?limit=20"
+
+# Get collaborative filtering recommendations only
+curl "http://127.0.0.1:8000/api/recommendations?strategy=collaborative&limit=10"
+
+# Get diverse recommendations with high quality threshold
+curl "http://127.0.0.1:8000/api/recommendations?diversity=0.8&min_quality=0.7"
+```
+
+**Performance:**
+- Target latency: <200ms for 20 recommendations
+- Candidate generation: <100ms
+- Ranking and diversification: <100ms
+- Cache hit rate: >80% for user embeddings
+
+**Cold Start Behavior:**
+- Users with <5 interactions: Uses content + graph strategies only
+- Collaborative filtering enabled after 5+ interactions
+- Recommendations available immediately for new users
+
+---
+
+### POST /api/interactions
+
+Track user-resource interactions for personalized learning.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "interaction_type": "view",
+  "dwell_time": 45,
+  "scroll_depth": 0.8,
+  "session_id": "session_abc123"
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | Yes | UUID of the resource |
+| `interaction_type` | string | Yes | Type of interaction |
+| `dwell_time` | integer | No | Time spent in seconds |
+| `scroll_depth` | float | No | Scroll percentage (0.0-1.0) |
+| `session_id` | string | No | Session identifier |
+
+**Interaction Types:**
+- `view` - User viewed the resource (strength: 0.1-0.5 based on dwell time and scroll depth)
+- `annotation` - User annotated the resource (strength: 0.7)
+- `collection_add` - User added to collection (strength: 0.8)
+- `export` - User exported the resource (strength: 0.9)
+- `rating` - User rated the resource (strength: based on rating value)
+
+**Response (201 Created):**
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "user_id": "user123",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "interaction_type": "view",
+  "interaction_strength": 0.42,
+  "is_positive": true,
+  "confidence": 0.85,
+  "dwell_time": 45,
+  "scroll_depth": 0.8,
+  "return_visits": 1,
+  "interaction_timestamp": "2024-01-15T14:30:00Z"
+}
+```
+
+**Interaction Strength Calculation:**
+```python
+# View interaction
+strength = 0.1 + min(0.3, dwell_time/1000) + 0.1 * scroll_depth
+
+# Annotation
+strength = 0.7
+
+# Collection add
+strength = 0.8
+
+# Export
+strength = 0.9
+
+# Positive interaction threshold
+is_positive = strength > 0.4
+```
+
+**Example:**
+```bash
+# Track a view interaction
+curl -X POST http://127.0.0.1:8000/api/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "view",
+    "dwell_time": 120,
+    "scroll_depth": 0.95,
+    "session_id": "session_xyz789"
+  }'
+
+# Track a collection add
+curl -X POST http://127.0.0.1:8000/api/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "collection_add"
+  }'
+```
+
+**Automatic Profile Updates:**
+- Updates `total_interactions` count
+- Updates `last_active_at` timestamp
+- Triggers preference learning every 10 interactions
+- Recomputes user embedding for collaborative filtering
+
+---
+
+### GET /api/profile
+
+Retrieve user profile settings and learned preferences.
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "user123",
+  "research_domains": ["Machine Learning", "Artificial Intelligence"],
+  "active_domain": "Machine Learning",
+  "preferred_taxonomy_ids": ["tax_001", "tax_002"],
+  "preferred_authors": ["John Doe", "Jane Smith"],
+  "preferred_sources": ["arxiv.org", "nature.com"],
+  "excluded_sources": ["example.com"],
+  "diversity_preference": 0.5,
+  "novelty_preference": 0.3,
+  "recency_bias": 0.5,
+  "total_interactions": 47,
+  "avg_session_duration": 180,
+  "last_active_at": "2024-01-15T14:30:00Z",
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-15T14:30:00Z"
+}
+```
+
+**Preference Ranges:**
+- `diversity_preference`: 0.0 (focused) to 1.0 (diverse)
+- `novelty_preference`: 0.0 (popular) to 1.0 (novel)
+- `recency_bias`: 0.0 (timeless) to 1.0 (recent only)
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/profile"
+```
+
+---
+
+### PUT /api/profile
+
+Update user profile preferences.
+
+**Request Body:**
+```json
+{
+  "diversity_preference": 0.7,
+  "novelty_preference": 0.5,
+  "recency_bias": 0.4,
+  "research_domains": ["Machine Learning", "Natural Language Processing"],
+  "excluded_sources": ["example.com", "spam-site.com"]
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Description | Validation |
+|-------|------|-------------|------------|
+| `diversity_preference` | float | Diversity preference | 0.0-1.0 |
+| `novelty_preference` | float | Novelty preference | 0.0-1.0 |
+| `recency_bias` | float | Recency bias | 0.0-1.0 |
+| `research_domains` | array[string] | Research domains | Max 10 items |
+| `excluded_sources` | array[string] | Excluded sources | Max 50 items |
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "user123",
+  "diversity_preference": 0.7,
+  "novelty_preference": 0.5,
+  "recency_bias": 0.4,
+  "research_domains": ["Machine Learning", "Natural Language Processing"],
+  "excluded_sources": ["example.com", "spam-site.com"],
+  "updated_at": "2024-01-15T15:00:00Z"
+}
+```
+
+**Example:**
+```bash
+curl -X PUT http://127.0.0.1:8000/api/profile \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diversity_preference": 0.8,
+    "novelty_preference": 0.6,
+    "research_domains": ["Deep Learning", "Computer Vision"]
+  }'
+```
+
+**Validation Errors:**
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "diversity_preference"],
+      "msg": "ensure this value is less than or equal to 1.0",
+      "type": "value_error.number.not_le"
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/recommendations/feedback
+
+Submit feedback on recommendation quality.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "was_clicked": true,
+  "was_useful": true,
+  "feedback_notes": "Exactly what I was looking for!"
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | Yes | UUID of recommended resource |
+| `was_clicked` | boolean | Yes | Whether user clicked the recommendation |
+| `was_useful` | boolean | No | Whether recommendation was useful |
+| `feedback_notes` | string | No | Optional feedback text |
+
+**Response (201 Created):**
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440002",
+  "user_id": "user123",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "recommendation_strategy": "hybrid",
+  "recommendation_score": 0.87,
+  "rank_position": 1,
+  "was_clicked": true,
+  "was_useful": true,
+  "feedback_notes": "Exactly what I was looking for!",
+  "recommended_at": "2024-01-15T14:00:00Z",
+  "feedback_at": "2024-01-15T14:05:00Z"
+}
+```
+
+**Example:**
+```bash
+# Positive feedback
+curl -X POST http://127.0.0.1:8000/api/recommendations/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "was_clicked": true,
+    "was_useful": true,
+    "feedback_notes": "Very relevant!"
+  }'
+
+# Negative feedback
+curl -X POST http://127.0.0.1:8000/api/recommendations/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "was_clicked": false,
+    "was_useful": false
+  }'
+```
+
+**Feedback Usage:**
+- Computes click-through rate (CTR) by strategy
+- Identifies underperforming recommendation strategies
+- Trains NCF model with implicit feedback
+- Improves future recommendations
+
+---
+
+### Recommendation Algorithms
+
+#### Neural Collaborative Filtering (NCF)
+
+**Architecture:**
+```
+User ID → User Embedding (64-dim)  ┐
+                                    ├→ Concatenate → MLP (128→64→32) → Score
+Item ID → Item Embedding (64-dim)  ┘
+```
+
+**Training:**
+- Positive samples: User interactions with `is_positive=True`
+- Negative samples: Random non-interacted items
+- Loss function: Binary Cross-Entropy
+- Optimizer: Adam with learning rate 0.001
+- Batch size: 256
+- Epochs: 10
+
+**Prediction:**
+```python
+score = ncf_model.predict(user_id, resource_id)
+# Returns float in [0, 1] range
+```
+
+**Requirements:**
+- Minimum 5 interactions per user for collaborative filtering
+- Model retraining recommended every 100 new interactions
+- GPU acceleration: 5-10x speedup over CPU
+
+---
+
+#### Content-Based Similarity
+
+**User Embedding:**
+```python
+user_embedding = weighted_average(
+    resource_embeddings,
+    weights=interaction_strengths
+)
+# Limited to 100 most recent positive interactions
+```
+
+**Similarity Computation:**
+```python
+content_score = cosine_similarity(
+    user_embedding,
+    resource_embedding
+)
+# Returns float in [0, 1] range
+```
+
+**Threshold:**
+- Minimum similarity: 0.3
+- Candidates with similarity < 0.3 are filtered out
+
+---
+
+#### Graph-Based Discovery
+
+**Multi-Hop Neighbors:**
+```python
+candidates = graph_service.get_neighbors_multihop(
+    resource_ids=user_interacted_resources,
+    hops=2,
+    limit=100
+)
+```
+
+**Edge Types:**
+- Citation relationships
+- Co-authorship networks
+- Subject similarity
+- Temporal connections
+
+**Scoring:**
+```python
+graph_score = edge_weight * (1 / distance)
+# Normalized to [0, 1] range
+```
+
+---
+
+#### Diversity Optimization (MMR)
+
+**Maximal Marginal Relevance:**
+```python
+MMR_score = λ * relevance - (1-λ) * max_similarity_to_selected
+
+where:
+  λ = user.diversity_preference (default 0.5)
+  relevance = hybrid_score
+  max_similarity = max cosine similarity to already-selected items
+```
+
+**Algorithm:**
+1. Start with empty result set
+2. Select highest-scoring candidate
+3. For remaining candidates, compute MMR score
+4. Select candidate with highest MMR score
+5. Repeat until limit reached
+
+**Target:**
+- Gini coefficient < 0.3 for diverse recommendations
+- Ensures coverage of different topics and perspectives
+
+---
+
+#### Novelty Promotion
+
+**Novelty Score:**
+```python
+novelty_score = 1.0 - (resource.view_count / median_view_count)
+# Normalized to [0, 1] range
+```
+
+**Boosting:**
+```python
+if novelty_score > user.novelty_preference:
+    hybrid_score *= (1.0 + 0.2 * novelty_score)
+```
+
+**Guarantee:**
+- At least 20% of recommendations from outside top-viewed resources
+- Promotes discovery of hidden gems
+
+---
+
+### Performance Metrics
+
+#### Recommendation Quality
+
+**Click-Through Rate (CTR):**
+```python
+CTR = clicked_recommendations / total_recommendations
+# Target: 40% improvement over baseline
+```
+
+**Diversity (Gini Coefficient):**
+```python
+Gini = 2 * sum(i * score_i) / (n * sum(scores)) - (n+1)/n
+# Target: < 0.3 (lower is more diverse)
+```
+
+**Novelty:**
+```python
+novelty_percentage = novel_recommendations / total_recommendations
+# Target: > 20%
+```
+
+#### System Performance
+
+**Latency Targets:**
+- Recommendation generation: <200ms for 20 items
+- User embedding computation: <10ms
+- NCF prediction: <5ms per resource
+- Database queries: <50ms per query
+
+**Cache Performance:**
+- User embedding cache TTL: 5 minutes
+- Cache hit rate target: >80%
+- Cache invalidation: On new interactions
+
+**Throughput:**
+- Concurrent users: 100+
+- Recommendations per second: 50+
+- Interaction tracking: 1000+ per second
+
+---
+
+### Error Handling
+
+**Insufficient Interactions:**
+```json
+{
+  "detail": "Collaborative filtering requires at least 5 interactions",
+  "current_interactions": 3,
+  "strategy_used": "content+graph"
+}
+```
+
+**Invalid Strategy:**
+```json
+{
+  "detail": "Invalid strategy. Must be one of: collaborative, content, graph, hybrid",
+  "status_code": 422
+}
+```
+
+**Invalid Preference Range:**
+```json
+{
+  "detail": "diversity_preference must be between 0.0 and 1.0",
+  "status_code": 422
+}
+```
+
+**NCF Model Unavailable:**
+- Falls back to content + graph strategies
+- Logs warning for monitoring
+- Returns recommendations with `cold_start: true` in metadata
+
+**Resource Not Found:**
+```json
+{
+  "detail": "Resource not found",
+  "status_code": 404
+}
+```
+
+---
+
+### Best Practices
+
+#### For Users
+
+**Building Your Profile:**
+1. Start interacting with resources (view, annotate, collect)
+2. After 5 interactions, collaborative filtering activates
+3. After 10 interactions, preference learning begins
+4. Adjust diversity/novelty preferences based on results
+
+**Optimizing Recommendations:**
+- Higher diversity (0.7-1.0): Explore new topics
+- Lower diversity (0.0-0.3): Focus on known interests
+- Higher novelty (0.7-1.0): Discover hidden gems
+- Lower novelty (0.0-0.3): Stick to popular resources
+
+**Providing Feedback:**
+- Click recommendations you find useful
+- Submit explicit feedback for best/worst recommendations
+- Helps improve future recommendations for all users
+
+#### For Developers
+
+**Training NCF Model:**
+```bash
+# Initial training with existing interactions
+curl -X POST http://127.0.0.1:8000/admin/ncf/train \
+  -H "Content-Type: application/json" \
+  -d '{"epochs": 10, "batch_size": 256}'
+
+# Retrain after 100+ new interactions
+curl -X POST http://127.0.0.1:8000/admin/ncf/train
+```
+
+**Monitoring Performance:**
+```bash
+# Check recommendation metrics
+curl "http://127.0.0.1:8000/admin/recommendations/metrics"
+
+# Check cache hit rate
+curl "http://127.0.0.1:8000/admin/recommendations/cache-stats"
+
+# Check NCF model health
+curl "http://127.0.0.1:8000/admin/ncf/health"
+```
+
+**Debugging Recommendations:**
+```bash
+# Get detailed scoring breakdown
+curl "http://127.0.0.1:8000/api/recommendations?limit=5&debug=true"
+
+# Compare strategies
+curl "http://127.0.0.1:8000/api/recommendations/compare-strategies"
+```
+
+---

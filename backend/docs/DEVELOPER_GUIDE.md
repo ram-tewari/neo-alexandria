@@ -2933,3 +2933,753 @@ curl http://127.0.0.1:8000/health/ai
 - Feature request discussions
 - Community contributions
 - Documentation improvements
+
+###
+ Phase 11: Hybrid Recommendation Engine Architecture
+
+The Phase 11 Hybrid Recommendation Engine combines Neural Collaborative Filtering (NCF), content-based similarity, and graph-based discovery to provide personalized, intelligent recommendations. The system learns from user interactions, optimizes for diversity and novelty, and adapts to individual preferences.
+
+#### System Overview
+
+**Key Components:**
+1. **User Profile Service** - Manages user preferences and interaction tracking
+2. **Collaborative Filtering Service** - Neural Collaborative Filtering with PyTorch
+3. **Hybrid Recommendation Service** - Multi-strategy recommendation generation
+4. **Performance Monitoring** - Caching and latency tracking
+
+**Data Flow:**
+```
+User Interaction → Track in UserInteraction → Update UserProfile
+                                            ↓
+                                    Trigger Preference Learning
+                                            ↓
+Recommendation Request → Generate Candidates (3 strategies)
+                                            ↓
+                            Rank with Hybrid Scoring
+                                            ↓
+                            Apply MMR Diversity
+                                            ↓
+                            Apply Novelty Boost
+                                            ↓
+                            Return Recommendations
+```
+
+#### Database Models
+
+**UserProfile Model:**
+```python
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    user_id = Column(String(255), unique=True, nullable=False, index=True)
+    
+    # Research context
+    research_domains = Column(Text, nullable=True)  # JSON array
+    active_domain = Column(String(255), nullable=True)
+    
+    # Learned preferences
+    preferred_taxonomy_ids = Column(Text, nullable=True)  # JSON array
+    preferred_authors = Column(Text, nullable=True)  # JSON array
+    preferred_sources = Column(Text, nullable=True)  # JSON array
+    excluded_sources = Column(Text, nullable=True)  # JSON array
+    
+    # User settings
+    diversity_preference = Column(Float, nullable=False, default=0.5)
+    novelty_preference = Column(Float, nullable=False, default=0.3)
+    recency_bias = Column(Float, nullable=False, default=0.5)
+    
+    # Metrics
+    total_interactions = Column(Integer, nullable=False, default=0)
+    avg_session_duration = Column(Integer, nullable=True)
+    last_active_at = Column(DateTime(timezone=True), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.current_timestamp())
+
+
+**UserInteraction Model:**
+```python
+class UserInteraction(Base):
+    __tablename__ = "user_interactions"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    user_id = Column(String(255), nullable=False, index=True)
+    resource_id = Column(UUID, ForeignKey("resources.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Interaction details
+    interaction_type = Column(String(50), nullable=False)
+    interaction_strength = Column(Float, nullable=False)
+    is_positive = Column(Boolean, nullable=False, default=False)
+    confidence = Column(Float, nullable=False, default=0.0)
+    
+    # Implicit signals
+    dwell_time = Column(Integer, nullable=True)
+    scroll_depth = Column(Float, nullable=True)
+    annotation_count = Column(Integer, nullable=True, default=0)
+    return_visits = Column(Integer, nullable=False, default=1)
+    
+    # Explicit feedback
+    rating = Column(Integer, nullable=True)
+    
+    # Context
+    session_id = Column(String(255), nullable=True)
+    interaction_timestamp = Column(DateTime(timezone=True), server_default=func.current_timestamp(), index=True)
+    
+    # Relationships
+    resource = relationship("Resource", back_populates="interactions")
+
+
+**RecommendationFeedback Model:**
+```python
+class RecommendationFeedback(Base):
+    __tablename__ = "recommendation_feedback"
+    
+    id = Column(UUID, primary_key=True, default=uuid4)
+    user_id = Column(String(255), nullable=False, index=True)
+    resource_id = Column(UUID, ForeignKey("resources.id", ondelete="CASCADE"), nullable=False)
+    
+    # Recommendation context
+    recommendation_strategy = Column(String(50), nullable=False)
+    recommendation_score = Column(Float, nullable=False)
+    rank_position = Column(Integer, nullable=False)
+    
+    # Feedback
+    was_clicked = Column(Boolean, nullable=False, default=False)
+    was_useful = Column(Boolean, nullable=True)
+    feedback_notes = Column(Text, nullable=True)
+    
+    # Timestamps
+    recommended_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
+    feedback_at = Column(DateTime(timezone=True), nullable=True)
+
+
+#### User Profile Service
+
+The UserProfileService manages user preferences, tracks interactions, and generates user embeddings.
+
+**Core Methods:**
+
+```python
+class UserProfileService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.logger = logging.getLogger(__name__)
+    
+    def get_or_create_profile(self, user_id: str) -> UserProfile:
+        """
+        Get existing profile or create with defaults.
+        
+        Default preferences:
+        - diversity_preference: 0.5 (balanced)
+        - novelty_preference: 0.3 (some novelty)
+        - recency_bias: 0.5 (balanced)
+        
+        Performance: <10ms
+        """
+        profile = self.db.query(UserProfile).filter(
+            UserProfile.user_id == user_id
+        ).first()
+        
+        if not profile:
+            profile = UserProfile(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                diversity_preference=0.5,
+                novelty_preference=0.3,
+                recency_bias=0.5
+            )
+            self.db.add(profile)
+            self.db.commit()
+            self.logger.info(f"Created profile for user {user_id}")
+        
+        return profile
+
+
+    def track_interaction(
+        self,
+        user_id: str,
+        resource_id: str,
+        interaction_type: str,
+        dwell_time: Optional[int] = None,
+        scroll_depth: Optional[float] = None,
+        session_id: Optional[str] = None
+    ) -> UserInteraction:
+        """
+        Track user-resource interaction with automatic strength computation.
+        
+        Interaction strength formula:
+        - view: 0.1 + min(0.3, dwell_time/1000) + 0.1*scroll_depth
+        - annotation: 0.7
+        - collection_add: 0.8
+        - export: 0.9
+        
+        Positive threshold: strength > 0.4
+        
+        Performance: <50ms
+        """
+        # Compute interaction strength
+        strength = self._compute_interaction_strength(
+            interaction_type, dwell_time, scroll_depth
+        )
+        
+        # Check for existing interaction
+        existing = self.db.query(UserInteraction).filter(
+            UserInteraction.user_id == user_id,
+            UserInteraction.resource_id == resource_id
+        ).first()
+        
+        if existing:
+            # Update existing
+            existing.return_visits += 1
+            existing.interaction_strength = max(existing.interaction_strength, strength)
+            existing.interaction_timestamp = datetime.utcnow()
+            interaction = existing
+        else:
+            # Create new
+            interaction = UserInteraction(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                resource_id=resource_id,
+                interaction_type=interaction_type,
+                interaction_strength=strength,
+                is_positive=strength > 0.4,
+                confidence=min(1.0, strength + 0.2),
+                dwell_time=dwell_time,
+                scroll_depth=scroll_depth,
+                session_id=session_id
+            )
+            self.db.add(interaction)
+        
+        # Update profile
+        profile = self.get_or_create_profile(user_id)
+        profile.total_interactions += 1
+        profile.last_active_at = datetime.utcnow()
+        
+        # Trigger preference learning every 10 interactions
+        if profile.total_interactions % 10 == 0:
+            self._update_learned_preferences(user_id)
+        
+        self.db.commit()
+        return interaction
+
+
+    def get_user_embedding(self, user_id: str) -> np.ndarray:
+        """
+        Generate user embedding from interaction history.
+        
+        Algorithm:
+        1. Query positive interactions (is_positive=True)
+        2. Limit to 100 most recent
+        3. Compute weighted average of resource embeddings
+        4. Weights = interaction_strength values
+        5. Return zero vector for cold start
+        
+        Performance: <10ms (with caching)
+        """
+        # Check cache
+        cache_key = f"user_embedding:{user_id}"
+        cached = self._get_from_cache(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Query positive interactions
+        interactions = (
+            self.db.query(UserInteraction)
+            .filter(
+                UserInteraction.user_id == user_id,
+                UserInteraction.is_positive == True
+            )
+            .order_by(UserInteraction.interaction_timestamp.desc())
+            .limit(100)
+            .all()
+        )
+        
+        if not interactions:
+            # Cold start: return zero vector
+            return np.zeros(768)
+        
+        # Get resource embeddings
+        embeddings = []
+        weights = []
+        
+        for interaction in interactions:
+            if interaction.resource.embedding:
+                try:
+                    embedding = json.loads(interaction.resource.embedding)
+                    embeddings.append(embedding)
+                    weights.append(interaction.interaction_strength)
+                except json.JSONDecodeError:
+                    continue
+        
+        if not embeddings:
+            return np.zeros(768)
+        
+        # Compute weighted average
+        embeddings_array = np.array(embeddings)
+        weights_array = np.array(weights).reshape(-1, 1)
+        
+        weighted_sum = np.sum(embeddings_array * weights_array, axis=0)
+        weight_sum = np.sum(weights_array)
+        
+        user_embedding = weighted_sum / weight_sum if weight_sum > 0 else np.zeros(768)
+        
+        # Cache for 5 minutes
+        self._set_in_cache(cache_key, user_embedding, ttl=300)
+        
+        return user_embedding
+
+
+#### Neural Collaborative Filtering Service
+
+The CollaborativeFilteringService implements NCF using PyTorch for learning user-item interactions.
+
+**NCF Model Architecture:**
+
+```python
+class NCFModel(nn.Module):
+    def __init__(self, num_users: int, num_items: int, embedding_dim: int = 64):
+        """
+        Neural Collaborative Filtering model.
+        
+        Architecture:
+        - User embedding: num_users × embedding_dim
+        - Item embedding: num_items × embedding_dim
+        - MLP layers: [128, 64, 32, 1]
+        - Activation: ReLU
+        - Output: Sigmoid (0-1 score)
+        """
+        super().__init__()
+        
+        self.user_embedding = nn.Embedding(num_users, embedding_dim)
+        self.item_embedding = nn.Embedding(num_items, embedding_dim)
+        
+        self.mlp = nn.Sequential(
+            nn.Linear(embedding_dim * 2, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
+    
+    def forward(self, user_ids, item_ids):
+        user_emb = self.user_embedding(user_ids)
+        item_emb = self.item_embedding(item_ids)
+        
+        # Concatenate embeddings
+        x = torch.cat([user_emb, item_emb], dim=1)
+        
+        # Pass through MLP
+        score = self.mlp(x)
+        
+        return score.squeeze()
+```
+
+
+**Training Process:**
+
+```python
+class CollaborativeFilteringService:
+    def train_model(self, epochs: int = 10, batch_size: int = 256):
+        """
+        Train NCF model on interaction history.
+        
+        Training data:
+        - Positive samples: is_positive=True interactions
+        - Negative samples: Random non-interacted items
+        - Label: interaction_strength (continuous feedback)
+        
+        Hyperparameters:
+        - Optimizer: Adam (lr=0.001)
+        - Loss: BCELoss (Binary Cross-Entropy)
+        - Batch size: 256
+        - Epochs: 10
+        
+        Performance: ~10 minutes for 10K interactions (GPU)
+        """
+        # Query positive interactions
+        interactions = (
+            self.db.query(UserInteraction)
+            .filter(UserInteraction.is_positive == True)
+            .all()
+        )
+        
+        # Build user/item mappings
+        user_ids = list(set(i.user_id for i in interactions))
+        item_ids = list(set(i.resource_id for i in interactions))
+        
+        user_to_idx = {uid: idx for idx, uid in enumerate(user_ids)}
+        item_to_idx = {iid: idx for idx, iid in enumerate(item_ids)}
+        
+        # Initialize model
+        model = NCFModel(len(user_ids), len(item_ids))
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = model.to(device)
+        
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        criterion = nn.BCELoss()
+        
+        # Training loop
+        for epoch in range(epochs):
+            model.train()
+            total_loss = 0
+            
+            for batch in self._get_batches(interactions, batch_size):
+                # Prepare batch
+                user_indices = torch.tensor([user_to_idx[i.user_id] for i in batch])
+                item_indices = torch.tensor([item_to_idx[i.resource_id] for i in batch])
+                labels = torch.tensor([i.interaction_strength for i in batch])
+                
+                user_indices = user_indices.to(device)
+                item_indices = item_indices.to(device)
+                labels = labels.to(device)
+                
+                # Forward pass
+                predictions = model(user_indices, item_indices)
+                loss = criterion(predictions, labels)
+                
+                # Backward pass
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                total_loss += loss.item()
+            
+            avg_loss = total_loss / len(interactions)
+            self.logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+        
+        # Save model
+        self._save_model(model, user_to_idx, item_to_idx)
+```
+
+
+#### Hybrid Recommendation Service
+
+The HybridRecommendationService combines multiple strategies with sophisticated ranking and diversification.
+
+**Two-Stage Pipeline:**
+
+```python
+class HybridRecommendationService:
+    def generate_recommendations(
+        self,
+        user_id: str,
+        limit: int = 20,
+        strategy: str = "hybrid",
+        filters: Optional[Dict] = None
+    ) -> List[Dict]:
+        """
+        Generate personalized recommendations using two-stage pipeline.
+        
+        Stage 1: Candidate Generation
+        - Collaborative: NCF predictions (top 100)
+        - Content: User embedding similarity (top 100)
+        - Graph: Multi-hop neighbors (top 100)
+        
+        Stage 2: Ranking & Reranking
+        - Hybrid scoring with weighted combination
+        - MMR diversity optimization
+        - Novelty boosting
+        - Quality filtering
+        
+        Performance: <200ms for 20 recommendations
+        """
+        # Get user profile
+        profile = self.user_profile_service.get_or_create_profile(user_id)
+        
+        # Check cold start
+        is_cold_start = profile.total_interactions < 5
+        
+        # Stage 1: Generate candidates
+        candidates = self._generate_candidates(user_id, strategy, is_cold_start)
+        
+        # Stage 2: Rank candidates
+        ranked = self._rank_candidates(user_id, candidates, profile)
+        
+        # Apply MMR diversity
+        diverse = self._apply_mmr(ranked, profile, limit * 2)
+        
+        # Apply novelty boost
+        boosted = self._apply_novelty_boost(diverse, profile)
+        
+        # Apply quality filtering
+        if filters and filters.get("min_quality"):
+            boosted = [c for c in boosted if c["quality_score"] >= filters["min_quality"]]
+        
+        # Return top N
+        return boosted[:limit]
+```
+
+
+**Hybrid Scoring Formula:**
+
+```python
+def _rank_candidates(self, user_id: str, candidates: List[Dict], profile: UserProfile) -> List[Dict]:
+    """
+    Rank candidates using hybrid scoring.
+    
+    Formula:
+    hybrid_score = 
+        w_collab * collaborative_score +
+        w_content * content_score +
+        w_graph * graph_score +
+        w_quality * quality_score +
+        w_recency * recency_score
+    
+    Default weights:
+    - collaborative: 0.35
+    - content: 0.30
+    - graph: 0.20
+    - quality: 0.10
+    - recency: 0.05
+    
+    User can override weights via profile settings.
+    """
+    # Get weights (user-specific or defaults)
+    weights = {
+        "collaborative": 0.35,
+        "content": 0.30,
+        "graph": 0.20,
+        "quality": 0.10,
+        "recency": 0.05
+    }
+    
+    # Compute hybrid scores
+    for candidate in candidates:
+        hybrid_score = (
+            weights["collaborative"] * candidate.get("collaborative_score", 0.0) +
+            weights["content"] * candidate.get("content_score", 0.0) +
+            weights["graph"] * candidate.get("graph_score", 0.0) +
+            weights["quality"] * candidate.get("quality_score", 0.0) +
+            weights["recency"] * candidate.get("recency_score", 0.0)
+        )
+        candidate["hybrid_score"] = hybrid_score
+    
+    # Sort by hybrid score
+    candidates.sort(key=lambda x: x["hybrid_score"], reverse=True)
+    
+    return candidates
+```
+
+
+**MMR Diversity Optimization:**
+
+```python
+def _apply_mmr(self, candidates: List[Dict], profile: UserProfile, limit: int) -> List[Dict]:
+    """
+    Apply Maximal Marginal Relevance for diversity.
+    
+    Algorithm:
+    1. Start with empty result set
+    2. Select highest-scoring candidate
+    3. For remaining, compute MMR = λ*relevance - (1-λ)*max_similarity
+    4. Select candidate with highest MMR
+    5. Repeat until limit reached
+    
+    Parameters:
+    - λ = profile.diversity_preference (0.0-1.0)
+    - relevance = hybrid_score
+    - max_similarity = max cosine similarity to selected items
+    
+    Target: Gini coefficient < 0.3
+    """
+    if not candidates:
+        return []
+    
+    lambda_param = profile.diversity_preference
+    selected = []
+    remaining = candidates.copy()
+    
+    # Select first (highest score)
+    selected.append(remaining.pop(0))
+    
+    # Iteratively select diverse items
+    while remaining and len(selected) < limit:
+        best_mmr = -float('inf')
+        best_idx = 0
+        
+        for idx, candidate in enumerate(remaining):
+            # Compute max similarity to selected
+            max_sim = 0.0
+            for selected_item in selected:
+                sim = self._cosine_similarity(
+                    candidate["embedding"],
+                    selected_item["embedding"]
+                )
+                max_sim = max(max_sim, sim)
+            
+            # Compute MMR score
+            mmr = lambda_param * candidate["hybrid_score"] - (1 - lambda_param) * max_sim
+            
+            if mmr > best_mmr:
+                best_mmr = mmr
+                best_idx = idx
+        
+        # Add best MMR candidate
+        selected.append(remaining.pop(best_idx))
+    
+    return selected
+```
+
+
+#### Performance Optimizations
+
+**Caching Strategy:**
+
+```python
+class RecommendationCache:
+    """
+    In-memory cache for user embeddings and NCF predictions.
+    
+    Cache entries:
+    - user_embedding:{user_id} → numpy array (TTL: 5 minutes)
+    - ncf_prediction:{user_id}:{resource_id} → float (TTL: 10 minutes)
+    
+    Invalidation:
+    - On new user interaction
+    - On profile update
+    - On TTL expiration
+    """
+    def __init__(self):
+        self.cache = {}
+        self.timestamps = {}
+    
+    def get(self, key: str) -> Optional[Any]:
+        if key not in self.cache:
+            return None
+        
+        # Check TTL
+        if time.time() - self.timestamps[key] > 300:  # 5 minutes
+            del self.cache[key]
+            del self.timestamps[key]
+            return None
+        
+        return self.cache[key]
+    
+    def set(self, key: str, value: Any, ttl: int = 300):
+        self.cache[key] = value
+        self.timestamps[key] = time.time()
+    
+    def invalidate_user(self, user_id: str):
+        """Invalidate all cache entries for a user."""
+        keys_to_delete = [k for k in self.cache.keys() if user_id in k]
+        for key in keys_to_delete:
+            del self.cache[key]
+            del self.timestamps[key]
+```
+
+**Database Query Optimization:**
+
+```python
+# Use .limit() to prevent memory issues
+interactions = (
+    db.query(UserInteraction)
+    .filter(UserInteraction.user_id == user_id)
+    .order_by(UserInteraction.interaction_timestamp.desc())
+    .limit(100)  # Always limit queries
+    .all()
+)
+
+# Use .in_() for batch lookups
+resource_ids = [c["resource_id"] for c in candidates]
+resources = (
+    db.query(Resource)
+    .filter(Resource.id.in_(resource_ids))
+    .all()
+)
+
+# Use query.count() instead of len(query.all())
+total_interactions = (
+    db.query(UserInteraction)
+    .filter(UserInteraction.user_id == user_id)
+    .count()
+)
+```
+
+
+#### NCF Model Training and Deployment
+
+**Training Workflow:**
+
+```bash
+# 1. Ensure sufficient training data (>100 interactions)
+curl "http://127.0.0.1:8000/admin/recommendations/stats"
+
+# 2. Train initial model
+curl -X POST http://127.0.0.1:8000/admin/ncf/train \
+  -H "Content-Type: application/json" \
+  -d '{
+    "epochs": 10,
+    "batch_size": 256,
+    "learning_rate": 0.001
+  }'
+
+# 3. Validate model performance
+curl "http://127.0.0.1:8000/admin/ncf/validate"
+
+# 4. Deploy model (automatic on training completion)
+# Model saved to: models/ncf/model_v{version}.pt
+
+# 5. Monitor model health
+curl "http://127.0.0.1:8000/admin/ncf/health"
+```
+
+**Retraining Schedule:**
+
+```python
+# Automatic retraining triggers:
+# - Every 100 new interactions
+# - Weekly scheduled task
+# - Manual trigger via API
+
+def should_retrain(db: Session) -> bool:
+    """
+    Check if model should be retrained.
+    
+    Criteria:
+    - 100+ new interactions since last training
+    - 7+ days since last training
+    - Model performance degradation detected
+    """
+    last_training = get_last_training_timestamp(db)
+    new_interactions = count_interactions_since(db, last_training)
+    
+    if new_interactions >= 100:
+        return True
+    
+    if (datetime.utcnow() - last_training).days >= 7:
+        return True
+    
+    return False
+```
+
+**Model Versioning:**
+
+```python
+# Model files structure:
+models/
+  ncf/
+    model_v1.0.pt          # Model weights
+    user_mapping_v1.0.json # User ID to index mapping
+    item_mapping_v1.0.json # Item ID to index mapping
+    metadata_v1.0.json     # Training metadata
+    
+# Metadata includes:
+{
+  "version": "1.0",
+  "trained_at": "2024-01-15T10:00:00Z",
+  "num_users": 150,
+  "num_items": 5000,
+  "num_interactions": 10000,
+  "epochs": 10,
+  "batch_size": 256,
+  "final_loss": 0.234,
+  "validation_metrics": {
+    "ndcg@20": 0.67,
+    "recall@20": 0.82
+  }
+}
+```

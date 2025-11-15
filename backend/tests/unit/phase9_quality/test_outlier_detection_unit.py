@@ -91,7 +91,7 @@ class TestDetectQualityOutliers:
         """Test outlier detection with insufficient resources (< 10)."""
         create_resources_with_quality(count=5)
         
-        with pytest.raises(ValueError, match="minimum 10 required"):
+        with pytest.raises(ValueError, match="minimum 10 resources"):
             quality_service.detect_quality_outliers()
     
     def test_detect_outliers_no_anomalies(self, quality_service, create_resources_with_quality, db_session):

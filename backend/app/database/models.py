@@ -1028,3 +1028,410 @@ class DiscoveryHypothesis(Base):
     
     def __repr__(self) -> str:
         return f"<DiscoveryHypothesis(id={self.id!r}, {self.concept_a!r} -> {self.concept_b!r}, confidence={self.confidence_score})>"
+
+
+class User(Base):
+    """
+    User model for authentication and profile management.
+    
+    Basic user entity with email and username for Phase 11 recommendation system.
+    """
+    
+    __tablename__ = "users"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Core fields
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    username: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    
+    # Relationships
+    profile: Mapped["UserProfile"] = relationship(
+        "UserProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    interactions: Mapped[List["UserInteraction"]] = relationship(
+        "UserInteraction",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    recommendation_feedback: Mapped[List["RecommendationFeedback"]] = relationship(
+        "RecommendationFeedback",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    def __repr__(self) -> str:
+        return f"<User(id={self.id!r}, email={self.email!r}, username={self.username!r})>"
+
+
+class UserProfile(Base):
+    """
+    User profile for personalized recommendations in Phase 11.
+    
+    Stores user preferences, learned patterns, and recommendation settings.
+    Supports diversity, novelty, and recency preferences for hybrid recommendations.
+    """
+    
+    __tablename__ = "user_profiles"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign key (one-to-one with User)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    
+    # Research context (JSON arrays stored as Text)
+    research_domains: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: ["AI", "ML", "NLP"]
+    active_domain: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+    
+    # Learned preferences (JSON arrays stored as Text)
+    preferred_taxonomy_ids: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: ["uuid1", "uuid2", ...]
+    preferred_authors: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: ["Author 1", "Author 2", ...]
+    preferred_sources: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: ["source1.com", "source2.com", ...]
+    excluded_sources: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # JSON: ["excluded1.com", "excluded2.com", ...]
+    
+    # Preference settings (0.0-1.0 range)
+    diversity_preference: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.5,
+        server_default='0.5'
+    )
+    novelty_preference: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.3,
+        server_default='0.3'
+    )
+    recency_bias: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.5,
+        server_default='0.5'
+    )
+    
+    # Interaction metrics
+    total_interactions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )
+    avg_session_duration: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True
+    )
+    last_active_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="profile"
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_user_profiles_user', 'user_id', unique=True),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<UserProfile(id={self.id!r}, user_id={self.user_id!r}, total_interactions={self.total_interactions})>"
+
+
+class UserInteraction(Base):
+    """
+    User-resource interaction tracking for Phase 11 recommendation engine.
+    
+    Tracks all user interactions with resources using implicit feedback signals.
+    Supports multiple interaction types with computed interaction strength.
+    """
+    
+    __tablename__ = "user_interactions"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign keys
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Interaction metadata
+    interaction_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'view', 'annotation', 'collection_add', 'export', 'rating'
+    interaction_strength: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default='0.0'
+    )  # 0.0-1.0 computed score
+    
+    # Implicit feedback signals
+    dwell_time: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )  # seconds
+    scroll_depth: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True
+    )  # 0.0-1.0
+    annotation_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )
+    return_visits: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )
+    
+    # Explicit feedback
+    rating: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )  # 1-5 stars
+    
+    # Context
+    session_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+    interaction_timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        index=True
+    )
+    
+    # Derived fields
+    is_positive: Mapped[bool] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )  # SQLite uses 0/1 for bool (strength > 0.4)
+    confidence: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default='0.0'
+    )  # 0.0-1.0
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="interactions"
+    )
+    resource: Mapped["Resource"] = relationship("Resource")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_user_interactions_user_resource', 'user_id', 'resource_id'),
+        Index('idx_user_interactions_timestamp', 'interaction_timestamp'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<UserInteraction(id={self.id!r}, user_id={self.user_id!r}, resource_id={self.resource_id!r}, type={self.interaction_type!r}, strength={self.interaction_strength})>"
+
+
+class RecommendationFeedback(Base):
+    """
+    Recommendation feedback tracking for Phase 11 continuous improvement.
+    
+    Tracks recommendation performance to compute CTR and strategy effectiveness.
+    Supports explicit user feedback for recommendation quality assessment.
+    """
+    
+    __tablename__ = "recommendation_feedback"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign keys
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # Recommendation context
+    recommendation_strategy: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'collaborative', 'content', 'graph', 'hybrid'
+    recommendation_score: Mapped[float] = mapped_column(
+        Float,
+        nullable=False
+    )
+    rank_position: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    
+    # Feedback signals
+    was_clicked: Mapped[bool] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default='0'
+    )  # SQLite uses 0/1 for bool
+    was_useful: Mapped[bool | None] = mapped_column(
+        Integer,
+        nullable=True
+    )  # SQLite uses 0/1 for bool (explicit feedback)
+    feedback_notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+    
+    # Timestamps
+    recommended_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    feedback_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp()
+    )
+    
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="recommendation_feedback"
+    )
+    resource: Mapped["Resource"] = relationship("Resource")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_recommendation_feedback_user', 'user_id'),
+        Index('idx_recommendation_feedback_resource', 'resource_id'),
+        Index('idx_recommendation_feedback_strategy', 'recommendation_strategy'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<RecommendationFeedback(id={self.id!r}, user_id={self.user_id!r}, resource_id={self.resource_id!r}, strategy={self.recommendation_strategy!r}, clicked={self.was_clicked})>"

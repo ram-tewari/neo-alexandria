@@ -61,6 +61,7 @@
 - [x] 3.3 Implement _compute_accuracy dimension method
 
 
+
   - Calculate citation validity score from Phase 6 citation data (20% weight)
   - Calculate source credibility score based on domain reputation (15% weight)
   - Calculate scholarly metadata score from DOI/PMID/arXiv presence (15% weight)
@@ -70,7 +71,8 @@
   - _Requirements: 1.1, 1.3, 11.1_
 
 
-- [x] 3.4 Implement _compute_completeness dimension method
+
+- [ ] 3.4 Implement _compute_completeness dimension method
 
   - Calculate required fields score (title, content, url) with 30% weight
   - Calculate important fields score (summary, tags, authors, publication_year) with 30% weight
@@ -80,7 +82,8 @@
   - _Requirements: 1.1, 1.3, 11.1_
 
 
-- [x] 3.5 Implement _compute_consistency dimension method
+
+- [ ] 3.5 Implement _compute_consistency dimension method
 
   - Calculate title-content alignment using keyword overlap (15% weight)
   - Calculate summary-content alignment using compression ratio heuristic (15% weight)
@@ -89,15 +92,18 @@
   - _Requirements: 1.1, 1.3, 11.1_
 
 
-- [x] 3.6 Implement _compute_timeliness dimension method
+
+- [ ] 3.6 Implement _compute_timeliness dimension method
 
   - Calculate publication recency score using decay function (20 year half-life)
   - Add ingestion recency bonus (10%) for resources ingested within 30 days
   - Use neutral baseline of 0.5 for undated content
+
   - Return timeliness score between 0.0 and 1.0
   - _Requirements: 1.1, 1.3, 11.1_
 
-- [x] 3.7 Implement _compute_relevance dimension method
+
+- [ ] 3.7 Implement _compute_relevance dimension method
 
 
   - Calculate classification confidence score from Phase 8.5 taxonomy data (20% weight)
@@ -111,10 +117,17 @@
 
 
 
-- [x] 4. Implement Outlier Detection
 
-- [x] 4.1 Implement detect_quality_outliers method
 
+
+
+- [-] 4. Implement Outlier Detection
+
+
+- [x] 4.1 Implement detect_quality_outliers method with Isolation Forest
+
+
+  - Import sklearn.ensemble.IsolationForest
   - Query resources with quality scores in configurable batches (default 1000)
   - Validate minimum 10 resources for statistical validity
   - Build feature matrix from 5 quality dimensions plus 4 summary dimensions when available
@@ -303,6 +316,10 @@
 
 
 
+
+
+
+
 - [x] 8.1 Integrate with resource ingestion pipeline
 
 
@@ -325,6 +342,8 @@
 - [x] 8.3 Integrate with summary generation workflow
 
 
+
+
   - Modify summary generation completion handler to trigger summarization evaluation
   - Call summarization_evaluator.evaluate_summary after summary is generated
   - Use use_g_eval=False by default to avoid API costs
@@ -333,19 +352,27 @@
 - [x] 8.4 Set up scheduled outlier detection
 
 
-  - Create scheduled task configuration for daily outlier detection
+
+  - Create scheduled task configuration in run_scheduled_tasks.py for daily outlier detection
   - Implement background job calling quality_service.detect_quality_outliers
   - Configure batch size and scheduling frequency
   - _Requirements: 7.3_
 
+
 - [x] 8.5 Set up scheduled degradation monitoring
 
-  - Create scheduled task configuration for weekly quality degradation monitoring
+
+
+  - Create scheduled task configuration in run_scheduled_tasks.py for weekly quality degradation monitoring
   - Implement background job calling quality_service.monitor_quality_degradation
   - Configure time window and alert thresholds
   - _Requirements: 7.4_
-
 - [x] 9. Enhance Recommendation Service with Quality Integration
+
+
+
+- [ ] 9. Enhance Recommendation Service with Quality Integration
+
 
 
 
@@ -353,19 +380,25 @@
 
 - [x] 9.1 Add quality filtering to generate_user_profile_vector
 
-  - Modify query to exclude resources with is_quality_outlier=true
+
+
+  - Modify query in recommendation_service.py to exclude resources with is_quality_outlier=true
   - Add optional min_quality parameter to filter by quality_overall threshold
   - _Requirements: 8.1, 8.2_
 
 
 - [x] 9.2 Add quality boosting to score_candidates
 
+
+
   - Apply configurable quality boost factor (1.2x) for high-quality resources (quality_overall > 0.8)
   - Modify final_score calculation to incorporate quality_overall weighting
   - _Requirements: 8.3_
 
 
+
 - [x] 9.3 Add quality filtering to generate_recommendations
+
 
   - Add min_quality parameter to API with default None
   - Filter candidates by quality_overall if min_quality specified
@@ -447,16 +480,26 @@
 
 - [x] 12. Update Documentation
 
+
+
+
+
+
+
 - [x] 12.1 Update README.md with Phase 9 overview
 
 
 
 
 
-  - Add Phase 9 section describing multi-dimensional quality assessment
+
+
+  - Add Phase 9 section to backend/docs/README.md describing multi-dimensional quality assessment
   - Include quick start guide for quality assessment features
   - Document quality dimension meanings and default weights
+  - Document G-Eval, FineSurE, and BERTScore metrics
   - _Requirements: 12.1_
+
 
 - [x] 12.2 Update API_DOCUMENTATION.md with quality endpoints
 
@@ -464,12 +507,14 @@
 
 
 
-  - Document all quality API endpoints with request/response examples
-  - Include GET /resources/{id}/quality-details endpoint
+
+
+  - Document all quality API endpoints in backend/docs/API_DOCUMENTATION.md with request/response examples
+  - Include GET /quality/details/{resource_id} endpoint
   - Include POST /quality/recalculate endpoint
   - Include GET /quality/outliers endpoint
   - Include GET /quality/degradation endpoint
-  - Include POST /summaries/{id}/evaluate endpoint
+  - Include POST /quality/summaries/{resource_id}/evaluate endpoint
   - Include GET /quality/distribution endpoint
   - Include GET /quality/trends endpoint
   - Include GET /quality/dimensions endpoint
@@ -480,7 +525,11 @@
 
 
 
-  - Document QualityService class and methods
+
+
+
+
+  - Document QualityService class and methods in backend/docs/DEVELOPER_GUIDE.md
   - Document SummarizationEvaluator class and methods
   - Explain quality dimension computation algorithms
   - Document outlier detection with Isolation Forest

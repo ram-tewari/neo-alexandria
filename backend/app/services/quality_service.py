@@ -334,33 +334,109 @@ class QualityService:
         return degraded
     
     def detect_quality_outliers(self, batch_size: int = 1000) -> int:
-        """Detect quality outliers using Isolation Forest."""
-        from backend.app.database.models import Resource
+        """Detect quality outliers using Isolation Forest.
         
-        # Get resources with quality scores
+        Args:
+            batch_size: Number of resources to process (default: 1000)
+            
+        Returns:
+            Count of detected outliers
+            
+        Raises:
+            ValueError: If fewer than 10 resources with quality scores exist
+        """
+        from backend.app.database.models import Resource
+        from sklearn.ensemble import IsolationForest
+        import numpy as np
+        
+        # Query resources with quality scores in configurable batches
         resources = self.db.query(Resource).filter(
             Resource.quality_overall.isnot(None)
         ).limit(batch_size).all()
         
+        # Validate minimum 10 resources for statistical validity
         if len(resources) < 10:
-            raise ValueError("Outlier detection requires minimum 10 required resources with quality scores")
+            raise ValueError("Outlier detection requires minimum 10 resources with quality scores")
         
-        # Simple outlier detection: flag resources with very low quality
-        outlier_count = 0
+        # Build feature matrix from 5 quality dimensions plus 4 summary dimensions when available
+        feature_matrix = []
+        resource_list = []
         
         for resource in resources:
-            if resource.quality_overall < 0.3:
-                resource.is_quality_outlier = True
-                resource.needs_quality_review = True
-                resource.outlier_score = 1.0 - resource.quality_overall
+            features = []
+            
+            # Add 5 quality dimensions
+            features.append(resource.quality_accuracy if resource.quality_accuracy is not None else 0.5)
+            features.append(resource.quality_completeness if resource.quality_completeness is not None else 0.5)
+            features.append(resource.quality_consistency if resource.quality_consistency is not None else 0.5)
+            features.append(resource.quality_timeliness if resource.quality_timeliness is not None else 0.5)
+            features.append(resource.quality_relevance if resource.quality_relevance is not None else 0.5)
+            
+            # Add 4 summary quality dimensions when available
+            if hasattr(resource, 'summary_coherence') and resource.summary_coherence is not None:
+                features.append(resource.summary_coherence)
+            else:
+                features.append(0.5)  # Neutral baseline
                 
-                # Identify reasons
+            if hasattr(resource, 'summary_consistency') and resource.summary_consistency is not None:
+                features.append(resource.summary_consistency)
+            else:
+                features.append(0.5)
+                
+            if hasattr(resource, 'summary_fluency') and resource.summary_fluency is not None:
+                features.append(resource.summary_fluency)
+            else:
+                features.append(0.5)
+                
+            if hasattr(resource, 'summary_relevance') and resource.summary_relevance is not None:
+                features.append(resource.summary_relevance)
+            else:
+                features.append(0.5)
+            
+            feature_matrix.append(features)
+            resource_list.append(resource)
+        
+        # Convert to numpy array
+        X = np.array(feature_matrix)
+        
+        # Train Isolation Forest with contamination=0.1, n_estimators=100, random_state=42
+        iso_forest = IsolationForest(
+            contamination=0.1,
+            n_estimators=100,
+            random_state=42
+        )
+        
+        # Fit and predict
+        predictions = iso_forest.fit_predict(X)
+        
+        # Predict anomaly scores for all resources (lower scores = more anomalous)
+        anomaly_scores = iso_forest.score_samples(X)
+        
+        # Identify outliers where prediction equals -1
+        outlier_count = 0
+        
+        for i, (resource, prediction, anomaly_score) in enumerate(zip(resource_list, predictions, anomaly_scores)):
+            if prediction == -1:
+                # Call _identify_outlier_reasons for each outlier
                 reasons = self._identify_outlier_reasons(resource)
+                
+                # Update resources with is_quality_outlier flag, outlier_score, outlier_reasons JSON, and needs_quality_review flag
+                resource.is_quality_outlier = True
+                resource.outlier_score = float(anomaly_score)
                 resource.outlier_reasons = json.dumps(reasons)
+                resource.needs_quality_review = True
                 
                 outlier_count += 1
+            else:
+                # Clear outlier flags for non-outliers
+                resource.is_quality_outlier = False
+                resource.outlier_score = float(anomaly_score)
+                resource.outlier_reasons = None
         
+        # Commit updates to database
         self.db.commit()
+        
+        # Return count of detected outliers
         return outlier_count
     
     def _identify_outlier_reasons(self, resource) -> List[str]:

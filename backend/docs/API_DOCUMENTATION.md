@@ -4345,3 +4345,644 @@ summary_quality_overall =
 - Does not fail the entire evaluation
 
 ---
+
+## Phase 11: Hybrid Recommendation Engine
+
+The Phase 11 Hybrid Recommendation Engine provides personalized, intelligent recommendations by combining Neural Collaborative Filtering (NCF), content-based similarity, and graph-based discovery. The system learns from user interactions, optimizes for diversity and novelty, and adapts to individual preferences.
+
+### Key Features
+
+- **Multi-Strategy Recommendations**: Combines collaborative filtering, content similarity, and graph relationships
+- **User Profile Learning**: Automatically learns preferences from interaction history
+- **Diversity Optimization**: Uses Maximal Marginal Relevance (MMR) to prevent filter bubbles
+- **Novelty Promotion**: Surfaces lesser-known but relevant resources
+- **Cold Start Handling**: Provides relevant recommendations for new users
+- **Performance**: <200ms latency for 20 recommendations
+
+---
+
+### GET /api/recommendations
+
+Get personalized recommendations for the authenticated user using hybrid strategy.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Number of recommendations (1-100) | 20 |
+| `strategy` | string | Recommendation strategy | hybrid |
+| `diversity` | float | Diversity preference override (0.0-1.0) | user profile |
+| `min_quality` | float | Minimum quality threshold (0.0-1.0) | 0.0 |
+
+**Strategy Options:**
+- `collaborative` - Neural Collaborative Filtering only (requires ≥5 interactions)
+- `content` - Content-based similarity only
+- `graph` - Graph-based relationships only
+- `hybrid` - Combines all strategies with weighted scoring (default)
+
+**Response (200 OK):**
+```json
+{
+  "recommendations": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Advanced Machine Learning Techniques",
+      "description": "Comprehensive guide to modern ML algorithms",
+      "score": 0.87,
+      "strategy": "hybrid",
+      "scores": {
+        "collaborative": 0.92,
+        "content": 0.85,
+        "graph": 0.78,
+        "quality": 0.88,
+        "recency": 0.65
+      },
+      "rank": 1,
+      "novelty_score": 0.42,
+      "source": "https://example.com/ml-guide",
+      "classification_code": "004",
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "metadata": {
+    "total": 20,
+    "strategy": "hybrid",
+    "diversity_applied": true,
+    "gini_coefficient": 0.24,
+    "user_interactions": 47,
+    "cold_start": false
+  }
+}
+```
+
+**Hybrid Scoring Formula:**
+```
+hybrid_score = 
+  0.35 * collaborative_score +
+  0.30 * content_score +
+  0.20 * graph_score +
+  0.10 * quality_score +
+  0.05 * recency_score
+```
+
+**Example:**
+```bash
+# Get 20 hybrid recommendations
+curl "http://127.0.0.1:8000/api/recommendations?limit=20"
+
+# Get collaborative filtering recommendations only
+curl "http://127.0.0.1:8000/api/recommendations?strategy=collaborative&limit=10"
+
+# Get diverse recommendations with high quality threshold
+curl "http://127.0.0.1:8000/api/recommendations?diversity=0.8&min_quality=0.7"
+```
+
+**Performance:**
+- Target latency: <200ms for 20 recommendations
+- Candidate generation: <100ms
+- Ranking and diversification: <100ms
+- Cache hit rate: >80% for user embeddings
+
+**Cold Start Behavior:**
+- Users with <5 interactions: Uses content + graph strategies only
+- Collaborative filtering enabled after 5+ interactions
+- Recommendations available immediately for new users
+
+---
+
+### POST /api/interactions
+
+Track user-resource interactions for personalized learning.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "interaction_type": "view",
+  "dwell_time": 45,
+  "scroll_depth": 0.8,
+  "session_id": "session_abc123"
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | Yes | UUID of the resource |
+| `interaction_type` | string | Yes | Type of interaction |
+| `dwell_time` | integer | No | Time spent in seconds |
+| `scroll_depth` | float | No | Scroll percentage (0.0-1.0) |
+| `session_id` | string | No | Session identifier |
+
+**Interaction Types:**
+- `view` - User viewed the resource (strength: 0.1-0.5 based on dwell time and scroll depth)
+- `annotation` - User annotated the resource (strength: 0.7)
+- `collection_add` - User added to collection (strength: 0.8)
+- `export` - User exported the resource (strength: 0.9)
+- `rating` - User rated the resource (strength: based on rating value)
+
+**Response (201 Created):**
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "user_id": "user123",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "interaction_type": "view",
+  "interaction_strength": 0.42,
+  "is_positive": true,
+  "confidence": 0.85,
+  "dwell_time": 45,
+  "scroll_depth": 0.8,
+  "return_visits": 1,
+  "interaction_timestamp": "2024-01-15T14:30:00Z"
+}
+```
+
+**Interaction Strength Calculation:**
+```python
+# View interaction
+strength = 0.1 + min(0.3, dwell_time/1000) + 0.1 * scroll_depth
+
+# Annotation
+strength = 0.7
+
+# Collection add
+strength = 0.8
+
+# Export
+strength = 0.9
+
+# Positive interaction threshold
+is_positive = strength > 0.4
+```
+
+**Example:**
+```bash
+# Track a view interaction
+curl -X POST http://127.0.0.1:8000/api/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "view",
+    "dwell_time": 120,
+    "scroll_depth": 0.95,
+    "session_id": "session_xyz789"
+  }'
+
+# Track a collection add
+curl -X POST http://127.0.0.1:8000/api/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "collection_add"
+  }'
+```
+
+**Automatic Profile Updates:**
+- Updates `total_interactions` count
+- Updates `last_active_at` timestamp
+- Triggers preference learning every 10 interactions
+- Recomputes user embedding for collaborative filtering
+
+---
+
+### GET /api/profile
+
+Retrieve user profile settings and learned preferences.
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "user123",
+  "research_domains": ["Machine Learning", "Artificial Intelligence"],
+  "active_domain": "Machine Learning",
+  "preferred_taxonomy_ids": ["tax_001", "tax_002"],
+  "preferred_authors": ["John Doe", "Jane Smith"],
+  "preferred_sources": ["arxiv.org", "nature.com"],
+  "excluded_sources": ["example.com"],
+  "diversity_preference": 0.5,
+  "novelty_preference": 0.3,
+  "recency_bias": 0.5,
+  "total_interactions": 47,
+  "avg_session_duration": 180,
+  "last_active_at": "2024-01-15T14:30:00Z",
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-15T14:30:00Z"
+}
+```
+
+**Preference Ranges:**
+- `diversity_preference`: 0.0 (focused) to 1.0 (diverse)
+- `novelty_preference`: 0.0 (popular) to 1.0 (novel)
+- `recency_bias`: 0.0 (timeless) to 1.0 (recent only)
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/profile"
+```
+
+---
+
+### PUT /api/profile
+
+Update user profile preferences.
+
+**Request Body:**
+```json
+{
+  "diversity_preference": 0.7,
+  "novelty_preference": 0.5,
+  "recency_bias": 0.4,
+  "research_domains": ["Machine Learning", "Natural Language Processing"],
+  "excluded_sources": ["example.com", "spam-site.com"]
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Description | Validation |
+|-------|------|-------------|------------|
+| `diversity_preference` | float | Diversity preference | 0.0-1.0 |
+| `novelty_preference` | float | Novelty preference | 0.0-1.0 |
+| `recency_bias` | float | Recency bias | 0.0-1.0 |
+| `research_domains` | array[string] | Research domains | Max 10 items |
+| `excluded_sources` | array[string] | Excluded sources | Max 50 items |
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "user123",
+  "diversity_preference": 0.7,
+  "novelty_preference": 0.5,
+  "recency_bias": 0.4,
+  "research_domains": ["Machine Learning", "Natural Language Processing"],
+  "excluded_sources": ["example.com", "spam-site.com"],
+  "updated_at": "2024-01-15T15:00:00Z"
+}
+```
+
+**Example:**
+```bash
+curl -X PUT http://127.0.0.1:8000/api/profile \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diversity_preference": 0.8,
+    "novelty_preference": 0.6,
+    "research_domains": ["Deep Learning", "Computer Vision"]
+  }'
+```
+
+**Validation Errors:**
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "diversity_preference"],
+      "msg": "ensure this value is less than or equal to 1.0",
+      "type": "value_error.number.not_le"
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/recommendations/feedback
+
+Submit feedback on recommendation quality.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "was_clicked": true,
+  "was_useful": true,
+  "feedback_notes": "Exactly what I was looking for!"
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `resource_id` | string | Yes | UUID of recommended resource |
+| `was_clicked` | boolean | Yes | Whether user clicked the recommendation |
+| `was_useful` | boolean | No | Whether recommendation was useful |
+| `feedback_notes` | string | No | Optional feedback text |
+
+**Response (201 Created):**
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440002",
+  "user_id": "user123",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "recommendation_strategy": "hybrid",
+  "recommendation_score": 0.87,
+  "rank_position": 1,
+  "was_clicked": true,
+  "was_useful": true,
+  "feedback_notes": "Exactly what I was looking for!",
+  "recommended_at": "2024-01-15T14:00:00Z",
+  "feedback_at": "2024-01-15T14:05:00Z"
+}
+```
+
+**Example:**
+```bash
+# Positive feedback
+curl -X POST http://127.0.0.1:8000/api/recommendations/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "was_clicked": true,
+    "was_useful": true,
+    "feedback_notes": "Very relevant!"
+  }'
+
+# Negative feedback
+curl -X POST http://127.0.0.1:8000/api/recommendations/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "was_clicked": false,
+    "was_useful": false
+  }'
+```
+
+**Feedback Usage:**
+- Computes click-through rate (CTR) by strategy
+- Identifies underperforming recommendation strategies
+- Trains NCF model with implicit feedback
+- Improves future recommendations
+
+---
+
+### Recommendation Algorithms
+
+#### Neural Collaborative Filtering (NCF)
+
+**Architecture:**
+```
+User ID → User Embedding (64-dim)  ┐
+                                    ├→ Concatenate → MLP (128→64→32) → Score
+Item ID → Item Embedding (64-dim)  ┘
+```
+
+**Training:**
+- Positive samples: User interactions with `is_positive=True`
+- Negative samples: Random non-interacted items
+- Loss function: Binary Cross-Entropy
+- Optimizer: Adam with learning rate 0.001
+- Batch size: 256
+- Epochs: 10
+
+**Prediction:**
+```python
+score = ncf_model.predict(user_id, resource_id)
+# Returns float in [0, 1] range
+```
+
+**Requirements:**
+- Minimum 5 interactions per user for collaborative filtering
+- Model retraining recommended every 100 new interactions
+- GPU acceleration: 5-10x speedup over CPU
+
+---
+
+#### Content-Based Similarity
+
+**User Embedding:**
+```python
+user_embedding = weighted_average(
+    resource_embeddings,
+    weights=interaction_strengths
+)
+# Limited to 100 most recent positive interactions
+```
+
+**Similarity Computation:**
+```python
+content_score = cosine_similarity(
+    user_embedding,
+    resource_embedding
+)
+# Returns float in [0, 1] range
+```
+
+**Threshold:**
+- Minimum similarity: 0.3
+- Candidates with similarity < 0.3 are filtered out
+
+---
+
+#### Graph-Based Discovery
+
+**Multi-Hop Neighbors:**
+```python
+candidates = graph_service.get_neighbors_multihop(
+    resource_ids=user_interacted_resources,
+    hops=2,
+    limit=100
+)
+```
+
+**Edge Types:**
+- Citation relationships
+- Co-authorship networks
+- Subject similarity
+- Temporal connections
+
+**Scoring:**
+```python
+graph_score = edge_weight * (1 / distance)
+# Normalized to [0, 1] range
+```
+
+---
+
+#### Diversity Optimization (MMR)
+
+**Maximal Marginal Relevance:**
+```python
+MMR_score = λ * relevance - (1-λ) * max_similarity_to_selected
+
+where:
+  λ = user.diversity_preference (default 0.5)
+  relevance = hybrid_score
+  max_similarity = max cosine similarity to already-selected items
+```
+
+**Algorithm:**
+1. Start with empty result set
+2. Select highest-scoring candidate
+3. For remaining candidates, compute MMR score
+4. Select candidate with highest MMR score
+5. Repeat until limit reached
+
+**Target:**
+- Gini coefficient < 0.3 for diverse recommendations
+- Ensures coverage of different topics and perspectives
+
+---
+
+#### Novelty Promotion
+
+**Novelty Score:**
+```python
+novelty_score = 1.0 - (resource.view_count / median_view_count)
+# Normalized to [0, 1] range
+```
+
+**Boosting:**
+```python
+if novelty_score > user.novelty_preference:
+    hybrid_score *= (1.0 + 0.2 * novelty_score)
+```
+
+**Guarantee:**
+- At least 20% of recommendations from outside top-viewed resources
+- Promotes discovery of hidden gems
+
+---
+
+### Performance Metrics
+
+#### Recommendation Quality
+
+**Click-Through Rate (CTR):**
+```python
+CTR = clicked_recommendations / total_recommendations
+# Target: 40% improvement over baseline
+```
+
+**Diversity (Gini Coefficient):**
+```python
+Gini = 2 * sum(i * score_i) / (n * sum(scores)) - (n+1)/n
+# Target: < 0.3 (lower is more diverse)
+```
+
+**Novelty:**
+```python
+novelty_percentage = novel_recommendations / total_recommendations
+# Target: > 20%
+```
+
+#### System Performance
+
+**Latency Targets:**
+- Recommendation generation: <200ms for 20 items
+- User embedding computation: <10ms
+- NCF prediction: <5ms per resource
+- Database queries: <50ms per query
+
+**Cache Performance:**
+- User embedding cache TTL: 5 minutes
+- Cache hit rate target: >80%
+- Cache invalidation: On new interactions
+
+**Throughput:**
+- Concurrent users: 100+
+- Recommendations per second: 50+
+- Interaction tracking: 1000+ per second
+
+---
+
+### Error Handling
+
+**Insufficient Interactions:**
+```json
+{
+  "detail": "Collaborative filtering requires at least 5 interactions",
+  "current_interactions": 3,
+  "strategy_used": "content+graph"
+}
+```
+
+**Invalid Strategy:**
+```json
+{
+  "detail": "Invalid strategy. Must be one of: collaborative, content, graph, hybrid",
+  "status_code": 422
+}
+```
+
+**Invalid Preference Range:**
+```json
+{
+  "detail": "diversity_preference must be between 0.0 and 1.0",
+  "status_code": 422
+}
+```
+
+**NCF Model Unavailable:**
+- Falls back to content + graph strategies
+- Logs warning for monitoring
+- Returns recommendations with `cold_start: true` in metadata
+
+**Resource Not Found:**
+```json
+{
+  "detail": "Resource not found",
+  "status_code": 404
+}
+```
+
+---
+
+### Best Practices
+
+#### For Users
+
+**Building Your Profile:**
+1. Start interacting with resources (view, annotate, collect)
+2. After 5 interactions, collaborative filtering activates
+3. After 10 interactions, preference learning begins
+4. Adjust diversity/novelty preferences based on results
+
+**Optimizing Recommendations:**
+- Higher diversity (0.7-1.0): Explore new topics
+- Lower diversity (0.0-0.3): Focus on known interests
+- Higher novelty (0.7-1.0): Discover hidden gems
+- Lower novelty (0.0-0.3): Stick to popular resources
+
+**Providing Feedback:**
+- Click recommendations you find useful
+- Submit explicit feedback for best/worst recommendations
+- Helps improve future recommendations for all users
+
+#### For Developers
+
+**Training NCF Model:**
+```bash
+# Initial training with existing interactions
+curl -X POST http://127.0.0.1:8000/admin/ncf/train \
+  -H "Content-Type: application/json" \
+  -d '{"epochs": 10, "batch_size": 256}'
+
+# Retrain after 100+ new interactions
+curl -X POST http://127.0.0.1:8000/admin/ncf/train
+```
+
+**Monitoring Performance:**
+```bash
+# Check recommendation metrics
+curl "http://127.0.0.1:8000/admin/recommendations/metrics"
+
+# Check cache hit rate
+curl "http://127.0.0.1:8000/admin/recommendations/cache-stats"
+
+# Check NCF model health
+curl "http://127.0.0.1:8000/admin/ncf/health"
+```
+
+**Debugging Recommendations:**
+```bash
+# Get detailed scoring breakdown
+curl "http://127.0.0.1:8000/api/recommendations?limit=5&debug=true"
+
+# Compare strategies
+curl "http://127.0.0.1:8000/api/recommendations/compare-strategies"
+```
+
+---

@@ -2,21 +2,27 @@ import { Outlet } from 'react-router-dom';
 import { AnimatedOrbs } from '../background/AnimatedOrbs';
 import { GridPattern } from '../background/GridPattern';
 import { Navbar } from './Navbar';
-import { Sidebar } from './Sidebar';
+import { AppSidebar } from './AppSidebar';
+import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
 import './MainLayout.css';
 
 export const MainLayout = () => {
   return (
-    <div className="app">
-      <AnimatedOrbs />
-      <GridPattern />
-      <Navbar />
-      <div className="app-container">
-        <Sidebar />
-        <main className="main-content">
-          <Outlet />
-        </main>
+    <SidebarProvider defaultOpen={true}>
+      <div className="app">
+        <AnimatedOrbs />
+        <GridPattern />
+        <Navbar />
+        <div className="app-container">
+          <AppSidebar />
+          <main className="main-content">
+            <div className="main-content-header">
+              <SidebarTrigger />
+            </div>
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
-import { useNavigationStore } from '../../store/navigationStore';
+import { useSidebar } from '../ui/sidebar';
 import { Icon } from '../common/Icon';
 import { icons } from '../../config/icons';
 import type { NavLink } from '../../types';
@@ -17,7 +17,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const scrolled = useScrollPosition();
-  const { toggleSidebar } = useNavigationStore();
+  const { toggleSidebar } = useSidebar();
 
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">

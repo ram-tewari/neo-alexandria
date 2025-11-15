@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Star,
   BookOpen,
   Video,
@@ -46,6 +47,7 @@ export const icons = {
   sort: ArrowUpDown,
   prevPage: ChevronLeft,
   nextPage: ChevronRight,
+  chevronDown: ChevronDown,
   menu: Menu,
   close: X,
   

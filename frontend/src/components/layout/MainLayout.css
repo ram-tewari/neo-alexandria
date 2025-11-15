@@ -12,15 +12,25 @@
 
 .main-content {
   flex: 1;
-  margin-left: 260px;
+  margin-left: var(--sidebar-width, 260px);
   padding-top: 72px;
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content-header {
+  display: none;
+  padding: 1rem;
 }
 
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
+  }
+  
+  .main-content-header {
+    display: block;
   }
 }

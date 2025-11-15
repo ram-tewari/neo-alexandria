@@ -1,10 +1,15 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSidebarKeyboardNav } from '../../hooks/useSidebarKeyboardNav';
+import './sidebar.css';
+
+// Sidebar component with collapsible functionality
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-const SIDEBAR_WIDTH = '16rem';
-const SIDEBAR_WIDTH_MOBILE = '18rem';
+const SIDEBAR_WIDTH = '260px';
+const SIDEBAR_WIDTH_ICON = '60px';
+const SIDEBAR_WIDTH_MOBILE = '280px';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
 type SidebarContext = {
@@ -108,7 +113,7 @@ export function SidebarProvider({
       <div
         style={
           {
-            '--sidebar-width': SIDEBAR_WIDTH,
+            '--sidebar-width': open ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_ICON,
             '--sidebar-width-mobile': SIDEBAR_WIDTH_MOBILE,
             ...style,
           } as React.CSSProperties
@@ -131,11 +136,32 @@ interface SidebarProps extends React.ComponentProps<'aside'> {
 export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
   ({ side = 'left', variant = 'sidebar', collapsible = 'offcanvas', className, children, ...props }, ref) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const keyboardNavRef = useSidebarKeyboardNav({
+      enabled: true,
+      onEscape: () => {
+        if (isMobile) {
+          setOpenMobile(false);
+        }
+      },
+    });
+
+    // Merge refs
+    const mergedRef = React.useCallback(
+      (node: HTMLElement | null) => {
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+        }
+        (keyboardNavRef as React.MutableRefObject<HTMLElement | null>).current = node;
+      },
+      [ref, keyboardNavRef]
+    );
 
     if (collapsible === 'none') {
       return (
         <aside
-          ref={ref}
+          ref={mergedRef}
           className={`sidebar-root ${className || ''}`}
           data-state={state}
           data-collapsible={collapsible}
@@ -164,7 +190,7 @@ export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             )}
           </AnimatePresence>
           <motion.aside
-            ref={ref as any}
+            ref={mergedRef as any}
             initial={false}
             animate={{
               x: openMobile ? 0 : '-100%',
@@ -185,12 +211,14 @@ export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
 
     return (
       <aside
-        ref={ref}
+        ref={mergedRef}
         className={`sidebar-root ${className || ''}`}
         data-state={state}
         data-collapsible={collapsible}
         data-variant={variant}
         data-side={side}
+        role="navigation"
+        aria-label="Main navigation"
         {...props}
       >
         {children}
@@ -245,6 +273,21 @@ export const SidebarGroupContent = React.forwardRef<HTMLDivElement, React.Compon
   }
 );
 SidebarGroupContent.displayName = 'SidebarGroupContent';
+
+export const SidebarGroupAction = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(
+  ({ className, ...props }, ref) => {
+    return (
+      <motion.button
+        ref={ref as any}
+        className={`sidebar-group-action ${className || ''}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        {...props}
+      />
+    );
+  }
+);
+SidebarGroupAction.displayName = 'SidebarGroupAction';
 
 export const SidebarMenu = React.forwardRef<HTMLUListElement, React.ComponentProps<'ul'>>(
   ({ className, ...props }, ref) => {
@@ -342,6 +385,17 @@ export const SidebarMenuSubButton = React.forwardRef<HTMLButtonElement, SidebarM
 );
 SidebarMenuSubButton.displayName = 'SidebarMenuSubButton';
 
+export const SidebarMenuBadge = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+  ({ className, children, ...props }, ref) => {
+    return (
+      <div ref={ref} className={`sidebar-menu-badge ${className || ''}`} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
+SidebarMenuBadge.displayName = 'SidebarMenuBadge';
+
 export const SidebarSeparator = React.forwardRef<HTMLHRElement, React.ComponentProps<'hr'>>(
   ({ className, ...props }, ref) => {
     return <hr ref={ref} className={`sidebar-separator ${className || ''}`} {...props} />;
@@ -385,3 +439,69 @@ export const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.Componen
   }
 );
 SidebarTrigger.displayName = 'SidebarTrigger';
+
+export const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(
+  ({ className, ...props }, ref) => {
+    const { toggleSidebar, state } = useSidebar();
+
+    if (state === 'expanded') return null;
+
+    return (
+      <motion.button
+        ref={ref as any}
+        className={`sidebar-rail ${className || ''}`}
+        onClick={toggleSidebar}
+        aria-label="Expand sidebar"
+        initial={{ opacity: 0 }}
+        whileHover={{ opacity: 0.5, width: '6px' }}
+        transition={{ duration: 0.2 }}
+        {...props}
+      >
+        <span className="sr-only">Expand sidebar</span>
+      </motion.button>
+    );
+  }
+);
+SidebarRail.displayName = 'SidebarRail';
+
+interface TooltipProps extends React.ComponentProps<'div'> {
+  content?: string;
+  side?: 'right' | 'left' | 'top' | 'bottom';
+}
+
+export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
+  ({ content, side = 'right', children, className, ...props }, ref) => {
+    const { state } = useSidebar();
+    const [isVisible, setIsVisible] = React.useState(false);
+
+    if (!content || state === 'expanded') {
+      return <>{children}</>;
+    }
+
+    return (
+      <div
+        ref={ref}
+        className={`tooltip-wrapper ${className || ''}`}
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        {...props}
+      >
+        {children}
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div
+              className={`tooltip tooltip-${side}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+            >
+              {content}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+);
+Tooltip.displayName = 'Tooltip';

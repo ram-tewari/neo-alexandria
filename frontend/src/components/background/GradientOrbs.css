@@ -7,47 +7,48 @@
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+  background: linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #0a0a0f 100%);
 }
 
 .gradient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.6;
+  filter: blur(100px);
+  opacity: 0.5;
   will-change: transform;
+  mix-blend-mode: normal;
 }
 
 .gradient-orb-purple {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, #a855f7 0%, transparent 70%);
-  top: -200px;
-  left: -100px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, #8b5cf6 0%, rgba(139, 92, 246, 0.5) 30%, transparent 70%);
+  top: -250px;
+  left: -150px;
 }
 
 .gradient-orb-pink {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, #ec4899 0%, rgba(236, 72, 153, 0.5) 30%, transparent 70%);
   top: -150px;
   right: -100px;
 }
 
 .gradient-orb-blue {
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
-  bottom: -200px;
-  left: 50%;
-  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, #3b82f6 0%, rgba(59, 130, 246, 0.5) 30%, transparent 70%);
+  bottom: -250px;
+  left: 15%;
 }
 
 .gradient-orb-orange {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, #f97316 0%, transparent 70%);
-  bottom: -100px;
-  right: -50px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, #f97316 0%, rgba(249, 115, 22, 0.5) 30%, transparent 70%);
+  bottom: -150px;
+  right: -80px;
 }
 
 /* Reduce intensity on smaller screens */
@@ -64,4 +65,21 @@
     width: 300px;
     height: 300px;
   }
+}
+
+/* Additional ambient glow effect */
+.gradient-orbs-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse 800px 600px at 25% 25%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 700px 500px at 75% 20%, rgba(236, 72, 153, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 900px 700px at 30% 75%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 750px 600px at 70% 80%, rgba(249, 115, 22, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
 }

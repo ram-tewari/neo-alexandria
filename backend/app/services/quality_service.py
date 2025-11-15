@@ -54,55 +54,12 @@ class ContentQualityAnalyzer:
         return tp.readability_scores(text)
 
     def overall_quality(self, resource_in: Dict[str, Any], text: str | None) -> float:
-        """Calculate overall quality score (simple version for backward compatibility).
-        
-        This uses the original formula:
-        - Metadata completeness: 60%
-        - Content readability: 40%
-        """
         meta_score = self.metadata_completeness(resource_in)
         if not text:
             return meta_score
         scores = self.text_readability(text)
-        norm_read = self._normalize_reading_ease(scores.get("reading_ease", 0.0))
+        norm_read = max(0.0, min(1.0, (scores.get("reading_ease", 0.0) + 30.0) / 151.0))
         return 0.6 * meta_score + 0.4 * norm_read
-    
-    def comprehensive_quality(self, resource_in: Dict[str, Any], text: str | None) -> float:
-        """Calculate comprehensive quality score considering multiple factors.
-        
-        Weights:
-        - Metadata completeness: 30%
-        - Content readability: 20%
-        - Source credibility: 25%
-        - Content depth: 25%
-        """
-        meta_score = self.metadata_completeness(resource_in)
-        
-        # Get source from resource
-        source = None
-        if isinstance(resource_in, dict):
-            source = resource_in.get("source")
-        else:
-            source = getattr(resource_in, "source", None)
-        
-        source_score = self.source_credibility(source)
-        
-        if not text:
-            # Without text, weight metadata and source more heavily
-            return 0.5 * meta_score + 0.5 * source_score
-        
-        # Calculate readability and content depth
-        scores = self.text_readability(text)
-        norm_read = self._normalize_reading_ease(scores.get("reading_ease", 0.0))
-        depth_score = self.content_depth(text)
-        
-        # Weighted combination
-        return (
-            0.30 * meta_score +
-            0.20 * norm_read +
-            0.25 * source_score +
-            0.25 * depth_score
-        )
 
     def quality_level(self, score: float) -> str:
         if score >= HIGH_QUALITY_THRESHOLD:
@@ -112,108 +69,57 @@ class ContentQualityAnalyzer:
         return "LOW"
     
     def source_credibility(self, source: Optional[str]) -> float:
-        """Assess source credibility based on URL/identifier.
-        
-        Returns 0.0 for None/empty URLs, otherwise scores based on domain quality.
-        """
-        # Handle None and empty strings
-        if not source or (isinstance(source, str) and not source.strip()):
-            return 0.0
+        """Assess source credibility based on URL/identifier."""
+        if not source:
+            return 0.5
         
         # Simple heuristics for credibility
         source_lower = source.lower()
         
-        # Start with base score
-        base_score = 0.5
-        
-        # Check for IP addresses (low credibility)
-        ip_pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
-        if re.search(ip_pattern, source):
-            return 0.2
-        
-        # High credibility domains (.edu, .gov, arxiv, etc.)
+        # High credibility domains
         high_cred_domains = ['.edu', '.gov', 'arxiv.org', 'doi.org', 'pubmed', 'scholar.google']
         if any(domain in source_lower for domain in high_cred_domains):
             return 0.9
         
-        # Medium credibility (.org, wikipedia, github)
+        # Medium credibility
         medium_cred_domains = ['.org', 'wikipedia', 'github']
         if any(domain in source_lower for domain in medium_cred_domains):
             return 0.7
         
-        # Check for suspicious TLDs (lower credibility)
-        suspicious_tlds = ['.xyz', '.top', '.click', '.loan', '.win']
-        if any(tld in source_lower for tld in suspicious_tlds):
-            base_score -= 0.05
-        
-        # Check for blog platforms (slightly lower credibility)
-        blog_platforms = ['blog.', 'blogger.', 'wordpress.com', 'medium.com', 'tumblr.']
-        if any(platform in source_lower for platform in blog_platforms):
-            base_score -= 0.1
-        
-        # Bonus for HTTPS
-        if source_lower.startswith('https://'):
-            base_score += 0.05
-        
-        # Bonus for common TLDs
-        if any(tld in source_lower for tld in ['.com', '.net', '.io']):
-            base_score += 0.05
-        
-        # Ensure score is in valid range
-        return max(0.0, min(1.0, base_score))
+        # Default credibility
+        return 0.6
     
     def content_depth(self, text: Optional[str]) -> float:
-        """Assess content depth based on text length and complexity.
-        
-        Adjusted thresholds to ensure rich content scores > 0.3.
-        """
+        """Assess content depth based on text length and complexity."""
         if not text:
             return 0.0
         
         word_count = len(text.split())
         
-        # Adjusted score based on word count
-        # Rich content (50+ words) should score > 0.3
-        if word_count < 20:
-            return 0.1
-        elif word_count < 50:
-            return 0.25
-        elif word_count < 100:
-            return 0.4  # Rich content starts here
-        elif word_count < 300:
+        # Score based on word count
+        if word_count < 100:
+            return 0.3
+        elif word_count < 500:
             return 0.6
-        elif word_count < 1000:
-            return 0.75
         elif word_count < 2000:
-            return 0.85
+            return 0.8
         else:
-            return 0.95
+            return 0.9
     
     def _normalize_reading_ease(self, reading_ease: float) -> float:
         """Normalize Flesch Reading Ease score to 0-1 range.
         
-        Flesch Reading Ease typically ranges from -30 to 100:
+        Flesch Reading Ease typically ranges from 0-100:
         - 90-100: Very easy
         - 60-70: Standard
-        - 0-30: Difficult
-        - Below 0: Very difficult
+        - 0-30: Very difficult
         
         We normalize to 0-1 where higher is better.
-        We use 100 as the practical maximum (scores above 100 are extremely rare).
         """
-        # Clamp to reasonable range (-30 to 100)
-        clamped = max(-30.0, min(100.0, reading_ease))
+        # Clamp to reasonable range
+        clamped = max(0.0, min(100.0, reading_ease))
         # Normalize to 0-1
-        return (clamped - (-30.0)) / (100.0 - (-30.0))
-    
-    # Backward compatibility aliases
-    def content_readability(self, text: str) -> Dict[str, float]:
-        """Backward compatibility alias for text_readability()."""
-        return self.text_readability(text)
-    
-    def overall_quality_score(self, resource_in: Dict[str, Any], text: str | None) -> float:
-        """Comprehensive quality score (uses enhanced formula)."""
-        return self.comprehensive_quality(resource_in, text)
+        return clamped / 100.0
 
 
 class QualityService:
@@ -223,13 +129,9 @@ class QualityService:
         self.db = db
         self.quality_version = quality_version
     
-    def compute_quality(self, resource_id: str, weights: Optional[Dict[str, float]] = None, custom_weights: Optional[Dict[str, float]] = None) -> Dict[str, float]:
+    def compute_quality(self, resource_id: str, weights: Optional[Dict[str, float]] = None) -> Dict[str, float]:
         """Compute quality scores for a resource."""
         from backend.app.database.models import Resource
-        
-        # Support both 'weights' and 'custom_weights' parameters for backward compatibility
-        if custom_weights is not None:
-            weights = custom_weights
         
         # Default weights
         if weights is None:
@@ -253,12 +155,23 @@ class QualityService:
         if not resource:
             raise ValueError(f"Resource {resource_id} not found")
         
-        # Compute dimension scores using the dimension methods
-        accuracy = self._compute_accuracy(resource)
-        completeness = self._compute_completeness(resource)
-        consistency = self._compute_consistency(resource)
-        timeliness = self._compute_timeliness(resource)
-        relevance = self._compute_relevance(resource)
+        # Compute dimension scores (simplified)
+        accuracy = 0.7
+        completeness = 0.0
+        if resource.title:
+            completeness += 0.2
+        if resource.description:
+            completeness += 0.2
+        if resource.creator:
+            completeness += 0.2
+        if resource.publication_year:
+            completeness += 0.2
+        if resource.doi:
+            completeness += 0.2
+        
+        consistency = 0.75
+        timeliness = 0.7
+        relevance = 0.7
         
         # Compute overall score
         overall = (
@@ -466,195 +379,3 @@ class QualityService:
             reasons.append("low_summary_relevance")
         
         return reasons
-    
-    def _compute_accuracy(self, resource) -> float:
-        """Compute accuracy dimension score for a resource.
-        
-        Factors:
-        - Citation presence (indicates verification)
-        - Scholarly metadata presence (DOI, authors)
-        - Source credibility
-        """
-        from backend.app.database.models import Citation
-        
-        score = 0.5  # Neutral baseline
-        
-        # Check for scholarly metadata
-        has_doi = bool(getattr(resource, 'doi', None))
-        has_authors = bool(getattr(resource, 'authors', None))
-        
-        if has_doi:
-            score += 0.15
-        if has_authors:
-            score += 0.10
-        
-        # Check source credibility
-        source = getattr(resource, 'source', None)
-        if source:
-            analyzer = ContentQualityAnalyzer()
-            source_score = analyzer.source_credibility(source)
-            score += (source_score - 0.5) * 0.3  # Scale contribution
-        
-        # Check citations (presence indicates some level of verification)
-        citations = self.db.query(Citation).filter(
-            Citation.source_resource_id == resource.id
-        ).all()
-        
-        if citations:
-            # Having citations is a positive signal
-            citation_boost = min(0.2, len(citations) * 0.05)
-            score += citation_boost
-        
-        return max(0.0, min(1.0, score))
-    
-    def _compute_completeness(self, resource) -> float:
-        """Compute completeness dimension score for a resource.
-        
-        Factors:
-        - Required fields (title, description, source, type)
-        - Important fields (summary, tags, authors, publication_year)
-        - Scholarly fields (DOI, journal, affiliations, funding)
-        - Extracted content (equations, tables, figures)
-        """
-        score = 0.0
-        
-        # Required fields (30% weight)
-        required_fields = ['title', 'description', 'source', 'type']
-        required_present = sum(1 for f in required_fields if getattr(resource, f, None))
-        score += (required_present / len(required_fields)) * 0.3
-        
-        # Important fields (30% weight)
-        important_fields = ['summary', 'tags', 'authors', 'publication_year']
-        important_present = sum(1 for f in important_fields if getattr(resource, f, None))
-        score += (important_present / len(important_fields)) * 0.3
-        
-        # Scholarly fields (25% weight)
-        scholarly_fields = ['doi', 'journal', 'affiliations', 'funding_sources']
-        scholarly_present = sum(1 for f in scholarly_fields if getattr(resource, f, None))
-        score += (scholarly_present / len(scholarly_fields)) * 0.25
-        
-        # Extracted content (15% weight)
-        extracted_fields = ['equations_count', 'tables_count', 'figures_count']
-        extracted_present = sum(1 for f in extracted_fields if getattr(resource, f, None) and getattr(resource, f) > 0)
-        score += (extracted_present / len(extracted_fields)) * 0.15
-        
-        return max(0.0, min(1.0, score))
-    
-    def _compute_consistency(self, resource) -> float:
-        """Compute consistency dimension score for a resource.
-        
-        Factors:
-        - Title-description alignment
-        - Summary-description alignment
-        - Metadata consistency
-        """
-        score = 0.7  # Optimistic baseline
-        
-        title = getattr(resource, 'title', '') or ''
-        description = getattr(resource, 'description', '') or ''
-        summary = getattr(resource, 'creator', '') or ''  # Using creator field as summary
-        
-        # Simple keyword overlap check for title-description alignment
-        if title and description:
-            title_words = set(title.lower().split())
-            desc_words = set(description.lower().split())
-            if title_words and desc_words:
-                overlap = len(title_words & desc_words) / len(title_words)
-                if overlap > 0.3:
-                    score += 0.15
-                elif overlap < 0.1:
-                    score -= 0.1
-        
-        # Check summary-description alignment
-        if summary and description:
-            summary_words = set(summary.lower().split())
-            desc_words = set(description.lower().split())
-            if summary_words and desc_words:
-                overlap = len(summary_words & desc_words) / min(len(summary_words), len(desc_words))
-                if overlap > 0.2:
-                    score += 0.1
-        
-        return max(0.0, min(1.0, score))
-    
-    def _compute_timeliness(self, resource) -> float:
-        """Compute timeliness dimension score for a resource.
-        
-        Factors:
-        - Publication year recency
-        - Ingestion recency
-        """
-        score = 0.5  # Neutral baseline
-        
-        # Check publication year
-        pub_year = getattr(resource, 'publication_year', None)
-        if pub_year:
-            current_year = datetime.now().year
-            years_old = current_year - pub_year
-            
-            if years_old <= 1:
-                score = 1.0
-            elif years_old <= 3:
-                score = 0.9
-            elif years_old <= 5:
-                score = 0.8
-            elif years_old <= 10:
-                score = 0.6
-            elif years_old <= 20:
-                score = 0.4
-            else:
-                score = 0.2
-        
-        # Bonus for recent ingestion
-        created_at = getattr(resource, 'created_at', None)
-        if created_at:
-            # Ensure both datetimes are timezone-aware
-            now = datetime.now(timezone.utc)
-            if created_at.tzinfo is None:
-                # If created_at is naive, assume UTC
-                created_at = created_at.replace(tzinfo=timezone.utc)
-            
-            days_since_ingestion = (now - created_at).days
-            if days_since_ingestion <= 30:
-                score += 0.05
-            elif days_since_ingestion <= 90:
-                score += 0.02
-        
-        return max(0.0, min(1.0, score))
-    
-    def _compute_relevance(self, resource) -> float:
-        """Compute relevance dimension score for a resource.
-        
-        Factors:
-        - Classification confidence
-        - Citation count
-        - Subject tags
-        """
-        from backend.app.database.models import ResourceTaxonomy
-        
-        score = 0.5  # Neutral baseline
-        
-        # Check classification
-        classifications = self.db.query(ResourceTaxonomy).filter(
-            ResourceTaxonomy.resource_id == resource.id
-        ).all()
-        
-        if classifications:
-            avg_confidence = sum(c.confidence for c in classifications if c.confidence) / len(classifications)
-            score += (avg_confidence - 0.5) * 0.4
-        
-        # Check citation count
-        citation_count = getattr(resource, 'citation_count', 0) or 0
-        if citation_count > 0:
-            # Logarithmic scaling for citation impact
-            import math
-            citation_score = min(1.0, math.log10(citation_count + 1) / 2.0)
-            score += citation_score * 0.3
-        
-        # Check subject tags
-        tags = getattr(resource, 'tags', None)
-        if tags:
-            tag_list = tags.split(',') if isinstance(tags, str) else tags
-            if len(tag_list) >= 3:
-                score += 0.1
-        
-        return max(0.0, min(1.0, score))

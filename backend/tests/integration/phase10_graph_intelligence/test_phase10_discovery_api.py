@@ -231,13 +231,14 @@ class TestDiscoveryAPIEndpoints:
         
         # Create hypothesis
         hypothesis = DiscoveryHypothesis(
-            concept_a="Concept A",
-            concept_b="Concept C",
-            resource_a_id=resource_a.id,
-            resource_c_id=resource_c.id,
-            supporting_resources=json.dumps([]),
+            a_resource_id=resource_a.id,
+            c_resource_id=resource_c.id,
+            b_resource_ids=json.dumps([]),
             hypothesis_type="open",
-            confidence_score=0.75
+            plausibility_score=0.75,
+            path_strength=0.8,
+            path_length=2,
+            common_neighbors=3
         )
         db.add(hypothesis)
         db.commit()
@@ -282,13 +283,14 @@ class TestDiscoveryAPIEndpoints:
         
         # Create hypothesis
         hypothesis = DiscoveryHypothesis(
-            concept_a="Concept A",
-            concept_b="Concept C",
-            resource_a_id=resource_a.id,
-            resource_c_id=resource_c.id,
-            supporting_resources=json.dumps([]),
+            a_resource_id=resource_a.id,
+            c_resource_id=resource_c.id,
+            b_resource_ids=json.dumps([]),
             hypothesis_type="open",
-            confidence_score=0.75
+            plausibility_score=0.75,
+            path_strength=0.8,
+            path_length=2,
+            common_neighbors=3
         )
         db.add(hypothesis)
         db.commit()
@@ -305,8 +307,8 @@ class TestDiscoveryAPIEndpoints:
         
         # Verify hypothesis was updated
         db.refresh(hypothesis)
-        # Check that status was updated (the actual field that exists)
-        assert hypothesis.status in ["validated", "pending"]
+        assert hypothesis.is_validated == 1  # SQLite stores boolean as integer
+        assert hypothesis.validation_notes == "Confirmed through manual review"
         
         # Cleanup
         db.delete(hypothesis)

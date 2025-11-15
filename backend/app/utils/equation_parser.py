@@ -149,7 +149,7 @@ class EquationParser:
         latex_str = re.sub(r'\s+', ' ', latex_str)
         
         # Standardize spacing around commands
-        latex_str = re.sub(r'\\\s+', r'\\', latex_str)
+        latex_str = re.sub(r'\\\s+', '\\', latex_str)
         
         # Remove spaces before braces in commands
         latex_str = re.sub(r'(\\\w+)\s+\{', r'\1{', latex_str)

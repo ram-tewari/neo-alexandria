@@ -13,14 +13,9 @@ def test_training_methods():
     # Direct import to avoid full app initialization
     import importlib.util
     
-    # Construct path from test file to backend/app/services/ml_classification_service.py
-    # Test file is at: backend/tests/unit/phase8_classification/test_ml_training.py
-    # Target file is at: backend/app/services/ml_classification_service.py
-    backend_root = Path(__file__).parent.parent.parent.parent
-    ml_service_path = backend_root / "app" / "services" / "ml_classification_service.py"
     spec = importlib.util.spec_from_file_location(
         "ml_classification_service",
-        ml_service_path
+        Path(__file__).parent / "app" / "services" / "ml_classification_service.py"
     )
     ml_module = importlib.util.module_from_spec(spec)
     

@@ -9,17 +9,17 @@ This test verifies that:
 
 from unittest.mock import patch, MagicMock
 from uuid import uuid4
-import pytest
 
 from backend.app.services.resource_service import process_ingestion
 from backend.app.database.models import Resource
+from backend.app.database.base import SessionLocal
 
 
-def test_quality_integration_in_ingestion(test_db):
+def test_quality_integration_in_ingestion():
     """Test that quality assessment is integrated into ingestion pipeline."""
     
-    # Create a test resource using the test database session
-    session = test_db()
+    # Create a test resource
+    session = SessionLocal()
     try:
         resource = Resource(
             id=uuid4(),
@@ -97,23 +97,16 @@ def test_quality_integration_in_ingestion(test_db):
             
     finally:
         # Cleanup
-        try:
-            if resource and resource.id:
-                # Refresh to ensure it's attached to session
-                session.refresh(resource)
-                session.delete(resource)
-                session.commit()
-        except Exception:
-            # If resource was never persisted or already deleted, just rollback
-            session.rollback()
-        finally:
-            session.close()
+        if resource:
+            session.delete(resource)
+            session.commit()
+        session.close()
 
 
-def test_quality_integration_error_handling(test_db):
+def test_quality_integration_error_handling():
     """Test that quality assessment errors don't block ingestion."""
     
-    session = test_db()
+    session = SessionLocal()
     try:
         resource = Resource(
             id=uuid4(),
@@ -177,17 +170,10 @@ def test_quality_integration_error_handling(test_db):
             
     finally:
         # Cleanup
-        try:
-            if resource and resource.id:
-                # Refresh to ensure it's attached to session
-                session.refresh(resource)
-                session.delete(resource)
-                session.commit()
-        except Exception:
-            # If resource was never persisted or already deleted, just rollback
-            session.rollback()
-        finally:
-            session.close()
+        if resource:
+            session.delete(resource)
+            session.commit()
+        session.close()
 
 
 if __name__ == "__main__":

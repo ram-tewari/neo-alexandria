@@ -38,7 +38,7 @@ from ..services.quality_service import QualityService
 from ..services.summarization_evaluator import SummarizationEvaluator
 
 
-router = APIRouter(prefix="/quality", tags=["quality"])
+router = APIRouter(prefix="", tags=["quality"])
 
 
 def _get_quality_service(db: Session) -> QualityService:
@@ -52,7 +52,7 @@ def _get_summarization_evaluator(db: Session) -> SummarizationEvaluator:
     return SummarizationEvaluator(db, openai_api_key=openai_api_key)
 
 
-@router.get("/details/{resource_id}", response_model=QualityDetailsResponse)
+@router.get("/resources/{resource_id}/quality-details", response_model=QualityDetailsResponse)
 async def get_quality_details(
     resource_id: str,
     db: Session = Depends(get_sync_db),
@@ -116,7 +116,7 @@ async def get_quality_details(
     )
 
 
-@router.post("/recalculate", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/quality/recalculate", status_code=status.HTTP_202_ACCEPTED)
 async def recalculate_quality(
     request: QualityRecalculateRequest,
     background: BackgroundTasks,
@@ -166,7 +166,7 @@ def _compute_quality_background(resource_id: str, weights: Optional[dict], engin
         db.close()
 
 
-@router.get("/outliers", response_model=OutlierListResponse)
+@router.get("/quality/outliers", response_model=OutlierListResponse)
 async def get_outliers(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(50, ge=1, le=100, description="Results per page"),
@@ -214,19 +214,12 @@ async def get_outliers(
     )
 
 
-@router.get("/degradation", response_model=DegradationReport)
+@router.get("/quality/degradation", response_model=DegradationReport)
 async def get_degradation_report(
-    time_window_days: int = Query(30, description="Lookback period in days"),
+    time_window_days: int = Query(30, ge=1, le=365, description="Lookback period in days"),
     db: Session = Depends(get_sync_db),
 ):
     """Get quality degradation report for specified time window."""
-    # Validate time_window_days manually to return 400 instead of 422
-    if time_window_days < 1 or time_window_days > 365:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="time_window_days must be between 1 and 365"
-        )
-    
     quality_service = _get_quality_service(db)
     
     degraded_resources = quality_service.monitor_quality_degradation(
@@ -302,7 +295,7 @@ def _evaluate_summary_background(resource_id: str, use_g_eval: bool, engine_url:
         db.close()
 
 
-@router.get("/distribution", response_model=QualityDistributionResponse)
+@router.get("/quality/distribution", response_model=QualityDistributionResponse)
 async def get_quality_distribution(
     bins: int = Query(10, ge=5, le=50, description="Number of histogram bins"),
     dimension: str = Query("overall", description="Quality dimension or 'overall'"),
@@ -367,7 +360,7 @@ async def get_quality_distribution(
     )
 
 
-@router.get("/trends", response_model=QualityTrendsResponse)
+@router.get("/quality/trends", response_model=QualityTrendsResponse)
 async def get_quality_trends(
     granularity: str = Query("weekly", description="Time granularity (daily, weekly, monthly)"),
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
@@ -477,7 +470,7 @@ async def get_quality_trends(
     )
 
 
-@router.get("/dimensions", response_model=QualityDimensionsResponse)
+@router.get("/quality/dimensions", response_model=QualityDimensionsResponse)
 async def get_dimension_averages(
     db: Session = Depends(get_sync_db),
 ):
@@ -526,7 +519,7 @@ async def get_dimension_averages(
     )
 
 
-@router.get("/review-queue", response_model=ReviewQueueResponse)
+@router.get("/quality/review-queue", response_model=ReviewQueueResponse)
 async def get_review_queue(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(50, ge=1, le=100, description="Results per page"),

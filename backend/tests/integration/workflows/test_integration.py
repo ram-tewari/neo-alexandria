@@ -127,22 +127,14 @@ class TestIngestionPipelineIntegration:
         self._poll_until_completed(client, rid)
         data = client.get(f"/resources/{rid}").json()
         
-        # Verify content extraction and processing
-        # Note: AI generation may not always produce content depending on configuration
-        # At minimum, we should have extracted some metadata
-        assert data["subject"] is not None  # Should have some tags (AI-generated or extracted)
+        # Verify AI-generated content
+        assert data["description"] is not None  # Should have AI-generated summary
+        assert len(data["subject"]) > 0  # Should have AI-generated tags
         
-        # If tags were generated, verify authority control was applied
-        if len(data["subject"]) > 0:
-            subjects = data["subject"]
-            # Check for AI/ML related terms (may vary based on extraction/generation)
-            has_ai_terms = any(
-                term in subj.lower() 
-                for subj in subjects 
-                for term in ["artificial intelligence", "machine learning", "ai", "ml"]
-            )
-            # This is a soft check - content extraction should identify these topics
-            assert has_ai_terms or len(subjects) > 0, "Should have extracted relevant topics"
+        # Verify authority control was applied
+        subjects = data["subject"]
+        assert any("Artificial Intelligence" in subj for subj in subjects)
+        assert any("Machine Learning" in subj for subj in subjects)
         
         # Verify classification
         # Codes may have evolved; ensure non-empty

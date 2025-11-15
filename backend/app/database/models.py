@@ -26,7 +26,7 @@ from typing import List
 
 from sqlalchemy import String, Text, DateTime, Float, func, JSON, Integer, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator, CHAR
 
 from .base import Base
@@ -852,9 +852,24 @@ class GraphEdge(Base):
         server_default=func.current_timestamp()
     )
     
-    # Aliases for backward compatibility (using synonym for query support)
-    source_id = synonym('source_resource_id')
-    target_id = synonym('target_resource_id')
+    # Aliases for backward compatibility
+    @property
+    def source_id(self):
+        """Alias for source_resource_id."""
+        return self.source_resource_id
+    
+    @source_id.setter
+    def source_id(self, value):
+        self.source_resource_id = value
+    
+    @property
+    def target_id(self):
+        """Alias for target_resource_id."""
+        return self.target_resource_id
+    
+    @target_id.setter
+    def target_id(self, value):
+        self.target_resource_id = value
     
     # Indexes
     __table_args__ = (
@@ -992,15 +1007,6 @@ class DiscoveryHypothesis(Base):
     @b_resource_id.setter
     def b_resource_id(self, value):
         self.resource_b_id = value
-    
-    @property
-    def c_resource_id(self):
-        """Alias for resource_c_id."""
-        return self.resource_c_id
-    
-    @c_resource_id.setter
-    def c_resource_id(self, value):
-        self.resource_c_id = value
     
     # Hypothesis metadata
     hypothesis_type: Mapped[str] = mapped_column(

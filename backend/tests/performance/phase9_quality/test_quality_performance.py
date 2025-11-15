@@ -31,13 +31,13 @@ def create_test_resources(db_session: Session):
         for i in range(count):
             resource = Resource(
                 title=f"Performance Test Resource {i}",
-                source=f"https://example.com/perf{i}",
-                description=f"Performance test content {i} " * 50,
-                creator=f"Summary {i}",
-                type="article",
+                url=f"https://example.com/perf{i}",
+                content=f"Performance test content {i} " * 50,
+                summary=f"Summary {i}",
+                resource_type="article",
                 authors=f"Author {i}",
                 publication_year=2024,
-                subject=["test", "performance", str(i)]
+                tags=f"test,performance,{i}"
             )
             resources.append(resource)
             db_session.add(resource)
@@ -58,9 +58,9 @@ class TestQualityComputationLatency:
         # Create resource
         resource = Resource(
             title="Latency Test",
-            source="https://example.com/latency",
-            description="Content for latency testing",
-            type="article"
+            url="https://example.com/latency",
+            content="Content for latency testing",
+            resource_type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -207,10 +207,10 @@ class TestSummarizationEvaluationLatency:
         """Test summary evaluation without G-Eval completes quickly."""
         resource = Resource(
             title="Summary Eval Test",
-            source="https://example.com/summary-eval",
-            description="Content for summary evaluation testing " * 50,
-            creator="Brief summary for evaluation",
-            type="article"
+            url="https://example.com/summary-eval",
+            content="Content for summary evaluation testing " * 50,
+            summary="Brief summary for evaluation",
+            resource_type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -231,10 +231,10 @@ class TestSummarizationEvaluationLatency:
         """Test summary evaluation with G-Eval (requires API key)."""
         resource = Resource(
             title="G-Eval Test",
-            source="https://example.com/g-eval",
-            description="Content for G-Eval testing",
-            creator="Summary for G-Eval",
-            type="article"
+            url="https://example.com/g-eval",
+            content="Content for G-Eval testing",
+            summary="Summary for G-Eval",
+            resource_type="article"
         )
         db_session.add(resource)
         db_session.commit()

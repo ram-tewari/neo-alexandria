@@ -119,8 +119,7 @@ class TestGraphConstructionPerformance:
     """Test graph construction performance."""
     
     @pytest.mark.performance
-    @pytest.mark.slow
-    @pytest.mark.parametrize("size", [100, 500])
+    @pytest.mark.parametrize("size", [1000, 5000])
     def test_graph_construction_time(self, test_db, size: int):
         """
         Test graph construction completes within time limits.
@@ -128,9 +127,6 @@ class TestGraphConstructionPerformance:
         Requirements:
         - Less than 30s for 10,000 resources
         - Proportionally faster for smaller graphs
-        
-        Note: Test sizes reduced to 100 and 500 for faster execution.
-        Original sizes (1000, 5000) can be used for full performance testing.
         """
         db_session = test_db()
         # Create test dataset
@@ -146,10 +142,8 @@ class TestGraphConstructionPerformance:
         
         metrics = monitor.stop()
         
-        # Calculate expected time - adjusted for realistic performance
-        # Original: 30s for 10k nodes, but actual performance is slower
-        # Using more realistic expectations based on actual measurements
-        expected_time = (size / 100) * 5  # ~5s per 100 nodes
+        # Calculate expected time (linear scaling from 30s for 10k)
+        expected_time = (size / 10000) * 30
         
         print(f"\n=== Graph Construction Performance ({size} nodes) ===")
         print(f"Time: {metrics['elapsed_time']:.2f}s (expected: <{expected_time:.2f}s)")
@@ -157,13 +151,12 @@ class TestGraphConstructionPerformance:
         print(f"Nodes: {graph.number_of_nodes()}")
         print(f"Edges: {graph.number_of_edges()}")
         
-        # Assert performance requirements with realistic expectations
+        # Assert performance requirements
         assert metrics['elapsed_time'] < expected_time, \
             f"Graph construction took {metrics['elapsed_time']:.2f}s, expected <{expected_time:.2f}s"
         
-        # Memory should be reasonable - adjusted for realistic usage
-        # Using more generous memory limits based on actual measurements
-        expected_memory = (size / 100) * 50  # ~50MB per 100 nodes
+        # Memory should be reasonable (<500MB for 10k nodes)
+        expected_memory = (size / 10000) * 500
         assert metrics['memory_delta_mb'] < expected_memory, \
             f"Memory usage {metrics['memory_delta_mb']:.2f}MB exceeds expected {expected_memory:.2f}MB"
 
@@ -172,8 +165,7 @@ class TestTwoHopQueryPerformance:
     """Test 2-hop neighbor query performance."""
     
     @pytest.mark.performance
-    @pytest.mark.slow
-    @pytest.mark.parametrize("size", [100, 500])
+    @pytest.mark.parametrize("size", [1000, 5000])
     def test_two_hop_query_latency(self, test_db, size: int):
         """
         Test 2-hop neighbor queries complete within latency limits.
@@ -181,8 +173,6 @@ class TestTwoHopQueryPerformance:
         Requirements:
         - Less than 500ms for 5,000 node graphs
         - Proportionally faster for smaller graphs
-        
-        Note: Test sizes reduced to 100 and 500 for faster execution.
         """
         db_session = test_db()
         # Create test dataset and build graph
@@ -217,13 +207,12 @@ class TestTwoHopQueryPerformance:
         
         avg_time = total_time / num_queries
         
-        # Calculate expected time - adjusted for realistic performance
-        # Performance scales poorly with graph size: ~100ms for 100 nodes, ~3-5s for 500 nodes
-        expected_time = (size / 100) * 1.0  # 1s per 100 nodes
+        # Calculate expected time (linear scaling from 500ms for 5k)
+        expected_time = (size / 5000) * 0.5
         
         print(f"Average latency: {avg_time*1000:.2f}ms (expected: <{expected_time*1000:.2f}ms)")
         
-        # Assert performance requirements with realistic expectations
+        # Assert performance requirements
         assert avg_time < expected_time, \
             f"Average 2-hop query took {avg_time*1000:.2f}ms, expected <{expected_time*1000:.2f}ms"
 
@@ -232,16 +221,13 @@ class TestHNSWQueryPerformance:
     """Test HNSW index query performance."""
     
     @pytest.mark.performance
-    @pytest.mark.slow
-    @pytest.mark.parametrize("size", [100, 500])
+    @pytest.mark.parametrize("size", [1000, 5000, 10000])
     def test_hnsw_query_latency(self, test_db, size: int):
         """
         Test HNSW k-NN queries complete within latency limits.
         
         Requirements:
         - Less than 100ms for 10,000 node graphs
-        
-        Note: Test sizes reduced to 100 and 500 for faster execution.
         """
         db_session = test_db()
         # Create test dataset
@@ -253,11 +239,10 @@ class TestHNSWQueryPerformance:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
-                embedding=[0.01 * (i % 128)] * 128,
-                embedding_model="fusion",
-                dimensions=128,
                 structural_embedding=[0.01 * (i % 128)] * 128,
-                fusion_embedding=[0.01 * (i % 128)] * 128
+                fusion_embedding=[0.01 * (i % 128)] * 128,
+                embedding_method="fusion",
+                embedding_version="v1.0"
             )
             db_session.add(graph_embedding)
             
@@ -326,7 +311,7 @@ class TestGraph2VecPerformance:
         """
         db_session = test_db()
         # Create smaller test dataset for Graph2Vec (it's computationally expensive)
-        size = 50  # Reduced from 200 for faster execution
+        size = 200
         create_large_test_dataset(db_session, size=size)
         
         # Build graph
@@ -361,7 +346,6 @@ class TestMemoryUsage:
     """Test memory usage stays within acceptable limits."""
     
     @pytest.mark.performance
-    @pytest.mark.slow
     def test_graph_cache_memory(self, test_db):
         """
         Test graph cache memory usage.
@@ -370,7 +354,7 @@ class TestMemoryUsage:
         - Less than 500MB for 10,000 nodes
         """
         db_session = test_db()
-        size = 500  # Reduced from 5000 for faster execution
+        size = 5000  # Test with 5k nodes
         create_large_test_dataset(db_session, size=size)
         
         # Get baseline memory
@@ -400,7 +384,6 @@ class TestMemoryUsage:
             f"Graph cache used {memory_delta:.2f}MB, expected <{expected_memory:.2f}MB"
     
     @pytest.mark.performance
-    @pytest.mark.slow
     def test_hnsw_index_memory(self, test_db):
         """
         Test HNSW index memory usage.
@@ -409,7 +392,7 @@ class TestMemoryUsage:
         - Less than 200MB for 10,000 nodes with 128-dim embeddings
         """
         db_session = test_db()
-        size = 500  # Reduced from 5000 for faster execution
+        size = 5000
         resources = create_large_test_dataset(db_session, size=size)
         
         # Create embeddings
@@ -417,10 +400,9 @@ class TestMemoryUsage:
             graph_embedding = GraphEmbedding(
                 id=uuid.uuid4(),
                 resource_id=resource.id,
-                embedding=[0.01] * 128,
-                embedding_model="fusion",
-                dimensions=128,
-                fusion_embedding=[0.01] * 128
+                fusion_embedding=[0.01] * 128,
+                embedding_method="fusion",
+                embedding_version="v1.0"
             )
             db_session.add(graph_embedding)
         
@@ -455,11 +437,10 @@ class TestDiscoveryPerformance:
     """Test LBD discovery performance."""
     
     @pytest.mark.performance
-    @pytest.mark.slow
     def test_open_discovery_latency(self, test_db):
         """Test open discovery completes in reasonable time."""
         db_session = test_db()
-        size = 100  # Reduced from 1000 for faster execution
+        size = 1000
         resources = create_large_test_dataset(db_session, size=size)
         
         # Build graph
@@ -489,11 +470,10 @@ class TestDiscoveryPerformance:
             f"Open discovery took {metrics['elapsed_time']:.2f}s, expected <2s"
     
     @pytest.mark.performance
-    @pytest.mark.slow
     def test_closed_discovery_latency(self, test_db):
         """Test closed discovery completes in reasonable time."""
         db_session = test_db()
-        size = 100  # Reduced from 1000 for faster execution
+        size = 1000
         resources = create_large_test_dataset(db_session, size=size)
         
         # Build graph

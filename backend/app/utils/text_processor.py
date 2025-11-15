@@ -74,57 +74,25 @@ def readability_scores(txt: str) -> Dict[str, float]:
     """Compute Flesch Reading Ease and Flesch–Kincaid Grade.
 
     Prefer textstat if available; otherwise use internal approximation.
-    Returns dict with keys: reading_ease, fk_grade, word_count, sentence_count,
-    avg_words_per_sentence, unique_word_ratio, long_word_ratio, paragraph_count
+    Returns dict with keys: reading_ease, fk_grade
     """
     text = clean_text(txt)
     if not text:
-        return {
-            "reading_ease": 0.0, 
-            "fk_grade": 0.0, 
-            "word_count": 0, 
-            "sentence_count": 0,
-            "avg_words_per_sentence": 0.0,
-            "unique_word_ratio": 0.0,
-            "long_word_ratio": 0.0,
-            "paragraph_count": 0.0
-        }
+        return {"reading_ease": 0.0, "fk_grade": 0.0}
 
-    words = _WORD_RE.findall(text)
-    num_words = max(len(words), 1)
-    num_sentences = _split_sentences(text)
-    
-    # Calculate additional metrics
-    avg_words_per_sentence = num_words / num_sentences if num_sentences > 0 else 0.0
-    
-    # Unique word ratio
-    unique_words = set(w.lower() for w in words)
-    unique_word_ratio = len(unique_words) / num_words if num_words > 0 else 0.0
-    
-    # Long word ratio (words with 7+ characters)
-    long_words = [w for w in words if len(w) >= 7]
-    long_word_ratio = len(long_words) / num_words if num_words > 0 else 0.0
-    
-    # Paragraph count (split by double newlines or single newlines)
-    paragraphs = [p.strip() for p in txt.split('\n') if p.strip()]
-    paragraph_count = len(paragraphs) if paragraphs else 1
-    
     if textstat is not None:
         try:
             return {
                 "reading_ease": float(textstat.flesch_reading_ease(text)),
                 "fk_grade": float(textstat.flesch_kincaid_grade(text)),
-                "word_count": len(words),
-                "sentence_count": num_sentences,
-                "avg_words_per_sentence": float(avg_words_per_sentence),
-                "unique_word_ratio": float(unique_word_ratio),
-                "long_word_ratio": float(long_word_ratio),
-                "paragraph_count": float(paragraph_count),
             }
         except Exception:
             # fall back to internal
             pass
 
+    words = _WORD_RE.findall(text)
+    num_words = max(len(words), 1)
+    num_sentences = _split_sentences(text)
     syllables = sum(_estimate_syllables(w) for w in words) or 1
 
     words_per_sentence = num_words / num_sentences
@@ -138,15 +106,6 @@ def readability_scores(txt: str) -> Dict[str, float]:
         reading_ease = 0.0
     if math.isnan(fk_grade):
         fk_grade = 0.0
-    return {
-        "reading_ease": float(reading_ease), 
-        "fk_grade": float(fk_grade),
-        "word_count": len(words),
-        "sentence_count": num_sentences,
-        "avg_words_per_sentence": float(avg_words_per_sentence),
-        "unique_word_ratio": float(unique_word_ratio),
-        "long_word_ratio": float(long_word_ratio),
-        "paragraph_count": float(paragraph_count),
-    }
+    return {"reading_ease": float(reading_ease), "fk_grade": float(fk_grade)}
 
 

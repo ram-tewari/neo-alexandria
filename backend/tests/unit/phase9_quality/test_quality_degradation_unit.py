@@ -21,9 +21,9 @@ def create_resource_with_old_quality(db_session: Session):
     def _create(days_old=35, old_quality=0.8, title_suffix=""):
         resource = Resource(
             title=f"Test Resource {title_suffix}",
-            source=f"https://example.com/test{title_suffix}",
-            description=f"Test content {title_suffix}",
-            type="article",
+            url=f"https://example.com/test{title_suffix}",
+            content=f"Test content {title_suffix}",
+            resource_type="article",
             quality_overall=old_quality,
             quality_accuracy=old_quality,
             quality_completeness=old_quality,
@@ -56,7 +56,7 @@ class TestMonitorQualityDegradation:
         
         # Simulate degradation by modifying resource to lower quality
         # (In real scenario, external factors would cause this)
-        resource.description = "Poor quality content"
+        resource.content = "Poor quality content"
         db_session.commit()
         
         reports = quality_service.monitor_quality_degradation(time_window_days=30)
@@ -110,8 +110,8 @@ class TestMonitorQualityDegradation:
         )
         
         # Improve resource quality
-        resource.description = "High quality summary"
-        resource.subject = ["quality", "tags"]
+        resource.summary = "High quality summary"
+        resource.tags = "quality,tags"
         resource.authors = "Expert Author"
         db_session.commit()
         
@@ -189,8 +189,8 @@ class TestMonitorQualityDegradation:
         )
         
         # Degrade first two
-        degraded1.description = "Poor content"
-        degraded2.description = "Poor content"
+        degraded1.content = "Poor content"
+        degraded2.content = "Poor content"
         db_session.commit()
         
         reports = quality_service.monitor_quality_degradation(time_window_days=30)
@@ -208,7 +208,7 @@ class TestMonitorQualityDegradation:
             title_suffix="report_test"
         )
         
-        resource.description = "Degraded content"
+        resource.content = "Degraded content"
         db_session.commit()
         
         reports = quality_service.monitor_quality_degradation(time_window_days=30)
@@ -237,9 +237,9 @@ class TestMonitorQualityDegradation:
         # Create only recent resources
         resource = Resource(
             title="Recent Resource",
-            source="https://example.com/recent",
-            description="Recent content",
-            type="article",
+            url="https://example.com/recent",
+            content="Recent content",
+            resource_type="article",
             quality_overall=0.8,
             quality_last_computed=datetime.now() - timedelta(days=5)
         )

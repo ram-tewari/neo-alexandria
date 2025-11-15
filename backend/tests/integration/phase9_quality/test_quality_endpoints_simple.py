@@ -8,20 +8,34 @@ HTTP methods and paths.
 import sys
 from pathlib import Path
 
+# Ensure we can import from app
+
 
 def test_quality_router_structure():
     """Test that quality router has all expected endpoints."""
     
-    # Import the router using proper Python import
-    # The backend directory is already in the Python path via pytest configuration
-    try:
-        from backend.app.routers.quality import router
-    except ImportError:
-        # Fallback: add backend to path if needed
-        backend_root = Path(__file__).parent.parent.parent.parent
-        if str(backend_root) not in sys.path:
-            sys.path.insert(0, str(backend_root))
-        from backend.app.routers.quality import router
+    # Import the router directly (avoiding app init issues)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "quality_router",
+        Path(__file__).parent / "app" / "routers" / "quality.py"
+    )
+    quality_module = importlib.util.module_from_spec(spec)
+    
+    # Mock the dependencies before loading
+    import unittest.mock as mock
+    
+    # Mock all the imports that might fail
+    sys.modules['app.database.base'] = mock.MagicMock()
+    sys.modules['app.database.models'] = mock.MagicMock()
+    sys.modules['app.schemas.quality'] = mock.MagicMock()
+    sys.modules['app.services.quality_service'] = mock.MagicMock()
+    sys.modules['app.services.summarization_evaluator'] = mock.MagicMock()
+    
+    # Now load the module
+    spec.loader.exec_module(quality_module)
+    
+    router = quality_module.router
     
     print("=" * 80)
     print("Quality API Endpoints Verification")

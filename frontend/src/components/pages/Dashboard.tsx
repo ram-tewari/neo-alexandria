@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
@@ -5,60 +6,111 @@ import { StatCard } from '../cards/StatCard';
 import { ResourceCard } from '../cards/ResourceCard';
 import { Carousel } from '../common/Carousel';
 import { MiniKnowledgeGraph } from '../common/MiniKnowledgeGraph';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import { GradientOrbs } from '../background/GradientOrbs';
+import { DeepPurpleOrbs } from '../background/DeepPurpleOrbs';
 import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
-import type { StatData, Resource } from '../../types';
+import { useResourceStore } from '@/store';
+import type { StatData } from '../../types';
 import './Dashboard.css';
 
 const stats: StatData[] = [
-  { iconName: 'library', value: 524, label: 'Resources', color: 'blue' },
-  { iconName: 'chart', value: 86, label: 'Collections', color: 'cyan' },
-  { iconName: 'book', value: 142, label: 'Annotations', color: 'purple' },
-  { iconName: 'trending', value: 38, label: 'Citations', color: 'teal' },
-];
-
-const resources: Resource[] = [
-  {
-    title: 'Introduction to Neural Networks',
-    description: 'A comprehensive guide to understanding neural networks and their applications.',
-    author: 'John Doe',
-    readTime: 25,
-    rating: 4.8,
-    tags: ['AI', 'Neural Networks', 'Tutorial'],
-    type: 'article',
-  },
-  {
-    title: 'Quantum Computing Explained',
-    description: 'Visual introduction to quantum computing principles.',
-    author: 'Dr. Smith',
-    readTime: 45,
-    rating: 4.6,
-    tags: ['Physics', 'Quantum', 'Technology'],
-    type: 'video',
-  },
-  {
-    title: 'Data Science Fundamentals',
-    description: 'Complete guide to data science concepts and best practices.',
-    author: 'Jane Wilson',
-    readTime: 180,
-    rating: 4.9,
-    tags: ['Data Science', 'Analytics'],
-    type: 'book',
-  },
+  { iconName: 'library', value: 0, label: 'Resources', color: 'blue' },
+  { iconName: 'chart', value: 0, label: 'Collections', color: 'cyan' },
+  { iconName: 'book', value: 0, label: 'Annotations', color: 'purple' },
+  { iconName: 'trending', value: 0, label: 'Citations', color: 'teal' },
 ];
 
 export const Dashboard = () => {
+  const { 
+    resources, 
+    isLoading, 
+    error, 
+    viewMode,
+    pagination,
+    fetchResources,
+    updateResourceStatus,
+    archiveResource
+  } = useResourceStore();
+
+  useEffect(() => {
+    // Fetch resources on mount
+    fetchResources({ limit: 20, sort_by: 'created_at', sort_order: 'desc' });
+  }, [fetchResources]);
+
+  const handleRead = async (id: string) => {
+    try {
+      await updateResourceStatus(id, 'completed');
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  };
+
+  const handleArchive = async (id: string) => {
+    try {
+      await archiveResource(id);
+    } catch (error) {
+      console.error('Failed to archive:', error);
+    }
+  };
+
+  const handleAnnotate = (id: string) => {
+    console.log('Annotate:', id);
+    // TODO: Implement annotation feature
+  };
+
+  const handleShare = (id: string) => {
+    console.log('Share:', id);
+    // TODO: Implement share feature
+  };
+
+  const handleRefresh = () => {
+    fetchResources({ limit: 20, sort_by: 'created_at', sort_order: 'desc' });
+  };
+
+  // Update stats with real data
+  const updatedStats = [
+    { ...stats[0], value: pagination.total },
+    stats[1],
+    stats[2],
+    stats[3],
+  ];
+
   return (
     <motion.div
-      className="container"
+      className="dashboard-container"
       variants={pageVariants}
       initial="initial"
       animate="animate"
       exit="exit"
     >
-      <div className="page-header">
-        <h1 className="page-title">Welcome back, User</h1>
-        <p className="page-subtitle">Here's what's happening in your knowledge space today.</p>
-      </div>
+      <GradientOrbs />
+      <DeepPurpleOrbs />
+      
+      <div className="container">
+        <div className="page-header">
+          <motion.h1 
+            className="page-title"
+            style={{
+              background: 'linear-gradient(135deg, var(--white) 0%, var(--purple-bright) 50%, var(--purple-vibrant) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              backgroundSize: '200% 200%',
+            }}
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            Welcome back, User
+          </motion.h1>
+          <p className="page-subtitle">Here's what's happening in your knowledge space today.</p>
+        </div>
 
       <div style={{ marginBottom: '2.5rem' }}>
         <SearchInput placeholder="Search resources, tags, or topics..." />
@@ -70,7 +122,7 @@ export const Dashboard = () => {
         initial="hidden"
         animate="visible"
       >
-        {stats.map((stat, index) => (
+        {updatedStats.map((stat, index) => (
           <motion.div key={index} variants={staggerItem}>
             <StatCard {...stat} />
           </motion.div>
@@ -79,24 +131,65 @@ export const Dashboard = () => {
 
       <div style={{ marginBottom: '3rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Recommended for You</h2>
-          <Button variant="secondary" size="sm">Refresh</Button>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>
+            Recent Resources
+          </h2>
+          <Button variant="secondary" size="sm" onClick={handleRefresh}>
+            Refresh
+          </Button>
         </div>
-        <Carousel speed={20} pauseOnHover={true}>
-          {resources.map((resource, index) => (
-            <div key={index} style={{ width: '380px' }}>
-              <ResourceCard resource={resource} />
-            </div>
-          ))}
-        </Carousel>
+
+        {error && (
+          <div style={{ 
+            padding: '1rem', 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            color: '#ef4444',
+            marginBottom: '1rem'
+          }}>
+            Error loading resources: {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : resources.length > 0 ? (
+          <Carousel speed={20} pauseOnHover={true}>
+            {resources.slice(0, 10).map((resource, index) => (
+              <div key={resource.id} style={{ width: '380px' }}>
+                <ResourceCard 
+                  resource={resource}
+                  viewMode={viewMode}
+                  delay={index * 0.1}
+                  onRead={handleRead}
+                  onArchive={handleArchive}
+                  onAnnotate={handleAnnotate}
+                  onShare={handleShare}
+                />
+              </div>
+            ))}
+          </Carousel>
+        ) : (
+          <div style={{ 
+            padding: '3rem', 
+            textAlign: 'center',
+            color: 'var(--text-secondary)'
+          }}>
+            <p>No resources found. Start by adding some resources to your library!</p>
+          </div>
+        )}
       </div>
 
-      <div className="activity-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Knowledge Network</h2>
-          <Button variant="secondary" size="sm">Explore Graph</Button>
+        <div className="activity-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>Knowledge Network</h2>
+            <Button variant="secondary" size="sm">Explore Graph</Button>
+          </div>
+          <MiniKnowledgeGraph />
         </div>
-        <MiniKnowledgeGraph />
       </div>
     </motion.div>
   );

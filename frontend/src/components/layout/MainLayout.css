@@ -1,6 +1,7 @@
 .app {
   min-height: 100vh;
   position: relative;
+  background: var(--black);
 }
 
 .app-container {
@@ -12,22 +13,23 @@
 
 .main-content {
   flex: 1;
-  margin-left: var(--sidebar-width, 260px);
-  padding-top: 72px;
+  margin-left: var(--sidebar-width, 200px);
+  padding-top: 60px;
   min-height: 100vh;
   position: relative;
   z-index: 1;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-left var(--transition-base);
 }
 
 .main-content-header {
   display: none;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
+    padding-top: 56px;
   }
   
   .main-content-header {

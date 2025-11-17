@@ -1,20 +1,18 @@
 .avatar {
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  background: var(--charcoal-light);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-base);
   cursor: pointer;
 }
 
 .avatar:hover {
-  transform: scale(1.05);
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  border-color: var(--border-medium);
+  background: var(--surface-raised);
 }
 
 .avatar img {
@@ -24,23 +22,23 @@
 }
 
 .avatar i {
-  color: var(--accent-blue);
+  color: var(--text-secondary);
 }
 
 .avatar-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
+}
+
+.avatar-md {
   width: 32px;
   height: 32px;
   font-size: 0.875rem;
 }
 
-.avatar-md {
+.avatar-lg {
   width: 40px;
   height: 40px;
   font-size: 1rem;
-}
-
-.avatar-lg {
-  width: 56px;
-  height: 56px;
-  font-size: 1.5rem;
 }

@@ -1,0 +1,108 @@
+.collection-node {
+  position: relative;
+}
+
+.collection-node__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.collection-node__item:hover {
+  background: linear-gradient(90deg, rgba(107, 33, 168, 0.2), rgba(124, 58, 237, 0.15));
+  border-left: 3px solid var(--purple-vibrant);
+  padding-left: calc(0.75rem - 3px);
+  transform: translateX(4px);
+  box-shadow: 0 2px 15px rgba(107, 33, 168, 0.3);
+}
+
+.collection-node__item.active {
+  background: linear-gradient(135deg, var(--purple-vibrant) 0%, var(--purple-deep) 100%);
+  color: var(--white);
+  box-shadow: 
+    0 4px 20px var(--purple-glow),
+    0 0 30px rgba(107, 33, 168, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--purple-bright);
+  border-left: 4px solid var(--white);
+  padding-left: calc(0.75rem - 4px);
+  animation: deepPurpleGlow 3s ease-in-out infinite;
+}
+
+.collection-node__item.active .collection-node__name {
+  font-weight: 600;
+  color: var(--white);
+}
+
+.collection-node__item.active .collection-node__count {
+  background: var(--white);
+  color: var(--purple-deep);
+  font-weight: 600;
+}
+
+.collection-node__toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition-base);
+  flex-shrink: 0;
+}
+
+.collection-node__toggle:hover {
+  color: var(--text-primary);
+}
+
+.collection-node__item.active .collection-node__toggle {
+  color: var(--black);
+}
+
+.collection-node__icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.collection-node__item.active .collection-node__icon {
+  color: var(--black);
+}
+
+.collection-node__name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition-base);
+}
+
+.collection-node__count {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  background: var(--charcoal-light);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+}
+
+.collection-node__children {
+  overflow: hidden;
+}
+
+.collection-node__context-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}

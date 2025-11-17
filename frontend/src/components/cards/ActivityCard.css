@@ -1,63 +1,65 @@
 .activity-card {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 1.25rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
   border-radius: var(--radius-md);
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
+  border: 1px solid transparent;
 }
 
 .activity-card:hover {
-  background: rgba(255, 255, 255, 0.03);
-  transform: translateX(5px);
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
+  transform: translateX(2px);
 }
 
 .activity-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  background: var(--charcoal-light);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-base);
 }
 
-.activity-icon-blue {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--accent-blue);
+.activity-card:hover .activity-icon {
+  background: var(--white);
+  border-color: var(--white);
 }
 
-.activity-icon-cyan {
-  background: rgba(6, 182, 212, 0.1);
-  color: var(--accent-cyan);
+.activity-card:hover .activity-icon svg {
+  color: var(--black);
 }
 
-.activity-icon-purple {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--color-purple);
-}
-
+.activity-icon-blue,
+.activity-icon-cyan,
+.activity-icon-purple,
 .activity-icon-teal {
-  background: rgba(20, 184, 166, 0.1);
-  color: var(--color-teal);
+  background: var(--charcoal-light);
+  color: var(--text-secondary);
 }
 
 .activity-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
 }
 
 .activity-text {
-  font-size: 0.9375rem;
-  color: var(--primary-white);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .activity-timestamp {
-  font-size: 0.8125rem;
-  color: var(--gray-400);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
 }

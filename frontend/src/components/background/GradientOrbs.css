@@ -7,67 +7,65 @@
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #0a0a0f 100%);
+  background: var(--black);
 }
 
 .gradient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.5;
+  filter: blur(120px);
+  opacity: 0.15;
   will-change: transform;
-  mix-blend-mode: normal;
+  mix-blend-mode: screen;
 }
 
 .gradient-orb-purple {
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(circle, #8b5cf6 0%, rgba(139, 92, 246, 0.5) 30%, transparent 70%);
-  top: -250px;
-  left: -150px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  top: -200px;
+  left: -100px;
 }
 
 .gradient-orb-pink {
-  width: 650px;
-  height: 650px;
-  background: radial-gradient(circle, #ec4899 0%, rgba(236, 72, 153, 0.5) 30%, transparent 70%);
-  top: -150px;
-  right: -100px;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  top: -100px;
+  right: -80px;
 }
 
 .gradient-orb-blue {
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(circle, #3b82f6 0%, rgba(59, 130, 246, 0.5) 30%, transparent 70%);
-  bottom: -250px;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+  bottom: -200px;
   left: 15%;
 }
 
 .gradient-orb-orange {
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(circle, #f97316 0%, rgba(249, 115, 22, 0.5) 30%, transparent 70%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
   bottom: -150px;
-  right: -80px;
+  right: -60px;
 }
 
-/* Reduce intensity on smaller screens */
 @media (max-width: 768px) {
   .gradient-orb {
     filter: blur(80px);
-    opacity: 0.4;
+    opacity: 0.1;
   }
   
   .gradient-orb-purple,
   .gradient-orb-pink,
   .gradient-orb-blue,
   .gradient-orb-orange {
-    width: 300px;
-    height: 300px;
+    width: 250px;
+    height: 250px;
   }
 }
 
-/* Additional ambient glow effect */
 .gradient-orbs-container::before {
   content: '';
   position: absolute;
@@ -76,10 +74,8 @@
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(ellipse 800px 600px at 25% 25%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse 700px 500px at 75% 20%, rgba(236, 72, 153, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse 900px 700px at 30% 75%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 750px 600px at 70% 80%, rgba(249, 115, 22, 0.2) 0%, transparent 50%);
+    radial-gradient(ellipse 600px 400px at 25% 25%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 500px 350px at 75% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: 1;
 }

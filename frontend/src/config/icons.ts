@@ -24,7 +24,15 @@ import {
   BarChart3,
   Users,
   TrendingUp,
-  X
+  X,
+  Check,
+  Archive,
+  Edit,
+  Share2,
+  Grid,
+  List,
+  Columns,
+  LayoutGrid
 } from 'lucide-react';
 
 export const icons = {
@@ -50,6 +58,16 @@ export const icons = {
   chevronDown: ChevronDown,
   menu: Menu,
   close: X,
+  check: Check,
+  archive: Archive,
+  edit: Edit,
+  share: Share2,
+  
+  // View modes
+  grid: Grid,
+  list: List,
+  columns: Columns,
+  masonry: LayoutGrid,
   
   // Content types
   star: Star,

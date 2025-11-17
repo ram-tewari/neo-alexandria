@@ -1,5 +1,6 @@
 @import './variables.css';
 @import './animations.css';
+@import './purple-animations.css';
 
 * {
   margin: 0;
@@ -8,34 +9,55 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-  background: var(--primary-black);
-  color: var(--primary-white);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
+  background: var(--black);
+  color: var(--text-primary);
   overflow-x: hidden;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hide scrollbar globally while keeping scroll functionality */
+/* Minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-  display: none;
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--charcoal-light);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray);
 }
 
 /* Firefox */
 * {
-  scrollbar-width: none;
-}
-
-/* IE and Edge */
-* {
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--charcoal-light) var(--black);
 }
 
 /* Focus visible styles */
 *:focus-visible {
-  outline: 2px solid var(--accent-purple);
+  outline: 2px solid var(--white);
   outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background: var(--white);
+  color: var(--black);
+}
+
+::-moz-selection {
+  background: var(--white);
+  color: var(--black);
 }
 
 /* Reduced motion support */

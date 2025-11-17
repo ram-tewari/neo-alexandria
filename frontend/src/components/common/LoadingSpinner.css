@@ -5,28 +5,28 @@
 }
 
 .spinner {
-  border: 3px solid rgba(59, 130, 246, 0.1);
-  border-top-color: var(--accent-blue);
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--white);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.6s linear infinite;
 }
 
 .loading-spinner-sm .spinner {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-width: 2px;
 }
 
 .loading-spinner-md .spinner {
-  width: 40px;
-  height: 40px;
-  border-width: 3px;
+  width: 32px;
+  height: 32px;
+  border-width: 2px;
 }
 
 .loading-spinner-lg .spinner {
-  width: 60px;
-  height: 60px;
-  border-width: 4px;
+  width: 48px;
+  height: 48px;
+  border-width: 3px;
 }
 
 @keyframes spin {
@@ -38,7 +38,7 @@
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation: none;
-    border-top-color: var(--accent-blue);
+    border-top-color: var(--white);
     opacity: 0.5;
   }
 }

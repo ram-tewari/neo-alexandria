@@ -1,0 +1,42 @@
+.masonry-view {
+  column-count: 4;
+  column-gap: 1.25rem;
+  width: 100%;
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 1.25rem;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Responsive breakpoints */
+@media (min-width: 1440px) {
+  .masonry-view {
+    column-count: 4;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .masonry-view {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .masonry-view {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 767px) {
+  .masonry-view {
+    column-count: 1;
+    column-gap: 1rem;
+  }
+  
+  .masonry-item {
+    margin-bottom: 1rem;
+  }
+}

@@ -1,0 +1,114 @@
+.gallery-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.gallery-area__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.gallery-area__breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+}
+
+.breadcrumb-item:hover {
+  background: var(--surface-base);
+  color: var(--text-primary);
+}
+
+.breadcrumb-item.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: default;
+}
+
+.gallery-area__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gallery-area__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--black);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.gallery-area__add-btn:hover {
+  background: var(--gray-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.gallery-area__content {
+  flex: 1;
+}
+
+.gallery-area__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.gallery-area__empty h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1rem 0 0.5rem;
+}
+
+.gallery-area__empty p {
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 768px) {
+  .gallery-area {
+    padding: 1rem;
+  }
+
+  .gallery-area__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gallery-area__actions {
+    flex-direction: column;
+  }
+}

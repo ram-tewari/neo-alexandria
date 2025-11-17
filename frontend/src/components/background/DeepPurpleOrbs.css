@@ -1,0 +1,120 @@
+.deep-purple-orbs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.deep-purple-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.25;
+  animation: deepPurpleGlow 3s ease-in-out infinite;
+}
+
+.deep-purple-orb--xlarge {
+  width: 600px;
+  height: 600px;
+  top: -10%;
+  right: -10%;
+  background: radial-gradient(circle, var(--purple-deep), var(--purple-dark));
+  animation: deepPurpleGlow 6s ease-in-out infinite;
+}
+
+.deep-purple-orb--large {
+  width: 400px;
+  height: 400px;
+  top: 20%;
+  left: 10%;
+  background: radial-gradient(circle, var(--purple-vibrant), var(--purple-deep));
+  animation: deepPurpleGlow 5s ease-in-out infinite reverse;
+}
+
+.deep-purple-orb--medium {
+  width: 300px;
+  height: 300px;
+  bottom: 15%;
+  right: 20%;
+  background: radial-gradient(circle, var(--purple-dark), var(--purple-vibrant));
+  animation: deepPurpleGlow 4.5s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.deep-purple-orb--small {
+  width: 200px;
+  height: 200px;
+  top: 60%;
+  left: 30%;
+  background: radial-gradient(circle, var(--purple-bright), var(--purple-vibrant));
+  animation: deepPurpleGlow 4s ease-in-out infinite reverse;
+  animation-delay: 2s;
+}
+
+.deep-purple-orb--accent {
+  width: 250px;
+  height: 250px;
+  bottom: 30%;
+  left: 15%;
+  background: radial-gradient(circle, var(--purple-vibrant), var(--purple-deep));
+  animation: deepPurpleGlow 5.5s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+@media (max-width: 1024px) {
+  .deep-purple-orb--xlarge {
+    width: 400px;
+    height: 400px;
+  }
+  
+  .deep-purple-orb--large {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .deep-purple-orb--medium {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .deep-purple-orb--small {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .deep-purple-orb--accent {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .deep-purple-orb--xlarge {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .deep-purple-orb--large {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .deep-purple-orb--medium {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .deep-purple-orb--small {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .deep-purple-orb--accent {
+    width: 120px;
+    height: 120px;
+  }
+}

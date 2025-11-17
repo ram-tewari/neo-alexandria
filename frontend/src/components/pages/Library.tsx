@@ -1,73 +1,95 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { SearchInput } from '../common/SearchInput';
 import { Button } from '../common/Button';
-import { Tag } from '../common/Tag';
-import { ResourceCard } from '../cards/ResourceCard';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import { ViewModeSelector } from '../common/ViewModeSelector';
+import { FilterBar } from '../common/FilterBar';
+import { GridView } from '../views/GridView';
+import { ListView } from '../views/ListView';
+import { HeadlinesView } from '../views/HeadlinesView';
+import { MasonryView } from '../views/MasonryView';
 import { GradientOrbs } from '../background/GradientOrbs';
-import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
-import type { Resource } from '../../types';
+import { pageVariants } from '../../animations/variants';
+import { useResourceStore } from '@/store';
 import './Library.css';
 
-const resources: Resource[] = [
-  {
-    title: 'Introduction to Neural Networks',
-    description: 'A comprehensive guide to understanding neural networks and their applications.',
-    author: 'John Doe',
-    readTime: 25,
-    rating: 4.8,
-    tags: ['AI', 'Neural Networks', 'Tutorial'],
-    type: 'article',
-  },
-  {
-    title: 'Quantum Computing Explained',
-    description: 'Visual introduction to quantum computing principles.',
-    author: 'Dr. Smith',
-    readTime: 45,
-    rating: 4.6,
-    tags: ['Physics', 'Quantum', 'Technology'],
-    type: 'video',
-  },
-  {
-    title: 'Data Science Fundamentals',
-    description: 'Complete guide to data science concepts and best practices.',
-    author: 'Jane Wilson',
-    readTime: 180,
-    rating: 4.9,
-    tags: ['Data Science', 'Analytics'],
-    type: 'book',
-  },
-  {
-    title: 'Machine Learning Research Paper',
-    description: 'Latest research on deep learning architectures.',
-    author: 'Dr. Johnson',
-    readTime: 60,
-    rating: 4.7,
-    tags: ['ML', 'Research', 'Deep Learning'],
-    type: 'paper',
-  },
-  {
-    title: 'Web Development Best Practices',
-    description: 'Modern approaches to building scalable web applications.',
-    author: 'Sarah Chen',
-    readTime: 30,
-    rating: 4.5,
-    tags: ['Web Dev', 'JavaScript', 'Best Practices'],
-    type: 'article',
-  },
-  {
-    title: 'Cloud Architecture Patterns',
-    description: 'Design patterns for cloud-native applications.',
-    author: 'Mike Brown',
-    readTime: 40,
-    rating: 4.8,
-    tags: ['Cloud', 'Architecture', 'DevOps'],
-    type: 'article',
-  },
-];
-
-const activeFilters = ['AI', 'Tutorial'];
-
 export const Library = () => {
+  const {
+    resources,
+    isLoading,
+    error,
+    viewMode,
+    filters,
+    pagination,
+    fetchResources,
+    setViewMode,
+    updateFilters,
+    clearFilters,
+    updateResourceStatus,
+    archiveResource,
+    setPage,
+  } = useResourceStore();
+
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
+
+  const handleRead = async (id: string) => {
+    try {
+      await updateResourceStatus(id, 'completed');
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  };
+
+  const handleArchive = async (id: string) => {
+    try {
+      await archiveResource(id);
+    } catch (error) {
+      console.error('Failed to archive:', error);
+    }
+  };
+
+  const handleAnnotate = (id: string) => {
+    console.log('Annotate:', id);
+    // TODO: Implement annotation feature
+  };
+
+  const handleShare = (id: string) => {
+    console.log('Share:', id);
+    // TODO: Implement share feature
+  };
+
+  const handleSearchChange = (query: string) => {
+    updateFilters({ search: query });
+  };
+
+  const handleFiltersChange = (newFilters: any) => {
+    updateFilters(newFilters);
+  };
+
+  const renderView = () => {
+    const viewProps = {
+      resources,
+      onRead: handleRead,
+      onArchive: handleArchive,
+      onAnnotate: handleAnnotate,
+      onShare: handleShare,
+    };
+
+    switch (viewMode) {
+      case 'list':
+        return <ListView {...viewProps} />;
+      case 'headlines':
+        return <HeadlinesView {...viewProps} />;
+      case 'masonry':
+        return <MasonryView {...viewProps} />;
+      case 'grid':
+      default:
+        return <GridView {...viewProps} />;
+    }
+  };
+
   return (
     <motion.div
       className="container library-container"
@@ -77,60 +99,170 @@ export const Library = () => {
       exit="exit"
     >
       <GradientOrbs />
+      
       <div className="page-header" style={{ position: 'relative', zIndex: 1 }}>
-        <h1 className="page-title">Library</h1>
-        <p className="page-subtitle">Browse and manage your knowledge resources.</p>
-      </div>
-
-      <div className="library-toolbar">
-        <SearchInput placeholder="Search library..." />
-        <div className="toolbar-actions">
-          <Button variant="secondary" iconName="filter">Filter</Button>
-          <Button variant="secondary" iconName="sort">Sort</Button>
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <motion.h1 
+            className="page-title"
+            style={{
+              background: 'linear-gradient(135deg, var(--white) 0%, var(--purple-bright) 50%, var(--purple-vibrant) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              backgroundSize: '200% 200%',
+            }}
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            Library
+          </motion.h1>
+          <motion.p 
+            className="page-subtitle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            Browse and manage your knowledge resources.
+          </motion.p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           <Button variant="primary" iconName="add">Add Resource</Button>
+        </motion.div>
+      </div>
+
+      <div className="library-controls">
+        <FilterBar
+          searchQuery={filters.search}
+          onSearchChange={handleSearchChange}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={clearFilters}
+        />
+        
+        <div className="library-toolbar">
+          <div className="library-info">
+            {pagination.total > 0 && (
+              <span>
+                Showing {(pagination.page - 1) * pagination.limit + 1}-
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} resources
+              </span>
+            )}
+          </div>
+          <ViewModeSelector currentMode={viewMode} onChange={setViewMode} />
         </div>
       </div>
 
-      <div className="filter-tags">
-        {activeFilters.map((filter, index) => (
-          <Tag key={index} label={filter} variant="blue" />
-        ))}
-        <button className="clear-filters">
-          Clear all
-        </button>
-      </div>
-
-      <motion.div
-        className="resource-grid"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        {resources.map((resource, index) => (
-          <motion.div key={index} variants={staggerItem}>
-            <ResourceCard resource={resource} />
-          </motion.div>
-        ))}
-      </motion.div>
-
-      <div className="pagination">
-        <div className="pagination-info">
-          Showing 1-6 of 524 resources
+      {error && (
+        <div className="library-error">
+          <p>Error loading resources: {error}</p>
+          <Button variant="secondary" onClick={() => fetchResources()}>
+            Retry
+          </Button>
         </div>
-        <div className="pagination-controls">
-          <button className="pagination-btn" disabled>
-            ‹
-          </button>
-          <button className="pagination-btn active">1</button>
-          <button className="pagination-btn">2</button>
-          <button className="pagination-btn">3</button>
-          <span className="pagination-dots">...</span>
-          <button className="pagination-btn">88</button>
-          <button className="pagination-btn">
-            ›
-          </button>
+      )}
+
+      {isLoading ? (
+        <div className="library-loading">
+          <LoadingSpinner size="lg" />
+          <p>Loading resources...</p>
         </div>
-      </div>
+      ) : resources.length > 0 ? (
+        <>
+          <div className="library-content">
+            {renderView()}
+          </div>
+
+          {pagination.pages > 1 && (
+            <div className="pagination">
+              <div className="pagination-info">
+                Page {pagination.page} of {pagination.pages}
+              </div>
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  disabled={pagination.page === 1}
+                  onClick={() => setPage(pagination.page - 1)}
+                >
+                  ‹
+                </button>
+                
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.pages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.page >= pagination.pages - 2) {
+                    pageNum = pagination.pages - 4 + i;
+                  } else {
+                    pageNum = pagination.page - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`pagination-btn ${pagination.page === pageNum ? 'active' : ''}`}
+                      onClick={() => setPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                {pagination.pages > 5 && pagination.page < pagination.pages - 2 && (
+                  <>
+                    <span className="pagination-dots">...</span>
+                    <button
+                      className="pagination-btn"
+                      onClick={() => setPage(pagination.pages)}
+                    >
+                      {pagination.pages}
+                    </button>
+                  </>
+                )}
+                
+                <button
+                  className="pagination-btn"
+                  disabled={pagination.page === pagination.pages}
+                  onClick={() => setPage(pagination.page + 1)}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="library-empty">
+          <p>No resources found.</p>
+          <p className="library-empty-hint">
+            {filters.search || Object.keys(filters).length > 0
+              ? 'Try adjusting your filters or search query.'
+              : 'Start by adding some resources to your library!'}
+          </p>
+          {(filters.search || Object.keys(filters).length > 0) && (
+            <Button variant="secondary" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 };

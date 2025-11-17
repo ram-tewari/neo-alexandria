@@ -1,0 +1,292 @@
+/**
+ * Deep Purple Animations
+ * Vibrant animations featuring deep purple, white, and black
+ */
+
+/* Deep Purple Glow - Intense */
+@keyframes deepPurpleGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px var(--purple-glow),
+      0 0 40px rgba(107, 33, 168, 0.4),
+      inset 0 0 20px rgba(107, 33, 168, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px var(--purple-glow),
+      0 0 80px rgba(107, 33, 168, 0.6),
+      inset 0 0 30px rgba(107, 33, 168, 0.2);
+  }
+}
+
+/* Purple Wave Animation */
+@keyframes purpleWave {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Deep Purple Pulse */
+@keyframes deepPurplePulse {
+  0%, 100% {
+    background: linear-gradient(180deg, var(--purple-deep), var(--charcoal-dark));
+    transform: scale(1);
+  }
+  50% {
+    background: linear-gradient(180deg, var(--purple-dark), var(--purple-deep));
+    transform: scale(1.02);
+  }
+}
+
+/* Purple Shimmer Slide */
+@keyframes purpleShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Purple Border Glow */
+@keyframes purpleBorderGlow {
+  0%, 100% {
+    border-color: var(--purple-vibrant);
+    box-shadow: 0 0 10px var(--purple-glow);
+  }
+  50% {
+    border-color: var(--purple-bright);
+    box-shadow: 0 0 25px var(--purple-glow), 0 0 50px rgba(107, 33, 168, 0.3);
+  }
+}
+
+/* Purple Float */
+@keyframes purpleFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 10px 20px var(--purple-glow));
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+    filter: drop-shadow(0 20px 40px var(--purple-glow));
+  }
+}
+
+/* Purple Spin Glow */
+@keyframes purpleSpinGlow {
+  0% {
+    transform: rotate(0deg);
+    filter: drop-shadow(0 0 10px var(--purple-glow));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px var(--purple-glow));
+  }
+  100% {
+    transform: rotate(360deg);
+    filter: drop-shadow(0 0 10px var(--purple-glow));
+  }
+}
+
+/* Purple Gradient Shift */
+@keyframes purpleGradientShift {
+  0% {
+    background: linear-gradient(135deg, var(--purple-deep) 0%, var(--charcoal-dark) 100%);
+  }
+  33% {
+    background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple-deep) 100%);
+  }
+  66% {
+    background: linear-gradient(135deg, var(--purple-vibrant) 0%, var(--purple-dark) 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, var(--purple-deep) 0%, var(--charcoal-dark) 100%);
+  }
+}
+
+/* Purple Ripple */
+@keyframes purpleRipple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Purple Bounce */
+@keyframes purpleBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Purple Pulse for backgrounds */
+@keyframes purplePulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Purple Slide In */
+@keyframes purpleSlideIn {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Purple Fade In Up */
+@keyframes purpleFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Purple Scale In */
+@keyframes purpleScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Utility Classes */
+.deep-purple-glow {
+  animation: deepPurpleGlow 3s ease-in-out infinite;
+}
+
+.purple-wave {
+  background: linear-gradient(
+    270deg,
+    var(--purple-deep),
+    var(--purple-dark),
+    var(--purple-vibrant),
+    var(--purple-dark),
+    var(--purple-deep)
+  );
+  background-size: 400% 400%;
+  animation: purpleWave 8s ease infinite;
+}
+
+.deep-purple-pulse {
+  animation: deepPurplePulse 4s ease-in-out infinite;
+}
+
+.purple-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--purple-glow) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: purpleShimmer 3s infinite;
+}
+
+.purple-border-glow {
+  animation: purpleBorderGlow 2s ease-in-out infinite;
+}
+
+.purple-float {
+  animation: purpleFloat 4s ease-in-out infinite;
+}
+
+.purple-spin-glow {
+  animation: purpleSpinGlow 3s linear infinite;
+}
+
+.purple-gradient-shift {
+  animation: purpleGradientShift 6s ease-in-out infinite;
+}
+
+.purple-bounce {
+  animation: purpleBounce 1s ease;
+}
+
+.purple-slide-in {
+  animation: purpleSlideIn 0.6s ease-out;
+}
+
+.purple-fade-in-up {
+  animation: purpleFadeInUp 0.6s ease-out;
+}
+
+.purple-scale-in {
+  animation: purpleScaleIn 0.4s ease-out;
+}
+
+/* Hover Effects */
+.purple-hover-glow:hover {
+  box-shadow: 0 0 30px var(--purple-glow), 0 0 60px rgba(107, 33, 168, 0.4);
+  border-color: var(--purple-bright);
+  transition: all 0.3s ease;
+}
+
+.purple-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px var(--purple-glow);
+  transition: all 0.3s ease;
+}
+
+.purple-hover-scale:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px var(--purple-glow);
+  transition: all 0.3s ease;
+}
+
+/* Interactive Ripple */
+.purple-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.purple-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--purple-bright), transparent);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.purple-ripple:active::after {
+  width: 300px;
+  height: 300px;
+}

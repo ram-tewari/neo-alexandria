@@ -2,24 +2,23 @@
   width: 100%;
   overflow: hidden;
   position: relative;
-  padding: 2rem 0;
+  padding: 1.5rem 0;
   mask-image: linear-gradient(
     to right,
     transparent,
-    black 10%,
-    black 90%,
+    black 8%,
+    black 92%,
     transparent
   );
   -webkit-mask-image: linear-gradient(
     to right,
     transparent,
-    black 10%,
-    black 90%,
+    black 8%,
+    black 92%,
     transparent
   );
 }
 
-/* Keep carousel scrollable but hide scrollbar */
 .carousel-container::-webkit-scrollbar {
   display: none;
 }
@@ -31,7 +30,7 @@
 
 .carousel-content {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   width: fit-content;
   will-change: transform;
 }
@@ -43,29 +42,26 @@
   justify-content: center;
 }
 
-/* Logo styling for carousel items */
 .carousel-logo {
-  height: 40px;
-  opacity: 0.6;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  filter: grayscale(100%);
+  height: 32px;
+  opacity: 0.5;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+  filter: grayscale(100%) brightness(2);
 }
 
 .carousel-logo:hover {
   opacity: 1;
-  transform: scale(1.05);
-  filter: grayscale(0%);
+  transform: scale(1.02);
 }
 
-/* Text carousel items */
 .carousel-text {
-  font-size: 1.125rem;
+  font-size: var(--font-size-base);
   font-weight: 500;
-  color: var(--gray-400);
+  color: var(--text-secondary);
   white-space: nowrap;
-  transition: color 0.3s ease;
+  transition: color var(--transition-base);
 }
 
 .carousel-text:hover {
-  color: var(--primary-white);
+  color: var(--text-primary);
 }

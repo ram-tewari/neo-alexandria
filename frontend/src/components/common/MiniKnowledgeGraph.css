@@ -1,12 +1,11 @@
 .mini-knowledge-graph {
   position: relative;
   width: 100%;
-  height: 400px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  height: 350px;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  backdrop-filter: blur(20px);
 }
 
 .graph-canvas {
@@ -17,21 +16,21 @@
 
 .graph-overlay {
   position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
+  top: 1rem;
+  left: 1rem;
   z-index: 10;
   pointer-events: none;
 }
 
 .graph-overlay h3 {
-  font-size: 1.25rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: var(--primary-white);
-  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
 }
 
 .graph-overlay p {
-  font-size: 0.875rem;
-  color: var(--gray-400);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
   margin: 0;
 }

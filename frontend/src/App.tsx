@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
 import { FAB } from './components/layout/FAB';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
+import { CommandPalette } from './components/common/CommandPalette';
+import { useCommandPalette } from './hooks/useCommandPalette';
 import './styles/globals.css';
 
 // Lazy load page components
@@ -11,6 +13,9 @@ const Library = lazy(() => import('./components/pages/Library').then(module => (
 const KnowledgeGraph = lazy(() => import('./components/pages/KnowledgeGraph').then(module => ({ default: module.KnowledgeGraph })));
 
 function App() {
+  // Initialize command palette keyboard shortcut
+  useCommandPalette();
+
   return (
     <BrowserRouter>
       <Suspense fallback={
@@ -32,6 +37,7 @@ function App() {
           </Route>
         </Routes>
         <FAB />
+        <CommandPalette />
       </Suspense>
     </BrowserRouter>
   );

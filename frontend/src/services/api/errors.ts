@@ -15,8 +15,8 @@ export class APIError extends Error {
     this.name = 'APIError';
     
     // Maintains proper stack trace for where error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, APIError);
+    if ((Error as any).captureStackTrace) {
+      (Error as any).captureStackTrace(this, APIError);
     }
   }
 

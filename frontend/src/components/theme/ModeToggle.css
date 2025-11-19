@@ -1,0 +1,121 @@
+.mode-toggle {
+  position: relative;
+  display: inline-block;
+}
+
+.mode-toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-toggle-button:hover {
+  background: var(--surface-raised);
+  border-color: var(--border-purple);
+  box-shadow: 0 0 12px var(--purple-glow);
+}
+
+.mode-toggle-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.mode-toggle-button > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mode-toggle-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  padding: 4px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all var(--transition-fast);
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+}
+
+.mode-toggle:hover .mode-toggle-dropdown,
+.mode-toggle:focus-within .mode-toggle-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.mode-toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--foreground);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  text-align: left;
+}
+
+.mode-toggle-option:hover {
+  background: var(--surface-purple);
+  color: var(--text-purple);
+}
+
+.mode-toggle-option.active {
+  background: var(--purple-subtle);
+  color: var(--text-purple);
+  font-weight: var(--font-weight-medium);
+}
+
+.mode-toggle-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Smooth theme transition */
+* {
+  transition: background-color var(--transition-base), 
+              border-color var(--transition-base),
+              color var(--transition-base);
+}
+
+/* Prevent transition on page load */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .mode-toggle-button,
+  .mode-toggle-dropdown,
+  .mode-toggle-option {
+    transition: none;
+  }
+}

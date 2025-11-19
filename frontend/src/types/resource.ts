@@ -6,6 +6,9 @@
 
 import type { ReadStatus, IngestionStatus } from './api';
 
+// Re-export types for convenience
+export type { ReadStatus, IngestionStatus };
+
 export interface Resource {
   id: string;
   title: string;

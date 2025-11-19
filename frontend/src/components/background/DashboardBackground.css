@@ -1,0 +1,354 @@
+.dashboard-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--background);
+  contain: layout style paint;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.2;
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+  backface-visibility: hidden;
+}
+
+/* Orb 1 - Large purple gradient (top-left, slow diagonal flow) */
+.gradient-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle at center,
+    rgba(74, 58, 90, 0.25) 0%,
+    rgba(74, 58, 90, 0.15) 40%,
+    transparent 70%
+  );
+  top: -200px;
+  left: -100px;
+  filter: blur(60px);
+  animation: float1 25s ease-in-out infinite;
+}
+
+/* Orb 2 - Medium purple gradient (bottom-right, circular motion) */
+.gradient-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle at center,
+    rgba(106, 90, 122, 0.2) 0%,
+    rgba(106, 90, 122, 0.1) 40%,
+    transparent 70%
+  );
+  bottom: -150px;
+  right: -100px;
+  filter: blur(50px);
+  animation: float2 30s ease-in-out infinite;
+}
+
+/* Orb 3 - Large accent gradient (center, pulsing) */
+.gradient-orb-3 {
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(
+    circle at center,
+    rgba(90, 70, 100, 0.18) 0%,
+    rgba(90, 70, 100, 0.08) 40%,
+    transparent 70%
+  );
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(70px);
+  animation: float3 35s ease-in-out infinite;
+}
+
+/* Orb 4 - Medium gradient (top-right, wave motion) */
+.gradient-orb-4 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(
+    circle at center,
+    rgba(80, 60, 95, 0.22) 0%,
+    rgba(80, 60, 95, 0.12) 40%,
+    transparent 70%
+  );
+  top: -100px;
+  right: 10%;
+  filter: blur(65px);
+  animation: float4 28s ease-in-out infinite;
+}
+
+/* Orb 5 - Small accent gradient (bottom-left, figure-8 motion) */
+.gradient-orb-5 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(
+    circle at center,
+    rgba(95, 75, 110, 0.19) 0%,
+    rgba(95, 75, 110, 0.09) 40%,
+    transparent 70%
+  );
+  bottom: 10%;
+  left: 15%;
+  filter: blur(55px);
+  animation: float5 32s ease-in-out infinite;
+}
+
+/* Animation keyframes - Each orb has unique movement pattern */
+@keyframes float1 {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1); 
+  }
+  33% { 
+    transform: translate(15%, 10%) scale(1.1); 
+  }
+  66% { 
+    transform: translate(-10%, 15%) scale(0.9); 
+  }
+}
+
+@keyframes float2 {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1); 
+  }
+  33% { 
+    transform: translate(-15%, 12%) scale(1.15); 
+  }
+  66% { 
+    transform: translate(8%, -10%) scale(0.95); 
+  }
+}
+
+@keyframes float3 {
+  0%, 100% { 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+  33% { 
+    transform: translate(-45%, -55%) scale(0.9); 
+  }
+  66% { 
+    transform: translate(-55%, -45%) scale(1.1); 
+  }
+}
+
+@keyframes float4 {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1); 
+  }
+  25% { 
+    transform: translate(-8%, 15%) scale(1.08); 
+  }
+  50% { 
+    transform: translate(5%, 8%) scale(0.92); 
+  }
+  75% { 
+    transform: translate(-12%, -5%) scale(1.05); 
+  }
+}
+
+@keyframes float5 {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1); 
+  }
+  25% { 
+    transform: translate(10%, -12%) scale(1.12); 
+  }
+  50% { 
+    transform: translate(-8%, -8%) scale(0.88); 
+  }
+  75% { 
+    transform: translate(12%, 10%) scale(1.03); 
+  }
+}
+
+/* Intensity variations */
+.dashboard-background[data-intensity="low"] .gradient-orb {
+  opacity: 0.15;
+}
+
+.dashboard-background[data-intensity="medium"] .gradient-orb {
+  opacity: 0.2;
+}
+
+.dashboard-background[data-intensity="high"] .gradient-orb {
+  opacity: 0.25;
+}
+
+/* Speed variations - Slow (default) */
+.dashboard-background[data-speed="slow"] .gradient-orb-1 {
+  animation-duration: 25s;
+}
+
+.dashboard-background[data-speed="slow"] .gradient-orb-2 {
+  animation-duration: 30s;
+}
+
+.dashboard-background[data-speed="slow"] .gradient-orb-3 {
+  animation-duration: 35s;
+}
+
+.dashboard-background[data-speed="slow"] .gradient-orb-4 {
+  animation-duration: 28s;
+}
+
+.dashboard-background[data-speed="slow"] .gradient-orb-5 {
+  animation-duration: 32s;
+}
+
+/* Speed variations - Normal */
+.dashboard-background[data-speed="normal"] .gradient-orb-1 {
+  animation-duration: 20s;
+}
+
+.dashboard-background[data-speed="normal"] .gradient-orb-2 {
+  animation-duration: 25s;
+}
+
+.dashboard-background[data-speed="normal"] .gradient-orb-3 {
+  animation-duration: 28s;
+}
+
+.dashboard-background[data-speed="normal"] .gradient-orb-4 {
+  animation-duration: 22s;
+}
+
+.dashboard-background[data-speed="normal"] .gradient-orb-5 {
+  animation-duration: 26s;
+}
+
+/* Speed variations - Fast */
+.dashboard-background[data-speed="fast"] .gradient-orb-1 {
+  animation-duration: 15s;
+}
+
+.dashboard-background[data-speed="fast"] .gradient-orb-2 {
+  animation-duration: 18s;
+}
+
+.dashboard-background[data-speed="fast"] .gradient-orb-3 {
+  animation-duration: 20s;
+}
+
+.dashboard-background[data-speed="fast"] .gradient-orb-4 {
+  animation-duration: 16s;
+}
+
+.dashboard-background[data-speed="fast"] .gradient-orb-5 {
+  animation-duration: 19s;
+}
+
+/* Reduced motion support */
+.dashboard-background.reduced-motion .gradient-orb {
+  animation: none;
+  opacity: 0.1;
+  will-change: auto; /* Remove will-change when not animating */
+}
+
+/* Low performance mode - reduce complexity */
+.dashboard-background[data-performance="low"] .gradient-orb {
+  filter: blur(40px); /* Less blur for better performance */
+  opacity: 0.1;
+}
+
+.dashboard-background[data-performance="low"] .gradient-orb-4,
+.dashboard-background[data-performance="low"] .gradient-orb-5 {
+  display: none; /* Hide extra orbs on low performance */
+}
+
+/* Light mode adjustments - Olive/Forest Green theme */
+.light .dashboard-background {
+  background: var(--background);
+}
+
+.light .dashboard-background .gradient-orb-1 {
+  background: radial-gradient(
+    circle at center,
+    rgba(58, 74, 42, 0.25) 0%,
+    rgba(58, 74, 42, 0.15) 40%,
+    transparent 70%
+  );
+}
+
+.light .dashboard-background .gradient-orb-2 {
+  background: radial-gradient(
+    circle at center,
+    rgba(90, 106, 74, 0.2) 0%,
+    rgba(90, 106, 74, 0.1) 40%,
+    transparent 70%
+  );
+}
+
+.light .dashboard-background .gradient-orb-3 {
+  background: radial-gradient(
+    circle at center,
+    rgba(74, 90, 58, 0.18) 0%,
+    rgba(74, 90, 58, 0.08) 40%,
+    transparent 70%
+  );
+}
+
+.light .dashboard-background .gradient-orb-4 {
+  background: radial-gradient(
+    circle at center,
+    rgba(66, 82, 50, 0.22) 0%,
+    rgba(66, 82, 50, 0.12) 40%,
+    transparent 70%
+  );
+}
+
+.light .dashboard-background .gradient-orb-5 {
+  background: radial-gradient(
+    circle at center,
+    rgba(82, 98, 66, 0.19) 0%,
+    rgba(82, 98, 66, 0.09) 40%,
+    transparent 70%
+  );
+}
+
+.light .dashboard-background .gradient-orb {
+  opacity: 0.15;
+  filter: blur(80px);
+}
+
+.light .dashboard-background.reduced-motion .gradient-orb {
+  opacity: 0.08;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .gradient-orb {
+    filter: blur(40px);
+    opacity: 0.12;
+  }
+  
+  .gradient-orb-1,
+  .gradient-orb-2,
+  .gradient-orb-3,
+  .gradient-orb-4,
+  .gradient-orb-5 {
+    width: 300px;
+    height: 300px;
+  }
+  
+  /* Hide extra orbs on mobile for performance */
+  .gradient-orb-4,
+  .gradient-orb-5 {
+    display: none;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gradient-orb {
+    filter: blur(50px);
+  }
+  
+  .gradient-orb-5 {
+    display: none; /* Hide 5th orb on tablets */
+  }
+}

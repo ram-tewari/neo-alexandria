@@ -1,0 +1,62 @@
+.library-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--background);
+}
+
+/* Subtle purple accents that only appear on interaction */
+.library-accent {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+  will-change: opacity;
+}
+
+.library-accent-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle at center,
+    var(--purple-deep) 0%,
+    transparent 70%
+  );
+  top: 20%;
+  right: 10%;
+}
+
+.library-accent-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(
+    circle at center,
+    var(--purple-medium) 0%,
+    transparent 70%
+  );
+  bottom: 30%;
+  left: 15%;
+}
+
+/* Show accents on hover of parent container */
+.library-background.with-accents:hover .library-accent {
+  opacity: 0.05;
+}
+
+/* Light mode - even more subtle */
+.light .library-background .library-accent {
+  opacity: 0;
+}
+
+.light .library-background.with-accents:hover .library-accent {
+  opacity: 0.02;
+}
+
+/* Reduced motion - no transitions */
+@media (prefers-reduced-motion: reduce) {
+  .library-accent {
+    transition: none;
+  }
+}

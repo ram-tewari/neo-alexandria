@@ -18,7 +18,18 @@ export interface NavLink {
 export interface SidebarItem {
   iconName: IconName;
   label: string;
-  path: string;
+  path?: string;
+  badge?: number | string;
+  onClick?: () => void;
+  children?: SidebarItem[];
+}
+
+export interface SidebarSection {
+  id: string;
+  label: string;
+  items: SidebarItem[];
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
 export interface StatData {

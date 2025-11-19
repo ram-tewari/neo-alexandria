@@ -1,52 +1,137 @@
 :root {
-  /* Monochromatic Color System */
+  /* Base Colors */
   --black: #000000;
-  --charcoal-dark: #1a1a1a;
-  --charcoal: #2a2a2a;
-  --charcoal-light: #3a3a3a;
-  --gray-dark: #4a4a4a;
-  --gray: #6a6a6a;
-  --gray-light: #9a9a9a;
   --white: #ffffff;
   
-  /* Purple Accent System - Desaturated */
-  --purple-deep: #4a3a5a;
-  --purple-dark: #5a4a6a;
-  --purple-vibrant: #6a5a7a;
-  --purple-bright: #8a7a9a;
-  --purple-light: #aaaaaa;
-  --purple-glow: rgba(106, 90, 122, 0.25);
-  --purple-subtle: rgba(106, 90, 122, 0.08);
+  /* Gray Scale */
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #e5e5e5;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #404040;
+  --gray-800: #262626;
+  --gray-900: #171717;
+  --gray-950: #0a0a0a;
+}
+
+/* Dark Mode (Default) */
+:root,
+.dark {
+  /* Background Colors */
+  --background: var(--black);
+  --background-secondary: #1a1a1a;
+  --background-tertiary: #2a2a2a;
   
-  /* Primary Usage */
-  --primary-black: var(--black);
-  --primary-white: var(--white);
-  --primary-purple: var(--purple-vibrant);
-  --secondary-bg: var(--charcoal-dark);
+  /* Purple Accent System */
+  --accent-deep: #4a3a5a;
+  --accent-medium: #6a5a7a;
+  --accent-bright: #8a7a9a;
+  --accent-light: #aaaaaa;
+  --accent-glow: rgba(106, 90, 122, 0.25);
+  --accent-subtle: rgba(106, 90, 122, 0.08);
   
-  /* Borders & Dividers */
+  /* Semantic Colors */
+  --primary: var(--accent-medium);
+  --primary-foreground: var(--white);
+  
+  /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-medium: rgba(255, 255, 255, 0.12);
   --border-strong: rgba(255, 255, 255, 0.2);
-  --border-purple: rgba(106, 90, 122, 0.2);
+  --border-accent: rgba(106, 90, 122, 0.2);
   
   /* Surfaces */
-  --surface-base: var(--charcoal-dark);
-  --surface-raised: var(--charcoal);
-  --surface-overlay: var(--charcoal-light);
-  --surface-purple: rgba(74, 58, 90, 0.1);
+  --surface-base: #1a1a1a;
+  --surface-raised: #2a2a2a;
+  --surface-overlay: #3a3a3a;
+  --surface-accent: rgba(74, 58, 90, 0.1);
   
-  /* Text Hierarchy */
+  /* Text */
   --text-primary: var(--white);
-  --text-secondary: var(--gray-light);
-  --text-tertiary: var(--gray);
-  --text-disabled: var(--gray-dark);
-  --text-purple: var(--purple-bright);
+  --text-secondary: #9a9a9a;
+  --text-tertiary: #6a6a6a;
+  --text-disabled: #4a4a4a;
+  --text-accent: var(--accent-bright);
   
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  
+  /* Sidebar Specific */
+  --sidebar-background: var(--black);
+  --sidebar-foreground: var(--white);
+  --sidebar-accent: var(--accent-subtle);
+  --sidebar-accent-foreground: var(--accent-bright);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-active: var(--accent-medium);
+  --sidebar-hover: rgba(106, 90, 122, 0.12);
+}
+
+/* Light Mode */
+.light {
+  /* Background Colors - Inverted */
+  --background: var(--white);
+  --background-secondary: var(--gray-50);
+  --background-tertiary: var(--gray-100);
+  
+  /* Olive/Forest Green Accent System (Inverted from Purple) */
+  --accent-deep: #3a4a2a;
+  --accent-medium: #5a6a4a;
+  --accent-bright: #7a8a6a;
+  --accent-light: #9aaa8a;
+  --accent-glow: rgba(90, 106, 74, 0.25);
+  --accent-subtle: rgba(90, 106, 74, 0.08);
+  
+  /* Semantic Colors */
+  --primary: var(--accent-medium);
+  --primary-foreground: var(--black);
+  
+  /* Borders - Inverted */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.2);
+  --border-accent: rgba(90, 106, 74, 0.2);
+  
+  /* Surfaces - Inverted */
+  --surface-base: var(--gray-50);
+  --surface-raised: var(--white);
+  --surface-overlay: var(--gray-100);
+  --surface-accent: rgba(58, 74, 42, 0.1);
+  
+  /* Text - Inverted */
+  --text-primary: var(--black);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --text-disabled: var(--gray-400);
+  --text-accent: var(--accent-deep);
+  
+  /* Shadows - Lighter */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  
+  /* Sidebar Specific - Inverted */
+  --sidebar-background: var(--white);
+  --sidebar-foreground: var(--black);
+  --sidebar-accent: var(--accent-subtle);
+  --sidebar-accent-foreground: var(--accent-deep);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-active: var(--accent-medium);
+  --sidebar-hover: rgba(90, 106, 74, 0.12);
+}
+
+/* Shared Variables */
+:root {
+  /* Legacy Support - Map to new variables */
+  --purple-deep: var(--accent-deep);
+  --purple-vibrant: var(--accent-medium);
+  --purple-bright: var(--accent-bright);
+  --purple-glow: var(--accent-glow);
+  --purple-subtle: var(--accent-subtle);
   
   /* Typography Scale - Reduced */
   --font-size-h1: 1.75rem;

@@ -4,6 +4,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { FAB } from './components/layout/FAB';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { CommandPalette } from './components/common/CommandPalette';
+import { ThemeProvider } from './components/theme/ThemeProvider';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import './styles/globals.css';
 
@@ -17,29 +18,31 @@ function App() {
   useCommandPalette();
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          minHeight: '100vh',
-          background: 'var(--primary-black)'
-        }}>
-          <LoadingSpinner size="lg" />
-        </div>
-      }>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="library" element={<Library />} />
-            <Route path="graph" element={<KnowledgeGraph />} />
-          </Route>
-        </Routes>
-        <FAB />
-        <CommandPalette />
-      </Suspense>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Suspense fallback={
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            minHeight: '100vh',
+            background: 'var(--primary-black)'
+          }}>
+            <LoadingSpinner size="lg" />
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="library" element={<Library />} />
+              <Route path="graph" element={<KnowledgeGraph />} />
+            </Route>
+          </Routes>
+          <FAB />
+          <CommandPalette />
+        </Suspense>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

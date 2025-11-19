@@ -55,7 +55,7 @@ export const Sidebar = () => {
                 aria-current={isActive ? 'page' : undefined}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleNavigation(item.path);
+                  if (item.path) handleNavigation(item.path);
                 }}
                 variants={sidebarItemVariants}
                 initial="rest"
@@ -88,7 +88,7 @@ export const Sidebar = () => {
                 aria-current={isActive ? 'page' : undefined}
                 onClick={(e) => {
                   e.preventDefault();
-                  handleNavigation(item.path);
+                  if (item.path) handleNavigation(item.path);
                 }}
                 variants={sidebarItemVariants}
                 initial="rest"

@@ -1,0 +1,289 @@
+/**
+ * Neo Alexandria Theme System
+ * Using OKLCH color space for perceptually uniform colors
+ * Supports light and dark modes with purple accents
+ */
+
+:root {
+  /* ===== Base Colors (OKLCH) ===== */
+  --background: #000000; /* Pure black - fallback */
+  --background: oklch(0 0 0); /* Pure black */
+  --foreground: #ffffff; /* Pure white - fallback */
+  --foreground: oklch(1 0 0); /* Pure white */
+  
+  /* ===== Purple Accent System (OKLCH) ===== */
+  --purple-deep: #4a3a5a; /* Deep purple for backgrounds - fallback */
+  --purple-deep: oklch(0.35 0.08 300); /* Deep purple for backgrounds */
+  --purple-medium: #6a5a7a; /* Medium purple for accents - fallback */
+  --purple-medium: oklch(0.45 0.08 300); /* Medium purple for accents */
+  --purple-bright: #a855f7; /* Bright purple for highlights - fallback */
+  --purple-bright: oklch(0.65 0.12 300); /* Bright purple for highlights */
+  --purple-glow: rgba(106, 90, 122, 0.25); /* Purple with glow opacity - fallback */
+  --purple-glow: oklch(0.45 0.08 300 / 0.25); /* Purple with glow opacity */
+  --purple-subtle: rgba(106, 90, 122, 0.08); /* Subtle purple background - fallback */
+  --purple-subtle: oklch(0.45 0.08 300 / 0.08); /* Subtle purple background */
+  
+  /* ===== Primary Usage ===== */
+  --primary: var(--purple-medium);
+  --primary-foreground: var(--foreground);
+  --accent: var(--purple-medium);
+  --accent-foreground: var(--foreground);
+  
+  /* ===== Surfaces ===== */
+  --surface-base: #1a1a1a; /* fallback */
+  --surface-base: oklch(0.1 0 0); /* #1a1a1a equivalent */
+  --surface-raised: #2a2a2a; /* fallback */
+  --surface-raised: oklch(0.15 0 0); /* #2a2a2a equivalent */
+  --surface-overlay: #3a3a3a; /* fallback */
+  --surface-overlay: oklch(0.2 0 0); /* #3a3a3a equivalent */
+  --surface-purple: rgba(74, 58, 90, 0.1); /* fallback */
+  --surface-purple: oklch(0.35 0.08 300 / 0.1); /* Purple tinted surface */
+  
+  /* ===== Card & Popover ===== */
+  --card: var(--surface-base);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  
+  /* ===== Secondary ===== */
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--foreground);
+  
+  /* ===== Muted ===== */
+  --muted: var(--surface-raised);
+  --muted-foreground: #9a9a9a; /* Gray text - fallback */
+  --muted-foreground: oklch(0.7 0 0); /* Gray text */
+  
+  /* ===== Borders ===== */
+  --border-subtle: rgba(255, 255, 255, 0.06); /* fallback */
+  --border-subtle: oklch(1 0 0 / 0.06);
+  --border-medium: rgba(255, 255, 255, 0.12); /* fallback */
+  --border-medium: oklch(1 0 0 / 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2); /* fallback */
+  --border-strong: oklch(1 0 0 / 0.2);
+  --border-purple: rgba(106, 90, 122, 0.2); /* fallback */
+  --border-purple: oklch(0.45 0.08 300 / 0.2);
+  --border: var(--border-medium);
+  
+  /* ===== Input ===== */
+  --input: var(--border-medium);
+  --input-background: var(--surface-base);
+  
+  /* ===== Ring (Focus) ===== */
+  --ring: var(--purple-medium);
+  
+  /* ===== Text Hierarchy ===== */
+  --text-primary: var(--foreground);
+  --text-secondary: oklch(0.7 0 0); /* Light gray */
+  --text-tertiary: oklch(0.5 0 0); /* Medium gray */
+  --text-disabled: oklch(0.3 0 0); /* Dark gray */
+  --text-purple: var(--purple-bright);
+  
+  /* ===== Destructive ===== */
+  --destructive: oklch(0.577 0.245 27.325); /* Red */
+  --destructive-foreground: var(--foreground);
+  
+  /* ===== Sidebar Specific ===== */
+  --sidebar-background: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--purple-medium);
+  --sidebar-primary-foreground: var(--foreground);
+  --sidebar-accent: var(--purple-subtle);
+  --sidebar-accent-foreground: var(--purple-bright);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--purple-medium);
+  
+  /* ===== Chart Colors ===== */
+  --chart-1: oklch(0.646 0.222 41.116); /* Orange */
+  --chart-2: oklch(0.6 0.118 184.704); /* Cyan */
+  --chart-3: oklch(0.398 0.07 227.392); /* Blue */
+  --chart-4: oklch(0.828 0.189 84.429); /* Yellow */
+  --chart-5: oklch(0.769 0.188 70.08); /* Green */
+  
+  /* ===== Shadows ===== */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 2px 8px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 4px 16px oklch(0 0 0 / 0.5);
+  --shadow-xl: 0 8px 32px oklch(0 0 0 / 0.6);
+  
+  /* ===== Border Radius ===== */
+  --radius-sm: 0.125rem; /* 2px */
+  --radius-md: 0.25rem; /* 4px */
+  --radius-lg: 0.375rem; /* 6px */
+  --radius-xl: 0.5rem; /* 8px */
+  --radius-full: 9999px;
+  --radius: var(--radius-md); /* Default radius */
+  
+  /* ===== Transitions ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ===== Legacy Variable Aliases (for backward compatibility) ===== */
+  --black: #000000;
+  --white: #ffffff;
+  --charcoal-dark: var(--surface-base);
+  --charcoal: var(--surface-raised);
+  --charcoal-light: var(--surface-overlay);
+  --gray-dark: #4a4a4a;
+  --gray: #6a6a6a;
+  --gray-light: var(--muted-foreground);
+  --primary-black: var(--background);
+  --primary-white: var(--foreground);
+  --primary-purple: var(--primary);
+  
+  /* ===== Typography Scale ===== */
+  --font-size-h1: 1.75rem;
+  --font-size-h2: 1.25rem;
+  --font-size-h3: 1rem;
+  --font-size-base: 0.875rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-xs: 0.75rem;
+  
+  /* ===== Font Weights ===== */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* ===== Spacing Scale ===== */
+  --spacing-xs: 0.375rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+}
+
+/* ===== Light Mode Theme ===== */
+.light {
+  --background: oklch(1 0 0); /* Pure white */
+  --foreground: oklch(0 0 0); /* Pure black */
+  
+  /* Surfaces */
+  --surface-base: oklch(0.95 0 0); /* Very light gray */
+  --surface-raised: oklch(0.98 0 0); /* Almost white */
+  --surface-overlay: oklch(0.92 0 0); /* Light gray */
+  --surface-purple: oklch(0.45 0.08 300 / 0.05); /* Very subtle purple */
+  
+  /* Card & Popover */
+  --card: var(--surface-raised);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  
+  /* Secondary */
+  --secondary: var(--surface-base);
+  --secondary-foreground: var(--foreground);
+  
+  /* Muted */
+  --muted: var(--surface-base);
+  --muted-foreground: oklch(0.4 0 0); /* Dark gray text */
+  
+  /* Borders */
+  --border-subtle: oklch(0 0 0 / 0.06);
+  --border-medium: oklch(0 0 0 / 0.12);
+  --border-strong: oklch(0 0 0 / 0.2);
+  --border-purple: oklch(0.45 0.08 300 / 0.3);
+  --border: var(--border-medium);
+  
+  /* Input */
+  --input: var(--border-medium);
+  --input-background: var(--surface-raised);
+  
+  /* Text */
+  --text-primary: var(--foreground);
+  --text-secondary: oklch(0.3 0 0); /* Dark gray */
+  --text-tertiary: oklch(0.5 0 0); /* Medium gray */
+  --text-disabled: oklch(0.7 0 0); /* Light gray */
+  --text-purple: oklch(0.45 0.12 300); /* Darker purple for light mode */
+  
+  /* Purple accents - slightly adjusted for light mode */
+  --purple-deep: oklch(0.35 0.08 300);
+  --purple-medium: oklch(0.45 0.12 300); /* More saturated for visibility */
+  --purple-bright: oklch(0.55 0.15 300); /* Brighter for light mode */
+  --purple-glow: oklch(0.45 0.12 300 / 0.2);
+  --purple-subtle: oklch(0.45 0.12 300 / 0.05);
+  
+  /* Sidebar */
+  --sidebar-background: var(--surface-raised);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--purple-medium);
+  --sidebar-primary-foreground: var(--foreground);
+  --sidebar-accent: var(--purple-subtle);
+  --sidebar-accent-foreground: var(--purple-medium);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--purple-medium);
+  
+  /* Shadows - lighter for light mode */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.1);
+  --shadow-md: 0 2px 8px oklch(0 0 0 / 0.15);
+  --shadow-lg: 0 4px 16px oklch(0 0 0 / 0.2);
+  --shadow-xl: 0 8px 32px oklch(0 0 0 / 0.25);
+}
+
+/* ===== Dark Mode Theme (Default) ===== */
+.dark {
+  /* Dark mode uses root values, explicitly defined for clarity */
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  
+  --surface-base: oklch(0.1 0 0);
+  --surface-raised: oklch(0.15 0 0);
+  --surface-overlay: oklch(0.2 0 0);
+  
+  --card: var(--surface-base);
+  --popover: var(--surface-raised);
+  
+  --secondary: var(--surface-raised);
+  --muted: var(--surface-raised);
+  
+  --border: var(--border-medium);
+  --input: var(--border-medium);
+  
+  /* All other values inherit from :root */
+}
+
+/* ===== Custom Color Extensions ===== */
+@theme inline {
+  /* Make custom colors available as Tailwind utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  /* Purple variants */
+  --color-purple-deep: var(--purple-deep);
+  --color-purple-medium: var(--purple-medium);
+  --color-purple-bright: var(--purple-bright);
+  --color-purple-glow: var(--purple-glow);
+  --color-purple-subtle: var(--purple-subtle);
+  
+  /* Surface variants */
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-purple: var(--surface-purple);
+  
+  /* Text variants */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-purple: var(--text-purple);
+}

@@ -1,0 +1,306 @@
+/**
+ * Purple Accent Utilities
+ * Consistent purple accent usage throughout the application
+ */
+
+/* ===== Interactive Elements ===== */
+
+/* Buttons with purple accents */
+.btn-primary,
+button[data-variant="primary"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover,
+button[data-variant="primary"]:hover {
+  background: var(--purple-bright);
+  border-color: var(--purple-bright);
+  box-shadow: 0 0 16px var(--purple-glow);
+}
+
+/* Links with purple accents */
+a:not(.nav-link):not(.sidebar-menu-link) {
+  color: var(--text-purple);
+  transition: color var(--transition-fast);
+}
+
+a:not(.nav-link):not(.sidebar-menu-link):hover {
+  color: var(--purple-bright);
+  text-decoration: underline;
+}
+
+/* ===== Focus Indicators ===== */
+
+/* Purple focus rings */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Input focus with purple glow */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--purple-subtle);
+}
+
+/* ===== Selection Highlights ===== */
+
+/* Purple text selection */
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+::-moz-selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* ===== Loading & Progress ===== */
+
+/* Purple loading spinner */
+.loading-spinner {
+  border-color: var(--purple-subtle);
+  border-top-color: var(--primary);
+}
+
+/* Purple progress bars */
+.progress-bar {
+  background: var(--surface-base);
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--purple-medium), var(--purple-bright));
+  transition: width var(--transition-base);
+}
+
+/* ===== Hover Effects ===== */
+
+/* Card hover with purple glow */
+.card:hover,
+.resource-card:hover {
+  border-color: var(--border-purple);
+  box-shadow: 0 4px 20px var(--purple-glow);
+}
+
+/* Sidebar item hover */
+.sidebar-menu-link:hover {
+  background: var(--sidebar-accent);
+}
+
+.sidebar-menu-link[data-active="true"],
+.sidebar-menu-link[aria-current="page"] {
+  background: var(--sidebar-accent);
+  color: var(--text-purple);
+  border-left: 3px solid var(--primary);
+}
+
+/* ===== Active States ===== */
+
+/* Active navigation items */
+.nav-link.active {
+  color: var(--text-purple);
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Active tabs */
+.tab.active {
+  color: var(--text-purple);
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Active buttons */
+button[data-active="true"],
+button[aria-pressed="true"] {
+  background: var(--purple-subtle);
+  color: var(--text-purple);
+  border-color: var(--border-purple);
+}
+
+/* ===== Badges & Indicators ===== */
+
+/* Purple badges */
+.badge-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.badge-purple {
+  background: var(--purple-subtle);
+  color: var(--text-purple);
+  border: 1px solid var(--border-purple);
+}
+
+/* Notification dots */
+.notification-dot {
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--purple-glow);
+}
+
+/* ===== Micro-interactions ===== */
+
+/* Purple ripple effect */
+@keyframes ripple-purple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-purple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-purple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: var(--purple-glow);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+}
+
+.ripple-purple:active::after {
+  animation: ripple-purple 0.6s ease-out;
+}
+
+/* Purple glow on hover */
+.glow-purple:hover {
+  box-shadow: 0 0 20px var(--purple-glow);
+}
+
+/* ===== Scrollbars ===== */
+
+/* Purple scrollbar thumb on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--purple-medium);
+}
+
+/* ===== Checkboxes & Radio Buttons ===== */
+
+/* Purple checkboxes */
+input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+input[type="radio"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ===== Switches & Toggles ===== */
+
+/* Purple toggle switches */
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--primary);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* ===== Tooltips ===== */
+
+/* Purple tooltip accents */
+.tooltip {
+  background: var(--popover);
+  border: 1px solid var(--border-purple);
+  box-shadow: 0 4px 12px var(--purple-glow);
+}
+
+/* ===== Dividers ===== */
+
+/* Purple dividers for emphasis */
+.divider-purple {
+  border-color: var(--border-purple);
+  background: linear-gradient(90deg, transparent, var(--purple-medium), transparent);
+  height: 1px;
+  border: none;
+}
+
+/* ===== Animations ===== */
+
+/* Purple pulse animation */
+@keyframes pulse-purple {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--purple-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+.pulse-purple {
+  animation: pulse-purple 2s infinite;
+}
+
+/* Purple shimmer effect */
+@keyframes shimmer-purple {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer-purple {
+  background: linear-gradient(
+    90deg,
+    var(--surface-base) 0%,
+    var(--purple-subtle) 50%,
+    var(--surface-base) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer-purple 2s infinite;
+}
+
+/* ===== Utility Classes ===== */
+
+.text-purple {
+  color: var(--text-purple);
+}
+
+.bg-purple {
+  background: var(--primary);
+}
+
+.bg-purple-subtle {
+  background: var(--purple-subtle);
+}
+
+.border-purple {
+  border-color: var(--border-purple);
+}
+
+.shadow-purple {
+  box-shadow: 0 4px 16px var(--purple-glow);
+}
+
+/* ===== Reduced Motion ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .ripple-purple::after,
+  .pulse-purple,
+  .shimmer-purple {
+    animation: none;
+  }
+}

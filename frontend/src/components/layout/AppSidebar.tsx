@@ -17,20 +17,8 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
 import { Icon } from '../common/Icon';
 import { icons } from '../../config/icons';
-import type { SidebarItem } from '../../types';
-
-const mainItems: SidebarItem[] = [
-  { iconName: 'dashboard', label: 'Dashboard', path: '/' },
-  { iconName: 'library', label: 'Library', path: '/library' },
-  { iconName: 'search', label: 'Search', path: '/search' },
-  { iconName: 'graph', label: 'Knowledge Graph', path: '/graph' },
-];
-
-const collections: SidebarItem[] = [
-  { iconName: 'favorites', label: 'Favorites', path: '/favorites' },
-  { iconName: 'recent', label: 'Recent', path: '/recent' },
-  { iconName: 'readLater', label: 'Read Later', path: '/read-later' },
-];
+import { sidebarSections } from '../../config/sidebarConfig';
+import type { SidebarItem, SidebarSection } from '../../types';
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -44,102 +32,92 @@ export function AppSidebar() {
     }
   };
 
-  return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => {
-                const IconComponent = icons[item.iconName];
-                const isActive = location.pathname === item.path;
+  const renderSidebarItem = (item: SidebarItem) => {
+    const IconComponent = icons[item.iconName];
+    const isActive = item.path ? location.pathname === item.path : false;
 
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <Tooltip content={item.label} side="right">
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <motion.a
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleNavigation(item.path);
-                          }}
-                          className="sidebar-menu-link"
-                          aria-current={isActive ? 'page' : undefined}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        >
-                          <motion.div
-                            className="sidebar-item-glow"
-                            initial={{ opacity: 0 }}
-                            whileHover={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                          />
-                          <Icon icon={IconComponent} size={20} />
-                          <span>{item.label}</span>
-                        </motion.a>
-                      </SidebarMenuButton>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+    return (
+      <SidebarMenuItem key={item.path || item.label}>
+        <Tooltip content={item.label} side="right">
+          <SidebarMenuButton asChild isActive={isActive}>
+            <motion.a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (item.path) {
+                  handleNavigation(item.path);
+                } else if (item.onClick) {
+                  item.onClick();
+                }
+              }}
+              className="sidebar-menu-link"
+              aria-current={isActive ? 'page' : undefined}
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              <motion.div
+                className="sidebar-item-glow"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+              <Icon icon={IconComponent} size={20} />
+              <span>{item.label}</span>
+              {item.badge && (
+                <span className="sidebar-badge">{item.badge}</span>
+              )}
+            </motion.a>
+          </SidebarMenuButton>
+        </Tooltip>
+      </SidebarMenuItem>
+    );
+  };
 
-        <SidebarSeparator />
-
-        <Collapsible defaultOpen className="group/collapsible">
+  const renderSection = (section: SidebarSection, index: number) => {
+    if (section.collapsible) {
+      return (
+        <Collapsible key={section.id} defaultOpen={section.defaultOpen} className="group/collapsible">
           <SidebarGroup>
             <SidebarGroupLabel asChild>
               <CollapsibleTrigger className="sidebar-group-label-wrapper">
-                <span className="sidebar-group-label">Collections</span>
+                <span className="sidebar-group-label">{section.label}</span>
                 <Icon icon={icons.chevronDown} size={16} className="chevron-icon ml-auto" />
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {collections.map((item) => {
-                    const IconComponent = icons[item.iconName];
-                    const isActive = location.pathname === item.path;
-
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <Tooltip content={item.label} side="right">
-                          <SidebarMenuButton asChild isActive={isActive}>
-                            <motion.a
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleNavigation(item.path);
-                              }}
-                              className="sidebar-menu-link"
-                              whileHover={{ x: 4 }}
-                              whileTap={{ scale: 0.98 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            >
-                              <motion.div
-                                className="sidebar-item-glow"
-                                initial={{ opacity: 0 }}
-                                whileHover={{ opacity: 1 }}
-                                transition={{ duration: 0.3 }}
-                              />
-                              <Icon icon={IconComponent} size={20} />
-                              <span>{item.label}</span>
-                            </motion.a>
-                          </SidebarMenuButton>
-                        </Tooltip>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {section.items.map(renderSidebarItem)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
           </SidebarGroup>
         </Collapsible>
+      );
+    }
+
+    return (
+      <SidebarGroup key={section.id}>
+        <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {section.items.map(renderSidebarItem)}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  };
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarContent>
+        {sidebarSections.map((section, index) => (
+          <div key={section.id}>
+            {renderSection(section, index)}
+            {index < sidebarSections.length - 1 && <SidebarSeparator />}
+          </div>
+        ))}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

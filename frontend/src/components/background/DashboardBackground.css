@@ -24,8 +24,8 @@
   height: 600px;
   background: radial-gradient(
     circle at center,
-    rgba(74, 58, 90, 0.25) 0%,
-    rgba(74, 58, 90, 0.15) 40%,
+    rgba(138, 43, 226, 0.35) 0%,
+    rgba(138, 43, 226, 0.18) 40%,
     transparent 70%
   );
   top: -200px;
@@ -40,8 +40,8 @@
   height: 500px;
   background: radial-gradient(
     circle at center,
-    rgba(106, 90, 122, 0.2) 0%,
-    rgba(106, 90, 122, 0.1) 40%,
+    rgba(147, 51, 234, 0.32) 0%,
+    rgba(147, 51, 234, 0.16) 40%,
     transparent 70%
   );
   bottom: -150px;
@@ -56,8 +56,8 @@
   height: 700px;
   background: radial-gradient(
     circle at center,
-    rgba(90, 70, 100, 0.18) 0%,
-    rgba(90, 70, 100, 0.08) 40%,
+    rgba(168, 85, 247, 0.28) 0%,
+    rgba(168, 85, 247, 0.14) 40%,
     transparent 70%
   );
   top: 50%;
@@ -73,8 +73,8 @@
   height: 550px;
   background: radial-gradient(
     circle at center,
-    rgba(80, 60, 95, 0.22) 0%,
-    rgba(80, 60, 95, 0.12) 40%,
+    rgba(124, 58, 237, 0.3) 0%,
+    rgba(124, 58, 237, 0.15) 40%,
     transparent 70%
   );
   top: -100px;
@@ -89,8 +89,8 @@
   height: 450px;
   background: radial-gradient(
     circle at center,
-    rgba(95, 75, 110, 0.19) 0%,
-    rgba(95, 75, 110, 0.09) 40%,
+    rgba(159, 122, 234, 0.26) 0%,
+    rgba(159, 122, 234, 0.13) 40%,
     transparent 70%
   );
   bottom: 10%;
@@ -168,15 +168,15 @@
 
 /* Intensity variations */
 .dashboard-background[data-intensity="low"] .gradient-orb {
-  opacity: 0.15;
+  opacity: 0.3;
 }
 
 .dashboard-background[data-intensity="medium"] .gradient-orb {
-  opacity: 0.2;
+  opacity: 0.4;
 }
 
 .dashboard-background[data-intensity="high"] .gradient-orb {
-  opacity: 0.25;
+  opacity: 0.5;
 }
 
 /* Speed variations - Slow (default) */

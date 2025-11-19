@@ -1435,3 +1435,349 @@ class RecommendationFeedback(Base):
     
     def __repr__(self) -> str:
         return f"<RecommendationFeedback(id={self.id!r}, user_id={self.user_id!r}, resource_id={self.resource_id!r}, strategy={self.recommendation_strategy!r}, clicked={self.was_clicked})>"
+
+
+class ModelVersion(Base):
+    """
+    Model version tracking for ML models with metadata and metrics.
+    
+    Tracks trained model versions with semantic versioning, metadata about
+    training configuration, and performance metrics for comparison.
+    """
+    
+    __tablename__ = "model_versions"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Version information
+    version: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        unique=True
+    )  # Semantic version: v1.0.0
+    model_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # 'classification', 'ncf', 'embedding'
+    model_path: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )  # 'training', 'testing', 'production', 'archived'
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    promoted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
+    # Metadata and metrics (JSON)
+    model_metadata: Mapped[dict | None] = mapped_column(
+        'metadata',
+        JSON,
+        nullable=True
+    )  # Training config, dataset info, hyperparameters
+    model_metrics: Mapped[dict | None] = mapped_column(
+        'metrics',
+        JSON,
+        nullable=True
+    )  # Accuracy, F1, latency, model size
+    
+    # Relationships
+    control_experiments: Mapped[List["ABTestExperiment"]] = relationship(
+        "ABTestExperiment",
+        foreign_keys="ABTestExperiment.control_version_id",
+        back_populates="control_version"
+    )
+    treatment_experiments: Mapped[List["ABTestExperiment"]] = relationship(
+        "ABTestExperiment",
+        foreign_keys="ABTestExperiment.treatment_version_id",
+        back_populates="treatment_version"
+    )
+    prediction_logs: Mapped[List["PredictionLog"]] = relationship(
+        "PredictionLog",
+        back_populates="model_version"
+    )
+    retraining_runs: Mapped[List["RetrainingRun"]] = relationship(
+        "RetrainingRun",
+        back_populates="model_version"
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_model_versions_version', 'version'),
+        Index('idx_model_versions_status', 'status'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<ModelVersion(id={self.id!r}, version={self.version!r}, type={self.model_type!r}, status={self.status!r})>"
+
+
+class ABTestExperiment(Base):
+    """
+    A/B test experiment configuration for comparing model versions.
+    
+    Tracks experiments comparing control (current) and treatment (new) model
+    versions with traffic splitting and results analysis.
+    """
+    
+    __tablename__ = "ab_test_experiments"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Experiment configuration
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
+    
+    # Foreign keys to model versions
+    control_version_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("model_versions.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    treatment_version_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("model_versions.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    
+    # Traffic configuration
+    traffic_split: Mapped[float] = mapped_column(
+        Float,
+        nullable=False
+    )  # 0.0-1.0, percentage of traffic to treatment
+    
+    # Experiment timeline
+    start_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    end_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
+    # Status and results
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )  # 'running', 'completed', 'cancelled'
+    results: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True
+    )  # Analysis results with metrics and statistical tests
+    
+    # Relationships
+    control_version: Mapped["ModelVersion"] = relationship(
+        "ModelVersion",
+        foreign_keys=[control_version_id],
+        back_populates="control_experiments"
+    )
+    treatment_version: Mapped["ModelVersion"] = relationship(
+        "ModelVersion",
+        foreign_keys=[treatment_version_id],
+        back_populates="treatment_experiments"
+    )
+    prediction_logs: Mapped[List["PredictionLog"]] = relationship(
+        "PredictionLog",
+        back_populates="experiment"
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_ab_test_experiments_status', 'status'),
+        Index('idx_ab_test_experiments_dates', 'start_date', 'end_date'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<ABTestExperiment(id={self.id!r}, name={self.name!r}, status={self.status!r}, split={self.traffic_split})>"
+
+
+class PredictionLog(Base):
+    """
+    Prediction logging for A/B test analysis.
+    
+    Logs predictions from both control and treatment models during A/B tests
+    for performance comparison and statistical analysis.
+    """
+    
+    __tablename__ = "prediction_logs"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Foreign keys
+    experiment_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("ab_test_experiments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    model_version_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("model_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    
+    # Prediction data
+    input_text: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+    predictions: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=False
+    )  # Model predictions with scores
+    latency_ms: Mapped[float] = mapped_column(
+        Float,
+        nullable=False
+    )
+    
+    # Timestamp
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    
+    # Relationships
+    experiment: Mapped["ABTestExperiment"] = relationship(
+        "ABTestExperiment",
+        back_populates="prediction_logs"
+    )
+    model_version: Mapped["ModelVersion"] = relationship(
+        "ModelVersion",
+        back_populates="prediction_logs"
+    )
+    user: Mapped["User | None"] = relationship("User")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_prediction_logs_experiment_id', 'experiment_id'),
+        Index('idx_prediction_logs_model_version_id', 'model_version_id'),
+        Index('idx_prediction_logs_created_at', 'created_at'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<PredictionLog(id={self.id!r}, experiment_id={self.experiment_id!r}, version_id={self.model_version_id!r}, latency={self.latency_ms}ms)>"
+
+
+class RetrainingRun(Base):
+    """
+    Retraining run tracking for automated model retraining pipeline.
+    
+    Tracks each retraining run with trigger type, dataset information,
+    resulting model version, and performance metrics.
+    """
+    
+    __tablename__ = "retraining_runs"
+    
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4
+    )
+    
+    # Trigger information
+    trigger_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )  # "scheduled", "manual", "data_growth", "performance_degradation"
+    
+    # Dataset information
+    dataset_size: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    new_data_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    
+    # Foreign key to resulting model version
+    model_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(),
+        ForeignKey("model_versions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    
+    # Status tracking
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )  # "running", "completed", "failed"
+    
+    # Timing information
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.current_timestamp()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    training_time_seconds: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+    
+    # Results and metrics
+    metrics: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True
+    )  # Training metrics, evaluation results, comparison with production
+    
+    # Error information
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+    
+    # Relationships
+    model_version: Mapped["ModelVersion | None"] = relationship(
+        "ModelVersion",
+        back_populates="retraining_runs"
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_retraining_runs_status', 'status'),
+        Index('idx_retraining_runs_started_at', 'started_at'),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<RetrainingRun(id={self.id!r}, trigger={self.trigger_type!r}, status={self.status!r}, dataset_size={self.dataset_size})>"

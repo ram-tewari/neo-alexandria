@@ -20,9 +20,9 @@ Schemas:
 
 import uuid
 from datetime import datetime
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Union, Any
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class ResourceBase(BaseModel):
@@ -46,7 +46,7 @@ class ResourceBase(BaseModel):
     relation: List[str] = Field(default_factory=list)
     classification_code: Optional[str] = None
     read_status: Optional[Literal["unread", "in_progress", "completed", "archived"]] = None
-    quality_score: Optional[float] = None
+    quality_score: Optional[Union[float, Any]] = None
 
 
 class ResourceCreate(ResourceBase):
@@ -73,7 +73,7 @@ class ResourceRead(ResourceBase):
     subject: List[str]  # Always present (default to empty list)
     relation: List[str]  # Always present (default to empty list)
     read_status: Literal["unread", "in_progress", "completed", "archived"]  # Always present
-    quality_score: float  # Always present
+    quality_score: Union[float, Any]  # Can be float or QualityScore domain object
     # Expose computed URL; map from source when present
     url: Optional[str] = None
     created_at: datetime
@@ -84,6 +84,27 @@ class ResourceRead(ResourceBase):
     ingestion_error: Optional[str] = None
     ingestion_started_at: Optional[datetime] = None
     ingestion_completed_at: Optional[datetime] = None
+    
+    @field_serializer('quality_score')
+    def serialize_quality_score(self, quality_score: Union[float, Any], _info) -> float:
+        """Serialize quality_score to float for API responses.
+        
+        Handles both float values (from database) and QualityScore domain objects.
+        """
+        # If it's already a float, return it
+        if isinstance(quality_score, (int, float)):
+            return float(quality_score)
+        
+        # If it's a QualityScore domain object, get overall_score
+        if hasattr(quality_score, 'overall_score'):
+            return quality_score.overall_score()
+        
+        # If it has a to_dict method, extract overall_score from dict
+        if hasattr(quality_score, 'to_dict'):
+            return quality_score.to_dict().get('overall_score', 0.0)
+        
+        # Fallback to 0.0 if we can't determine the score
+        return 0.0
 
 
 class ResourceInDB(ResourceRead):

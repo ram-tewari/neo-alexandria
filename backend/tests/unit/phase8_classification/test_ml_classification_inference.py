@@ -13,7 +13,6 @@ actually loading the model to avoid downloading large model files during testing
 """
 
 import sys
-from pathlib import Path
 
 # Add parent directory to path for backend imports
 

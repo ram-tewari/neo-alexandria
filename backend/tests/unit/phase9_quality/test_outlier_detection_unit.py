@@ -8,18 +8,7 @@ from backend.app.services.quality_service import QualityService
 from backend.app.database.models import Resource
 
 
-@pytest.fixture
-def db_session(test_db):
-    """Create a database session for tests."""
-    db = test_db()
-    yield db
-    db.close()
-
-
-@pytest.fixture
-def quality_service(db_session: Session):
-    """Create QualityService instance."""
-    return QualityService(db_session)
+# db_session and quality_service fixtures are now in conftest.py
 
 
 @pytest.fixture
@@ -72,20 +61,20 @@ class TestDetectQualityOutliers:
     
     def test_detect_outliers_with_sufficient_data(self, quality_service, create_resources_with_quality, db_session):
         """Test outlier detection with sufficient resources."""
-        resources = create_resources_with_quality(count=50, include_outliers=True)
+        create_resources_with_quality(count=50, include_outliers=True)
         
         outlier_count = quality_service.detect_quality_outliers()
         
         assert outlier_count > 0
         
         # Verify outliers were flagged
-        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier == True).all()
+        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier).all()
         assert len(outliers) > 0
         
         for outlier in outliers:
             assert outlier.outlier_score is not None
             assert outlier.outlier_reasons is not None
-            assert outlier.needs_quality_review == True
+            assert outlier.needs_quality_review
     
     def test_detect_outliers_insufficient_data(self, quality_service, create_resources_with_quality):
         """Test outlier detection with insufficient resources (< 10)."""
@@ -98,10 +87,10 @@ class TestDetectQualityOutliers:
         """Test outlier detection when all resources are similar."""
         resources = create_resources_with_quality(count=30, include_outliers=False)
         
-        outlier_count = quality_service.detect_quality_outliers()
+        quality_service.detect_quality_outliers()
         
         # May detect some outliers due to natural variation, but should be minimal
-        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier == True).all()
+        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier).all()
         assert len(outliers) < len(resources) * 0.15  # Less than 15% flagged
     
     def test_detect_outliers_with_summary_scores(self, quality_service, create_resources_with_quality, db_session):
@@ -173,7 +162,7 @@ class TestDetectQualityOutliers:
         
         assert outlier_count >= 0
         # Verify the method handled missing scores gracefully
-        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier == True).all()
+        outliers = db_session.query(Resource).filter(Resource.is_quality_outlier).all()
         assert len(outliers) >= 0  # May or may not flag resources with missing scores
     
     def test_detect_outliers_with_partial_summary_scores(self, quality_service, db_session):

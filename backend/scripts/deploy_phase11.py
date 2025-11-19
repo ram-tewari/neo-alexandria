@@ -8,7 +8,6 @@ Orchestrates the complete deployment process:
 4. Test rollback capability
 """
 
-import os
 import subprocess
 import sys
 import time

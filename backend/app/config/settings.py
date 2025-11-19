@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     BACKUP_FREQUENCY: Literal["daily", "weekly", "monthly"] = "weekly"
     TIMEZONE: str = "UTC"
     
+    # Redis configuration for Celery and caching
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_CACHE_DB: int = 2
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
+    
     # Vector embedding configuration for Phase 4
     EMBEDDING_MODEL_NAME: str = "nomic-ai/nomic-embed-text-v1"
     DEFAULT_HYBRID_SEARCH_WEIGHT: float = 0.5  # 0.0=keyword only, 1.0=semantic only

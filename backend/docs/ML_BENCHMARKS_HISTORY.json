@@ -1,0 +1,132 @@
+{
+  "created_at": "2025-11-15T22:27:54.579628",
+  "runs": [
+    {
+      "timestamp": "2025-11-15T22:27:54.579628",
+      "suites": {
+        "classification": {
+          "total_tests": 5,
+          "passed_tests": 5,
+          "failed_tests": 0,
+          "execution_time_seconds": 45.2,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        },
+        "performance": {
+          "total_tests": 4,
+          "passed_tests": 4,
+          "failed_tests": 0,
+          "execution_time_seconds": 32.1,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-15T23:14:38.274342",
+      "suites": {
+        "classification": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 11.311256,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        },
+        "collaborative_filtering": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 0.059466,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        },
+        "search_quality": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 0.067394,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        },
+        "summarization_quality": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 0.059985,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        },
+        "performance": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 0.108779,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        }
+      }
+    },
+    {
+      "timestamp": "2025-11-16T01:18:49.454104",
+      "suites": {
+        "classification": {
+          "total_tests": 0,
+          "passed_tests": 0,
+          "failed_tests": 0,
+          "execution_time_seconds": 3.573724,
+          "accuracy": 0.85,
+          "f1_score": 0.85,
+          "ndcg_10": 0.45,
+          "ndcg_20": 0.68,
+          "bertscore": 0.82,
+          "classification_latency_p95": 85.0,
+          "ncf_latency_p95": 42.0,
+          "search_latency_p95": 175.0
+        }
+      }
+    }
+  ]
+}

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database.models import Base, Resource, TaxonomyNode, ResourceTaxonomy
+from app.database.models import Base, Resource, TaxonomyNode
 from app.services.classification_service import ClassificationService
 
 
@@ -115,13 +115,13 @@ def test_classification_service_initialization():
     
     # Test with use_ml=True
     service_ml = ClassificationService(db=db, use_ml=True)
-    assert service_ml.use_ml == True
+    assert service_ml.use_ml
     assert service_ml.confidence_threshold == 0.3
     print("✓ ClassificationService initialized with use_ml=True")
     
     # Test with use_ml=False
     service_rule = ClassificationService(db=db, use_ml=False)
-    assert service_rule.use_ml == False
+    assert not service_rule.use_ml
     print("✓ ClassificationService initialized with use_ml=False")
     
     # Test custom confidence threshold

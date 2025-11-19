@@ -99,9 +99,9 @@ def test_is_descendant_true(test_db):
     grandchild = service.create_node(name="Grandchild", parent_id=child.id)
     
     # Test descendant relationships
-    assert service._is_descendant(child.id, root.id) == True
-    assert service._is_descendant(grandchild.id, root.id) == True
-    assert service._is_descendant(grandchild.id, child.id) == True
+    assert service._is_descendant(child.id, root.id)
+    assert service._is_descendant(grandchild.id, root.id)
+    assert service._is_descendant(grandchild.id, child.id)
     
     db.close()
 
@@ -117,9 +117,9 @@ def test_is_descendant_false(test_db):
     child1 = service.create_node(name="Child 1", parent_id=root1.id)
     
     # Test non-descendant relationships
-    assert service._is_descendant(root1.id, child1.id) == False  # Parent is not descendant of child
-    assert service._is_descendant(root2.id, root1.id) == False  # Separate branches
-    assert service._is_descendant(child1.id, root2.id) == False  # Different branches
+    assert not service._is_descendant(root1.id, child1.id)  # Parent is not descendant of child
+    assert not service._is_descendant(root2.id, root1.id)  # Separate branches
+    assert not service._is_descendant(child1.id, root2.id)  # Different branches
     
     db.close()
 
@@ -148,8 +148,8 @@ def test_create_root_node(test_db):
     assert node.path == "/computer-science"
     assert node.description == "CS topics"
     assert node.keywords == ["programming", "algorithms"]
-    assert node.is_leaf == True
-    assert node.allow_resources == True
+    assert node.is_leaf
+    assert node.allow_resources
     assert node.resource_count == 0
     assert node.descendant_resource_count == 0
     
@@ -174,11 +174,11 @@ def test_create_child_node(test_db):
     assert child.parent_id == parent.id
     assert child.level == 1
     assert child.path == "/computer-science/machine-learning"
-    assert child.is_leaf == True
+    assert child.is_leaf
     
     # Verify parent is_leaf updated
     db.refresh(parent)
-    assert parent.is_leaf == False
+    assert not parent.is_leaf
     
     db.close()
 
@@ -273,7 +273,7 @@ def test_update_node_metadata(test_db):
     assert updated.slug == "machine-learning"
     assert updated.description == "New description"
     assert updated.keywords == ["ml", "ai", "deep-learning"]
-    assert updated.allow_resources == False
+    assert not updated.allow_resources
     
     db.close()
 
@@ -470,14 +470,14 @@ def test_delete_node_updates_parent_is_leaf(test_db):
     
     # Verify parent is not leaf
     db.refresh(parent)
-    assert parent.is_leaf == False
+    assert not parent.is_leaf
     
     # Delete child
     service.delete_node(node_id=child.id)
     
     # Verify parent is now leaf
     db.refresh(parent)
-    assert parent.is_leaf == True
+    assert parent.is_leaf
     
     db.close()
 
@@ -505,11 +505,11 @@ def test_move_node_to_new_parent(test_db):
     
     # Verify old parent is now leaf
     db.refresh(parent1)
-    assert parent1.is_leaf == True
+    assert parent1.is_leaf
     
     # Verify new parent is not leaf
     db.refresh(parent2)
-    assert parent2.is_leaf == False
+    assert not parent2.is_leaf
     
     db.close()
 
@@ -619,10 +619,10 @@ def test_get_tree_full(test_db):
     
     # Create hierarchy
     root1 = service.create_node(name="Root 1")
-    root2 = service.create_node(name="Root 2")
+    service.create_node(name="Root 2")
     child1 = service.create_node(name="Child 1", parent_id=root1.id)
-    child2 = service.create_node(name="Child 2", parent_id=root1.id)
-    grandchild = service.create_node(name="Grandchild", parent_id=child1.id)
+    service.create_node(name="Child 2", parent_id=root1.id)
+    service.create_node(name="Grandchild", parent_id=child1.id)
     
     # Get full tree
     tree = service.get_tree()
@@ -648,10 +648,10 @@ def test_get_tree_from_root(test_db):
     
     # Create two separate trees
     root1 = service.create_node(name="Root 1")
-    child1 = service.create_node(name="Child 1", parent_id=root1.id)
+    service.create_node(name="Child 1", parent_id=root1.id)
     
     root2 = service.create_node(name="Root 2")
-    child2 = service.create_node(name="Child 2", parent_id=root2.id)
+    service.create_node(name="Child 2", parent_id=root2.id)
     
     # Get subtree from root1
     tree = service.get_tree(root_id=root1.id)
@@ -673,7 +673,7 @@ def test_get_tree_with_max_depth(test_db):
     root = service.create_node(name="Root")
     level1 = service.create_node(name="Level 1", parent_id=root.id)
     level2 = service.create_node(name="Level 2", parent_id=level1.id)
-    level3 = service.create_node(name="Level 3", parent_id=level2.id)
+    service.create_node(name="Level 3", parent_id=level2.id)
     
     # Get tree with max_depth=2
     tree = service.get_tree(max_depth=2)
@@ -720,8 +720,8 @@ def test_get_tree_includes_metadata(test_db):
     assert node_tree["keywords"] == ["test", "node"]
     assert node_tree["resource_count"] == 0
     assert node_tree["descendant_resource_count"] == 0
-    assert node_tree["is_leaf"] == True
-    assert node_tree["allow_resources"] == False
+    assert node_tree["is_leaf"]
+    assert not node_tree["allow_resources"]
     
     db.close()
 
@@ -797,8 +797,8 @@ def test_get_descendants_basic(test_db):
     # Create hierarchy
     root = service.create_node(name="Root")
     child1 = service.create_node(name="Child 1", parent_id=root.id)
-    child2 = service.create_node(name="Child 2", parent_id=root.id)
-    grandchild = service.create_node(name="Grandchild", parent_id=child1.id)
+    service.create_node(name="Child 2", parent_id=root.id)
+    service.create_node(name="Grandchild", parent_id=child1.id)
     
     # Get descendants of root
     descendants = service.get_descendants(root.id)
@@ -832,9 +832,9 @@ def test_get_descendants_ordered(test_db):
     
     # Create hierarchy
     root = service.create_node(name="Root")
-    child_b = service.create_node(name="Child B", parent_id=root.id)
+    service.create_node(name="Child B", parent_id=root.id)
     child_a = service.create_node(name="Child A", parent_id=root.id)
-    grandchild = service.create_node(name="Grandchild", parent_id=child_a.id)
+    service.create_node(name="Grandchild", parent_id=child_a.id)
     
     # Get descendants
     descendants = service.get_descendants(root.id)
@@ -886,9 +886,9 @@ def test_classify_resource_basic(test_db):
     assert classifications[0].resource_id == resource.id
     assert classifications[0].taxonomy_node_id == node.id
     assert classifications[0].confidence == 0.95
-    assert classifications[0].is_predicted == True
+    assert classifications[0].is_predicted
     assert classifications[0].predicted_by == "test_model_v1"
-    assert classifications[0].needs_review == False
+    assert not classifications[0].needs_review
     
     db.close()
 
@@ -956,7 +956,7 @@ def test_classify_resource_low_confidence_needs_review(test_db):
         ]
     )
     
-    assert classifications[0].needs_review == True
+    assert classifications[0].needs_review
     assert classifications[0].review_priority is not None
     assert abs(classifications[0].review_priority - 0.35) < 0.01
     

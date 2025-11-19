@@ -25,6 +25,7 @@ def quality_test_resources(test_db):
     ]
     
     for i, config in enumerate(quality_configs):
+        quality = config["score"]
         r = Resource(
             title=config["title"],
             description=config["description"],
@@ -33,7 +34,14 @@ def quality_test_resources(test_db):
             classification_code="006",
             subject=["test", "quality"],
             read_status="unread",
-            quality_score=config["score"],
+            quality_score=quality,
+            # Add quality dimensions for Phase 9 compatibility
+            quality_overall=quality,
+            quality_accuracy=min(1.0, quality + 0.03),
+            quality_completeness=min(1.0, quality - 0.02),
+            quality_consistency=min(1.0, quality + 0.01),
+            quality_timeliness=min(1.0, quality - 0.01),
+            quality_relevance=min(1.0, quality + 0.02),
             creator="Test Author",
             identifier=f"/archive/2024/01/01/article-{i}",
             source="https://example.com/article",

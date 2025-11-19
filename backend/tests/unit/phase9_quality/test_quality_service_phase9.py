@@ -71,12 +71,12 @@ def test_quality_service():
         result = quality_service.compute_quality(str(resource.id))
         
         print("\n=== Quality Assessment Results ===")
-        print(f"Accuracy:      {result['accuracy']:.3f}")
-        print(f"Completeness:  {result['completeness']:.3f}")
-        print(f"Consistency:   {result['consistency']:.3f}")
-        print(f"Timeliness:    {result['timeliness']:.3f}")
-        print(f"Relevance:     {result['relevance']:.3f}")
-        print(f"Overall:       {result['overall']:.3f}")
+        print(f"Accuracy:      {result.accuracy:.3f}")
+        print(f"Completeness:  {result.completeness:.3f}")
+        print(f"Consistency:   {result.consistency:.3f}")
+        print(f"Timeliness:    {result.timeliness:.3f}")
+        print(f"Relevance:     {result.relevance:.3f}")
+        print(f"Overall:       {result.overall_score():.3f}")
         
         # Verify resource was updated
         db.refresh(resource)
@@ -103,7 +103,7 @@ def test_quality_service():
         result2 = quality_service.compute_quality(str(resource.id), weights=custom_weights)
         
         print("\n=== Custom Weights Results ===")
-        print(f"Overall with custom weights: {result2['overall']:.3f}")
+        print(f"Overall with custom weights: {result2.overall_score():.3f}")
         
         # Verify custom weights were stored
         db.refresh(resource)

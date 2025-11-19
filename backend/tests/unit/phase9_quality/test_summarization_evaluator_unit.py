@@ -5,7 +5,6 @@ Tests individual methods without requiring full database integration.
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Import the service module directly

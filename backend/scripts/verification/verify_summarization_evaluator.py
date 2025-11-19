@@ -18,7 +18,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 # Import directly without going through app/__init__.py to avoid Prometheus issues
-from sqlalchemy import create_engine, Column, String, Text, Float, Integer, DateTime, JSON
+from sqlalchemy import create_engine, Column, String, Text, Float, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.sql import func
 import uuid

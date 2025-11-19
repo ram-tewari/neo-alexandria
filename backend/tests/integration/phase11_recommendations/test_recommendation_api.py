@@ -3,7 +3,6 @@ Integration tests for Phase 11 Recommendation API endpoints.
 
 Tests all recommendation API endpoints with various parameters and scenarios.
 """
-import json
 import pytest
 from datetime import datetime
 from fastapi.testclient import TestClient
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session
 from uuid import uuid4
 
 from backend.app.database.models import (
-    User, UserProfile, UserInteraction, Resource, RecommendationFeedback
+    User, UserProfile, UserInteraction, Resource
 )
 
 
@@ -172,7 +171,7 @@ class TestRecommendationsEndpoint:
         response = client.get("/api/recommendations?min_quality=0.75")
         
         assert response.status_code == 200
-        data = response.json()
+        response.json()
         
         # All recommendations should meet quality threshold
         # (This depends on test data having quality scores)

@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database.models import Base, TaxonomyNode, Resource, ResourceTaxonomy
+from app.database.models import Base, Resource, ResourceTaxonomy
 from app.services.taxonomy_service import TaxonomyService
 
 
@@ -72,15 +72,15 @@ def test_classify_resource():
     # Check high confidence classification
     high_conf = [c for c in result if c.taxonomy_node_id == ml_node.id][0]
     assert high_conf.confidence == 0.95, f"Expected confidence 0.95, got {high_conf.confidence}"
-    assert high_conf.is_predicted == True, "Should be predicted"
+    assert high_conf.is_predicted, "Should be predicted"
     assert high_conf.predicted_by == "test_model_v1.0", f"Expected test_model_v1.0, got {high_conf.predicted_by}"
-    assert high_conf.needs_review == False, "High confidence should not need review"
+    assert not high_conf.needs_review, "High confidence should not need review"
     assert high_conf.review_priority is None, "High confidence should have no review priority"
     
     # Check low confidence classification
     low_conf = [c for c in result if c.taxonomy_node_id == root.id][0]
     assert low_conf.confidence == 0.65, f"Expected confidence 0.65, got {low_conf.confidence}"
-    assert low_conf.needs_review == True, "Low confidence should need review"
+    assert low_conf.needs_review, "Low confidence should need review"
     assert low_conf.review_priority is not None, "Low confidence should have review priority"
     assert abs(low_conf.review_priority - 0.35) < 0.01, f"Expected review_priority ~0.35, got {low_conf.review_priority}"
     

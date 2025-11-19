@@ -7,7 +7,6 @@ in the resource ingestion pipeline.
 Requirements: 12.1, 12.2, 12.3
 """
 
-import ast
 import sys
 
 

@@ -26,8 +26,8 @@ import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, func, delete, or_
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from backend.app.database.models import TaxonomyNode, ResourceTaxonomy, Resource
 from backend.app.database.base import Base
@@ -171,6 +171,90 @@ class TaxonomyService:
 
     # Core CRUD operations
     
+    def _validate_node_name(self, name: str) -> None:
+        """
+        Validate node name is not empty.
+        
+        Args:
+            name: Node name to validate
+            
+        Raises:
+            ValueError: If name is empty or whitespace only
+        """
+        if not name or not name.strip():
+            raise ValueError("Node name cannot be empty")
+    
+    def _validate_slug_uniqueness(self, slug: str, exclude_id: Optional[uuid.UUID] = None) -> None:
+        """
+        Check if slug is unique in the taxonomy.
+        
+        Args:
+            slug: Slug to check
+            exclude_id: Optional node ID to exclude from check (for updates)
+            
+        Raises:
+            ValueError: If slug already exists
+        """
+        query = self.db.query(TaxonomyNode).filter(TaxonomyNode.slug == slug)
+        if exclude_id:
+            query = query.filter(TaxonomyNode.id != exclude_id)
+        
+        existing = query.first()
+        if existing:
+            raise ValueError(f"A node with slug '{slug}' already exists")
+    
+    def _generate_and_validate_slug(self, name: str, exclude_id: Optional[uuid.UUID] = None) -> str:
+        """
+        Generate slug from name and validate it.
+        
+        Args:
+            name: Node name
+            exclude_id: Optional node ID to exclude from uniqueness check
+            
+        Returns:
+            Valid unique slug
+            
+        Raises:
+            ValueError: If slug is empty or not unique
+        """
+        slug = self._slugify(name)
+        if not slug:
+            raise ValueError("Node name must contain at least one alphanumeric character")
+        
+        self._validate_slug_uniqueness(slug, exclude_id)
+        return slug
+    
+    def _get_parent_and_compute_level(self, parent_id: Optional[uuid.UUID]) -> tuple[Optional[TaxonomyNode], int]:
+        """
+        Get parent node and compute level for new node.
+        
+        Args:
+            parent_id: Parent node UUID (None for root nodes)
+            
+        Returns:
+            Tuple of (parent_node, level)
+            
+        Raises:
+            ValueError: If parent_id provided but parent not found
+        """
+        if parent_id:
+            parent = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == parent_id).first()
+            if not parent:
+                raise ValueError(f"Parent node with id {parent_id} not found")
+            return parent, parent.level + 1
+        return None, 0
+    
+    def _update_parent_is_leaf(self, parent: Optional[TaxonomyNode], is_leaf: bool) -> None:
+        """
+        Update parent's is_leaf flag.
+        
+        Args:
+            parent: Parent node to update
+            is_leaf: New is_leaf value
+        """
+        if parent:
+            parent.is_leaf = is_leaf
+
     def create_node(
         self,
         name: str,
@@ -181,20 +265,6 @@ class TaxonomyService:
     ) -> TaxonomyNode:
         """
         Create a new taxonomy node with parent validation and path computation.
-        
-        Algorithm:
-        1. Validate name is not empty
-        2. Generate slug from name
-        3. Check slug uniqueness
-        4. If parent_id provided:
-           - Validate parent exists
-           - Compute level as parent.level + 1
-           - Update parent.is_leaf to False
-        5. Else:
-           - Set level to 0
-        6. Compute materialized path
-        7. Create TaxonomyNode instance
-        8. Commit and return
         
         Args:
             name: Node name (required)
@@ -209,30 +279,13 @@ class TaxonomyService:
         Raises:
             ValueError: If validation fails (empty name, duplicate slug, parent not found)
         """
-        # Validate name
-        if not name or not name.strip():
-            raise ValueError("Node name cannot be empty")
+        # Validate and generate slug
+        self._validate_node_name(name)
+        slug = self._generate_and_validate_slug(name)
         
-        # Generate slug
-        slug = self._slugify(name)
-        if not slug:
-            raise ValueError("Node name must contain at least one alphanumeric character")
-        
-        # Check slug uniqueness
-        existing = self.db.query(TaxonomyNode).filter(TaxonomyNode.slug == slug).first()
-        if existing:
-            raise ValueError(f"A node with slug '{slug}' already exists")
-        
-        # Determine level and update parent
-        level = 0
-        if parent_id:
-            parent = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == parent_id).first()
-            if not parent:
-                raise ValueError(f"Parent node with id {parent_id} not found")
-            
-            level = parent.level + 1
-            # Update parent is_leaf flag
-            parent.is_leaf = False
+        # Get parent and compute level
+        parent, level = self._get_parent_and_compute_level(parent_id)
+        self._update_parent_is_leaf(parent, False)
         
         # Compute path
         path = self._compute_path(parent_id, slug)
@@ -261,6 +314,78 @@ class TaxonomyService:
         
         return node
 
+    def _get_node_by_id(self, node_id: uuid.UUID) -> TaxonomyNode:
+        """
+        Get node by ID or raise error.
+        
+        Args:
+            node_id: Node UUID
+            
+        Returns:
+            TaxonomyNode object
+            
+        Raises:
+            ValueError: If node not found
+        """
+        node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
+        if not node:
+            raise ValueError(f"Node with id {node_id} not found")
+        return node
+    
+    def _handle_node_name_change(self, node: TaxonomyNode, new_name: str) -> None:
+        """
+        Handle node name change including slug and path updates.
+        
+        Args:
+            node: Node to update
+            new_name: New name for the node
+            
+        Raises:
+            ValueError: If slug validation fails
+        """
+        if new_name == node.name:
+            return
+        
+        # Generate and validate new slug
+        new_slug = self._generate_and_validate_slug(new_name, exclude_id=node.id)
+        
+        # Store old path for descendant updates
+        old_path = node.path
+        
+        # Update name and slug
+        node.name = new_name
+        node.slug = new_slug
+        
+        # Recalculate path
+        node.path = self._compute_path(node.parent_id, new_slug)
+        
+        # Update descendants if path changed
+        if old_path != node.path:
+            self._update_descendants(node, old_path)
+    
+    def _update_node_metadata(
+        self,
+        node: TaxonomyNode,
+        description: Optional[str],
+        keywords: Optional[List[str]],
+        allow_resources: Optional[bool]
+    ) -> None:
+        """
+        Update node metadata fields.
+        
+        Args:
+            node: Node to update
+            description: New description (None to skip)
+            keywords: New keywords (None to skip)
+            allow_resources: New allow_resources flag (None to skip)
+        """
+        if description is not None:
+            node.description = description
+        if keywords is not None:
+            node.keywords = keywords
+        if allow_resources is not None:
+            node.allow_resources = allow_resources
+
     def update_node(
         self,
         node_id: uuid.UUID,
@@ -271,16 +396,6 @@ class TaxonomyService:
     ) -> TaxonomyNode:
         """
         Update taxonomy node metadata.
-        
-        Algorithm:
-        1. Query node by id
-        2. If name changed:
-           - Generate new slug
-           - Check slug uniqueness
-           - Recalculate path for node and descendants
-        3. Update other fields if provided
-        4. Update updated_at timestamp
-        5. Commit and return
         
         Args:
             node_id: Node UUID to update
@@ -295,47 +410,15 @@ class TaxonomyService:
         Raises:
             ValueError: If node not found or slug conflict
         """
-        # Query node
-        node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
-        if not node:
-            raise ValueError(f"Node with id {node_id} not found")
+        # Get node
+        node = self._get_node_by_id(node_id)
         
         # Handle name change
-        if name and name != node.name:
-            # Generate new slug
-            new_slug = self._slugify(name)
-            if not new_slug:
-                raise ValueError("Node name must contain at least one alphanumeric character")
-            
-            # Check slug uniqueness
-            existing = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.slug == new_slug,
-                TaxonomyNode.id != node_id
-            ).first()
-            if existing:
-                raise ValueError(f"A node with slug '{new_slug}' already exists")
-            
-            # Store old path for descendant updates
-            old_path = node.path
-            
-            # Update name and slug
-            node.name = name
-            node.slug = new_slug
-            
-            # Recalculate path
-            node.path = self._compute_path(node.parent_id, new_slug)
-            
-            # Update descendants if path changed
-            if old_path != node.path:
-                self._update_descendants(node, old_path)
+        if name:
+            self._handle_node_name_change(node, name)
         
         # Update other fields
-        if description is not None:
-            node.description = description
-        if keywords is not None:
-            node.keywords = keywords
-        if allow_resources is not None:
-            node.allow_resources = allow_resources
+        self._update_node_metadata(node, description, keywords, allow_resources)
         
         # Update timestamp
         node.updated_at = datetime.now(timezone.utc)
@@ -345,6 +428,110 @@ class TaxonomyService:
         
         return node
     
+    def _validate_node_has_no_resources(self, node_id: uuid.UUID) -> None:
+        """
+        Validate that node has no assigned resources.
+        
+        Args:
+            node_id: Node UUID to check
+            
+        Raises:
+            ValueError: If node has assigned resources
+        """
+        resource_count = self.db.query(ResourceTaxonomy).filter(
+            ResourceTaxonomy.taxonomy_node_id == node_id
+        ).count()
+        if resource_count > 0:
+            raise ValueError(
+                f"Cannot delete node with {resource_count} assigned resources. "
+                "Please unassign resources first."
+            )
+    
+    def _cascade_delete_descendants(self, node: TaxonomyNode) -> int:
+        """
+        Delete all descendants and their resource classifications.
+        
+        Args:
+            node: Node whose descendants to delete
+            
+        Returns:
+            Number of descendants deleted
+        """
+        # Get all descendants
+        descendants = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.path.like(f"{node.path}/%")
+        ).all()
+        
+        # Delete resource classifications for descendants
+        descendant_ids = [d.id for d in descendants] + [node.id]
+        self.db.query(ResourceTaxonomy).filter(
+            ResourceTaxonomy.taxonomy_node_id.in_(descendant_ids)
+        ).delete(synchronize_session=False)
+        
+        # Delete descendants
+        for descendant in descendants:
+            self.db.delete(descendant)
+        
+        return len(descendants)
+    
+    def _reparent_children(self, node: TaxonomyNode) -> int:
+        """
+        Reparent node's children to node's parent.
+        
+        Args:
+            node: Node whose children to reparent
+            
+        Returns:
+            Number of children reparented
+        """
+        children = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.parent_id == node.id
+        ).all()
+        
+        for child in children:
+            old_path = child.path
+            child.parent_id = node.parent_id
+            
+            # Update level
+            if node.parent_id:
+                parent = self.db.query(TaxonomyNode).filter(
+                    TaxonomyNode.id == node.parent_id
+                ).first()
+                child.level = parent.level + 1
+            else:
+                child.level = 0
+            
+            # Update path
+            child.path = self._compute_path(child.parent_id, child.slug)
+            
+            # Update descendants
+            self._update_descendants(child, old_path)
+        
+        return len(children)
+    
+    def _update_parent_is_leaf_after_deletion(self, node: TaxonomyNode) -> None:
+        """
+        Update parent's is_leaf flag after node deletion.
+        
+        Args:
+            node: Node being deleted
+        """
+        if not node.parent_id:
+            return
+        
+        parent = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.id == node.parent_id
+        ).first()
+        if not parent:
+            return
+        
+        # Check if parent has other children
+        sibling_count = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.parent_id == node.parent_id,
+            TaxonomyNode.id != node.id
+        ).count()
+        parent.is_leaf = (sibling_count == 0)
+
     def delete_node(
         self,
         node_id: uuid.UUID,
@@ -352,20 +539,6 @@ class TaxonomyService:
     ) -> Dict[str, Any]:
         """
         Delete taxonomy node with cascade or reparenting options.
-        
-        Algorithm:
-        1. Query node by id
-        2. Check if node has assigned resources
-           - If yes, raise error (must unassign first)
-        3. If cascade=True:
-           - Delete all descendants recursively
-           - Delete all resource classifications for descendants
-        4. Else:
-           - Reparent children to node's parent
-           - Update children's level and path
-        5. Update parent's is_leaf flag if needed
-        6. Delete node
-        7. Return deletion summary
         
         Args:
             node_id: Node UUID to delete
@@ -377,80 +550,21 @@ class TaxonomyService:
         Raises:
             ValueError: If node not found or has assigned resources
         """
-        # Query node
-        node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
-        if not node:
-            raise ValueError(f"Node with id {node_id} not found")
+        # Get node and validate
+        node = self._get_node_by_id(node_id)
+        self._validate_node_has_no_resources(node_id)
         
-        # Check for assigned resources
-        resource_count = self.db.query(ResourceTaxonomy).filter(
-            ResourceTaxonomy.taxonomy_node_id == node_id
-        ).count()
-        if resource_count > 0:
-            raise ValueError(
-                f"Cannot delete node with {resource_count} assigned resources. "
-                "Please unassign resources first."
-            )
-        
+        # Handle descendants
         deleted_count = 1
         reparented_count = 0
         
         if cascade:
-            # Get all descendants
-            descendants = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.path.like(f"{node.path}/%")
-            ).all()
-            
-            # Delete resource classifications for descendants
-            descendant_ids = [d.id for d in descendants] + [node_id]
-            self.db.query(ResourceTaxonomy).filter(
-                ResourceTaxonomy.taxonomy_node_id.in_(descendant_ids)
-            ).delete(synchronize_session=False)
-            
-            # Delete descendants
-            for descendant in descendants:
-                self.db.delete(descendant)
-            
-            deleted_count += len(descendants)
+            deleted_count += self._cascade_delete_descendants(node)
         else:
-            # Reparent children to node's parent
-            children = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.parent_id == node_id
-            ).all()
-            
-            for child in children:
-                old_path = child.path
-                child.parent_id = node.parent_id
-                
-                # Update level
-                if node.parent_id:
-                    parent = self.db.query(TaxonomyNode).filter(
-                        TaxonomyNode.id == node.parent_id
-                    ).first()
-                    child.level = parent.level + 1
-                else:
-                    child.level = 0
-                
-                # Update path
-                child.path = self._compute_path(child.parent_id, child.slug)
-                
-                # Update descendants
-                self._update_descendants(child, old_path)
-                
-                reparented_count += 1
+            reparented_count = self._reparent_children(node)
         
-        # Update parent's is_leaf flag if needed
-        if node.parent_id:
-            parent = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.id == node.parent_id
-            ).first()
-            if parent:
-                # Check if parent has other children
-                sibling_count = self.db.query(TaxonomyNode).filter(
-                    TaxonomyNode.parent_id == node.parent_id,
-                    TaxonomyNode.id != node_id
-                ).count()
-                parent.is_leaf = (sibling_count == 0)
+        # Update parent's is_leaf flag
+        self._update_parent_is_leaf_after_deletion(node)
         
         # Delete node
         self.db.delete(node)
@@ -461,6 +575,87 @@ class TaxonomyService:
             "reparented_count": reparented_count
         }
     
+    def _validate_move_target(
+        self,
+        node_id: uuid.UUID,
+        new_parent_id: Optional[uuid.UUID]
+    ) -> Optional[TaxonomyNode]:
+        """
+        Validate move target and prevent circular references.
+        
+        Args:
+            node_id: Node being moved
+            new_parent_id: Target parent UUID
+            
+        Returns:
+            New parent node (or None for root)
+            
+        Raises:
+            ValueError: If parent not found or circular reference detected
+        """
+        if not new_parent_id:
+            return None
+        
+        new_parent = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.id == new_parent_id
+        ).first()
+        if not new_parent:
+            raise ValueError(f"New parent node with id {new_parent_id} not found")
+        
+        # Prevent moving to own descendant
+        if new_parent_id == node_id or self._is_descendant(new_parent_id, node_id):
+            raise ValueError("Cannot move node to its own descendant (circular reference)")
+        
+        return new_parent
+    
+    def _update_old_parent_after_move(self, node: TaxonomyNode) -> None:
+        """
+        Update old parent's is_leaf flag after node is moved.
+        
+        Args:
+            node: Node being moved
+        """
+        if not node.parent_id:
+            return
+        
+        old_parent = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.id == node.parent_id
+        ).first()
+        if not old_parent:
+            return
+        
+        # Check if old parent has other children
+        sibling_count = self.db.query(TaxonomyNode).filter(
+            TaxonomyNode.parent_id == node.parent_id,
+            TaxonomyNode.id != node.id
+        ).count()
+        old_parent.is_leaf = (sibling_count == 0)
+    
+    def _update_node_hierarchy(
+        self,
+        node: TaxonomyNode,
+        new_parent: Optional[TaxonomyNode],
+        new_parent_id: Optional[uuid.UUID]
+    ) -> None:
+        """
+        Update node's parent, level, and path.
+        
+        Args:
+            node: Node to update
+            new_parent: New parent node (or None for root)
+            new_parent_id: New parent UUID
+        """
+        node.parent_id = new_parent_id
+        
+        if new_parent:
+            node.level = new_parent.level + 1
+            new_parent.is_leaf = False
+        else:
+            node.level = 0
+        
+        node.path = self._compute_path(new_parent_id, node.slug)
+        node.updated_at = datetime.now(timezone.utc)
+
     def move_node(
         self,
         node_id: uuid.UUID,
@@ -468,19 +663,6 @@ class TaxonomyService:
     ) -> TaxonomyNode:
         """
         Move taxonomy node to a new parent (reparenting).
-        
-        Algorithm:
-        1. Query node by id
-        2. If new_parent_id is same as current, return node unchanged
-        3. If new_parent_id provided:
-           - Validate new parent exists
-           - Prevent circular reference (node cannot be moved to its own descendant)
-        4. Store old path
-        5. Update old parent's is_leaf flag
-        6. Update node's parent_id, level, and path
-        7. Update new parent's is_leaf flag
-        8. Update all descendants' level and path
-        9. Commit and return
         
         Args:
             node_id: Node UUID to move
@@ -492,63 +674,24 @@ class TaxonomyService:
         Raises:
             ValueError: If node not found, parent not found, or circular reference detected
         """
-        # Query node
-        node = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == node_id).first()
-        if not node:
-            raise ValueError(f"Node with id {node_id} not found")
+        # Get node
+        node = self._get_node_by_id(node_id)
         
         # Check if already at target parent
         if node.parent_id == new_parent_id:
             return node
         
-        # Validate new parent and prevent circular references
-        if new_parent_id:
-            new_parent = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.id == new_parent_id
-            ).first()
-            if not new_parent:
-                raise ValueError(f"New parent node with id {new_parent_id} not found")
-            
-            # Prevent moving to own descendant
-            if new_parent_id == node_id or self._is_descendant(new_parent_id, node_id):
-                raise ValueError("Cannot move node to its own descendant (circular reference)")
+        # Validate move target
+        new_parent = self._validate_move_target(node_id, new_parent_id)
         
-        # Store old path and parent
+        # Store old path
         old_path = node.path
-        old_parent_id = node.parent_id
         
         # Update old parent's is_leaf flag
-        if old_parent_id:
-            old_parent = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.id == old_parent_id
-            ).first()
-            if old_parent:
-                # Check if old parent has other children
-                sibling_count = self.db.query(TaxonomyNode).filter(
-                    TaxonomyNode.parent_id == old_parent_id,
-                    TaxonomyNode.id != node_id
-                ).count()
-                old_parent.is_leaf = (sibling_count == 0)
+        self._update_old_parent_after_move(node)
         
-        # Update node
-        node.parent_id = new_parent_id
-        
-        # Update level
-        if new_parent_id:
-            new_parent = self.db.query(TaxonomyNode).filter(
-                TaxonomyNode.id == new_parent_id
-            ).first()
-            node.level = new_parent.level + 1
-            # Update new parent's is_leaf flag
-            new_parent.is_leaf = False
-        else:
-            node.level = 0
-        
-        # Update path
-        node.path = self._compute_path(new_parent_id, node.slug)
-        
-        # Update timestamp
-        node.updated_at = datetime.now(timezone.utc)
+        # Update node hierarchy
+        self._update_node_hierarchy(node, new_parent, new_parent_id)
         
         # Update descendants
         self._update_descendants(node, old_path)
@@ -560,6 +703,55 @@ class TaxonomyService:
 
     # Hierarchical queries
     
+    def _query_subtree_nodes(
+        self,
+        root: TaxonomyNode,
+        max_depth: Optional[int]
+    ) -> List[TaxonomyNode]:
+        """
+        Query all nodes in a subtree.
+        
+        Args:
+            root: Root node of subtree
+            max_depth: Optional maximum depth relative to root
+            
+        Returns:
+            List of nodes in subtree
+        """
+        query = self.db.query(TaxonomyNode).filter(
+            or_(
+                TaxonomyNode.id == root.id,
+                TaxonomyNode.path.like(f"{root.path}/%")
+            )
+        )
+        
+        if max_depth is not None:
+            max_level = root.level + max_depth
+            query = query.filter(TaxonomyNode.level <= max_level)
+        
+        return query.all()
+    
+    def _query_full_tree_nodes(self, max_depth: Optional[int]) -> tuple[List[TaxonomyNode], List[TaxonomyNode]]:
+        """
+        Query root nodes and all nodes for full tree.
+        
+        Args:
+            max_depth: Optional maximum depth
+            
+        Returns:
+            Tuple of (root_nodes, all_nodes)
+        """
+        roots = self.db.query(TaxonomyNode).filter(TaxonomyNode.level == 0).all()
+        
+        if max_depth is not None:
+            all_nodes = self.db.query(TaxonomyNode).filter(
+                TaxonomyNode.level <= max_depth
+            ).all()
+        else:
+            all_nodes = self.db.query(TaxonomyNode).all()
+        
+        return roots, all_nodes
+
     def get_tree(
         self,
         root_id: Optional[uuid.UUID] = None,
@@ -567,13 +759,6 @@ class TaxonomyService:
     ) -> List[Dict[str, Any]]:
         """
         Retrieve nested taxonomy tree structure.
-        
-        Algorithm:
-        1. If root_id provided, query subtree starting from root
-        2. Else, query all root nodes (level=0)
-        3. For each node, recursively build children
-        4. Respect max_depth limit if provided
-        5. Return nested structure
         
         Args:
             root_id: Optional root node UUID for subtree (None for full tree)
@@ -587,43 +772,12 @@ class TaxonomyService:
         """
         if root_id:
             # Query specific subtree
-            root = self.db.query(TaxonomyNode).filter(TaxonomyNode.id == root_id).first()
-            if not root:
-                raise ValueError(f"Root node with id {root_id} not found")
-            
-            # Query all descendants
-            if max_depth is not None:
-                max_level = root.level + max_depth
-                nodes = self.db.query(TaxonomyNode).filter(
-                    or_(
-                        TaxonomyNode.id == root_id,
-                        TaxonomyNode.path.like(f"{root.path}/%")
-                    ),
-                    TaxonomyNode.level <= max_level
-                ).all()
-            else:
-                nodes = self.db.query(TaxonomyNode).filter(
-                    or_(
-                        TaxonomyNode.id == root_id,
-                        TaxonomyNode.path.like(f"{root.path}/%")
-                    )
-                ).all()
-            
-            # Build tree starting from root
+            root = self._get_node_by_id(root_id)
+            nodes = self._query_subtree_nodes(root, max_depth)
             return [self._build_tree_node(root, nodes, max_depth)]
         else:
-            # Query all root nodes
-            roots = self.db.query(TaxonomyNode).filter(TaxonomyNode.level == 0).all()
-            
-            # Query all nodes if needed
-            if max_depth is not None:
-                all_nodes = self.db.query(TaxonomyNode).filter(
-                    TaxonomyNode.level <= max_depth
-                ).all()
-            else:
-                all_nodes = self.db.query(TaxonomyNode).all()
-            
-            # Build tree for each root
+            # Query full tree
+            roots, all_nodes = self._query_full_tree_nodes(max_depth)
             return [self._build_tree_node(root, all_nodes, max_depth) for root in roots]
     
     def _build_tree_node(
@@ -784,7 +938,7 @@ class TaxonomyService:
         # Remove existing predicted classifications
         self.db.query(ResourceTaxonomy).filter(
             ResourceTaxonomy.resource_id == resource_id,
-            ResourceTaxonomy.is_predicted == True
+            ResourceTaxonomy.is_predicted
         ).delete(synchronize_session=False)
         
         # Create new classifications

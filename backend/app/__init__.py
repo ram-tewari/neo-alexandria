@@ -18,6 +18,9 @@ The application includes the following feature modules:
 - Classification: Personal classification system with UDC-inspired codes
 """
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -41,6 +44,50 @@ from .routers.discovery import router as discovery_router
 from .routers.monitoring import router as monitoring_router
 from .monitoring import setup_monitoring
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager for startup and shutdown events.
+    
+    Startup:
+    - Register event hooks for automatic data consistency
+    - Initialize Redis cache connection
+    - Log event system initialization
+    
+    Shutdown:
+    - Clean up resources if needed
+    """
+    # Startup
+    logger.info("Starting Neo Alexandria 2.0...")
+    
+    # Initialize Redis cache connection
+    try:
+        from .cache.redis_cache import cache
+        if cache.ping():
+            logger.info("Redis cache connection established successfully")
+        else:
+            logger.warning("Redis cache connection failed - caching will be disabled")
+    except Exception as e:
+        logger.warning(f"Redis cache initialization failed: {e} - caching will be disabled")
+    
+    # Register event hooks for automatic data consistency
+    try:
+        from .events.hooks import register_all_hooks
+        register_all_hooks()
+        logger.info("Event system initialized - all hooks registered for automatic data consistency")
+    except Exception as e:
+        logger.error(f"Failed to register event hooks: {e}", exc_info=True)
+    
+    logger.info("Neo Alexandria 2.0 startup complete")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Neo Alexandria 2.0...")
+
 
 def create_app() -> FastAPI:
     """
@@ -50,11 +97,16 @@ def create_app() -> FastAPI:
     - Database table creation for SQLite environments
     - All feature routers (resources, curation, search, authority, classification)
     - Application metadata and versioning
+    - Event system and Redis cache initialization via lifespan
     
     Returns:
         FastAPI: Configured application instance ready for deployment
     """
-    app = FastAPI(title="Neo Alexandria 2.0", version="0.4.0")
+    app = FastAPI(
+        title="Neo Alexandria 2.0",
+        version="0.4.0",
+        lifespan=lifespan
+    )
     
     # Add CORS middleware to allow frontend connections
     app.add_middleware(

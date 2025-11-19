@@ -8,13 +8,10 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from backend.app.services.quality_service import QualityService
 from backend.app.services.summarization_evaluator import SummarizationEvaluator
-from backend.app.database.models import Resource, Citation, TaxonomyNode, ResourceTaxonomy
+from backend.app.database.models import Resource, Citation, TaxonomyNode
 
 
-@pytest.fixture
-def quality_service(db_session: Session):
-    """Create QualityService instance."""
-    return QualityService(db_session)
+# quality_service fixture is now in integration/phase9_quality/conftest.py
 
 
 @pytest.fixture
@@ -49,18 +46,18 @@ class TestEndToEndQualityAssessment:
         # Compute quality
         result = quality_service.compute_quality(resource.id)
         
-        # Verify all dimensions computed
-        assert result["accuracy"] is not None
-        assert result["completeness"] is not None
-        assert result["consistency"] is not None
-        assert result["timeliness"] is not None
-        assert result["relevance"] is not None
-        assert result["overall"] is not None
+        # Verify all dimensions computed (result is QualityScore domain object)
+        assert result.accuracy is not None
+        assert result.completeness is not None
+        assert result.consistency is not None
+        assert result.timeliness is not None
+        assert result.relevance is not None
+        assert result.overall_score() is not None
         
         # Verify resource updated
         db_session.refresh(resource)
-        assert resource.quality_overall == result["overall"]
-        assert resource.quality_accuracy == result["accuracy"]
+        assert resource.quality_overall == result.overall_score()
+        assert resource.quality_accuracy == result.accuracy
         assert resource.quality_last_computed is not None
         assert resource.quality_computation_version is not None
         
@@ -102,8 +99,8 @@ class TestEndToEndQualityAssessment:
         # Compute quality
         result = quality_service.compute_quality(resource.id)
         
-        # Accuracy should benefit from valid citations
-        assert result["accuracy"] > 0.5
+        # Accuracy should benefit from valid citations (result is QualityScore domain object)
+        assert result.accuracy > 0.5
     
     def test_quality_with_phase65_scholarly_metadata(
         self, quality_service, db_session
@@ -129,9 +126,9 @@ class TestEndToEndQualityAssessment:
         # Compute quality
         result = quality_service.compute_quality(resource.id)
         
-        # Accuracy and completeness should benefit from metadata
-        assert result["accuracy"] > 0.6
-        assert result["completeness"] > 0.7
+        # Accuracy and completeness should benefit from metadata (result is QualityScore domain object)
+        assert result.accuracy > 0.6
+        assert result.completeness > 0.7
     
     def test_quality_with_phase85_classification(
         self, quality_service, db_session
@@ -265,7 +262,7 @@ class TestOutlierDetectionWorkflow:
         
         # Verify outliers flagged
         outliers = db_session.query(Resource).filter(
-            Resource.is_quality_outlier == True
+            Resource.is_quality_outlier
         ).all()
         
         assert len(outliers) > 0
@@ -273,7 +270,7 @@ class TestOutlierDetectionWorkflow:
         for outlier in outliers:
             assert outlier.outlier_score is not None
             assert outlier.outlier_reasons is not None
-            assert outlier.needs_quality_review == True
+            assert outlier.needs_quality_review
 
 
 class TestQualityDegradationWorkflow:
@@ -362,7 +359,7 @@ class TestCrossPhaseIntegration:
         # 4. Compute quality (Phase 9)
         quality_result = quality_service.compute_quality(resource.id)
         
-        assert quality_result["overall"] > 0.6  # Should have good quality
+        assert quality_result.overall_score() > 0.6  # Should have good quality (QualityScore domain object)
         
         # 5. Evaluate summary (Phase 9)
         summary_result = summarization_evaluator.evaluate_summary(

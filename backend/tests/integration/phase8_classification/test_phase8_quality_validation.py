@@ -110,6 +110,15 @@ def quality_test_dataset(test_db):
         data["read_status"] = "unread"
         data["sparse_embedding_updated_at"] = now - timedelta(days=10)
         
+        # Add quality dimensions for Phase 9 compatibility
+        quality = data["quality_score"]
+        data["quality_overall"] = quality
+        data["quality_accuracy"] = min(1.0, quality + 0.02)
+        data["quality_completeness"] = min(1.0, quality - 0.01)
+        data["quality_consistency"] = min(1.0, quality + 0.01)
+        data["quality_timeliness"] = min(1.0, quality - 0.02)
+        data["quality_relevance"] = min(1.0, quality + 0.03)
+        
         resource = Resource(**data)
         db.add(resource)
         resources.append(resource)

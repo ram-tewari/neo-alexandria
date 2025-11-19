@@ -3,8 +3,6 @@
 Simple test script to verify the classification tree API response format.
 """
 
-import sys
-import os
 
 from backend.app.services.classification_service import PersonalClassification
 from backend.app.database.base import get_sync_db

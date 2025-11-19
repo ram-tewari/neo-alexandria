@@ -8,7 +8,6 @@ This script verifies that the methods are properly implemented by:
 """
 
 import ast
-import inspect
 
 print("=" * 80)
 print("Verifying Active Learning Implementation")

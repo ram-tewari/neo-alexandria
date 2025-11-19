@@ -7,13 +7,10 @@ import pytest
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.app.services.quality_service import QualityService
-from backend.app.database.models import Resource, Citation, TaxonomyNode, ResourceTaxonomy
+from backend.app.database.models import Resource, Citation, TaxonomyNode
 
 
-@pytest.fixture
-def quality_service(db_session: Session):
-    """Create QualityService instance."""
-    return QualityService(db_session)
+# db_session and quality_service fixtures are now in conftest.py
 
 
 @pytest.fixture
@@ -262,16 +259,21 @@ class TestComputeQuality:
         """Test compute_quality with default weights."""
         result = quality_service.compute_quality(base_resource.id)
         
-        assert "accuracy" in result
-        assert "completeness" in result
-        assert "consistency" in result
-        assert "timeliness" in result
-        assert "relevance" in result
-        assert "overall" in result
+        # Result should be a QualityScore domain object
+        assert hasattr(result, 'accuracy')
+        assert hasattr(result, 'completeness')
+        assert hasattr(result, 'consistency')
+        assert hasattr(result, 'timeliness')
+        assert hasattr(result, 'relevance')
+        assert hasattr(result, 'overall_score')
         
         # Verify all scores are in valid range
-        for key, value in result.items():
-            assert 0.0 <= value <= 1.0
+        assert 0.0 <= result.accuracy <= 1.0
+        assert 0.0 <= result.completeness <= 1.0
+        assert 0.0 <= result.consistency <= 1.0
+        assert 0.0 <= result.timeliness <= 1.0
+        assert 0.0 <= result.relevance <= 1.0
+        assert 0.0 <= result.overall_score() <= 1.0
         
         # Verify resource was updated
         db_session.refresh(base_resource)
@@ -321,7 +323,7 @@ class TestComputeQuality:
     
     def test_compute_quality_backward_compatibility(self, quality_service, base_resource, db_session):
         """Test compute_quality updates legacy quality_score field."""
-        result = quality_service.compute_quality(base_resource.id)
+        quality_service.compute_quality(base_resource.id)
         
         db_session.refresh(base_resource)
         assert base_resource.quality_score == base_resource.quality_overall

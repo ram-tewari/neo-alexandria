@@ -1,0 +1,803 @@
+{
+  "metadata": {
+    "dataset_name": "classification_benchmark_v1",
+    "created_at": "2025-11-15",
+    "num_samples": 200,
+    "num_classes": 10,
+    "description": "Balanced test set for taxonomy classification with 200 samples across 10 categories"
+  },
+  "samples": [
+    {
+      "text": "Introduction to neural networks and deep learning architectures. This comprehensive guide covers feedforward networks, convolutional neural networks, and recurrent neural networks. Learn about backpropagation, gradient descent optimization, and regularization techniques.",
+      "true_labels": ["machine-learning", "deep-learning"],
+      "taxonomy_node_ids": ["ml-node-1", "dl-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Quantum computing fundamentals: qubits, superposition, and entanglement. Explore quantum gates, quantum circuits, and quantum algorithms including Shor's algorithm and Grover's search algorithm.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Database design principles and normalization. Understanding first, second, and third normal forms. Entity-relationship diagrams, ACID properties, and transaction management in relational databases.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Web development with React and modern JavaScript. Component-based architecture, hooks, state management with Redux, and server-side rendering with Next.js.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Cybersecurity best practices: encryption, authentication, and authorization. Understanding common vulnerabilities like SQL injection, XSS, and CSRF attacks. Implementing secure coding practices.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Cloud computing architectures on AWS, Azure, and Google Cloud. Microservices, containerization with Docker, orchestration with Kubernetes, and serverless computing patterns.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Data structures and algorithms: arrays, linked lists, trees, graphs, and hash tables. Time complexity analysis, Big O notation, and algorithm optimization strategies.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Natural language processing techniques: tokenization, part-of-speech tagging, named entity recognition, and sentiment analysis. Transformer models like BERT and GPT for text understanding.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Computer vision fundamentals: image processing, feature extraction, object detection, and image segmentation. Convolutional neural networks for visual recognition tasks.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Blockchain technology and distributed ledger systems. Consensus mechanisms, smart contracts, cryptocurrency fundamentals, and decentralized applications.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Advanced machine learning: ensemble methods including random forests, gradient boosting, and XGBoost. Feature engineering, cross-validation, and hyperparameter tuning strategies.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Quantum error correction codes and fault-tolerant quantum computation. Surface codes, stabilizer codes, and the threshold theorem for quantum computing.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "NoSQL databases: MongoDB, Cassandra, and Redis. Document stores, column-family stores, key-value stores, and graph databases. CAP theorem and eventual consistency.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Frontend performance optimization: code splitting, lazy loading, tree shaking, and bundle size reduction. Web vitals, lighthouse scores, and progressive web applications.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Penetration testing methodologies and ethical hacking. Reconnaissance, scanning, exploitation, and post-exploitation techniques. OWASP Top 10 vulnerabilities.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Infrastructure as code with Terraform and CloudFormation. Automated deployment pipelines, blue-green deployments, and canary releases in cloud environments.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Dynamic programming techniques for optimization problems. Memoization, tabulation, and solving classic problems like knapsack, longest common subsequence, and edit distance.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Attention mechanisms and transformer architectures in NLP. Self-attention, multi-head attention, positional encoding, and pre-training strategies for language models.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Semantic segmentation and instance segmentation in computer vision. U-Net, Mask R-CNN, and DeepLab architectures for pixel-level classification.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Decentralized finance (DeFi) protocols and automated market makers. Liquidity pools, yield farming, and smart contract security in blockchain applications.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Supervised learning algorithms: linear regression, logistic regression, support vector machines, and decision trees. Model evaluation metrics and confusion matrices.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Quantum annealing and adiabatic quantum computation. D-Wave systems, QUBO formulations, and optimization problems in quantum computing.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Database indexing strategies: B-trees, hash indexes, and full-text search indexes. Query optimization and execution plans in SQL databases.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "RESTful API design principles and GraphQL. HTTP methods, status codes, authentication with JWT, and API versioning strategies.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Network security protocols: TLS/SSL, IPSec, and VPNs. Firewall configurations, intrusion detection systems, and security information and event management.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Serverless architectures with AWS Lambda, Azure Functions, and Google Cloud Functions. Event-driven computing, cold starts, and function composition patterns.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Graph algorithms: breadth-first search, depth-first search, Dijkstra's algorithm, and minimum spanning trees. Applications in network analysis and routing.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Word embeddings and distributed representations: Word2Vec, GloVe, and FastText. Semantic similarity and analogy tasks in natural language processing.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Object detection architectures: YOLO, SSD, and Faster R-CNN. Real-time detection, anchor boxes, and non-maximum suppression in computer vision.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Consensus algorithms in distributed systems: Proof of Work, Proof of Stake, and Byzantine Fault Tolerance. Blockchain scalability and layer-2 solutions.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Reinforcement learning fundamentals: Markov decision processes, Q-learning, and policy gradients. Applications in game playing and robotics.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Quantum cryptography and quantum key distribution. BB84 protocol, quantum teleportation, and post-quantum cryptography algorithms.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Database sharding and partitioning strategies. Horizontal scaling, consistent hashing, and distributed database architectures.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Server-side rendering vs client-side rendering. Hydration, static site generation, and incremental static regeneration in modern web frameworks.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Zero-trust security architecture and micro-segmentation. Identity and access management, privileged access management, and security orchestration.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Multi-cloud strategies and cloud-native application design. Service mesh architectures, observability, and distributed tracing in microservices.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Sorting algorithms: quicksort, mergesort, heapsort, and radix sort. Stability, in-place sorting, and average-case vs worst-case complexity analysis.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Machine translation and sequence-to-sequence models. Encoder-decoder architectures, beam search, and evaluation metrics like BLEU score.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Generative adversarial networks for image synthesis. Generator and discriminator architectures, training stability, and applications in style transfer.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Non-fungible tokens (NFTs) and digital asset ownership. ERC-721 and ERC-1155 standards, metadata storage, and marketplace implementations.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Unsupervised learning: k-means clustering, hierarchical clustering, and dimensionality reduction with PCA and t-SNE.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Variational quantum eigensolver and quantum approximate optimization algorithm. Hybrid quantum-classical algorithms for near-term quantum devices.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Time-series databases: InfluxDB, TimescaleDB, and Prometheus. Data retention policies, downsampling, and continuous queries.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "WebAssembly and high-performance web applications. Compiling C/C++/Rust to WASM, memory management, and JavaScript interoperability.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Application security testing: static analysis (SAST), dynamic analysis (DAST), and interactive analysis (IAST). DevSecOps integration.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Edge computing and fog computing architectures. Content delivery networks, edge caching, and distributed computing at the network edge.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "String matching algorithms: Knuth-Morris-Pratt, Boyer-Moore, and Rabin-Karp. Pattern matching and text search optimization.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Question answering systems and reading comprehension. SQuAD dataset, extractive vs abstractive QA, and retrieval-augmented generation.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "3D computer vision: point cloud processing, depth estimation, and 3D reconstruction. SLAM algorithms and structure from motion.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Cross-chain interoperability and blockchain bridges. Atomic swaps, wrapped tokens, and multi-chain protocols.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Transfer learning and fine-tuning pre-trained models. Domain adaptation, few-shot learning, and meta-learning approaches.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Quantum machine learning: quantum neural networks, quantum kernel methods, and variational quantum classifiers.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Database replication and high availability. Master-slave replication, multi-master replication, and conflict resolution strategies.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "CSS Grid and Flexbox layouts. Responsive design patterns, mobile-first development, and CSS-in-JS solutions.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Cryptographic hash functions and digital signatures. SHA-256, HMAC, RSA, and elliptic curve cryptography.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Container orchestration with Kubernetes. Pods, services, deployments, and StatefulSets. Helm charts and GitOps workflows.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Divide and conquer algorithms. Merge sort, quick sort, binary search, and Strassen's matrix multiplication.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Text summarization techniques: extractive and abstractive summarization. ROUGE metrics and evaluation of summary quality.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Image classification with convolutional neural networks. ResNet, VGG, and EfficientNet architectures. Transfer learning with ImageNet.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Smart contract development with Solidity. Gas optimization, security patterns, and common vulnerabilities in Ethereum contracts.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Neural architecture search and AutoML. Hyperparameter optimization with Bayesian optimization and genetic algorithms.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Topological quantum computing and anyons. Majorana fermions, braiding operations, and fault-tolerant quantum gates.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "ACID vs BASE consistency models. Eventual consistency, strong consistency, and consistency trade-offs in distributed databases.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "State management in React applications. Context API, Redux, MobX, and Zustand. When to use local vs global state.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Threat modeling and risk assessment. STRIDE methodology, attack trees, and security requirements engineering.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Cloud cost optimization strategies. Reserved instances, spot instances, auto-scaling policies, and resource tagging.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Greedy algorithms and optimization. Activity selection, Huffman coding, and minimum spanning tree algorithms.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Named entity recognition and information extraction. CRF models, BiLSTM-CRF, and transformer-based NER systems.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Video understanding and action recognition. 3D CNNs, two-stream networks, and temporal modeling in computer vision.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Layer-2 scaling solutions: Lightning Network, Plasma, and Optimistic Rollups. Blockchain throughput and transaction finality.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Anomaly detection and outlier analysis. Isolation forests, one-class SVM, and autoencoders for unsupervised anomaly detection.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Quantum simulation of molecular systems. Variational quantum eigensolver for chemistry, quantum phase estimation, and Hamiltonian simulation.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Database connection pooling and performance tuning. Query caching, prepared statements, and connection lifecycle management.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "TypeScript for type-safe JavaScript development. Interfaces, generics, type inference, and advanced type system features.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Security operations center (SOC) and incident response. SIEM platforms, threat intelligence, and security playbooks.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Cloud-native storage solutions. Object storage (S3), block storage (EBS), and file storage (EFS). Storage classes and lifecycle policies.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Backtracking algorithms for constraint satisfaction problems. N-queens, Sudoku solver, and graph coloring.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Dialogue systems and conversational AI. Intent classification, slot filling, and dialogue state tracking in chatbots.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Facial recognition and biometric authentication. Face detection, face alignment, and deep face embeddings for verification.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Decentralized autonomous organizations (DAOs) and governance mechanisms. Voting systems, treasury management, and on-chain governance.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Model interpretability and explainable AI. SHAP values, LIME, attention visualization, and feature importance analysis.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Quantum supremacy and quantum advantage. Benchmarking quantum computers, random circuit sampling, and near-term applications.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Graph databases and property graph models. Neo4j, Cypher query language, and graph traversal algorithms.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Web accessibility (a11y) and WCAG guidelines. Screen readers, keyboard navigation, ARIA attributes, and inclusive design.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Malware analysis and reverse engineering. Static analysis, dynamic analysis, sandboxing, and behavioral detection.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Cloud disaster recovery and business continuity. Backup strategies, RTO/RPO objectives, and multi-region failover.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Computational geometry algorithms. Convex hull, line intersection, closest pair of points, and Voronoi diagrams.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Sentiment analysis and opinion mining. Aspect-based sentiment analysis, emotion detection, and stance detection in text.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Medical image analysis and diagnostic AI. X-ray classification, CT scan segmentation, and pathology detection with deep learning.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Zero-knowledge proofs and privacy-preserving protocols. zk-SNARKs, zk-STARKs, and confidential transactions in blockchain.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Federated learning and privacy-preserving machine learning. Differential privacy, secure multi-party computation, and distributed model training.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Quantum entanglement and Bell inequalities. EPR paradox, quantum non-locality, and applications in quantum communication.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Database migration strategies and schema evolution. Blue-green deployments, rolling migrations, and backward compatibility.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Progressive web apps and service workers. Offline functionality, push notifications, and app-like experiences on the web.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Cloud security posture management and compliance. CIS benchmarks, SOC 2, ISO 27001, and automated security auditing.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Serverless databases and managed database services. Aurora Serverless, DynamoDB, and Firestore for cloud-native applications.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Approximation algorithms for NP-hard problems. Vertex cover, traveling salesman, and set cover approximations.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Text generation with language models. Beam search, nucleus sampling, and controllable generation techniques.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Optical character recognition (OCR) and document understanding. Text detection, text recognition, and layout analysis.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Blockchain scalability trilemma: decentralization, security, and scalability. Sharding, state channels, and sidechains.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Time series forecasting with ARIMA, LSTM, and Prophet. Seasonality detection, trend analysis, and prediction intervals.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Quantum sensors and metrology. Atomic clocks, quantum magnetometers, and precision measurements with quantum systems.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Distributed transactions and two-phase commit. Saga pattern, eventual consistency, and compensating transactions.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "WebSockets and real-time communication. Server-sent events, WebRTC, and building real-time collaborative applications.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Container security and image scanning. Vulnerability assessment, runtime protection, and secure container registries.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Cloud monitoring and observability. Metrics, logs, traces, and distributed tracing with OpenTelemetry.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Randomized algorithms and probabilistic analysis. Monte Carlo methods, Las Vegas algorithms, and expected runtime analysis.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Coreference resolution and entity linking. Pronoun resolution, mention detection, and knowledge base linking in NLP.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Autonomous driving perception systems. Lane detection, traffic sign recognition, and pedestrian detection with computer vision.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Tokenomics and cryptocurrency economics. Supply mechanisms, incentive design, and game theory in blockchain protocols.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Batch normalization and layer normalization in neural networks. Training stability, internal covariate shift, and normalization techniques.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Quantum algorithms for linear systems. HHL algorithm, quantum matrix inversion, and applications in machine learning.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Database backup and recovery strategies. Point-in-time recovery, incremental backups, and disaster recovery testing.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Micro-frontends and modular web architecture. Module federation, independent deployments, and team autonomy in large applications.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "API security best practices. OAuth 2.0, OpenID Connect, rate limiting, and API gateway security patterns.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Cloud networking fundamentals. VPCs, subnets, security groups, and network ACLs. VPN and Direct Connect configurations.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Amortized analysis of data structures. Aggregate method, accounting method, and potential method for algorithm analysis.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Dependency parsing and syntactic analysis. Transition-based parsing, graph-based parsing, and universal dependencies.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Image super-resolution and enhancement. SRCNN, ESRGAN, and perceptual loss functions for high-quality image upscaling.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Interplanetary File System (IPFS) and decentralized storage. Content addressing, DHT, and peer-to-peer file sharing.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Gradient descent optimization algorithms. SGD, Adam, RMSprop, and learning rate scheduling strategies.",
+      "true_labels": ["machine-learning"],
+      "taxonomy_node_ids": ["ml-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Quantum networking and quantum internet. Quantum repeaters, entanglement distribution, and quantum communication protocols.",
+      "true_labels": ["quantum-computing"],
+      "taxonomy_node_ids": ["qc-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "In-memory databases and caching strategies. Redis, Memcached, and cache invalidation patterns.",
+      "true_labels": ["databases"],
+      "taxonomy_node_ids": ["db-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Testing strategies for web applications. Unit testing, integration testing, end-to-end testing with Cypress and Playwright.",
+      "true_labels": ["web-development"],
+      "taxonomy_node_ids": ["web-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Blockchain forensics and transaction analysis. Address clustering, deanonymization techniques, and on-chain analytics.",
+      "true_labels": ["cybersecurity"],
+      "taxonomy_node_ids": ["sec-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Infrastructure monitoring with Prometheus and Grafana. Metrics collection, alerting rules, and dashboard creation.",
+      "true_labels": ["cloud-computing"],
+      "taxonomy_node_ids": ["cloud-node-1"],
+      "difficulty": "easy"
+    },
+    {
+      "text": "Network flow algorithms. Maximum flow, minimum cut, Ford-Fulkerson algorithm, and bipartite matching.",
+      "true_labels": ["algorithms"],
+      "taxonomy_node_ids": ["algo-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Multilingual NLP and cross-lingual transfer. mBERT, XLM-R, and zero-shot cross-lingual classification.",
+      "true_labels": ["natural-language-processing"],
+      "taxonomy_node_ids": ["nlp-node-1"],
+      "difficulty": "hard"
+    },
+    {
+      "text": "Pose estimation and human activity recognition. OpenPose, keypoint detection, and skeleton-based action recognition.",
+      "true_labels": ["computer-vision"],
+      "taxonomy_node_ids": ["cv-node-1"],
+      "difficulty": "medium"
+    },
+    {
+      "text": "Blockchain consensus mechanisms comparison. PoW vs PoS vs DPoS vs PBFT. Energy efficiency and security trade-offs.",
+      "true_labels": ["blockchain"],
+      "taxonomy_node_ids": ["bc-node-1"],
+      "difficulty": "easy"
+    }
+  ],
+  "class_distribution": {
+    "machine-learning": 20,
+    "quantum-computing": 20,
+    "databases": 20,
+    "web-development": 20,
+    "cybersecurity": 20,
+    "cloud-computing": 20,
+    "algorithms": 20,
+    "natural-language-processing": 20,
+    "computer-vision": 20,
+    "blockchain": 20
+  }
+}

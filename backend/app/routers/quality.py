@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
@@ -119,10 +119,11 @@ async def get_quality_details(
 @router.post("/quality/recalculate", status_code=status.HTTP_202_ACCEPTED)
 async def recalculate_quality(
     request: QualityRecalculateRequest,
-    background: BackgroundTasks,
     db: Session = Depends(get_sync_db),
 ):
     """Trigger quality recomputation for one or more resources."""
+    from ..tasks.celery_tasks import recompute_quality_task
+    
     _get_quality_service(db)
     
     resource_ids = []
@@ -137,33 +138,16 @@ async def recalculate_quality(
         )
     
     for resource_id in resource_ids:
-        background.add_task(
-            _compute_quality_background,
-            str(resource_id),
-            request.weights,
-            str(db.get_bind().url) if db.get_bind() else None
+        recompute_quality_task.apply_async(
+            args=[str(resource_id), request.weights],
+            priority=5,
+            countdown=10
         )
     
     return {
         "status": "accepted",
         "message": f"Quality computation queued for {len(resource_ids)} resource(s)"
     }
-
-
-def _compute_quality_background(resource_id: str, weights: Optional[dict], engine_url: Optional[str]):
-    """Background task to compute quality for a resource."""
-    from ..database.base import SessionLocal
-    
-    db = SessionLocal()
-    try:
-        quality_service = QualityService(db)
-        quality_service.compute_quality(resource_id, weights=weights)
-        db.commit()
-    except Exception as e:
-        print(f"Error computing quality for {resource_id}: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
 
 @router.get("/quality/outliers", response_model=OutlierListResponse)
@@ -248,10 +232,11 @@ async def get_degradation_report(
 async def evaluate_summary(
     resource_id: str,
     use_g_eval: bool = Query(False, description="Whether to use G-Eval (requires OpenAI API)"),
-    background: BackgroundTasks = None,
     db: Session = Depends(get_sync_db),
 ):
     """Trigger summary quality evaluation for a resource."""
+    from ..tasks.celery_tasks import evaluate_summary_task
+    
     resource = db.query(Resource).filter(Resource.id == resource_id).first()
     
     if not resource:
@@ -266,33 +251,15 @@ async def evaluate_summary(
             detail="Resource has no summary to evaluate"
         )
     
-    background.add_task(
-        _evaluate_summary_background,
-        str(resource_id),
-        use_g_eval,
-        str(db.get_bind().url) if db.get_bind() else None
+    evaluate_summary_task.apply_async(
+        args=[str(resource_id), use_g_eval],
+        priority=5
     )
     
     return {
         "status": "accepted",
         "message": f"Summary evaluation queued for resource {str(resource_id)}"
     }
-
-
-def _evaluate_summary_background(resource_id: str, use_g_eval: bool, engine_url: Optional[str]):
-    """Background task to evaluate summary quality."""
-    from ..database.base import SessionLocal
-    
-    db = SessionLocal()
-    try:
-        evaluator = _get_summarization_evaluator(db)
-        evaluator.evaluate_summary(resource_id, use_g_eval=use_g_eval)
-        db.commit()
-    except Exception as e:
-        print(f"Error evaluating summary for {resource_id}: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
 
 @router.get("/quality/distribution", response_model=QualityDistributionResponse)

@@ -10,14 +10,12 @@ Tests cover:
 Requirements: 12.1, 12.2, 12.3, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
 """
 
-import pytest
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch, MagicMock
-import numpy as np
+from unittest.mock import patch
 
 from backend.app.database.models import (
-    TaxonomyNode, ResourceTaxonomy, Resource
+    ResourceTaxonomy, Resource
 )
 from backend.app.services.taxonomy_service import TaxonomyService
 from backend.app.services.ml_classification_service import MLClassificationService
@@ -106,10 +104,10 @@ def test_complete_classification_workflow(test_db):
     # Verify classification details
     for classification in stored_classifications:
         assert classification.resource_id == resource.id
-        assert classification.is_predicted == True
+        assert classification.is_predicted
         assert classification.predicted_by == "test_model_v1.0"
         assert 0.0 <= classification.confidence <= 1.0
-        assert classification.needs_review == False  # High confidence
+        assert not classification.needs_review  # High confidence
         print(f"    - Node: {classification.taxonomy_node_id}, "
               f"Confidence: {classification.confidence:.2f}, "
               f"Needs Review: {classification.needs_review}")
@@ -119,7 +117,7 @@ def test_complete_classification_workflow(test_db):
     db.refresh(dl_node)
     assert ml_node.resource_count == 1
     assert dl_node.resource_count == 1
-    print(f"  ✓ Resource counts updated correctly")
+    print("  ✓ Resource counts updated correctly")
     
     print("\n✅ Complete classification workflow test PASSED")
     db.close()
@@ -223,7 +221,7 @@ def test_active_learning_workflow(test_db):
         if len(uncertain_samples) > 1:
             for i in range(len(uncertain_samples) - 1):
                 assert uncertain_samples[i][1] >= uncertain_samples[i+1][1]
-            print(f"  ✓ Samples sorted by uncertainty")
+            print("  ✓ Samples sorted by uncertainty")
         
         # Print uncertainty scores
         for resource_id, uncertainty_score in uncertain_samples:
@@ -239,7 +237,7 @@ def test_active_learning_workflow(test_db):
         # Remove existing predicted classifications
         db.query(ResourceTaxonomy).filter(
             ResourceTaxonomy.resource_id == most_uncertain_id,
-            ResourceTaxonomy.is_predicted == True
+            ResourceTaxonomy.is_predicted
         ).delete()
         
         # Add manual classifications
@@ -264,7 +262,7 @@ def test_active_learning_workflow(test_db):
         print("\nStep 4: Verifying manual labels...")
         manual_labels = db.query(ResourceTaxonomy).filter(
             ResourceTaxonomy.resource_id == most_uncertain_id,
-            ResourceTaxonomy.is_predicted == False
+            not ResourceTaxonomy.is_predicted
         ).all()
         
         assert len(manual_labels) == 2
@@ -272,7 +270,7 @@ def test_active_learning_workflow(test_db):
         
         # Verify all are manual (not predicted)
         for label in manual_labels:
-            assert label.is_predicted == False
+            assert not label.is_predicted
             assert label.predicted_by == "manual"
             assert label.confidence == 1.0
             print(f"    - Node: {label.taxonomy_node_id}, "
@@ -282,10 +280,10 @@ def test_active_learning_workflow(test_db):
         # Verify predicted labels were removed
         predicted_labels = db.query(ResourceTaxonomy).filter(
             ResourceTaxonomy.resource_id == most_uncertain_id,
-            ResourceTaxonomy.is_predicted == True
+            ResourceTaxonomy.is_predicted
         ).all()
         assert len(predicted_labels) == 0
-        print(f"  ✓ Predicted labels removed correctly")
+        print("  ✓ Predicted labels removed correctly")
     
     print("\n✅ Active learning workflow test PASSED")
     db.close()
@@ -361,7 +359,7 @@ def test_semi_supervised_learning_workflow(test_db):
             confidence_threshold=0.9
         )
         
-        print(f"  ✓ Semi-supervised iteration completed")
+        print("  ✓ Semi-supervised iteration completed")
         print(f"    - F1 Score: {metrics['f1']:.3f}")
         print(f"    - Precision: {metrics['precision']:.3f}")
         print(f"    - Recall: {metrics['recall']:.3f}")
@@ -391,7 +389,7 @@ def test_semi_supervised_learning_workflow(test_db):
         assert call_args[1]['epochs'] == 1
         assert call_args[1]['learning_rate'] == 1e-5
         assert call_args[1]['unlabeled_data'] is None  # No recursion
-        print(f"  ✓ Training parameters correct (epochs=1, lr=1e-5)")
+        print("  ✓ Training parameters correct (epochs=1, lr=1e-5)")
     
     print("\n✅ Semi-supervised learning workflow test PASSED")
     db.close()
@@ -492,7 +490,7 @@ def test_api_endpoints_integration(test_db, client):
     print("\nStep 7: Verifying manual label stored...")
     manual_labels = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
-        ResourceTaxonomy.is_predicted == False
+        not ResourceTaxonomy.is_predicted
     ).all()
     
     assert len(manual_labels) > 0
@@ -555,11 +553,11 @@ def test_classification_service_integration(test_db):
         }
         
         # Classify resource
-        result = classification_service.classify_resource(resource.id)
+        classification_service.classify_resource(resource.id)
         
-        print(f"  ✓ Classification completed")
+        print("  ✓ Classification completed")
         assert mock_predict.called
-        print(f"  ✓ ML classifier was used")
+        print("  ✓ ML classifier was used")
     
     # Verify classification stored
     classifications = db.query(ResourceTaxonomy).filter(
@@ -582,8 +580,8 @@ def test_classification_service_integration(test_db):
     
     # This should use rule-based classification
     # Note: May not produce results if no rules match
-    result = classification_service_rules.classify_resource(resource.id)
-    print(f"  ✓ Rule-based classification completed")
+    classification_service_rules.classify_resource(resource.id)
+    print("  ✓ Rule-based classification completed")
     
     print("\n✅ Classification service integration test PASSED")
     db.close()
@@ -623,7 +621,7 @@ def test_low_confidence_flagging_workflow(test_db):
     db.add(resource)
     db.commit()
     db.refresh(resource)
-    print(f"  ✓ Setup complete")
+    print("  ✓ Setup complete")
     
     # Test 1: High confidence (should not be flagged)
     print("\nTest 1: High confidence classification...")
@@ -639,8 +637,8 @@ def test_low_confidence_flagging_workflow(test_db):
         ResourceTaxonomy.resource_id == resource.id
     ).first()
     
-    assert high_conf.needs_review == False
-    print(f"  ✓ High confidence (0.92) not flagged for review")
+    assert not high_conf.needs_review
+    print("  ✓ High confidence (0.92) not flagged for review")
     
     # Clear classifications
     db.query(ResourceTaxonomy).filter(
@@ -662,9 +660,9 @@ def test_low_confidence_flagging_workflow(test_db):
         ResourceTaxonomy.resource_id == resource.id
     ).first()
     
-    assert low_conf.needs_review == True
+    assert low_conf.needs_review
     assert low_conf.review_priority is not None
-    print(f"  ✓ Low confidence (0.65) flagged for review")
+    print("  ✓ Low confidence (0.65) flagged for review")
     print(f"    - Review Priority: {low_conf.review_priority:.4f}")
     
     print("\n✅ Low confidence flagging workflow test PASSED")
@@ -769,7 +767,7 @@ def test_confidence_threshold_filtering(test_db):
     print("\nSetup: Creating taxonomy nodes...")
     node1 = taxonomy_service.create_node(name="High Confidence Category")
     node2 = taxonomy_service.create_node(name="Low Confidence Category")
-    print(f"  ✓ Created taxonomy nodes")
+    print("  ✓ Created taxonomy nodes")
     
     # Create resource
     resource = Resource(
@@ -784,7 +782,7 @@ def test_confidence_threshold_filtering(test_db):
     db.add(resource)
     db.commit()
     db.refresh(resource)
-    print(f"  ✓ Created resource")
+    print("  ✓ Created resource")
     
     # Test with ClassificationService (threshold = 0.3)
     print("\nTest: Filtering predictions by confidence threshold...")
@@ -812,7 +810,7 @@ def test_confidence_threshold_filtering(test_db):
     assert len(classifications) == 1
     assert classifications[0].taxonomy_node_id == node1.id
     assert classifications[0].confidence >= 0.3
-    print(f"  ✓ Only predictions above threshold (0.3) stored")
+    print("  ✓ Only predictions above threshold (0.3) stored")
     print(f"    - Stored: {len(classifications)} classification(s)")
     print(f"    - Confidence: {classifications[0].confidence:.2f}")
     
@@ -822,9 +820,7 @@ def test_confidence_threshold_filtering(test_db):
 
 if __name__ == "__main__":
     """Run tests manually for debugging."""
-    import sys
         
-    from backend.tests.conftest import test_db, client
     
     print("\n" + "="*70)
     print("PHASE 8.5 INTEGRATION TESTS")

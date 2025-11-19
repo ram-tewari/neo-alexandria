@@ -76,11 +76,11 @@ def verify_implementation():
         print(f"  Description: {requirements['description']}")
         
         if method_name not in methods:
-            print(f"  ✗ Method not found")
+            print("  ✗ Method not found")
             all_passed = False
             continue
         
-        print(f"  ✓ Method exists")
+        print("  ✓ Method exists")
         
         # Check parameters
         method = methods[method_name]
@@ -98,7 +98,7 @@ def verify_implementation():
         if docstring:
             print(f"  ✓ Has docstring ({len(docstring)} chars)")
         else:
-            print(f"  ⚠ No docstring")
+            print("  ⚠ No docstring")
     
     # Check key implementation details in fine_tune
     print("\n" + "="*70)

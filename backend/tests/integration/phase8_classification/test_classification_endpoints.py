@@ -12,7 +12,6 @@ Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
 
 import sys
 import uuid
-from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

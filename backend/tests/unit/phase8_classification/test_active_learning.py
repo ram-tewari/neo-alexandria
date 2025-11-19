@@ -33,9 +33,9 @@ print("=" * 80)
 
 # Create test taxonomy nodes
 print("\n1. Creating test taxonomy nodes...")
-node1_id = str(uuid.uuid4())
-node2_id = str(uuid.uuid4())
-node3_id = str(uuid.uuid4())
+node1_id = uuid.uuid4()
+node2_id = uuid.uuid4()
+node3_id = uuid.uuid4()
 
 node1 = TaxonomyNode(
     id=node1_id,
@@ -73,9 +73,9 @@ print("✓ Created 3 taxonomy nodes")
 
 # Create test resources
 print("\n2. Creating test resources...")
-resource1_id = str(uuid.uuid4())
-resource2_id = str(uuid.uuid4())
-resource3_id = str(uuid.uuid4())
+resource1_id = uuid.uuid4()
+resource2_id = uuid.uuid4()
+resource3_id = uuid.uuid4()
 
 resource1 = Resource(
     id=resource1_id,
@@ -248,16 +248,18 @@ print("TEST 4: Error Handling")
 print("=" * 80)
 
 print("\nTesting with invalid resource ID...")
+invalid_resource_id = uuid.uuid4()  # Valid UUID but non-existent resource
 success = ml_service.update_from_human_feedback(
-    resource_id="invalid-uuid",
+    resource_id=invalid_resource_id,
     correct_taxonomy_ids=[node1_id]
 )
 print(f"✓ Invalid resource handled correctly: {not success}")
 
 print("\nTesting with invalid taxonomy ID...")
+invalid_taxonomy_id = uuid.uuid4()  # Valid UUID but non-existent taxonomy
 success = ml_service.update_from_human_feedback(
     resource_id=resource1_id,
-    correct_taxonomy_ids=["invalid-uuid"]
+    correct_taxonomy_ids=[invalid_taxonomy_id]
 )
 print(f"✓ Invalid taxonomy handled correctly: {not success}")
 

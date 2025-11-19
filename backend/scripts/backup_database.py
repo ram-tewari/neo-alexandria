@@ -66,12 +66,12 @@ def backup_database():
                     print(f"  Size: {backup_size:,} bytes")
                     return backup_path
                 else:
-                    print(f"[ERROR] Backup size mismatch!")
+                    print("[ERROR] Backup size mismatch!")
                     print(f"  Original: {original_size:,} bytes")
                     print(f"  Backup: {backup_size:,} bytes")
                     return None
             else:
-                print(f"[ERROR] Backup file not created")
+                print("[ERROR] Backup file not created")
                 return None
         
         else:

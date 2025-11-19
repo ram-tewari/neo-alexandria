@@ -63,19 +63,14 @@ def sample_resource(db_session):
     return resource
 
 
-def test_update_resource_triggers_quality_recomputation(db_session, sample_resource):
+def test_update_resource_triggers_quality_recomputation(db_session, sample_resource, high_quality_score):
     """Test that updating quality-affecting fields triggers quality recomputation."""
     
     with patch('backend.app.services.quality_service.QualityService') as mock_quality_service:
         mock_service_instance = Mock()
-        mock_service_instance.compute_quality.return_value = {
-            'overall': 0.82,
-            'accuracy': 0.85,
-            'completeness': 0.8,
-            'consistency': 0.8,
-            'timeliness': 0.75,
-            'relevance': 0.85
-        }
+        
+        # Use fixture for QualityScore domain object
+        mock_service_instance.compute_quality.return_value = high_quality_score
         mock_quality_service.return_value = mock_service_instance
         
         # Update a quality-affecting field

@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2025-11-18T01:07:18.348603",
+    "from_version": "v1.1.0",
+    "to_version": "v1.0.0",
+    "reason": "Test rollback",
+    "success": true
+  },
+  {
+    "timestamp": "2025-11-18T01:27:06.914452",
+    "from_version": "v1.1.0",
+    "to_version": "v1.0.0",
+    "reason": "Test rollback",
+    "success": true
+  },
+  {
+    "timestamp": "2025-11-18T13:52:39.009158",
+    "from_version": "v1.1.0",
+    "to_version": "v1.0.0",
+    "reason": "Test rollback",
+    "success": true
+  }
+]

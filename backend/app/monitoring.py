@@ -22,60 +22,88 @@ import asyncio
 from typing import Callable, Any
 from functools import wraps
 
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse
 
 
-# Custom Prometheus metrics
-REQUEST_DURATION = Histogram(
+# Custom Prometheus metrics - use try-except to prevent duplicate registration during tests
+def _get_or_create_metric(metric_class, name, description, labelnames=None):
+    """Get existing metric or create new one, preventing duplicates."""
+    try:
+        # Try to get existing metric from registry
+        return REGISTRY._names_to_collectors.get(name)
+    except:
+        pass
+    
+    # Create new metric
+    try:
+        if labelnames:
+            return metric_class(name, description, labelnames)
+        else:
+            return metric_class(name, description)
+    except ValueError:
+        # Metric already exists, get it from registry
+        return REGISTRY._names_to_collectors.get(name)
+
+
+REQUEST_DURATION = _get_or_create_metric(
+    Histogram,
     'neo_alexandria_request_duration_seconds',
     'Request duration in seconds',
     ['method', 'endpoint', 'status_code']
 )
 
-REQUEST_COUNT = Counter(
+REQUEST_COUNT = _get_or_create_metric(
+    Counter,
     'neo_alexandria_requests_total',
     'Total number of requests',
     ['method', 'endpoint', 'status_code']
 )
 
-INGESTION_SUCCESS = Counter(
+INGESTION_SUCCESS = _get_or_create_metric(
+    Counter,
     'neo_alexandria_ingestion_success_total',
     'Total successful resource ingestions'
 )
 
-INGESTION_FAILURE = Counter(
+INGESTION_FAILURE = _get_or_create_metric(
+    Counter,
     'neo_alexandria_ingestion_failure_total',
     'Total failed resource ingestions',
     ['error_type']
 )
 
-AI_PROCESSING_TIME = Histogram(
+AI_PROCESSING_TIME = _get_or_create_metric(
+    Histogram,
     'neo_alexandria_ai_processing_seconds',
     'AI processing time in seconds',
-    ['operation']  # 'summarize', 'tag', 'classify'
+    ['operation']
 )
 
-DATABASE_QUERY_TIME = Histogram(
+DATABASE_QUERY_TIME = _get_or_create_metric(
+    Histogram,
     'neo_alexandria_database_query_seconds',
     'Database query execution time in seconds',
-    ['operation']  # 'select', 'insert', 'update', 'delete'
+    ['operation']
 )
 
-ACTIVE_INGESTIONS = Gauge(
+ACTIVE_INGESTIONS = _get_or_create_metric(
+    Gauge,
     'neo_alexandria_active_ingestions',
     'Number of currently active ingestion processes'
 )
 
-CACHE_HITS = Counter(
+CACHE_HITS = _get_or_create_metric(
+    Counter,
     'neo_alexandria_cache_hits_total',
     'Total cache hits',
     ['cache_type']
 )
 
-CACHE_MISSES = Counter(
+CACHE_MISSES = _get_or_create_metric(
+    Counter,
     'neo_alexandria_cache_misses_total',
     'Total cache misses',
     ['cache_type']

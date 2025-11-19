@@ -1,102 +1,112 @@
 """
-Neo Alexandria 2.0 - Collection Schemas (Phase 7)
+Neo Alexandria 2.0 - Collection Data Models and Validation
 
-This module defines Pydantic schemas for collection-related API requests and responses.
+This module defines Pydantic schemas for collection data validation and serialization.
+It provides comprehensive models for collection creation, updates, and responses with
+proper validation rules and field constraints.
 
 Related files:
-- app/database/models.py: Collection and CollectionResource models
-- app/routers/collections.py: Collection API endpoints
-- app/services/collection_service.py: Collection business logic
+- app/database/models.py: SQLAlchemy models that these schemas represent
+- app/routers/collections.py: API endpoints that use these schemas
+- app/services/collection_service.py: Business logic that validates with these schemas
+
+Schemas:
+- CollectionBase: Common fields for all collection operations
+- CollectionCreate: Schema for creating new collections
+- CollectionUpdate: Schema for updating existing collections
+- CollectionResponse: Schema for API responses
+- CollectionResourcesUpdate: Schema for batch add/remove resources
 """
 
+import uuid
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class CollectionBase(BaseModel):
-    """Base schema for collection data."""
-    name: str = Field(..., min_length=1, max_length=255, description="Collection name")
-    description: Optional[str] = Field(None, description="Collection description")
-    visibility: str = Field(default="private", description="Access control: private, shared, or public")
+    """Base collection schema with common fields."""
+    
+    name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+    visibility: Optional[Literal["private", "shared", "public"]] = None
+    parent_id: Optional[uuid.UUID] = None
 
 
 class CollectionCreate(CollectionBase):
     """Schema for creating a new collection."""
-    parent_id: Optional[str] = Field(None, description="Parent collection UUID for hierarchical organization")
+    
+    name: str = Field(..., min_length=1, max_length=255, description="Collection name")
+    owner_id: str = Field(..., min_length=1, max_length=255, description="Owner user ID")
+    visibility: Literal["private", "shared", "public"] = Field(default="private", description="Collection visibility")
 
 
-class CollectionUpdate(BaseModel):
-    """Schema for updating collection metadata."""
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Collection name")
-    description: Optional[str] = Field(None, description="Collection description")
-    visibility: Optional[str] = Field(None, description="Access control: private, shared, or public")
-    parent_id: Optional[str] = Field(None, description="Parent collection UUID")
+class CollectionUpdate(CollectionBase):
+    """Schema for updating an existing collection.
+    
+    All fields are optional for partial updates.
+    """
+    pass
 
 
 class ResourceSummary(BaseModel):
-    """Minimal resource information for collection responses."""
-    id: str
-    title: str
-    quality_score: float
-    classification_code: Optional[str] = None
+    """Lightweight resource summary for collection responses."""
+    model_config = ConfigDict(from_attributes=True)
     
-    class Config:
-        from_attributes = True
-
-
-class CollectionResponse(CollectionBase):
-    """Schema for collection API responses."""
-    id: str = Field(..., description="Collection UUID")
-    owner_id: str = Field(..., description="Owner user ID")
-    parent_id: Optional[str] = Field(None, description="Parent collection UUID")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    resource_count: int = Field(default=0, description="Number of resources in collection")
-    
-    class Config:
-        from_attributes = True
-
-
-class CollectionDetailResponse(CollectionResponse):
-    """Detailed collection response with embedded resources."""
-    resources: List[ResourceSummary] = Field(default_factory=list, description="Collection resources")
-    subcollections: List[CollectionResponse] = Field(default_factory=list, description="Child collections")
-
-
-class CollectionListResponse(BaseModel):
-    """Response for collection list endpoint."""
-    items: List[CollectionResponse] = Field(default_factory=list)
-    total: int = Field(..., description="Total count of collections")
-    page: int = Field(..., description="Current page number")
-    limit: int = Field(..., description="Items per page")
-
-
-class ResourceMembershipRequest(BaseModel):
-    """Request to add or remove resources from collection."""
-    resource_ids: List[str] = Field(..., min_items=1, max_items=100, description="Resource UUIDs (max 100)")
-
-
-class ResourceMembershipResponse(BaseModel):
-    """Response for resource membership operations."""
-    collection_id: str
-    added_count: Optional[int] = None
-    removed_count: Optional[int] = None
-    total_resources: int
-
-
-class RecommendationItem(BaseModel):
-    """Recommended resource or collection."""
-    id: str
+    id: uuid.UUID
     title: str
-    type: str = Field(..., description="Type: resource or collection")
-    relevance_score: float = Field(..., ge=0.0, le=1.0, description="Similarity score")
     description: Optional[str] = None
-    quality_score: Optional[float] = None
+    creator: Optional[str] = None
+    type: Optional[str] = None
+    quality_score: float
+    created_at: datetime
+
+
+class CollectionRead(CollectionBase):
+    """Schema for reading a collection (includes all fields)."""
+    
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: uuid.UUID
+    name: str
+    owner_id: str
+    visibility: Literal["private", "shared", "public"]
+    parent_id: Optional[uuid.UUID] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    # Resource count (computed)
+    resource_count: int = 0
+
+
+class CollectionWithResources(CollectionRead):
+    """Schema for collection with populated resources."""
+    
+    resources: List[ResourceSummary] = Field(default_factory=list)
+
+
+class CollectionResourcesUpdate(BaseModel):
+    """Schema for batch add/remove resources from collection."""
+    
+    add_resource_ids: List[uuid.UUID] = Field(default_factory=list, description="Resource IDs to add")
+    remove_resource_ids: List[uuid.UUID] = Field(default_factory=list, description="Resource IDs to remove")
+
+
+class CollectionRecommendation(BaseModel):
+    """Schema for collection-based recommendations."""
+    
+    resource_id: uuid.UUID
+    title: str
+    description: Optional[str] = None
+    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity to collection")
+    reason: str = Field(..., description="Explanation for recommendation")
 
 
 class CollectionRecommendationsResponse(BaseModel):
-    """Response for collection-based recommendations."""
-    collection_id: str
-    resource_recommendations: List[RecommendationItem] = Field(default_factory=list)
-    collection_recommendations: List[RecommendationItem] = Field(default_factory=list)
+    """Schema for collection recommendations response."""
+    
+    collection_id: uuid.UUID
+    collection_name: str
+    recommendations: List[CollectionRecommendation]
+    total: int

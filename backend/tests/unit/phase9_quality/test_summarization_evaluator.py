@@ -3,7 +3,7 @@ Unit tests for SummarizationEvaluator service.
 Tests G-Eval methods, FineSurE metrics, BERTScore, and evaluate_summary.
 """
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 from backend.app.services.summarization_evaluator import SummarizationEvaluator
 from backend.app.database.models import Resource

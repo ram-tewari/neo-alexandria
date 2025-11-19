@@ -456,25 +456,24 @@ class ClassificationService:
             # Use ML classifier
             method = "ml"
             try:
-                # Predict taxonomy nodes
-                predictions = self.ml_classifier.predict(text=content, top_k=5)
+                # Predict taxonomy nodes - returns ClassificationResult domain object
+                result = self.ml_classifier.predict(text=content, top_k=5)
                 
-                # Filter by confidence threshold
-                filtered_predictions = {}
-                for node_id, confidence in predictions.items():
-                    if confidence >= self.confidence_threshold:
-                        filtered_predictions[node_id] = confidence
-                    else:
-                        filtered_count += 1
+                # Filter by confidence threshold using domain object methods
+                high_conf_predictions = [
+                    pred for pred in result.predictions
+                    if pred.confidence >= self.confidence_threshold
+                ]
+                filtered_count = len(result.predictions) - len(high_conf_predictions)
                 
                 # Prepare classifications for TaxonomyService
-                if filtered_predictions and self.taxonomy_service:
+                if high_conf_predictions and self.taxonomy_service:
                     classification_list = [
                         {
-                            "taxonomy_node_id": uuid.UUID(node_id),
-                            "confidence": confidence
+                            "taxonomy_node_id": uuid.UUID(pred.taxonomy_id),
+                            "confidence": pred.confidence
                         }
-                        for node_id, confidence in filtered_predictions.items()
+                        for pred in high_conf_predictions
                     ]
                     
                     # Store classifications

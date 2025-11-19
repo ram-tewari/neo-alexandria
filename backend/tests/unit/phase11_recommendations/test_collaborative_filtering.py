@@ -8,10 +8,9 @@ Uses mocked PyTorch models to avoid loading actual weights.
 import json
 import os
 import tempfile
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 from uuid import uuid4
 
-import numpy as np
 import pytest
 import torch
 

@@ -4,7 +4,6 @@ Migration verification script for Phase 11 deployment.
 Verifies that all required tables and indexes were created successfully.
 """
 
-import os
 import sys
 from pathlib import Path
 

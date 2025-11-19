@@ -20,11 +20,12 @@ import uuid
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 import numpy as np
 
 from backend.app.services.ml_classification_service import MLClassificationService
 from backend.app.database.models import TaxonomyNode, ResourceTaxonomy, Resource
+from backend.app.domain.classification import ClassificationResult, ClassificationPrediction
 
 
 # ============================================================================
@@ -386,18 +387,16 @@ def test_predict_returns_dict_with_confidence_scores(test_db):
             mock_no_grad.return_value = Mock(__enter__=Mock(), __exit__=Mock())
             
             try:
-                predictions = service.predict("Test text", top_k=3)
+                result = service.predict("Test text", top_k=3)
                 
                 # Verify return type
-                assert isinstance(predictions, dict)
+                assert isinstance(result, ClassificationResult)
                 
-                # Verify keys are taxonomy node IDs
-                for key in predictions.keys():
-                    assert key in service.id_to_label.values()
-                
-                # Verify values are confidence scores (0-1)
-                for conf in predictions.values():
-                    assert 0.0 <= conf <= 1.0
+                # Verify predictions are ClassificationPrediction objects
+                for pred in result.predictions:
+                    assert isinstance(pred, ClassificationPrediction)
+                    assert pred.taxonomy_id in service.id_to_label.values()
+                    assert 0.0 <= pred.confidence <= 1.0
                 
             except ImportError:
                 pytest.skip("ML libraries not installed")
@@ -437,12 +436,14 @@ def test_predict_respects_top_k_parameter(test_db):
             
             try:
                 # Test with top_k=3
-                predictions = service.predict("Test text", top_k=3)
-                assert len(predictions) <= 3
+                result = service.predict("Test text", top_k=3)
+                assert isinstance(result, ClassificationResult)
+                assert len(result.predictions) <= 3
                 
                 # Test with top_k=1
-                predictions = service.predict("Test text", top_k=1)
-                assert len(predictions) <= 1
+                result = service.predict("Test text", top_k=1)
+                assert isinstance(result, ClassificationResult)
+                assert len(result.predictions) <= 1
                 
             except ImportError:
                 pytest.skip("ML libraries not installed")
@@ -609,7 +610,7 @@ def test_semi_supervised_iteration_generates_pseudo_labels(test_db):
         }
         
         try:
-            metrics = service._semi_supervised_iteration(
+            service._semi_supervised_iteration(
                 labeled_data=labeled_data,
                 unlabeled_data=unlabeled_data,
                 confidence_threshold=0.9
@@ -652,7 +653,7 @@ def test_semi_supervised_iteration_filters_low_confidence(test_db):
         mock_fine_tune.return_value = {'f1': 0.85, 'precision': 0.87, 'recall': 0.83, 'loss': 0.4}
         
         try:
-            metrics = service._semi_supervised_iteration(
+            service._semi_supervised_iteration(
                 labeled_data=labeled_data,
                 unlabeled_data=unlabeled_data,
                 confidence_threshold=0.9
@@ -947,14 +948,14 @@ def test_update_from_human_feedback_removes_predicted_classifications(test_db):
     # Verify predicted classification removed
     predicted = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
-        ResourceTaxonomy.is_predicted == True
+        ResourceTaxonomy.is_predicted
     ).all()
     assert len(predicted) == 0
     
     # Verify manual classification added
     manual = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
-        ResourceTaxonomy.is_predicted == False
+        not ResourceTaxonomy.is_predicted
     ).all()
     assert len(manual) == 1
     assert manual[0].taxonomy_node_id == node2.id
@@ -1013,7 +1014,7 @@ def test_update_from_human_feedback_adds_manual_classifications(test_db):
     # Verify all manual classifications added
     manual = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
-        ResourceTaxonomy.is_predicted == False
+        not ResourceTaxonomy.is_predicted
     ).all()
     
     assert len(manual) == 3
@@ -1021,7 +1022,7 @@ def test_update_from_human_feedback_adds_manual_classifications(test_db):
     for classification in manual:
         assert classification.confidence == 1.0
         assert classification.predicted_by == "manual"
-        assert classification.needs_review == False or classification.needs_review == 0  # SQLite returns 0 for False
+        assert not classification.needs_review or classification.needs_review == 0  # SQLite returns 0 for False
         assert classification.review_priority is None
     
     # Cleanup
@@ -1039,8 +1040,8 @@ def test_update_from_human_feedback_invalid_resource(test_db):
     db = test_db()
     service = MLClassificationService(db)
     
-    fake_resource_id = str(uuid.uuid4())
-    fake_taxonomy_id = str(uuid.uuid4())
+    fake_resource_id = uuid.uuid4()
+    fake_taxonomy_id = uuid.uuid4()
     
     result = service.update_from_human_feedback(
         resource_id=fake_resource_id,
@@ -1070,9 +1071,9 @@ def test_update_from_human_feedback_invalid_taxonomy_node(test_db):
     db.commit()
     
     # Try to add feedback with invalid taxonomy node
-    fake_taxonomy_id = str(uuid.uuid4())
+    fake_taxonomy_id = uuid.uuid4()
     result = service.update_from_human_feedback(
-        resource_id=str(resource.id),
+        resource_id=resource.id,
         correct_taxonomy_ids=[fake_taxonomy_id]
     )
     
@@ -1139,7 +1140,7 @@ def test_update_from_human_feedback_preserves_existing_manual(test_db):
     manual = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
         ResourceTaxonomy.taxonomy_node_id == node.id,
-        ResourceTaxonomy.is_predicted == False
+        not ResourceTaxonomy.is_predicted
     ).all()
     
     assert len(manual) == 1
@@ -1347,7 +1348,7 @@ def test_end_to_end_workflow_simulation(test_db):
     # Verify manual classifications added
     manual = db.query(ResourceTaxonomy).filter(
         ResourceTaxonomy.resource_id == resource.id,
-        ResourceTaxonomy.is_predicted == False
+        not ResourceTaxonomy.is_predicted
     ).all()
     
     assert len(manual) == 2

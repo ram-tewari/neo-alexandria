@@ -18,9 +18,8 @@ from fastapi.testclient import TestClient
 from app import create_app
 from app.database.base import SessionLocal
 from app.database.models import Resource
-from app.services.quality_service import QualityService
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def verify_quality_endpoints():
@@ -69,7 +68,7 @@ def verify_quality_endpoints():
         response = client.get(f"/resources/{test_resource.id}/quality-details")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Quality details endpoint working")
+            print("✓ Quality details endpoint working")
             print(f"  - Overall quality: {data['quality_overall']}")
             print(f"  - Dimensions: {list(data['quality_dimensions'].keys())}")
         else:
@@ -83,7 +82,7 @@ def verify_quality_endpoints():
             json={"resource_id": str(test_resource.id)}
         )
         if response.status_code == 202:
-            print(f"✓ Quality recalculation endpoint working")
+            print("✓ Quality recalculation endpoint working")
             print(f"  Response: {response.json()}")
         else:
             print(f"✗ Quality recalculation endpoint failed: {response.status_code}")
@@ -94,7 +93,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/outliers?page=1&limit=10")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Outliers endpoint working")
+            print("✓ Outliers endpoint working")
             print(f"  - Total outliers: {data['total']}")
             print(f"  - Page: {data['page']}, Limit: {data['limit']}")
         else:
@@ -106,7 +105,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/degradation?time_window_days=30")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Degradation endpoint working")
+            print("✓ Degradation endpoint working")
             print(f"  - Time window: {data['time_window_days']} days")
             print(f"  - Degraded count: {data['degraded_count']}")
         else:
@@ -119,7 +118,7 @@ def verify_quality_endpoints():
             f"/summaries/{test_resource.id}/evaluate?use_g_eval=false"
         )
         if response.status_code == 202:
-            print(f"✓ Summary evaluation endpoint working")
+            print("✓ Summary evaluation endpoint working")
             print(f"  Response: {response.json()}")
         else:
             print(f"✗ Summary evaluation endpoint failed: {response.status_code}")
@@ -130,7 +129,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/distribution?bins=10&dimension=overall")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Distribution endpoint working")
+            print("✓ Distribution endpoint working")
             print(f"  - Dimension: {data['dimension']}")
             print(f"  - Bins: {data['bins']}")
             print(f"  - Statistics: mean={data['statistics']['mean']:.2f}")
@@ -143,7 +142,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/trends?granularity=weekly&dimension=overall")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Trends endpoint working")
+            print("✓ Trends endpoint working")
             print(f"  - Dimension: {data['dimension']}")
             print(f"  - Granularity: {data['granularity']}")
             print(f"  - Data points: {len(data['data_points'])}")
@@ -156,7 +155,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/dimensions")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Dimensions endpoint working")
+            print("✓ Dimensions endpoint working")
             print(f"  - Total resources: {data['total_resources']}")
             print(f"  - Dimensions tracked: {list(data['dimensions'].keys())}")
             print(f"  - Overall avg: {data['overall']['avg']:.2f}")
@@ -169,7 +168,7 @@ def verify_quality_endpoints():
         response = client.get("/quality/review-queue?page=1&limit=10&sort_by=quality_overall")
         if response.status_code == 200:
             data = response.json()
-            print(f"✓ Review queue endpoint working")
+            print("✓ Review queue endpoint working")
             print(f"  - Total in queue: {data['total']}")
             print(f"  - Page: {data['page']}, Limit: {data['limit']}")
         else:

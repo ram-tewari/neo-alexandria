@@ -4,7 +4,6 @@ Verify Phase 9 quality assessment integration with resource ingestion pipeline.
 This script verifies that the integration code is correctly placed in the ingestion pipeline.
 """
 
-import re
 
 
 def verify_integration():

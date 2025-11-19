@@ -87,7 +87,11 @@ class ResourceTaxonomy(Base):
 
 # Import the QualityService directly without app initialization
 import importlib.util
-spec = importlib.util.spec_from_file_location("quality_service", "backend/app/services/quality_service.py")
+from pathlib import Path
+
+backend_root = Path(__file__).parent.parent.parent.parent  # Go up to backend root
+quality_service_path = backend_root / "app" / "services" / "quality_service.py"
+spec = importlib.util.spec_from_file_location("quality_service", str(quality_service_path))
 quality_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(quality_module)
 QualityService = quality_module.QualityService
@@ -133,7 +137,7 @@ def test_quality_degradation_monitoring():
         
         # Compute initial quality
         result1 = quality_service.compute_quality(resource1.id)
-        initial_quality1 = result1['overall']
+        initial_quality1 = result1.overall_score()
         
         # Simulate old computation date
         resource1.quality_last_computed = old_date
@@ -168,7 +172,7 @@ def test_quality_degradation_monitoring():
         
         # Compute initial quality
         result2 = quality_service.compute_quality(resource2.id)
-        initial_quality2 = result2['overall']
+        initial_quality2 = result2.overall_score()
         
         # Simulate old computation date
         resource2.quality_last_computed = old_date
@@ -196,7 +200,7 @@ def test_quality_degradation_monitoring():
         result3 = quality_service.compute_quality(resource3.id)
         
         print(f"\nResource 3: '{resource3.title}'")
-        print(f"  Quality: {result3['overall']:.3f}")
+        print(f"  Quality: {result3.overall_score():.3f}")
         print(f"  Computed: {now.strftime('%Y-%m-%d')} (today)")
         print("  Should be SKIPPED (within 30-day window)")
         

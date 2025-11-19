@@ -2,7 +2,6 @@
 Test quality integration in recommendation service.
 """
 
-import pytest
 from uuid import uuid4
 from backend.app.services.recommendation_service import (
     generate_user_profile_vector,

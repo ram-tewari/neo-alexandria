@@ -10,7 +10,7 @@ Related files:
 """
 
 from typing import List
-from fastapi import APIRouter, Depends, BackgroundTasks, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.app.database.base import get_sync_db
@@ -245,7 +245,6 @@ async def get_citation_network(
 @router.post("/resources/{resource_id}/citations/extract", response_model=CitationExtractionResponse)
 async def trigger_citation_extraction(
     resource_id: str,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_sync_db)
 ):
     """
@@ -256,12 +255,13 @@ async def trigger_citation_extraction(
     
     Args:
         resource_id: UUID of the resource
-        background_tasks: FastAPI background tasks
         db: Database session
         
     Returns:
         CitationExtractionResponse with task status
     """
+    from ..tasks.celery_tasks import extract_citations_task
+    
     service = CitationService(db)
     
     # Verify resource exists
@@ -283,7 +283,7 @@ async def trigger_citation_extraction(
         raise HTTPException(status_code=404, detail="Resource not found")
     
     # Queue extraction task
-    background_tasks.add_task(service.extract_citations, resource_id)
+    extract_citations_task.apply_async(args=[resource_id], priority=5)
     
     return CitationExtractionResponse(
         status="queued",
@@ -294,7 +294,6 @@ async def trigger_citation_extraction(
 
 @router.post("/citations/resolve", response_model=CitationResolutionResponse)
 async def resolve_citations(
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_sync_db)
 ):
     """
@@ -304,16 +303,17 @@ async def resolve_citations(
     Typically runs automatically after new resource ingestion.
     
     Args:
-        background_tasks: FastAPI background tasks
         db: Database session
         
     Returns:
         CitationResolutionResponse with task status
     """
+    from ..tasks.celery_tasks import resolve_citations_task
+    
     service = CitationService(db)
     
     # Queue resolution task
-    background_tasks.add_task(service.resolve_internal_citations)
+    resolve_citations_task.apply_async(priority=5)
     
     return CitationResolutionResponse(
         status="queued"
@@ -322,7 +322,6 @@ async def resolve_citations(
 
 @router.post("/citations/importance/compute", response_model=ImportanceComputationResponse)
 async def compute_importance_scores(
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_sync_db)
 ):
     """
@@ -332,16 +331,17 @@ async def compute_importance_scores(
     periodically (e.g., daily) rather than on every request.
     
     Args:
-        background_tasks: FastAPI background tasks
         db: Database session
         
     Returns:
         ImportanceComputationResponse with task status
     """
+    from ..tasks.celery_tasks import compute_citation_importance_task
+    
     service = CitationService(db)
     
     # Queue computation task
-    background_tasks.add_task(service.compute_citation_importance)
+    compute_citation_importance_task.apply_async(priority=3)
     
     return ImportanceComputationResponse(
         status="queued"

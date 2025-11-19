@@ -20,6 +20,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from backend.app.database import models as db_models
+from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +99,14 @@ class MetadataExtractor:
             self.db.add(resource)
             self.db.commit()
             
+            # Emit authors.extracted event if authors were found
+            if 'authors' in metadata:
+                try:
+                    authors_list = json.loads(metadata['authors']) if isinstance(metadata['authors'], str) else metadata['authors']
+                    self.emit_authors_extracted_event(resource_id, authors_list)
+                except Exception as e:
+                    logger.warning(f"Failed to emit authors.extracted event: {e}")
+            
             logger.info(f"Extracted scholarly metadata for resource {resource_id}")
             return metadata
             
@@ -145,6 +155,25 @@ class MetadataExtractor:
             metadata['journal'] = journal
         
         return metadata
+    
+    def emit_authors_extracted_event(self, resource_id: str, authors: List[Dict]) -> None:
+        """
+        Emit authors.extracted event after author extraction.
+        
+        Args:
+            resource_id: Resource ID
+            authors: List of extracted author dictionaries
+        """
+        if authors:
+            event_emitter.emit(
+                SystemEvent.AUTHORS_EXTRACTED,
+                {
+                    "resource_id": resource_id,
+                    "authors": authors,
+                    "author_count": len(authors)
+                },
+                priority=EventPriority.LOW
+            )
 
     def _extract_doi(self, content: str) -> Optional[str]:
         """Extract DOI using regex pattern."""

@@ -12,7 +12,7 @@ Endpoints:
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -276,7 +276,6 @@ async def get_recommendations(
         )
     except Exception as e:
         import logging
-        import traceback
         logger = logging.getLogger(__name__)
         logger.error(f"Error in get_recommendations: {str(e)}", exc_info=True)
         raise HTTPException(

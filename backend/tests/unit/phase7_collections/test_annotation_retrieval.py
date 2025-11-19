@@ -12,14 +12,7 @@ from backend.app.database.models import Resource, Annotation
 from backend.app.services.annotation_service import AnnotationService
 
 
-@pytest.fixture
-def db_session(test_db):
-    """Create a database session for tests."""
-    db = test_db()
-    try:
-        yield db
-    finally:
-        db.close()
+# db_session fixture is now in conftest.py
 
 
 @pytest.fixture

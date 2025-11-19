@@ -39,10 +39,15 @@ def get_async_database_url() -> str:
         return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
     return url
 
-# Create async engine
+# Create async engine with optimized connection pool
 async_engine = create_async_engine(
     get_async_database_url(),
     echo=True if settings.ENV == "dev" else False,
+    pool_size=20,              # Base connections
+    max_overflow=40,           # Additional connections (total: 60)
+    pool_recycle=3600,         # Recycle connections after 1 hour
+    pool_pre_ping=True,        # Health check before using connection
+    echo_pool=True             # Log pool events for monitoring
 )
 
 # Create async sessionmaker
@@ -53,9 +58,15 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 # Keep sync engine for background tasks and migrations
+# Optimized connection pool configuration for high concurrency
 sync_engine = create_engine(
     settings.DATABASE_URL,
     echo=True if settings.ENV == "dev" else False,
+    pool_size=20,              # Base connections
+    max_overflow=40,           # Additional connections (total: 60)
+    pool_recycle=3600,         # Recycle connections after 1 hour
+    pool_pre_ping=True,        # Health check before using connection
+    echo_pool=True             # Log pool events for monitoring
 )
 
 # Create sync sessionmaker for background tasks
@@ -135,3 +146,29 @@ def _ensure_tables_before_flush(session: OrmSession, flush_context, instances): 
     except Exception:
         # Best-effort; ignore if fails
         pass
+
+
+def get_pool_status() -> dict:
+    """
+    Get connection pool statistics for monitoring.
+    
+    Returns detailed metrics about the current state of the database
+    connection pool, including active connections, available connections,
+    and overflow usage.
+    
+    Returns:
+        dict: Connection pool statistics with the following keys:
+            - size: Total pool size (base connections)
+            - checked_in: Number of connections available in the pool
+            - checked_out: Number of connections currently in use
+            - overflow: Number of overflow connections in use
+            - total: Total connections (checked_in + checked_out + overflow)
+    """
+    pool = sync_engine.pool
+    return {
+        "size": pool.size(),
+        "checked_in": pool.checkedin(),
+        "checked_out": pool.checkedout(),
+        "overflow": pool.overflow(),
+        "total": pool.size() + pool.overflow()
+    }

@@ -15,6 +15,7 @@ Services:
 - graph_service: Knowledge graph and relationship analysis
 - recommendation_service: Personalized content recommendations
 - curation_service: Content review and quality control
+- ncf_service: Neural collaborative filtering recommendations
 """
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "classification_service",
     "authority_service",
     "resource_service",
+    "ncf_service",
 ]
 
 

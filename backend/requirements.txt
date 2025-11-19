@@ -34,3 +34,16 @@ sympy==1.12
 nltk==3.8.1
 python-Levenshtein==0.25.0
 scikit-learn==1.3.2
+
+# Production ML Training Dependencies
+arxiv>=1.4.0
+optuna>=3.0.0
+tensorboard>=2.14.0
+
+# Phase 12.5: Event-Driven Architecture Dependencies
+celery[redis]>=5.3.0
+flower>=2.0.0
+redis>=5.0.0
+
+# Phase 12.6: Test Suite Optimization Dependencies
+pytest-xdist>=3.5.0

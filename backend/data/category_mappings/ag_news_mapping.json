@@ -1,0 +1,18 @@
+{
+  "name": "AG News to Neo Alexandria Taxonomy Mapping",
+  "version": "1.0",
+  "description": "Maps AG News categories to Neo Alexandria taxonomy node IDs",
+  "created": "2025-11-16",
+  "mappings": {
+    "world": ["web-node-1"],
+    "sports": ["web-node-1"],
+    "business": ["web-node-1"],
+    "sci-tech": ["ml-node-1"]
+  },
+  "notes": {
+    "world": "World news - general web content",
+    "sports": "Sports news - general web content",
+    "business": "Business news - general web content",
+    "sci-tech": "Science and technology news - ML/tech content"
+  }
+}

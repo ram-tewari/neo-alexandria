@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
@@ -28,13 +29,47 @@ from backend.app.monitoring import (
     increment_active_ingestions,
     decrement_active_ingestions,
 )
+from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
 
 
 ARCHIVE_ROOT = Path("storage/archive")
+logger = logging.getLogger(__name__)
+
+
+def _find_existing_resource_by_url(db: Session, url: str) -> Optional[db_models.Resource]:
+    """
+    Query for existing resource by source URL.
+    
+    Args:
+        db: Database session
+        url: Source URL to search for
+        
+    Returns:
+        Existing resource if found, None otherwise
+    """
+    result = db.execute(
+        select(db_models.Resource)
+        .filter(db_models.Resource.source == url)
+        .order_by(db_models.Resource.created_at.desc())
+    )
+    return result.scalar_one_or_none()
 
 
 def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.Resource:
-    """Create a pending resource row and return it. Idempotent on URL/source."""
+    """
+    Create a pending resource row and return it. Idempotent on URL/source.
+    
+    Args:
+        db: Database session
+        payload: Resource data including required 'url' field
+        
+    Returns:
+        Created or existing resource
+        
+    Raises:
+        ValueError: If url is not provided
+    """
     try:
         Base.metadata.create_all(bind=db.get_bind())
     except Exception:
@@ -44,16 +79,14 @@ def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.R
     if not url:
         raise ValueError("url is required")
 
-    # Idempotency: reuse existing resource for same source URL if pending or completed
-    result = db.execute(
-        select(db_models.Resource)
-        .filter(db_models.Resource.source == url)
-        .order_by(db_models.Resource.created_at.desc())
-    )
-    existing = result.scalar_one_or_none()
+    # Query: Check for existing resource (no side effects)
+    existing = _find_existing_resource_by_url(db, url)
     if existing:
+        logger.info(f"Reusing existing resource for URL: {url}")
         return existing
 
+    # Modifier: Create new resource
+    logger.info(f"Creating new pending resource for URL: {url}")
     now = datetime.now(timezone.utc)
     authority = get_authority_control(db)
 
@@ -85,7 +118,279 @@ def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.R
     db.add(resource)
     db.commit()
     db.refresh(resource)
+    logger.info(f"Created pending resource with source: {url}")
+    
+    # Emit resource.created event
+    try:
+        event_emitter.emit(
+            SystemEvent.RESOURCE_CREATED,
+            {
+                "resource_id": str(resource.id),
+                "title": resource.title,
+                "source": resource.source
+            },
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted resource.created event for {resource.id}")
+    except Exception as e:
+        logger.error(f"Failed to emit resource.created event: {e}", exc_info=True)
+    
     return resource
+
+
+def _mark_ingestion_started(session: Session, resource: db_models.Resource) -> None:
+    """
+    Mark resource ingestion as started (modifier).
+    
+    Args:
+        session: Database session
+        resource: Resource to update
+    """
+    resource.ingestion_status = "processing"
+    resource.ingestion_error = None
+    resource.ingestion_started_at = datetime.now(timezone.utc)
+    session.add(resource)
+    session.commit()
+    logger.info(f"Resource {resource.id} marked as processing")
+
+
+def _mark_ingestion_failed(session: Session, resource: db_models.Resource, error: str) -> None:
+    """
+    Mark resource ingestion as failed (modifier).
+    
+    Args:
+        session: Database session
+        resource: Resource to update
+        error: Error message
+    """
+    resource.ingestion_status = "failed"
+    resource.ingestion_error = error
+    resource.ingestion_completed_at = datetime.now(timezone.utc)
+    session.add(resource)
+    session.commit()
+    logger.error(f"Resource {resource.id} marked as failed: {error}")
+
+
+def _mark_ingestion_completed(session: Session, resource: db_models.Resource) -> None:
+    """
+    Mark resource ingestion as completed (modifier).
+    
+    Args:
+        session: Database session
+        resource: Resource to update
+    """
+    resource.ingestion_status = "completed"
+    resource.ingestion_completed_at = datetime.now(timezone.utc)
+    session.add(resource)
+    session.commit()
+    logger.info(f"Resource {resource.id} marked as completed")
+
+
+def _fetch_and_extract_content(target_url: str) -> Tuple[Dict[str, Any], Dict[str, Any], str]:
+    """
+    Fetch and extract content from URL (query with external side effects).
+    
+    Args:
+        target_url: URL to fetch
+        
+    Returns:
+        Tuple of (fetched_data, extracted_data, cleaned_text)
+    """
+    logger.info(f"Fetching content from {target_url}")
+    fetched = ce.fetch_url(target_url)
+    logger.info("Content fetched successfully, extracting text")
+    extracted = ce.extract_from_fetched(fetched)
+    text_clean = clean_text(extracted.get("text", ""))
+    logger.info(f"Text extracted and cleaned, length: {len(text_clean)} characters")
+    return fetched, extracted, text_clean
+
+
+def _generate_ai_content(ai_core: AICore, text_clean: str) -> Tuple[str, List[str]]:
+    """
+    Generate AI summary and tags (query with external side effects).
+    
+    Args:
+        ai_core: AI core service
+        text_clean: Cleaned text
+        
+    Returns:
+        Tuple of (summary, tags)
+    """
+    summary = ai_core.generate_summary(text_clean)
+    tags_raw = ai_core.generate_tags(text_clean)
+    return summary, tags_raw
+
+
+def _generate_embeddings(
+    ai_core: AICore,
+    resource: db_models.Resource,
+    session: Session,
+    title: str,
+    description: str,
+    tags: List[str]
+) -> None:
+    """
+    Generate dense and sparse embeddings for resource (modifier).
+    
+    Args:
+        ai_core: AI core service
+        resource: Resource to update
+        session: Database session
+        title: Resource title
+        description: Resource description
+        tags: Resource tags
+    """
+    # Generate dense embedding
+    try:
+        from backend.app.services.ai_core import create_composite_text
+        temp_resource = type('obj', (object,), {
+            'title': title,
+            'description': description,
+            'subject': tags
+        })()
+        composite_text = create_composite_text(temp_resource)
+        if composite_text.strip():
+            embedding = ai_core.generate_embedding(composite_text)
+            if embedding:
+                resource.embedding = embedding
+                logger.info(f"Generated dense embedding for resource {resource.id}")
+    except Exception as e:
+        logger.warning(f"Dense embedding generation failed: {e}")
+    
+    # Generate sparse embedding
+    try:
+        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+        sparse_service = SparseEmbeddingService(session, model_name="BAAI/bge-m3")
+        
+        text_parts = []
+        if title:
+            text_parts.append(title)
+        if description:
+            text_parts.append(description)
+        if tags:
+            subjects_text = " ".join(tags)
+            if subjects_text.strip():
+                text_parts.append(f"Keywords: {subjects_text}")
+        
+        composite_text = " ".join(text_parts)
+        
+        if not composite_text.strip():
+            resource.sparse_embedding = None
+            resource.sparse_embedding_model = None
+            resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+        else:
+            sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
+            if sparse_vec:
+                resource.sparse_embedding = json.dumps(sparse_vec)
+                resource.sparse_embedding_model = "BAAI/bge-m3"
+                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+                logger.info(f"Generated sparse embedding for resource {resource.id}")
+            else:
+                resource.sparse_embedding = None
+                resource.sparse_embedding_model = None
+                resource.sparse_embedding_updated_at = None
+    except Exception as e:
+        logger.warning(f"Sparse embedding generation failed: {e}")
+        resource.sparse_embedding = None
+        resource.sparse_embedding_model = None
+        resource.sparse_embedding_updated_at = None
+
+
+def _perform_ml_classification(session: Session, resource_id) -> None:
+    """
+    Perform ML classification on resource (modifier).
+    
+    Args:
+        session: Database session
+        resource_id: Resource ID
+    """
+    try:
+        from backend.app.services.classification_service import ClassificationService
+        
+        classification_service = ClassificationService(
+            db=session,
+            use_ml=True,
+            confidence_threshold=0.3
+        )
+        
+        classification_result = classification_service.classify_resource(
+            resource_id=resource_id,
+            use_ml=True
+        )
+        
+        logger.info(f"ML classification completed for resource {resource_id}: "
+                   f"{len(classification_result.get('classifications', []))} classifications")
+    except Exception as e:
+        logger.warning(f"ML classification failed for resource {resource_id}: {e}")
+
+
+def _compute_quality_scores(session: Session, resource_id) -> None:
+    """
+    Compute quality scores for resource (modifier).
+    
+    Args:
+        session: Database session
+        resource_id: Resource ID
+    """
+    try:
+        from backend.app.services.quality_service import QualityService
+        
+        quality_service = QualityService(db=session)
+        quality_result = quality_service.compute_quality(resource_id)
+        
+        # quality_result is a QualityScore domain object
+        logger.info(f"Quality assessment completed for resource {resource_id}: "
+                   f"overall={quality_result.overall_score():.2f}")
+    except Exception as e:
+        logger.warning(f"Quality assessment failed for resource {resource_id}: {e}")
+
+
+def _evaluate_summarization(session: Session, resource_id, summary: str) -> None:
+    """
+    Evaluate summarization quality (modifier).
+    
+    Args:
+        session: Database session
+        resource_id: Resource ID
+        summary: Generated summary
+    """
+    if not summary or not summary.strip():
+        return
+    
+    try:
+        from backend.app.services.summarization_evaluator import SummarizationEvaluator
+        
+        summarization_evaluator = SummarizationEvaluator(db=session)
+        summary_result = summarization_evaluator.evaluate_summary(
+            resource_id=resource_id,
+            use_g_eval=False
+        )
+        
+        logger.info(f"Summarization evaluation completed for resource {resource_id}: "
+                   f"overall={summary_result.get('overall', 0.0):.2f}")
+    except Exception as e:
+        logger.warning(f"Summarization evaluation failed for resource {resource_id}: {e}")
+
+
+def _extract_citations(session: Session, resource_id: str, content_type: str) -> None:
+    """
+    Extract citations from resource content (modifier).
+    
+    Args:
+        session: Database session
+        resource_id: Resource ID
+        content_type: Content type
+    """
+    try:
+        content_type_lower = content_type.lower()
+        if any(ct in content_type_lower for ct in ["html", "pdf", "markdown"]):
+            from backend.app.services.citation_service import CitationService
+            citation_service = CitationService(session)
+            citation_service.extract_citations(resource_id)
+            citation_service.resolve_internal_citations()
+            logger.info(f"Citations extracted for resource {resource_id}")
+    except Exception as e:
+        logger.warning(f"Citation extraction failed for resource {resource_id}: {e}")
 
 
 def process_ingestion(
@@ -94,62 +399,69 @@ def process_ingestion(
     ai: Optional[AICore] = None,
     engine_url: Optional[str] = None,
 ) -> None:
-    """Background ingestion job. Opens its own DB session.
+    """
+    Background ingestion job (modifier, returns None). Opens its own DB session.
 
     Steps: fetch, extract, AI summarize/tag, authority normalize, classify, quality, archive, persist.
-    """
-    import logging
-    logger = logging.getLogger(__name__)
     
+    Args:
+        resource_id: Resource ID to ingest
+        archive_root: Optional archive root directory
+        ai: Optional AI core instance
+        engine_url: Optional database engine URL
+    """
     session: Optional[Session] = None
-    local_session_factory = None
     increment_active_ingestions()
+    start_time = datetime.now(timezone.utc)
     
     logger.info(f"Starting ingestion for resource {resource_id}")
     
+    # Emit ingestion.started event
+    event_emitter.emit(
+        SystemEvent.INGESTION_STARTED,
+        {
+            "resource_id": resource_id,
+            "started_at": start_time.isoformat()
+        },
+        priority=EventPriority.NORMAL
+    )
+    
     try:
+        # Setup database session
         if engine_url:
             engine = create_engine(engine_url, echo=False)
             local_session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
             session = local_session_factory()
         else:
             session = SessionLocal()
+        
         try:
             Base.metadata.create_all(bind=session.get_bind())
         except Exception:
             pass
 
-        # Convert string resource_id back to UUID for proper comparison
+        # Query: Get resource
         try:
             import uuid as uuid_module
             resource_uuid = uuid_module.UUID(resource_id)
         except (ValueError, TypeError):
             logger.error(f"Invalid UUID format for resource_id: {resource_id}")
             return
+        
         resource = session.query(db_models.Resource).filter(db_models.Resource.id == resource_uuid).first()
         if not resource:
             logger.warning(f"Resource not found: {resource_id}")
             return
 
-        # Mark started
-        resource.ingestion_status = "processing"
-        resource.ingestion_error = None
-        resource.ingestion_started_at = datetime.now(timezone.utc)
-        session.add(resource)
-        session.commit()
+        # Modifier: Mark ingestion started
+        _mark_ingestion_started(session, resource)
         
-        logger.info(f"Resource {resource_id} marked as processing, starting fetch from {resource.source}")
-
         target_url = resource.source or ""
-        logger.info(f"Fetching content from {target_url}")
-        fetched = ce.fetch_url(target_url)
-        logger.info(f"Content fetched successfully, extracting text")
-        extracted = ce.extract_from_fetched(fetched)
-        text_clean = clean_text(extracted.get("text", ""))
-        logger.info(f"Text extracted and cleaned, length: {len(text_clean)} characters")
+        
+        # Query: Fetch and extract content
+        fetched, extracted, text_clean = _fetch_and_extract_content(target_url)
 
-        # AI - let exceptions propagate to trigger failure path
-        # Resolve AICore dynamically from this module to honor test patching
+        # Resolve AI core
         if ai is not None:
             ai_core = ai
         else:
@@ -160,26 +472,25 @@ def process_ingestion(
             except Exception:  # pragma: no cover
                 AICoreClass = AICore
             ai_core = AICoreClass()
-        summary = ai_core.generate_summary(text_clean)
-        tags_raw = ai_core.generate_tags(text_clean)
+        
+        # Query: Generate AI content
+        summary, tags_raw = _generate_ai_content(ai_core, text_clean)
 
-        # Authority control
+        # Query: Normalize tags
         authority = get_authority_control(session)
         normalized_tags = authority.normalize_subjects(tags_raw)
 
-        # Classification
+        # Query: Classify resource
         classifier = get_classification_service()
-        # Use extracted title if current title is default "Untitled"
         extracted_title = extracted.get("title") or ""
         if resource.title == "Untitled" and extracted_title:
             title_final = extracted_title
         else:
             title_final = resource.title or extracted_title or "Untitled"
-        # Prefer user-provided description over AI summary
         description_final = resource.description or summary or None
         classification_code = classifier.auto_classify(title_final, description_final, normalized_tags)
 
-        # Archive
+        # Modifier: Archive content
         meta = {
             "source_url": fetched.get("url"),
             "status": fetched.get("status"),
@@ -190,14 +501,11 @@ def process_ingestion(
         root_path = archive_root or ARCHIVE_ROOT
         root_path = root_path if isinstance(root_path, Path) else Path(str(root_path))
         
-        # Ensure archive root directory exists (create if needed)
-        # archive_local will handle detailed validation and error reporting
         try:
             root_path.mkdir(parents=True, exist_ok=True)
             logger.info(f"Archive root ready: {root_path}")
         except Exception as mkdir_exc:
             logger.error(f"Failed to create archive root {root_path}: {str(mkdir_exc)}")
-            # Don't raise - let archive_local handle it and provide better error context
         
         html_for_archive = fetched.get("html") or ""
         archive_info = ce.archive_local(
@@ -205,99 +513,13 @@ def process_ingestion(
         )
         logger.info(f"Content archived to {archive_info.get('archive_path')}")
 
-        # Generate embedding for Phase 4 hybrid search
-        try:
-            from backend.app.services.ai_core import create_composite_text
-            # Create a temporary resource object for embedding generation
-            temp_resource = type('obj', (object,), {
-                'title': title_final,
-                'description': description_final,
-                'subject': normalized_tags
-            })()
-            composite_text = create_composite_text(temp_resource)
-            if composite_text.strip():
-                embedding = ai_core.generate_embedding(composite_text)
-                if embedding:
-                    resource.embedding = embedding
-        except Exception:
-            # Embedding generation is optional, don't fail the whole ingestion
-            pass
+        # Modifier: Generate embeddings
+        _generate_embeddings(ai_core, resource, session, title_final, description_final, normalized_tags)
         
-        # Phase 8: Generate sparse embedding after dense embedding
-        try:
-            from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-            sparse_service = SparseEmbeddingService(session, model_name="BAAI/bge-m3")
-            
-            # Create composite text for sparse embedding
-            text_parts = []
-            if title_final:
-                text_parts.append(title_final)
-            if description_final:
-                text_parts.append(description_final)
-            if normalized_tags:
-                subjects_text = " ".join(normalized_tags)
-                if subjects_text.strip():
-                    text_parts.append(f"Keywords: {subjects_text}")
-            
-            composite_text = " ".join(text_parts)
-            
-            if not composite_text.strip():
-                # No content to embed - set timestamp to indicate processing was attempted
-                resource.sparse_embedding = None
-                resource.sparse_embedding_model = None
-                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
-            else:
-                # Generate sparse embedding
-                sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
-                if sparse_vec:
-                    # Successfully generated sparse embedding
-                    resource.sparse_embedding = json.dumps(sparse_vec)
-                    resource.sparse_embedding_model = "BAAI/bge-m3"
-                    resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
-                else:
-                    # Generation returned empty (model not available or other issue)
-                    # Mark for retry by not setting sparse_embedding_updated_at
-                    resource.sparse_embedding = None
-                    resource.sparse_embedding_model = None
-                    resource.sparse_embedding_updated_at = None
-        except Exception as sparse_exc:
-            # Sparse embedding generation is optional, don't fail the whole ingestion
-            # Log error and mark resource for retry by not setting sparse_embedding_updated_at
-            print(f"Warning: Sparse embedding generation failed for {resource_id}: {sparse_exc}")
-            resource.sparse_embedding = None
-            resource.sparse_embedding_model = None
-            resource.sparse_embedding_updated_at = None
-        
-        # Phase 8.5: ML Classification after embedding generation, before quality scoring
-        # Execute classification as a non-blocking operation
-        try:
-            from backend.app.services.classification_service import ClassificationService
-            
-            # Initialize classification service with ML enabled
-            classification_service = ClassificationService(
-                db=session,
-                use_ml=True,
-                confidence_threshold=0.3
-            )
-            
-            # Perform ML classification
-            # This will predict taxonomy nodes and store them with confidence scores
-            classification_result = classification_service.classify_resource(
-                resource_id=resource.id,
-                use_ml=True
-            )
-            
-            print(f"ML classification completed for resource {resource_id}: "
-                  f"{len(classification_result.get('classifications', []))} classifications, "
-                  f"method={classification_result.get('method')}")
-            
-        except Exception as classification_exc:
-            # Classification is optional and should not block ingestion
-            # Log the error and continue with the ingestion process
-            print(f"Warning: ML classification failed for resource {resource_id}: {classification_exc}")
-            # Continue with ingestion - classification can be retried later
+        # Modifier: Perform ML classification
+        _perform_ml_classification(session, resource.id)
 
-        # Quality - Legacy scoring for backward compatibility
+        # Query: Compute legacy quality score
         analyzer = get_quality_analyzer()
         candidate_metadata = {
             "title": title_final,
@@ -311,7 +533,7 @@ def process_ingestion(
         }
         quality = analyzer.overall_quality(candidate_metadata, text_clean)
 
-        # Persist updates
+        # Modifier: Persist resource updates
         resource.title = title_final
         resource.description = description_final
         resource.subject = normalized_tags
@@ -320,88 +542,75 @@ def process_ingestion(
         resource.source = resource.source or fetched.get("url")
         resource.quality_score = float(quality)
         resource.date_modified = resource.date_modified or datetime.now(timezone.utc)
-        resource.ingestion_status = "completed"
-        resource.ingestion_completed_at = datetime.now(timezone.utc)
-        resource.format = fetched.get("content_type")  # Store content type for citation extraction
+        resource.format = fetched.get("content_type")
         session.add(resource)
         session.commit()
         
-        # Phase 9: Multi-dimensional quality assessment
-        # Execute after embedding generation and ML classification
-        # Handle errors gracefully without blocking ingestion
-        try:
-            from backend.app.services.quality_service import QualityService
-            
-            quality_service = QualityService(db=session)
-            quality_result = quality_service.compute_quality(resource.id)
-            
-            print(f"Phase 9 quality assessment completed for resource {resource_id}: "
-                  f"overall={quality_result.get('overall', 0.0):.2f}, "
-                  f"accuracy={quality_result.get('accuracy', 0.0):.2f}, "
-                  f"completeness={quality_result.get('completeness', 0.0):.2f}")
-            
-        except Exception as quality_exc:
-            # Quality assessment is optional and should not block ingestion
-            # Log the error and continue - quality can be computed later
-            print(f"Warning: Phase 9 quality assessment failed for resource {resource_id}: {quality_exc}")
+        # Modifier: Mark ingestion completed
+        _mark_ingestion_completed(session, resource)
         
-        # Phase 9: Summarization evaluation
-        # Execute after quality assessment if summary was generated
-        # Use use_g_eval=False by default to avoid API costs
-        if summary and summary.strip():
-            try:
-                from backend.app.services.summarization_evaluator import SummarizationEvaluator
-                
-                summarization_evaluator = SummarizationEvaluator(db=session)
-                summary_result = summarization_evaluator.evaluate_summary(
-                    resource_id=resource.id,
-                    use_g_eval=False  # Default to False to avoid OpenAI API costs
-                )
-                
-                print(f"Phase 9 summarization evaluation completed for resource {resource_id}: "
-                      f"overall={summary_result.get('overall', 0.0):.2f}")
-                
-            except Exception as summary_exc:
-                # Summarization evaluation is optional and should not block ingestion
-                # Log the error and continue - evaluation can be done later
-                print(f"Warning: Phase 9 summarization evaluation failed for resource {resource_id}: {summary_exc}")
+        # Modifier: Compute quality scores
+        _compute_quality_scores(session, resource.id)
+        
+        # Modifier: Evaluate summarization
+        _evaluate_summarization(session, resource.id, summary)
+        
+        # Modifier: Extract citations
+        _extract_citations(session, str(resource.id), fetched.get("content_type", ""))
         
         # Track successful ingestion
         track_ingestion_success()
+        
+        # Calculate duration
+        end_time = datetime.now(timezone.utc)
+        duration_seconds = (end_time - start_time).total_seconds()
+        
         logger.info(f"Ingestion completed successfully for resource {resource_id}")
         
-        # Phase 6: Extract citations if content type supports it
-        try:
-            content_type = fetched.get("content_type", "").lower()
-            if any(ct in content_type for ct in ["html", "pdf", "markdown"]):
-                from backend.app.services.citation_service import CitationService
-                citation_service = CitationService(session)
-                citation_service.extract_citations(str(resource.id))
-                # Resolve internal citations
-                citation_service.resolve_internal_citations()
-        except Exception as citation_exc:
-            # Citation extraction is optional, don't fail the whole ingestion
-            print(f"Warning: Citation extraction failed for {resource_id}: {citation_exc}")
+        # Emit ingestion.completed event
+        event_emitter.emit(
+            SystemEvent.INGESTION_COMPLETED,
+            {
+                "resource_id": resource_id,
+                "duration_seconds": duration_seconds,
+                "success": True,
+                "completed_at": end_time.isoformat()
+            },
+            priority=EventPriority.NORMAL
+        )
 
     except Exception as exc:  # pragma: no cover - error path
         logger.error(f"Ingestion failed for resource {resource_id}: {type(exc).__name__}: {str(exc)}", exc_info=True)
+        
+        # Calculate duration
+        end_time = datetime.now(timezone.utc)
+        duration_seconds = (end_time - start_time).total_seconds()
+        
+        # Emit ingestion.failed event
+        event_emitter.emit(
+            SystemEvent.INGESTION_FAILED,
+            {
+                "resource_id": resource_id,
+                "error": str(exc),
+                "error_type": type(exc).__name__,
+                "duration_seconds": duration_seconds,
+                "success": False,
+                "failed_at": end_time.isoformat()
+            },
+            priority=EventPriority.HIGH
+        )
+        
         if session is not None:
             try:
-                # Convert string resource_id back to UUID for proper comparison
+                import uuid as uuid_module
                 try:
                     resource_uuid = uuid_module.UUID(resource_id)
                     resource = session.query(db_models.Resource).filter(db_models.Resource.id == resource_uuid).first()
                 except (ValueError, TypeError):
                     resource = None
+                
                 if resource is not None:
-                    resource.ingestion_status = "failed"
-                    resource.ingestion_error = str(exc)
-                    resource.ingestion_completed_at = datetime.now(timezone.utc)
-                    session.add(resource)
-                    session.commit()
-                    logger.info(f"Resource {resource_id} marked as failed with error: {str(exc)}")
-                    
-                    # Track failed ingestion
+                    _mark_ingestion_failed(session, resource, str(exc))
                     track_ingestion_failure(type(exc).__name__)
             except Exception as commit_exc:
                 logger.error(f"Failed to update resource status for {resource_id}: {str(commit_exc)}")
@@ -412,6 +621,16 @@ def process_ingestion(
 
 
 def get_resource(db: Session, resource_id) -> Optional[db_models.Resource]:
+    """
+    Query for a resource by ID (pure query, no side effects).
+    
+    Args:
+        db: Database session
+        resource_id: Resource ID (UUID or string)
+        
+    Returns:
+        Resource if found, None otherwise
+    """
     try:
         Base.metadata.create_all(bind=db.get_bind())
     except Exception:
@@ -434,6 +653,16 @@ def get_resource(db: Session, resource_id) -> Optional[db_models.Resource]:
 
 
 def _apply_resource_filters(query, filters: ResourceFilters):
+    """
+    Apply filters to resource query (pure query helper).
+    
+    Args:
+        query: SQLAlchemy query
+        filters: Resource filters
+        
+    Returns:
+        Filtered query
+    """
     if not filters:
         return query
 
@@ -491,10 +720,23 @@ def list_resources(
     page: PageParams,
     sort: SortParams,
 ) -> Tuple[List[db_models.Resource], int]:
+    """
+    Query for list of resources with filtering, pagination, and sorting (pure query).
+    
+    Args:
+        db: Database session
+        filters: Resource filters
+        page: Pagination parameters
+        sort: Sort parameters
+        
+    Returns:
+        Tuple of (resources, total_count)
+    """
     try:
         Base.metadata.create_all(bind=db.get_bind())
     except Exception:
         pass
+    
     query = select(db_models.Resource)
     query = _apply_resource_filters(query, filters)
 
@@ -524,30 +766,25 @@ def list_resources(
     return items, total
 
 
-def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_models.Resource:
-    try:
-        Base.metadata.create_all(bind=db.get_bind())
-    except Exception:
-        pass
-    resource = get_resource(db, resource_id)
-    if not resource:
-        raise ValueError("Resource not found")
-
-    updates = payload.model_dump(exclude_unset=True)
-
-    # Protect immutable/system-managed fields
-    for key in [
-        "id",
-        "created_at",
-        "updated_at",
-    ]:
-        updates.pop(key, None)
-
-    # Track if fields that affect embedding have changed
+def _apply_resource_updates(
+    resource: db_models.Resource,
+    updates: Dict[str, Any],
+    authority
+) -> Tuple[bool, bool, bool]:
+    """
+    Apply updates to resource fields (modifier helper).
+    
+    Args:
+        resource: Resource to update
+        updates: Dictionary of field updates
+        authority: Authority control service
+        
+    Returns:
+        Tuple of (embedding_fields_changed, quality_fields_changed, content_changed)
+    """
     embedding_fields_changed = False
     embedding_affecting_fields = {"title", "description", "subject"}
     
-    # Track if fields that affect quality have changed
     quality_fields_changed = False
     quality_affecting_fields = {
         "title", "description", "subject", "content", 
@@ -555,124 +792,242 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
         "doi", "pmid", "arxiv_id", "journal", "affiliations", "funding_sources"
     }
     
-    # Assign allowed fields with authority normalization on certain fields
-    authority = get_authority_control(db)
+    content_changed = False
+    content_fields = {"content", "identifier"}  # identifier is the archive path with content
+    
+    # Track if quality_score was explicitly set (manual override)
+    quality_score_manually_set = "quality_score" in updates
+    
     for key, value in updates.items():
         if key == "subject" and isinstance(value, list):
             setattr(resource, key, authority.normalize_subjects(value))
             embedding_fields_changed = True
-            quality_fields_changed = True
+            # Only trigger recomputation if quality_score wasn't manually set
+            if not quality_score_manually_set:
+                quality_fields_changed = True
         elif key == "creator":
             setattr(resource, key, authority.normalize_creator(value))
-            quality_fields_changed = True
+            # Only trigger recomputation if quality_score wasn't manually set
+            if not quality_score_manually_set:
+                quality_fields_changed = True
         elif key == "publisher":
             setattr(resource, key, authority.normalize_publisher(value))
-            quality_fields_changed = True
+            # Only trigger recomputation if quality_score wasn't manually set
+            if not quality_score_manually_set:
+                quality_fields_changed = True
+        elif key == "quality_score":
+            # Handle QualityScore domain object or float
+            if hasattr(value, 'overall_score'):
+                # It's a QualityScore domain object
+                setattr(resource, key, value.overall_score())
+            elif hasattr(value, 'to_dict'):
+                # It has a to_dict method, extract overall_score
+                setattr(resource, key, value.to_dict().get('overall_score', 0.0))
+            else:
+                # It's already a float or numeric value
+                setattr(resource, key, float(value))
+            # Don't trigger recomputation when quality_score is manually set
         else:
             setattr(resource, key, value)
             if key in embedding_affecting_fields:
                 embedding_fields_changed = True
-            if key in quality_affecting_fields:
+            if key in quality_affecting_fields and not quality_score_manually_set:
                 quality_fields_changed = True
+            if key in content_fields:
+                content_changed = True
+    
+    return embedding_fields_changed, quality_fields_changed, content_changed
 
-    # Regenerate embedding if relevant fields changed
-    if embedding_fields_changed:
-        try:
-            from backend.app.services.ai_core import create_composite_text, generate_embedding
-            composite_text = create_composite_text(resource)
-            if composite_text.strip():
-                embedding = generate_embedding(composite_text)
-                if embedding:
-                    resource.embedding = embedding
-        except Exception:
-            # Embedding generation is optional, don't fail the update
-            pass
+
+def _regenerate_embeddings(db: Session, resource: db_models.Resource) -> None:
+    """
+    Regenerate dense and sparse embeddings for resource (modifier).
+    
+    Args:
+        db: Database session
+        resource: Resource to regenerate embeddings for
+    """
+    # Regenerate dense embedding
+    try:
+        from backend.app.services.ai_core import create_composite_text, generate_embedding
+        composite_text = create_composite_text(resource)
+        if composite_text.strip():
+            embedding = generate_embedding(composite_text)
+            if embedding:
+                resource.embedding = embedding
+                logger.info(f"Regenerated dense embedding for resource {resource.id}")
+    except Exception as e:
+        logger.warning(f"Dense embedding regeneration failed for {resource.id}: {e}")
+    
+    # Regenerate sparse embedding
+    try:
+        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+        sparse_service = SparseEmbeddingService(db, model_name="BAAI/bge-m3")
         
-        # Phase 8: Regenerate sparse embedding if relevant fields changed
-        try:
-            from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-            sparse_service = SparseEmbeddingService(db, model_name="BAAI/bge-m3")
-            
-            # Create composite text for sparse embedding
-            text_parts = []
-            if resource.title:
-                text_parts.append(resource.title)
-            if resource.description:
-                text_parts.append(resource.description)
-            if resource.subject:
-                subjects_text = " ".join(resource.subject)
-                if subjects_text.strip():
-                    text_parts.append(f"Keywords: {subjects_text}")
-            
-            composite_text = " ".join(text_parts)
-            
-            if not composite_text.strip():
-                # No content to embed - set timestamp to indicate processing was attempted
-                resource.sparse_embedding = None
-                resource.sparse_embedding_model = None
-                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
-            else:
-                # Generate sparse embedding
-                sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
-                if sparse_vec:
-                    # Successfully generated sparse embedding
-                    resource.sparse_embedding = json.dumps(sparse_vec)
-                    resource.sparse_embedding_model = "BAAI/bge-m3"
-                    resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
-                else:
-                    # Generation returned empty (model not available or other issue)
-                    # Mark for retry by not setting sparse_embedding_updated_at
-                    resource.sparse_embedding = None
-                    resource.sparse_embedding_model = None
-                    resource.sparse_embedding_updated_at = None
-        except Exception as sparse_exc:
-            # Sparse embedding generation is optional, don't fail the update
-            print(f"Warning: Sparse embedding regeneration failed for {resource.id}: {sparse_exc}")
-            # Mark for retry by not setting sparse_embedding_updated_at
+        text_parts = []
+        if resource.title:
+            text_parts.append(resource.title)
+        if resource.description:
+            text_parts.append(resource.description)
+        if resource.subject:
+            subjects_text = " ".join(resource.subject)
+            if subjects_text.strip():
+                text_parts.append(f"Keywords: {subjects_text}")
+        
+        composite_text = " ".join(text_parts)
+        
+        if not composite_text.strip():
             resource.sparse_embedding = None
             resource.sparse_embedding_model = None
-            resource.sparse_embedding_updated_at = None
+            resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+        else:
+            sparse_vec = sparse_service.generate_sparse_embedding(composite_text)
+            if sparse_vec:
+                resource.sparse_embedding = json.dumps(sparse_vec)
+                resource.sparse_embedding_model = "BAAI/bge-m3"
+                resource.sparse_embedding_updated_at = datetime.now(timezone.utc)
+                logger.info(f"Regenerated sparse embedding for resource {resource.id}")
+            else:
+                resource.sparse_embedding = None
+                resource.sparse_embedding_model = None
+                resource.sparse_embedding_updated_at = None
+    except Exception as e:
+        logger.warning(f"Sparse embedding regeneration failed for {resource.id}: {e}")
+        resource.sparse_embedding = None
+        resource.sparse_embedding_model = None
+        resource.sparse_embedding_updated_at = None
 
-    # Ensure updated_at moves forward
-    resource.updated_at = datetime.now(timezone.utc)
 
-    db.add(resource)
-    db.commit()
-    db.refresh(resource)
+def _recompute_quality(db: Session, resource_id) -> None:
+    """
+    Recompute quality score for resource (modifier).
     
-    # Phase 9: Recompute quality if quality-affecting fields changed
-    if quality_fields_changed:
-        try:
-            from backend.app.services.quality_service import QualityService
-            
-            quality_service = QualityService(db=db)
-            quality_result = quality_service.compute_quality(resource.id)
-            
-            print(f"Phase 9 quality recomputed for resource {resource_id}: "
-                  f"overall={quality_result.get('overall', 0.0):.2f}")
-            
-        except Exception as quality_exc:
-            # Quality recomputation is optional and should not block update
-            # Log the error and continue - quality can be computed later
-            print(f"Warning: Phase 9 quality recomputation failed for resource {resource_id}: {quality_exc}")
+    Args:
+        db: Database session
+        resource_id: Resource ID
+    """
+    try:
+        from backend.app.services.quality_service import QualityService
+        
+        quality_service = QualityService(db=db)
+        quality_result = quality_service.compute_quality(resource_id)
+        
+        # quality_result is a QualityScore domain object
+        logger.info(f"Recomputed quality for resource {resource_id}: "
+                   f"overall={quality_result.overall_score():.2f}")
+    except Exception as e:
+        logger.warning(f"Quality recomputation failed for resource {resource_id}: {e}")
+
+
+def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_models.Resource:
+    """
+    Update a resource with new data.
     
-    return resource
-
-
-def delete_resource(db: Session, resource_id) -> None:
+    Args:
+        db: Database session
+        resource_id: Resource ID
+        payload: Update data
+        
+    Returns:
+        Updated resource
+        
+    Raises:
+        ValueError: If resource not found
+    """
     try:
         Base.metadata.create_all(bind=db.get_bind())
     except Exception:
         pass
+    
+    # Query: Get resource
     resource = get_resource(db, resource_id)
     if not resource:
         raise ValueError("Resource not found")
+
+    updates = payload.model_dump(exclude_unset=True)
+
+    # Protect immutable/system-managed fields
+    for key in ["id", "created_at", "updated_at"]:
+        updates.pop(key, None)
+
+    logger.info(f"Updating resource {resource_id} with {len(updates)} field(s)")
     
-    # Phase 7.5: Cascade delete annotations
-    # Note: Database CASCADE constraint handles this automatically,
-    # but explicit deletion provides better logging and control
+    # Track which fields changed
+    changed_fields = list(updates.keys())
+    
+    # Modifier: Apply updates
+    authority = get_authority_control(db)
+    embedding_changed, quality_changed, content_changed = _apply_resource_updates(resource, updates, authority)
+
+    # Modifier: Regenerate embeddings if needed
+    if embedding_changed:
+        _regenerate_embeddings(db, resource)
+
+    # Modifier: Update timestamp
+    resource.updated_at = datetime.now(timezone.utc)
+
+    # Modifier: Persist changes
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
+    
+    logger.info(f"Successfully updated resource {resource_id}")
+    
+    # Emit resource.updated event
+    event_emitter.emit(
+        SystemEvent.RESOURCE_UPDATED,
+        {
+            "resource_id": str(resource.id),
+            "changed_fields": changed_fields
+        },
+        priority=EventPriority.HIGH
+    )
+    
+    # Emit specific change events
+    if content_changed:
+        event_emitter.emit(
+            SystemEvent.RESOURCE_CONTENT_CHANGED,
+            {
+                "resource_id": str(resource.id),
+                "changed_fields": changed_fields
+            },
+            priority=EventPriority.HIGH
+        )
+    
+    # Metadata changed if quality fields changed but not content
+    metadata_fields = {"title", "description", "subject", "creator", "publisher", 
+                      "date_created", "publication_year", "doi", "pmid", "arxiv_id", 
+                      "journal", "affiliations", "funding_sources", "language", "type"}
+    metadata_changed = any(field in metadata_fields for field in changed_fields)
+    
+    if metadata_changed and not content_changed:
+        event_emitter.emit(
+            SystemEvent.RESOURCE_METADATA_CHANGED,
+            {
+                "resource_id": str(resource.id),
+                "changed_fields": changed_fields
+            },
+            priority=EventPriority.NORMAL
+        )
+    
+    # Modifier: Recompute quality if needed (after commit)
+    if quality_changed:
+        _recompute_quality(db, resource_id)
+    
+    return resource
+
+
+def _delete_resource_annotations(db: Session, resource_id) -> None:
+    """
+    Delete annotations associated with a resource (modifier).
+    
+    Args:
+        db: Database session
+        resource_id: Resource ID
+    """
     try:
         from backend.app.database.models import Annotation
+        
         # Convert resource_id to UUID if needed
         if isinstance(resource_id, str):
             try:
@@ -686,11 +1041,54 @@ def delete_resource(db: Session, resource_id) -> None:
         # Delete annotations associated with this resource
         annotation_count = db.query(Annotation).filter(Annotation.resource_id == resource_uuid).delete()
         if annotation_count > 0:
-            print(f"Deleted {annotation_count} annotations for resource {resource_id}")
+            logger.info(f"Deleted {annotation_count} annotations for resource {resource_id}")
     except Exception as e:
         # Log but don't fail if annotation deletion fails
         # The CASCADE constraint will handle it at the database level
-        print(f"Warning: Could not explicitly delete annotations for resource {resource_id}: {e}")
+        logger.warning(f"Could not explicitly delete annotations for resource {resource_id}: {e}")
+
+
+def delete_resource(db: Session, resource_id) -> None:
+    """
+    Delete a resource and its associated data (modifier, returns None).
     
+    Args:
+        db: Database session
+        resource_id: Resource ID
+        
+    Raises:
+        ValueError: If resource not found
+    """
+    try:
+        Base.metadata.create_all(bind=db.get_bind())
+    except Exception:
+        pass
+    
+    # Query: Get resource
+    resource = get_resource(db, resource_id)
+    if not resource:
+        raise ValueError("Resource not found")
+    
+    logger.info(f"Deleting resource {resource_id}")
+    
+    # Store resource info for event
+    resource_info = {
+        "resource_id": str(resource.id),
+        "title": resource.title
+    }
+    
+    # Modifier: Delete associated annotations
+    _delete_resource_annotations(db, resource_id)
+    
+    # Modifier: Delete resource
     db.delete(resource)
     db.commit()
+    
+    logger.info(f"Successfully deleted resource {resource_id}")
+    
+    # Emit resource.deleted event
+    event_emitter.emit(
+        SystemEvent.RESOURCE_DELETED,
+        resource_info,
+        priority=EventPriority.HIGH
+    )

@@ -31,6 +31,8 @@ from sqlalchemy import select, func
 
 from backend.app.database.models import Citation, Resource
 from backend.app.database.base import Base
+from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
 
 
 class CitationService:
@@ -136,6 +138,18 @@ class CitationService:
         
         try:
             self.db.commit()
+            
+            # Emit citations.extracted event after successful commit
+            if citations:
+                event_emitter.emit(
+                    SystemEvent.CITATIONS_EXTRACTED,
+                    {
+                        "resource_id": resource_id,
+                        "citations": [c["target_url"] for c in citations],
+                        "citation_count": len(citations)
+                    },
+                    priority=EventPriority.NORMAL
+                )
         except Exception as e:
             self.db.rollback()
             print(f"Warning: Failed to save citations for {resource_id}: {e}")

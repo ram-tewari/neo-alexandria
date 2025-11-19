@@ -20,8 +20,13 @@ def test_db():
     session.close()
 
 
-def test_sparse_embedding_service_integration(test_db):
+@pytest.mark.use_real_models
+def test_sparse_embedding_service_integration(test_db, sparse_embedding_model_cached):
     """Test sparse embedding service with real database."""
+    # Skip if model not available
+    model, tokenizer, device = sparse_embedding_model_cached
+    if model is None:
+        pytest.skip("Sparse embedding model not available")
     # Create test resources
     resource1 = Resource(
         title="Machine Learning Fundamentals",
@@ -55,8 +60,13 @@ def test_sparse_embedding_service_integration(test_db):
         assert resource1.sparse_embedding_updated_at is not None
 
 
-def test_batch_update_integration(test_db):
+@pytest.mark.use_real_models
+def test_batch_update_integration(test_db, sparse_embedding_model_cached):
     """Test batch update with real database."""
+    # Skip if model not available
+    model, tokenizer, device = sparse_embedding_model_cached
+    if model is None:
+        pytest.skip("Sparse embedding model not available")
     # Create multiple test resources
     resources = []
     for i in range(10):
@@ -89,8 +99,13 @@ def test_batch_update_integration(test_db):
     assert stats['success'] + stats['failed'] + stats['skipped'] == stats['total']
 
 
-def test_search_by_sparse_vector_integration(test_db):
+@pytest.mark.use_real_models
+def test_search_by_sparse_vector_integration(test_db, sparse_embedding_model_cached):
     """Test sparse vector search with real database."""
+    # Skip if model not available
+    model, tokenizer, device = sparse_embedding_model_cached
+    if model is None:
+        pytest.skip("Sparse embedding model not available")
     # Create test resources with mock sparse embeddings
     import json
     

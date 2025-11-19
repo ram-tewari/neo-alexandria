@@ -4,7 +4,6 @@ Generate synthetic test interaction data for Phase 11 NCF model training.
 This script creates test users and interactions for demonstration purposes.
 """
 
-import os
 import sys
 import uuid
 from datetime import datetime, timedelta
@@ -20,7 +19,7 @@ sys.path.insert(0, str(backend_dir))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from backend.app.config.settings import get_settings
-from backend.app.database.models import User, UserProfile, UserInteraction, Resource
+from backend.app.database.models import User, UserInteraction, Resource
 
 
 def generate_test_data(num_users=10, interactions_per_user=20):

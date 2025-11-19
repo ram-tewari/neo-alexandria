@@ -309,7 +309,7 @@ class HybridRecommendationService:
         """
         try:
             # Get user profile for custom weights
-            profile = self.user_profile_service.get_or_create_profile(user_id)
+            self.user_profile_service.get_or_create_profile(user_id)
             
             # Use default weights (user-specific weight overrides could be added to UserProfile in future)
             weights = self.default_weights.copy()
@@ -762,7 +762,7 @@ class HybridRecommendationService:
             final_recommendations = boosted_candidates[:limit]
             
             # Step 7: Compute Gini coefficient for diversity measurement
-            scores = [rec['score'] for rec in final_recommendations]
+            scores = [rec.get('hybrid_score', rec.get('score', 0.0)) for rec in final_recommendations]
             gini_coefficient = compute_gini_coefficient(scores)
             
             # Step 8: Format recommendations for response

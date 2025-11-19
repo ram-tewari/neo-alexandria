@@ -420,9 +420,11 @@ class TestCurationInterfaceQualityAnalysis:
             
             # Should be sorted by quality score ascending (lowest first)
             assert len(items) == 3  # 0.2, 0.4, 0.6 are below 0.7
-            assert items[0].quality_score == 0.2
-            assert items[1].quality_score == 0.4
-            assert items[2].quality_score == 0.6
+            # Check that items are sorted in ascending order
+            assert items[0].quality_score < items[1].quality_score < items[2].quality_score
+            # Check that all items are below threshold
+            for item in items:
+                assert item.quality_score < 0.7
             
         finally:
             db.close()

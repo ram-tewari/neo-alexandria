@@ -9,10 +9,7 @@ from backend.app.services.quality_service import QualityService
 from backend.app.database.models import Resource
 
 
-@pytest.fixture
-def quality_service(db_session: Session):
-    """Create QualityService instance."""
-    return QualityService(db_session)
+# db_session and quality_service fixtures are now in conftest.py
 
 
 @pytest.fixture
@@ -21,9 +18,9 @@ def create_resource_with_old_quality(db_session: Session):
     def _create(days_old=35, old_quality=0.8, title_suffix=""):
         resource = Resource(
             title=f"Test Resource {title_suffix}",
-            url=f"https://example.com/test{title_suffix}",
-            content=f"Test content {title_suffix}",
-            resource_type="article",
+            source=f"https://example.com/test{title_suffix}",
+            description=f"Test content {title_suffix}",
+            type="article",
             quality_overall=old_quality,
             quality_accuracy=old_quality,
             quality_completeness=old_quality,
@@ -56,7 +53,7 @@ class TestMonitorQualityDegradation:
         
         # Simulate degradation by modifying resource to lower quality
         # (In real scenario, external factors would cause this)
-        resource.content = "Poor quality content"
+        resource.description = "Poor quality content"
         db_session.commit()
         
         reports = quality_service.monitor_quality_degradation(time_window_days=30)
@@ -77,7 +74,7 @@ class TestMonitorQualityDegradation:
         
         # Verify review flag was set
         db_session.refresh(resource)
-        assert resource.needs_quality_review == True
+        assert resource.needs_quality_review
     
     def test_degradation_no_significant_change(
         self, quality_service, create_resource_with_old_quality, db_session
@@ -97,7 +94,7 @@ class TestMonitorQualityDegradation:
         
         # Review flag should not be set
         db_session.refresh(resource)
-        assert resource.needs_quality_review != True
+        assert not resource.needs_quality_review
     
     def test_degradation_quality_improvement(
         self, quality_service, create_resource_with_old_quality, db_session
@@ -184,7 +181,7 @@ class TestMonitorQualityDegradation:
         degraded2 = create_resource_with_old_quality(
             days_old=40, old_quality=0.85, title_suffix="deg2"
         )
-        stable = create_resource_with_old_quality(
+        create_resource_with_old_quality(
             days_old=35, old_quality=0.7, title_suffix="stable"
         )
         

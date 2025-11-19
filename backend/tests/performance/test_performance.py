@@ -15,12 +15,11 @@ Requirements: 2.5, 13.3, 13.1, 13.2
 import pytest
 import uuid
 import time
-from datetime import datetime, timezone
 from typing import List, Tuple
 
 from backend.app.services.taxonomy_service import TaxonomyService
 from backend.app.services.ml_classification_service import MLClassificationService
-from backend.app.database.models import TaxonomyNode, Resource
+from backend.app.database.models import TaxonomyNode
 
 
 # ============================================================================
@@ -126,7 +125,7 @@ def test_ancestor_query_performance(test_db):
     
     avg_time = sum(times) / len(times)
     
-    print(f"\nAncestor query performance:")
+    print("\nAncestor query performance:")
     print(f"  Average time: {avg_time:.2f}ms")
     print(f"  Min time: {min(times):.2f}ms")
     print(f"  Max time: {max(times):.2f}ms")
@@ -167,7 +166,7 @@ def test_descendant_query_performance(test_db):
     
     avg_time = sum(times) / len(times)
     
-    print(f"\nDescendant query performance:")
+    print("\nDescendant query performance:")
     print(f"  Average time: {avg_time:.2f}ms")
     print(f"  Min time: {min(times):.2f}ms")
     print(f"  Max time: {max(times):.2f}ms")
@@ -198,7 +197,7 @@ def test_tree_retrieval_performance(test_db):
     service = TaxonomyService(db)
     
     # Create tree with depth 5 and breadth 3
-    nodes = create_deep_taxonomy_tree(service, depth=5, breadth=3)
+    create_deep_taxonomy_tree(service, depth=5, breadth=3)
     
     # Warm-up query
     service.get_tree(max_depth=5)
@@ -211,12 +210,12 @@ def test_tree_retrieval_performance(test_db):
     
     avg_time = sum(times) / len(times)
     
-    print(f"\nTree retrieval performance (depth 5):")
+    print("\nTree retrieval performance (depth 5):")
     print(f"  Average time: {avg_time:.2f}ms")
     print(f"  Min time: {min(times):.2f}ms")
     print(f"  Max time: {max(times):.2f}ms")
     print(f"  Root nodes: {len(tree)}")
-    print(f"  Note: Time includes Python object construction")
+    print("  Note: Time includes Python object construction")
     
     # Relaxed assertion - tree construction with nested objects takes more time
     # The actual database query is fast (<50ms), but Python object construction adds overhead
@@ -250,7 +249,7 @@ def test_tree_retrieval_performance_full_depth(test_db):
     
     avg_time = sum(times) / len(times)
     
-    print(f"\nTree retrieval performance (full depth):")
+    print("\nTree retrieval performance (full depth):")
     print(f"  Average time: {avg_time:.2f}ms")
     print(f"  Min time: {min(times):.2f}ms")
     print(f"  Max time: {max(times):.2f}ms")
@@ -298,16 +297,16 @@ def test_single_prediction_inference_time(test_db):
         # Measure performance (average of 20 runs)
         times = []
         for _ in range(20):
-            exec_time, predictions = measure_time(service.predict, test_text, top_k=5)
+            exec_time, result = measure_time(service.predict, test_text, top_k=5)
             times.append(exec_time)
         
         avg_time = sum(times) / len(times)
         
-        print(f"\nSingle prediction inference time:")
+        print("\nSingle prediction inference time:")
         print(f"  Average time: {avg_time:.2f}ms")
         print(f"  Min time: {min(times):.2f}ms")
         print(f"  Max time: {max(times):.2f}ms")
-        print(f"  Predictions: {len(predictions)}")
+        print(f"  Predictions: {len(result.predictions)}")
         
         # Assert performance requirement (<100ms)
         assert avg_time < 100.0, f"Single prediction took {avg_time:.2f}ms, expected <100ms"
@@ -441,7 +440,7 @@ def test_gpu_vs_cpu_inference_speed(test_db):
         # Calculate speedup
         speedup = avg_cpu_time / avg_gpu_time
         
-        print(f"\nGPU vs CPU inference speed comparison:")
+        print("\nGPU vs CPU inference speed comparison:")
         print(f"  CPU average time: {avg_cpu_time:.2f}ms")
         print(f"  GPU average time: {avg_gpu_time:.2f}ms")
         print(f"  Speedup: {speedup:.2f}x")
@@ -488,7 +487,7 @@ def test_ancestor_query_scalability(test_db):
         print(f"Depth {depth}: {exec_time:.2f}ms ({len(ancestors)} ancestors)")
     
     # Verify performance scales linearly or better
-    print(f"\nAncestor query scalability:")
+    print("\nAncestor query scalability:")
     for depth, exec_time, count in results:
         print(f"  Depth {depth}: {exec_time:.2f}ms")
     
@@ -526,7 +525,7 @@ def test_descendant_query_scalability(test_db):
         
         print(f"Depth {depth}, Breadth {breadth}: {exec_time:.2f}ms ({len(descendants)} descendants)")
     
-    print(f"\nDescendant query scalability:")
+    print("\nDescendant query scalability:")
     for depth, breadth, exec_time, count in results:
         print(f"  Depth {depth}, Breadth {breadth}: {exec_time:.2f}ms ({count} descendants)")
     
@@ -559,24 +558,24 @@ def test_performance_summary(test_db):
     
     # Test 1: Ancestor query
     exec_time, ancestors = measure_time(taxonomy_service.get_ancestors, deepest.id)
-    print(f"\n1. Ancestor Query:")
+    print("\n1. Ancestor Query:")
     print(f"   Time: {exec_time:.2f}ms")
-    print(f"   Target: <10ms")
+    print("   Target: <10ms")
     print(f"   Status: {'✓ PASS' if exec_time < 10.0 else '✗ FAIL'}")
     
     # Test 2: Descendant query
     exec_time, descendants = measure_time(taxonomy_service.get_descendants, root.id)
-    print(f"\n2. Descendant Query:")
+    print("\n2. Descendant Query:")
     print(f"   Time: {exec_time:.2f}ms")
     print(f"   Descendants: {len(descendants)}")
-    print(f"   Target: <15ms (for moderate tree size)")
+    print("   Target: <15ms (for moderate tree size)")
     print(f"   Status: {'✓ PASS' if exec_time < 15.0 else '✗ FAIL'}")
     
     # Test 3: Tree retrieval
     exec_time, tree = measure_time(taxonomy_service.get_tree, max_depth=5)
-    print(f"\n3. Tree Retrieval (depth 5):")
+    print("\n3. Tree Retrieval (depth 5):")
     print(f"   Time: {exec_time:.2f}ms")
-    print(f"   Target: <300ms (includes object construction)")
+    print("   Target: <300ms (includes object construction)")
     print(f"   Status: {'✓ PASS' if exec_time < 300.0 else '✗ FAIL'}")
     
     print("\n" + "="*70)

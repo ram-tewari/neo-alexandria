@@ -1,0 +1,567 @@
+{
+  "metadata": {
+    "dataset_name": "search_relevance_benchmark_v1",
+    "created_at": "2025-11-15",
+    "num_queries": 50,
+    "description": "Test dataset for search quality evaluation with 50 diverse queries and graded relevance judgments (0-3 scale)"
+  },
+  "queries": [
+    {
+      "query_id": "q001",
+      "query_text": "machine learning algorithms",
+      "relevance_judgments": {
+        "resource_001": 3,
+        "resource_015": 3,
+        "resource_042": 2,
+        "resource_089": 2,
+        "resource_123": 1,
+        "resource_156": 1,
+        "resource_178": 0
+      }
+    },
+    {
+      "query_id": "q002",
+      "query_text": "quantum computing basics",
+      "relevance_judgments": {
+        "resource_002": 3,
+        "resource_023": 3,
+        "resource_067": 2,
+        "resource_091": 2,
+        "resource_134": 1,
+        "resource_167": 0
+      }
+    },
+    {
+      "query_id": "q003",
+      "query_text": "database normalization",
+      "relevance_judgments": {
+        "resource_003": 3,
+        "resource_034": 2,
+        "resource_078": 2,
+        "resource_112": 1,
+        "resource_145": 1,
+        "resource_189": 0
+      }
+    },
+    {
+      "query_id": "q004",
+      "query_text": "react hooks tutorial",
+      "relevance_judgments": {
+        "resource_004": 3,
+        "resource_045": 3,
+        "resource_087": 2,
+        "resource_124": 1,
+        "resource_156": 1,
+        "resource_190": 0
+      }
+    },
+    {
+      "query_id": "q005",
+      "query_text": "cybersecurity best practices",
+      "relevance_judgments": {
+        "resource_005": 3,
+        "resource_056": 2,
+        "resource_098": 2,
+        "resource_135": 1,
+        "resource_167": 1,
+        "resource_191": 0
+      }
+    },
+    {
+      "query_id": "q006",
+      "query_text": "kubernetes deployment strategies",
+      "relevance_judgments": {
+        "resource_006": 3,
+        "resource_067": 2,
+        "resource_109": 2,
+        "resource_146": 1,
+        "resource_178": 0
+      }
+    },
+    {
+      "query_id": "q007",
+      "query_text": "sorting algorithms complexity",
+      "relevance_judgments": {
+        "resource_007": 3,
+        "resource_078": 3,
+        "resource_120": 2,
+        "resource_157": 1,
+        "resource_192": 0
+      }
+    },
+    {
+      "query_id": "q008",
+      "query_text": "natural language processing transformers",
+      "relevance_judgments": {
+        "resource_008": 3,
+        "resource_089": 3,
+        "resource_131": 2,
+        "resource_168": 1,
+        "resource_193": 0
+      }
+    },
+    {
+      "query_id": "q009",
+      "query_text": "computer vision object detection",
+      "relevance_judgments": {
+        "resource_009": 3,
+        "resource_090": 2,
+        "resource_142": 2,
+        "resource_179": 1,
+        "resource_194": 0
+      }
+    },
+    {
+      "query_id": "q010",
+      "query_text": "blockchain smart contracts",
+      "relevance_judgments": {
+        "resource_010": 3,
+        "resource_101": 3,
+        "resource_153": 2,
+        "resource_180": 1,
+        "resource_195": 0
+      }
+    },
+    {
+      "query_id": "q011",
+      "query_text": "deep learning neural networks",
+      "relevance_judgments": {
+        "resource_011": 3,
+        "resource_042": 3,
+        "resource_089": 2,
+        "resource_134": 2,
+        "resource_167": 1,
+        "resource_196": 0
+      }
+    },
+    {
+      "query_id": "q012",
+      "query_text": "SQL query optimization",
+      "relevance_judgments": {
+        "resource_012": 3,
+        "resource_056": 2,
+        "resource_098": 2,
+        "resource_145": 1,
+        "resource_197": 0
+      }
+    },
+    {
+      "query_id": "q013",
+      "query_text": "REST API design patterns",
+      "relevance_judgments": {
+        "resource_013": 3,
+        "resource_067": 2,
+        "resource_109": 2,
+        "resource_156": 1,
+        "resource_198": 0
+      }
+    },
+    {
+      "query_id": "q014",
+      "query_text": "encryption algorithms",
+      "relevance_judgments": {
+        "resource_014": 3,
+        "resource_078": 2,
+        "resource_120": 2,
+        "resource_167": 1,
+        "resource_199": 0
+      }
+    },
+    {
+      "query_id": "q015",
+      "query_text": "AWS lambda serverless",
+      "relevance_judgments": {
+        "resource_015": 3,
+        "resource_089": 2,
+        "resource_131": 2,
+        "resource_178": 1,
+        "resource_200": 0
+      }
+    },
+    {
+      "query_id": "q016",
+      "query_text": "graph algorithms shortest path",
+      "relevance_judgments": {
+        "resource_016": 3,
+        "resource_090": 3,
+        "resource_142": 2,
+        "resource_189": 1,
+        "resource_001": 0
+      }
+    },
+    {
+      "query_id": "q017",
+      "query_text": "sentiment analysis techniques",
+      "relevance_judgments": {
+        "resource_017": 3,
+        "resource_101": 2,
+        "resource_153": 2,
+        "resource_190": 1,
+        "resource_002": 0
+      }
+    },
+    {
+      "query_id": "q018",
+      "query_text": "image segmentation methods",
+      "relevance_judgments": {
+        "resource_018": 3,
+        "resource_112": 2,
+        "resource_164": 2,
+        "resource_191": 1,
+        "resource_003": 0
+      }
+    },
+    {
+      "query_id": "q019",
+      "query_text": "cryptocurrency consensus mechanisms",
+      "relevance_judgments": {
+        "resource_019": 3,
+        "resource_123": 3,
+        "resource_175": 2,
+        "resource_192": 1,
+        "resource_004": 0
+      }
+    },
+    {
+      "query_id": "q020",
+      "query_text": "reinforcement learning Q-learning",
+      "relevance_judgments": {
+        "resource_020": 3,
+        "resource_134": 2,
+        "resource_186": 2,
+        "resource_193": 1,
+        "resource_005": 0
+      }
+    },
+    {
+      "query_id": "q021",
+      "query_text": "NoSQL database types",
+      "relevance_judgments": {
+        "resource_021": 3,
+        "resource_145": 2,
+        "resource_197": 2,
+        "resource_194": 1,
+        "resource_006": 0
+      }
+    },
+    {
+      "query_id": "q022",
+      "query_text": "frontend performance optimization",
+      "relevance_judgments": {
+        "resource_022": 3,
+        "resource_156": 2,
+        "resource_198": 2,
+        "resource_195": 1,
+        "resource_007": 0
+      }
+    },
+    {
+      "query_id": "q023",
+      "query_text": "penetration testing methodology",
+      "relevance_judgments": {
+        "resource_023": 3,
+        "resource_167": 2,
+        "resource_199": 2,
+        "resource_196": 1,
+        "resource_008": 0
+      }
+    },
+    {
+      "query_id": "q024",
+      "query_text": "docker containerization",
+      "relevance_judgments": {
+        "resource_024": 3,
+        "resource_178": 2,
+        "resource_200": 2,
+        "resource_197": 1,
+        "resource_009": 0
+      }
+    },
+    {
+      "query_id": "q025",
+      "query_text": "dynamic programming problems",
+      "relevance_judgments": {
+        "resource_025": 3,
+        "resource_189": 2,
+        "resource_001": 2,
+        "resource_198": 1,
+        "resource_010": 0
+      }
+    },
+    {
+      "query_id": "q026",
+      "query_text": "attention mechanism transformers",
+      "relevance_judgments": {
+        "resource_026": 3,
+        "resource_190": 3,
+        "resource_002": 2,
+        "resource_199": 1,
+        "resource_011": 0
+      }
+    },
+    {
+      "query_id": "q027",
+      "query_text": "semantic segmentation architectures",
+      "relevance_judgments": {
+        "resource_027": 3,
+        "resource_191": 2,
+        "resource_003": 2,
+        "resource_200": 1,
+        "resource_012": 0
+      }
+    },
+    {
+      "query_id": "q028",
+      "query_text": "DeFi protocols explained",
+      "relevance_judgments": {
+        "resource_028": 3,
+        "resource_192": 2,
+        "resource_004": 2,
+        "resource_001": 1,
+        "resource_013": 0
+      }
+    },
+    {
+      "query_id": "q029",
+      "query_text": "supervised learning classification",
+      "relevance_judgments": {
+        "resource_029": 3,
+        "resource_193": 2,
+        "resource_005": 2,
+        "resource_002": 1,
+        "resource_014": 0
+      }
+    },
+    {
+      "query_id": "q030",
+      "query_text": "database indexing strategies",
+      "relevance_judgments": {
+        "resource_030": 3,
+        "resource_194": 2,
+        "resource_006": 2,
+        "resource_003": 1,
+        "resource_015": 0
+      }
+    },
+    {
+      "query_id": "q031",
+      "query_text": "GraphQL vs REST comparison",
+      "relevance_judgments": {
+        "resource_031": 3,
+        "resource_195": 2,
+        "resource_007": 2,
+        "resource_004": 1,
+        "resource_016": 0
+      }
+    },
+    {
+      "query_id": "q032",
+      "query_text": "network security protocols",
+      "relevance_judgments": {
+        "resource_032": 3,
+        "resource_196": 2,
+        "resource_008": 2,
+        "resource_005": 1,
+        "resource_017": 0
+      }
+    },
+    {
+      "query_id": "q033",
+      "query_text": "microservices architecture patterns",
+      "relevance_judgments": {
+        "resource_033": 3,
+        "resource_197": 2,
+        "resource_009": 2,
+        "resource_006": 1,
+        "resource_018": 0
+      }
+    },
+    {
+      "query_id": "q034",
+      "query_text": "breadth first search algorithm",
+      "relevance_judgments": {
+        "resource_034": 3,
+        "resource_198": 2,
+        "resource_010": 2,
+        "resource_007": 1,
+        "resource_019": 0
+      }
+    },
+    {
+      "query_id": "q035",
+      "query_text": "word embeddings Word2Vec",
+      "relevance_judgments": {
+        "resource_035": 3,
+        "resource_199": 2,
+        "resource_011": 2,
+        "resource_008": 1,
+        "resource_020": 0
+      }
+    },
+    {
+      "query_id": "q036",
+      "query_text": "YOLO object detection",
+      "relevance_judgments": {
+        "resource_036": 3,
+        "resource_200": 2,
+        "resource_012": 2,
+        "resource_009": 1,
+        "resource_021": 0
+      }
+    },
+    {
+      "query_id": "q037",
+      "query_text": "proof of stake consensus",
+      "relevance_judgments": {
+        "resource_037": 3,
+        "resource_001": 2,
+        "resource_013": 2,
+        "resource_010": 1,
+        "resource_022": 0
+      }
+    },
+    {
+      "query_id": "q038",
+      "query_text": "transfer learning fine-tuning",
+      "relevance_judgments": {
+        "resource_038": 3,
+        "resource_002": 2,
+        "resource_014": 2,
+        "resource_011": 1,
+        "resource_023": 0
+      }
+    },
+    {
+      "query_id": "q039",
+      "query_text": "database sharding techniques",
+      "relevance_judgments": {
+        "resource_039": 3,
+        "resource_003": 2,
+        "resource_015": 2,
+        "resource_012": 1,
+        "resource_024": 0
+      }
+    },
+    {
+      "query_id": "q040",
+      "query_text": "server-side rendering Next.js",
+      "relevance_judgments": {
+        "resource_040": 3,
+        "resource_004": 2,
+        "resource_016": 2,
+        "resource_013": 1,
+        "resource_025": 0
+      }
+    },
+    {
+      "query_id": "q041",
+      "query_text": "zero trust security architecture",
+      "relevance_judgments": {
+        "resource_041": 3,
+        "resource_005": 2,
+        "resource_017": 2,
+        "resource_014": 1,
+        "resource_026": 0
+      }
+    },
+    {
+      "query_id": "q042",
+      "query_text": "service mesh Istio",
+      "relevance_judgments": {
+        "resource_042": 3,
+        "resource_006": 2,
+        "resource_018": 2,
+        "resource_015": 1,
+        "resource_027": 0
+      }
+    },
+    {
+      "query_id": "q043",
+      "query_text": "quicksort algorithm analysis",
+      "relevance_judgments": {
+        "resource_043": 3,
+        "resource_007": 2,
+        "resource_019": 2,
+        "resource_016": 1,
+        "resource_028": 0
+      }
+    },
+    {
+      "query_id": "q044",
+      "query_text": "machine translation seq2seq",
+      "relevance_judgments": {
+        "resource_044": 3,
+        "resource_008": 2,
+        "resource_020": 2,
+        "resource_017": 1,
+        "resource_029": 0
+      }
+    },
+    {
+      "query_id": "q045",
+      "query_text": "generative adversarial networks",
+      "relevance_judgments": {
+        "resource_045": 3,
+        "resource_009": 2,
+        "resource_021": 2,
+        "resource_018": 1,
+        "resource_030": 0
+      }
+    },
+    {
+      "query_id": "q046",
+      "query_text": "NFT smart contracts ERC-721",
+      "relevance_judgments": {
+        "resource_046": 3,
+        "resource_010": 2,
+        "resource_022": 2,
+        "resource_019": 1,
+        "resource_031": 0
+      }
+    },
+    {
+      "query_id": "q047",
+      "query_text": "k-means clustering algorithm",
+      "relevance_judgments": {
+        "resource_047": 3,
+        "resource_011": 2,
+        "resource_023": 2,
+        "resource_020": 1,
+        "resource_032": 0
+      }
+    },
+    {
+      "query_id": "q048",
+      "query_text": "time series forecasting LSTM",
+      "relevance_judgments": {
+        "resource_048": 3,
+        "resource_012": 2,
+        "resource_024": 2,
+        "resource_021": 1,
+        "resource_033": 0
+      }
+    },
+    {
+      "query_id": "q049",
+      "query_text": "WebAssembly performance",
+      "relevance_judgments": {
+        "resource_049": 3,
+        "resource_013": 2,
+        "resource_025": 2,
+        "resource_022": 1,
+        "resource_034": 0
+      }
+    },
+    {
+      "query_id": "q050",
+      "query_text": "edge computing architecture",
+      "relevance_judgments": {
+        "resource_050": 3,
+        "resource_014": 2,
+        "resource_026": 2,
+        "resource_023": 1,
+        "resource_035": 0
+      }
+    }
+  ]
+}

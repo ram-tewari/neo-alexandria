@@ -7,7 +7,7 @@ user embedding generation, and preference learning.
 
 import json
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import uuid4
 
 import numpy as np

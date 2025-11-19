@@ -39,7 +39,6 @@ from backend.app.schemas.taxonomy import (
     ClassificationFeedback,
     ClassifierTrainingRequest,
     ClassifierTrainingResponse,
-    ResourceClassificationResponse,
     UncertainSamplesResponse,
 )
 from backend.app.services.taxonomy_service import TaxonomyService
@@ -670,7 +669,7 @@ def get_uncertain_samples(
             current_classifications = []
             resource_taxonomies = db.query(ResourceTaxonomy).filter(
                 ResourceTaxonomy.resource_id == resource_id,
-                ResourceTaxonomy.is_predicted == True
+                ResourceTaxonomy.is_predicted
             ).all()
             
             for rt in resource_taxonomies:
@@ -803,7 +802,7 @@ def submit_classification_feedback(
         # Check if retraining is recommended
         from backend.app.database.models import ResourceTaxonomy
         manual_count = db.query(ResourceTaxonomy).filter(
-            ResourceTaxonomy.is_predicted == False,
+            not ResourceTaxonomy.is_predicted,
             ResourceTaxonomy.predicted_by == "manual"
         ).count()
         

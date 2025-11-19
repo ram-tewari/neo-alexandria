@@ -5,7 +5,6 @@ This test verifies the ClassificationService class structure and basic functiona
 """
 
 import sys
-import os
 
 
 def test_classification_service_import():

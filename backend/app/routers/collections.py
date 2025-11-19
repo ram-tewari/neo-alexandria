@@ -1,435 +1,451 @@
 """
-Neo Alexandria 2.0 - Collection API Endpoints (Phase 7)
+Neo Alexandria 2.0 - Collections API Router
 
-This module provides REST API endpoints for collection management and recommendations.
+This module provides the REST API endpoints for collection management in Neo Alexandria 2.0.
+It handles collection CRUD operations, resource membership management, and collection-based
+recommendations using semantic similarity.
 
 Related files:
-- app/services/collection_service.py: Collection business logic
-- app/schemas/collection.py: Request/response schemas
-- app/database/models.py: Collection and Resource models
+- app/services/collection_service.py: Business logic for collection operations
+- app/schemas/collection.py: Pydantic schemas for request/response validation
+- app/database/models.py: Collection and CollectionResource models
+- app/database/base.py: Database session management
+
+Endpoints:
+- POST /collections: Create a new collection
+- GET /collections: List user's collections
+- GET /collections/{id}: Retrieve a specific collection with resources
+- PUT /collections/{id}: Update collection metadata
+- DELETE /collections/{id}: Delete a collection
+- PUT /collections/{id}/resources: Batch add/remove resources
+- GET /collections/{id}/recommendations: Get collection-based recommendations
 """
 
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+import uuid
+from typing import Optional, List
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from backend.app.database.base import get_sync_db
-from backend.app.services.collection_service import CollectionService
 from backend.app.schemas.collection import (
     CollectionCreate,
     CollectionUpdate,
-    CollectionResponse,
-    CollectionDetailResponse,
-    CollectionListResponse,
-    ResourceMembershipRequest,
-    ResourceMembershipResponse,
+    CollectionRead,
+    CollectionWithResources,
+    CollectionResourcesUpdate,
+    CollectionRecommendation,
     CollectionRecommendationsResponse,
-    ResourceSummary,
-    RecommendationItem,
+    ResourceSummary
 )
+from backend.app.services.collection_service import CollectionService
+
 
 router = APIRouter(prefix="/collections", tags=["collections"])
 
 
-def _get_collection_service(db: Session = Depends(get_sync_db)) -> CollectionService:
+def get_collection_service(db: Session = Depends(get_sync_db)) -> CollectionService:
     """Dependency to get collection service instance."""
     return CollectionService(db)
 
 
-@router.post("", response_model=CollectionResponse, status_code=201)
+@router.post("", response_model=CollectionRead, status_code=status.HTTP_201_CREATED)
 async def create_collection(
-    collection_data: CollectionCreate,
-    user_id: str = Query(..., description="User ID (owner)"),
-    service: CollectionService = Depends(_get_collection_service)
+    payload: CollectionCreate,
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
     Create a new collection.
     
     Args:
-        collection_data: Collection creation data
-        user_id: User ID of the collection owner
+        payload: Collection creation data
         service: Collection service instance
         
     Returns:
         Created collection
+        
+    Raises:
+        400: If parent collection doesn't exist or validation fails
+        500: If creation fails
     """
     try:
         collection = service.create_collection(
-            owner_id=user_id,
-            name=collection_data.name,
-            description=collection_data.description,
-            visibility=collection_data.visibility,
-            parent_id=collection_data.parent_id
+            name=payload.name,
+            description=payload.description,
+            owner_id=payload.owner_id,
+            visibility=payload.visibility,
+            parent_id=payload.parent_id
         )
         
-        return CollectionResponse(
-            id=str(collection.id),
-            name=collection.name,
-            description=collection.description,
-            owner_id=collection.owner_id,
-            visibility=collection.visibility,
-            parent_id=str(collection.parent_id) if collection.parent_id else None,
-            created_at=collection.created_at,
-            updated_at=collection.updated_at,
-            resource_count=len(collection.resources) if collection.resources else 0
+        # Add resource count
+        collection.resource_count = 0  # type: ignore[attr-defined]
+        
+        return collection
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create collection: {str(exc)}"
+        )
 
 
-@router.get("", response_model=CollectionListResponse)
+@router.get("", response_model=List[CollectionRead])
 async def list_collections(
-    user_id: Optional[str] = Query(None, description="User ID for access control"),
-    owner_filter: Optional[str] = Query(None, description="Filter by owner ID"),
-    visibility_filter: Optional[str] = Query(None, description="Filter by visibility"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(50, ge=1, le=100, description="Items per page"),
-    service: CollectionService = Depends(_get_collection_service)
+    owner_id: str = Query(..., description="Owner user ID"),
+    parent_id: Optional[uuid.UUID] = Query(None, description="Parent collection ID (None for root)"),
+    include_public: bool = Query(False, description="Include public collections from other users"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum results"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
-    List collections with filtering and pagination.
+    List collections for a user.
     
     Args:
-        user_id: Optional user ID for access control
-        owner_filter: Optional filter by owner ID
-        visibility_filter: Optional filter by visibility
-        page: Page number (1-indexed)
-        limit: Items per page
+        owner_id: Owner user ID
+        parent_id: Optional parent collection ID filter
+        include_public: Whether to include public collections
+        limit: Maximum number of results
+        offset: Pagination offset
         service: Collection service instance
         
     Returns:
-        Paginated list of collections
+        List of collections
     """
     try:
         collections, total = service.list_collections(
-            user_id=user_id,
-            owner_filter=owner_filter,
-            visibility_filter=visibility_filter,
-            page=page,
-            limit=limit
+            owner_id=owner_id,
+            parent_id=parent_id,
+            include_public=include_public,
+            limit=limit,
+            offset=offset
         )
         
-        items = [
-            CollectionResponse(
-                id=str(c.id),
-                name=c.name,
-                description=c.description,
-                owner_id=c.owner_id,
-                visibility=c.visibility,
-                parent_id=str(c.parent_id) if c.parent_id else None,
-                created_at=c.created_at,
-                updated_at=c.updated_at,
-                resource_count=len(c.resources) if c.resources else 0
-            )
-            for c in collections
-        ]
+        # Add resource counts
+        from backend.app.database.models import CollectionResource
+        for collection in collections:
+            resource_count = service.db.query(CollectionResource).filter(
+                CollectionResource.collection_id == collection.id
+            ).count()
+            collection.resource_count = resource_count  # type: ignore[attr-defined]
         
-        return CollectionListResponse(
-            items=items,
-            total=total,
-            page=page,
-            limit=limit
+        return collections
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list collections: {str(exc)}"
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{collection_id}", response_model=CollectionDetailResponse)
+@router.get("/{collection_id}", response_model=CollectionWithResources)
 async def get_collection(
-    collection_id: str,
-    user_id: Optional[str] = Query(None, description="User ID for access control"),
-    service: CollectionService = Depends(_get_collection_service)
+    collection_id: uuid.UUID,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum resources to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset for resources"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
-    Retrieve a specific collection with resources.
+    Retrieve a collection with its resources.
     
     Args:
         collection_id: Collection UUID
-        user_id: Optional user ID for access control
+        owner_id: Optional owner ID for access control
+        limit: Maximum resources to return
+        offset: Pagination offset for resources
         service: Collection service instance
         
     Returns:
-        Collection with embedded resources
+        Collection with populated resources
+        
+    Raises:
+        404: If collection not found or access denied
     """
     try:
-        collection = service.get_collection(collection_id, user_id)
+        collection = service.get_collection(collection_id, owner_id)
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Collection not found or access denied"
+            )
         
-        # Build resource summaries
-        resources = [
+        # Get resources with pagination
+        resources, total = service.get_collection_resources(
+            collection_id=collection_id,
+            owner_id=owner_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Convert to response format
+        resource_summaries = [
             ResourceSummary(
-                id=str(r.id),
+                id=r.id,
                 title=r.title,
+                description=r.description,
+                creator=r.creator,
+                type=r.type,
                 quality_score=r.quality_score,
-                classification_code=r.classification_code
+                created_at=r.created_at
             )
-            for r in collection.resources
-        ] if collection.resources else []
+            for r in resources
+        ]
         
-        # Build subcollection summaries
-        subcollections = [
-            CollectionResponse(
-                id=str(sc.id),
-                name=sc.name,
-                description=sc.description,
-                owner_id=sc.owner_id,
-                visibility=sc.visibility,
-                parent_id=str(sc.parent_id) if sc.parent_id else None,
-                created_at=sc.created_at,
-                updated_at=sc.updated_at,
-                resource_count=len(sc.resources) if sc.resources else 0
-            )
-            for sc in collection.subcollections
-        ] if collection.subcollections else []
-        
-        return CollectionDetailResponse(
-            id=str(collection.id),
+        # Build response
+        response = CollectionWithResources(
+            id=collection.id,
             name=collection.name,
             description=collection.description,
             owner_id=collection.owner_id,
             visibility=collection.visibility,
-            parent_id=str(collection.parent_id) if collection.parent_id else None,
+            parent_id=collection.parent_id,
             created_at=collection.created_at,
             updated_at=collection.updated_at,
-            resource_count=len(resources),
-            resources=resources,
-            subcollections=subcollections
+            resource_count=total,
+            resources=resource_summaries
         )
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
+        
+        return response
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve collection: {str(exc)}"
+        )
 
 
-@router.put("/{collection_id}", response_model=CollectionResponse)
+@router.put("/{collection_id}", response_model=CollectionRead)
 async def update_collection(
-    collection_id: str,
-    updates: CollectionUpdate,
-    user_id: str = Query(..., description="User ID"),
-    service: CollectionService = Depends(_get_collection_service)
+    collection_id: uuid.UUID,
+    payload: CollectionUpdate,
+    owner_id: str = Query(..., description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
     Update collection metadata.
     
     Args:
         collection_id: Collection UUID
-        updates: Fields to update
-        user_id: User ID requesting the update
+        payload: Update data
+        owner_id: Owner user ID for access control
         service: Collection service instance
         
     Returns:
         Updated collection
+        
+    Raises:
+        400: If validation fails
+        404: If collection not found or access denied
     """
     try:
-        update_dict = updates.model_dump(exclude_unset=True)
-        collection = service.update_collection(collection_id, user_id, update_dict)
-        
-        return CollectionResponse(
-            id=str(collection.id),
-            name=collection.name,
-            description=collection.description,
-            owner_id=collection.owner_id,
-            visibility=collection.visibility,
-            parent_id=str(collection.parent_id) if collection.parent_id else None,
-            created_at=collection.created_at,
-            updated_at=collection.updated_at,
-            resource_count=len(collection.resources) if collection.resources else 0
+        collection = service.update_collection(
+            collection_id=collection_id,
+            owner_id=owner_id,
+            updates=payload
         )
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
+        
+        # Add resource count
+        from backend.app.database.models import CollectionResource
+        resource_count = service.db.query(CollectionResource).filter(
+            CollectionResource.collection_id == collection.id
+        ).count()
+        collection.resource_count = resource_count  # type: ignore[attr-defined]
+        
+        return collection
+    except ValueError as ve:
+        if "not found" in str(ve).lower() or "access denied" in str(ve).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(ve)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update collection: {str(exc)}"
+        )
 
 
-@router.delete("/{collection_id}", status_code=204)
+@router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_collection(
-    collection_id: str,
-    user_id: str = Query(..., description="User ID"),
-    service: CollectionService = Depends(_get_collection_service)
+    collection_id: uuid.UUID,
+    owner_id: str = Query(..., description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
     Delete a collection.
     
     Args:
         collection_id: Collection UUID
-        user_id: User ID requesting the deletion
+        owner_id: Owner user ID for access control
         service: Collection service instance
         
-    Returns:
-        204 No Content
+    Raises:
+        404: If collection not found or access denied
     """
     try:
-        service.delete_collection(collection_id, user_id)
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
+        service.delete_collection(collection_id, owner_id)
+        return None
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete collection: {str(exc)}"
+        )
 
 
-@router.post("/{collection_id}/resources", response_model=ResourceMembershipResponse)
-async def add_resources_to_collection(
-    collection_id: str,
-    request: ResourceMembershipRequest,
-    user_id: str = Query(..., description="User ID"),
-    background_tasks: BackgroundTasks = None,
-    service: CollectionService = Depends(_get_collection_service)
+@router.put("/{collection_id}/resources", response_model=dict)
+async def update_collection_resources(
+    collection_id: uuid.UUID,
+    payload: CollectionResourcesUpdate,
+    owner_id: str = Query(..., description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
-    Add resources to a collection (batch operation).
+    Batch add/remove resources from a collection.
     
     Args:
         collection_id: Collection UUID
-        request: Resource IDs to add
-        user_id: User ID requesting the operation
-        background_tasks: FastAPI background tasks
+        payload: Resource IDs to add/remove
+        owner_id: Owner user ID for access control
         service: Collection service instance
         
     Returns:
-        Membership operation result
+        Summary of changes
+        
+    Raises:
+        404: If collection not found or access denied
     """
     try:
-        # Get initial resource count
-        collection_before = service.get_collection(collection_id, user_id)
-        initial_count = len(collection_before.resources) if collection_before.resources else 0
+        added_count = 0
+        removed_count = 0
         
         # Add resources
-        collection = service.add_resources(
-            collection_id=collection_id,
-            user_id=user_id,
-            resource_ids=request.resource_ids
-        )
-        
-        # Get final resource count
-        final_count = len(collection.resources) if collection.resources else 0
-        added_count = final_count - initial_count
-        
-        # Queue embedding recomputation in background
-        if background_tasks and added_count > 0:
-            background_tasks.add_task(service.recompute_embedding, collection_id)
-        
-        return ResourceMembershipResponse(
-            collection_id=collection_id,
-            added_count=added_count,
-            total_resources=final_count
-        )
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.delete("/{collection_id}/resources", response_model=ResourceMembershipResponse)
-async def remove_resources_from_collection(
-    collection_id: str,
-    request: ResourceMembershipRequest,
-    user_id: str = Query(..., description="User ID"),
-    background_tasks: BackgroundTasks = None,
-    service: CollectionService = Depends(_get_collection_service)
-):
-    """
-    Remove resources from a collection (batch operation).
-    
-    Args:
-        collection_id: Collection UUID
-        request: Resource IDs to remove
-        user_id: User ID requesting the operation
-        background_tasks: FastAPI background tasks
-        service: Collection service instance
-        
-    Returns:
-        Membership operation result
-    """
-    try:
-        # Get initial resource count
-        collection_before = service.get_collection(collection_id, user_id)
-        initial_count = len(collection_before.resources) if collection_before.resources else 0
+        if payload.add_resource_ids:
+            added_count = service.add_resources_to_collection(
+                collection_id=collection_id,
+                resource_ids=payload.add_resource_ids,
+                owner_id=owner_id
+            )
         
         # Remove resources
-        collection = service.remove_resources(
-            collection_id=collection_id,
-            user_id=user_id,
-            resource_ids=request.resource_ids
+        if payload.remove_resource_ids:
+            removed_count = service.remove_resources_from_collection(
+                collection_id=collection_id,
+                resource_ids=payload.remove_resource_ids,
+                owner_id=owner_id
+            )
+        
+        return {
+            "collection_id": str(collection_id),
+            "added": added_count,
+            "removed": removed_count,
+            "message": f"Added {added_count} and removed {removed_count} resources"
+        }
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
         )
-        
-        # Get final resource count
-        final_count = len(collection.resources) if collection.resources else 0
-        removed_count = initial_count - final_count
-        
-        # Queue embedding recomputation in background
-        if background_tasks and removed_count > 0:
-            background_tasks.add_task(service.recompute_embedding, collection_id)
-        
-        return ResourceMembershipResponse(
-            collection_id=collection_id,
-            removed_count=removed_count,
-            total_resources=final_count
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update collection resources: {str(exc)}"
         )
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{collection_id}/recommendations", response_model=CollectionRecommendationsResponse)
 async def get_collection_recommendations(
-    collection_id: str,
-    user_id: Optional[str] = Query(None, description="User ID for access control"),
-    limit: int = Query(10, ge=1, le=50, description="Number of recommendations per type"),
-    service: CollectionService = Depends(_get_collection_service)
+    collection_id: uuid.UUID,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum recommendations"),
+    min_similarity: float = Query(0.5, ge=0.0, le=1.0, description="Minimum similarity threshold"),
+    exclude_collection_resources: bool = Query(True, description="Exclude resources already in collection"),
+    service: CollectionService = Depends(get_collection_service)
 ):
     """
-    Get recommendations based on collection's aggregate embedding.
+    Get resource recommendations based on collection embedding.
+    
+    Uses semantic similarity between the collection's aggregate embedding
+    and individual resource embeddings to find related content.
     
     Args:
         collection_id: Collection UUID
-        user_id: Optional user ID for access control
-        limit: Number of recommendations per type
+        owner_id: Optional owner ID for access control
+        limit: Maximum number of recommendations
+        min_similarity: Minimum similarity threshold (0.0-1.0)
+        exclude_collection_resources: Whether to exclude resources already in collection
         service: Collection service instance
         
     Returns:
-        Resource and collection recommendations
+        Collection recommendations with similarity scores
+        
+    Raises:
+        404: If collection not found or access denied
+        400: If collection has no embedding
     """
     try:
-        recommendations = service.get_collection_recommendations(
+        # Get collection
+        collection = service.get_collection(collection_id, owner_id)
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Collection not found or access denied"
+            )
+        
+        # Find similar resources
+        similar_resources = service.find_similar_resources(
             collection_id=collection_id,
-            user_id=user_id or "anonymous",
-            limit=limit
+            owner_id=owner_id,
+            limit=limit,
+            min_similarity=min_similarity,
+            exclude_collection_resources=exclude_collection_resources
         )
         
         # Convert to response format
-        resource_recs = [
-            RecommendationItem(**item)
-            for item in recommendations["resource_recommendations"]
-        ]
-        
-        collection_recs = [
-            RecommendationItem(**item)
-            for item in recommendations["collection_recommendations"]
+        recommendations = [
+            CollectionRecommendation(
+                resource_id=r["resource_id"],
+                title=r["title"],
+                description=r["description"],
+                similarity_score=r["similarity_score"],
+                reason=f"Semantically similar to collection (similarity: {r['similarity_score']:.2f})"
+            )
+            for r in similar_resources
         ]
         
         return CollectionRecommendationsResponse(
             collection_id=collection_id,
-            resource_recommendations=resource_recs,
-            collection_recommendations=collection_recs
+            collection_name=collection.name,
+            recommendations=recommendations,
+            total=len(recommendations)
         )
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            raise HTTPException(status_code=404, detail=str(e))
-        elif "access denied" in str(e).lower():
-            raise HTTPException(status_code=403, detail=str(e))
-        else:
-            raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as ve:
+        if "no embedding" in str(ve).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(ve)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get recommendations: {str(exc)}"
+        )

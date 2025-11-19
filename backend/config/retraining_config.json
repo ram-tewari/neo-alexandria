@@ -1,0 +1,83 @@
+{
+  "schedule": {
+    "cron": "0 2 * * 0",
+    "description": "Every Sunday at 2 AM",
+    "timezone": "UTC",
+    "enabled": true
+  },
+  "triggers": {
+    "data_growth_threshold": 0.10,
+    "performance_degradation_threshold": 0.05,
+    "min_new_samples": 500,
+    "check_interval_hours": 168
+  },
+  "retraining": {
+    "promotion_threshold": 0.02,
+    "min_improvement_required": true,
+    "max_training_time_hours": 4,
+    "enable_auto_promotion": true,
+    "enable_ab_testing": true,
+    "ab_test_duration_days": 7,
+    "ab_test_traffic_split": 0.1
+  },
+  "data_collection": {
+    "arxiv_categories": [
+      "cs.AI",
+      "cs.CL",
+      "cs.CV",
+      "cs.LG",
+      "cs.CR",
+      "cs.DB",
+      "cs.DC",
+      "cs.NE",
+      "cs.RO",
+      "cs.SE"
+    ],
+    "papers_per_category": 1000,
+    "start_date_offset_days": 30,
+    "rate_limit_delay_seconds": 0.5,
+    "max_retries": 3
+  },
+  "preprocessing": {
+    "min_words": 50,
+    "remove_duplicates": true,
+    "quality_filtering": true,
+    "language": "en"
+  },
+  "notification": {
+    "enabled": true,
+    "email": {
+      "enabled": false,
+      "recipients": ["ml-team@example.com"],
+      "smtp_server": "smtp.example.com",
+      "smtp_port": 587
+    },
+    "slack": {
+      "enabled": false,
+      "webhook_url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    },
+    "include_metrics": true,
+    "include_comparison": true
+  },
+  "error_handling": {
+    "max_retries": 3,
+    "retry_delay_seconds": 60,
+    "exponential_backoff": true,
+    "continue_on_collection_error": false,
+    "save_intermediate_results": true
+  },
+  "monitoring": {
+    "track_dataset_size": true,
+    "track_training_time": true,
+    "track_model_performance": true,
+    "log_to_database": true,
+    "alert_on_failure": true
+  },
+  "rollback": {
+    "enabled": true,
+    "error_rate_threshold": 0.10,
+    "latency_p95_threshold_ms": 500,
+    "monitoring_window_minutes": 60,
+    "auto_rollback": true
+  }
+}

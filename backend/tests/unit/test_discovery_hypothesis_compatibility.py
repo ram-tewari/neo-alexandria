@@ -2,7 +2,6 @@
 Unit tests for DiscoveryHypothesis backward compatibility.
 """
 import uuid
-import pytest
 from backend.app.database.models import DiscoveryHypothesis
 
 

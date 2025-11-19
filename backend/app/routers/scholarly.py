@@ -7,7 +7,7 @@ API endpoints for Phase 6.5 scholarly metadata access and extraction.
 import json
 import logging
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -195,7 +195,6 @@ async def get_tables(
 async def trigger_metadata_extraction(
     resource_id: str,
     request: schemas.MetadataExtractionRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -206,6 +205,8 @@ async def trigger_metadata_extraction(
     
     Returns: 202 Accepted with task status
     """
+    from ..tasks.celery_tasks import extract_scholarly_metadata_task
+    
     try:
         import uuid as uuid_module
         resource_uuid = uuid_module.UUID(resource_id)
@@ -228,11 +229,7 @@ async def trigger_metadata_extraction(
         )
     
     # Queue extraction task
-    def extract_task():
-        extractor = MetadataExtractor(db)
-        extractor.extract_scholarly_metadata(resource_id)
-    
-    background_tasks.add_task(extract_task)
+    extract_scholarly_metadata_task.apply_async(args=[resource_id], priority=5)
     
     return schemas.MetadataExtractionResponse(
         status="queued",

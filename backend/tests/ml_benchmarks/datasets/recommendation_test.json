@@ -1,0 +1,6615 @@
+{
+  "metadata": {
+    "dataset_name": "recommendation_benchmark_v1",
+    "created_at": "2025-11-15",
+    "num_users": 50,
+    "num_items": 200,
+    "num_interactions": 800,
+    "num_test_cases": 200,
+    "description": "Test dataset for collaborative filtering with realistic interaction patterns"
+  },
+  "interactions": [
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_013",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-01-22T03:49:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_033",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-04-08T17:45:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_123",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-04-03T04:52:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_115",
+      "interaction_type": "collection_add",
+      "strength": 0.82,
+      "timestamp": "2025-05-08T23:41:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_110",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-02-03T19:34:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_179",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-02-01T02:07:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_104",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-04-19T23:31:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_086",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-05-20T00:24:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_177",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-06-01T02:58:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_185",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-04-18T08:01:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_006",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-06-12T00:05:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_085",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-05T10:22:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_116",
+      "interaction_type": "share",
+      "strength": 0.65,
+      "timestamp": "2025-05-22T12:27:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_039",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-04-18T17:43:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_130",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-05-13T09:23:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_048",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-01-03T09:36:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_111",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-05-23T14:45:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_181",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-03-31T15:29:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_144",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-06-18T15:29:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_152",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-03-19T20:26:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_195",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-05-23T13:54:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_196",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-01-14T17:11:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_120",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-02-27T21:46:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_087",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-01-09T21:36:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_084",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-01-28T17:04:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_040",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-05-31T20:48:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_124",
+      "interaction_type": "view",
+      "strength": 0.4,
+      "timestamp": "2025-03-23T04:24:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_185",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-02-06T07:29:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_116",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-06-04T05:58:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_013",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-04-10T11:59:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_169",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-02-14T08:50:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_035",
+      "interaction_type": "bookmark",
+      "strength": 0.71,
+      "timestamp": "2025-06-11T20:21:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_093",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-02-26T23:42:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_090",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-01-10T22:59:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_096",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-02-06T16:24:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_122",
+      "interaction_type": "collection_add",
+      "strength": 0.81,
+      "timestamp": "2025-01-20T21:59:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_135",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-04-06T22:42:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_055",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-06-17T00:03:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_085",
+      "interaction_type": "share",
+      "strength": 0.8,
+      "timestamp": "2025-05-03T20:11:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_052",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-06-19T11:55:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_072",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-02-23T01:11:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_153",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-06-03T22:47:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_105",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-05-23T04:07:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_156",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-06-19T01:44:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_109",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-05-31T19:05:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_130",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-05-29T12:49:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_069",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-26T19:01:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_124",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-15T22:37:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_069",
+      "interaction_type": "annotation",
+      "strength": 0.7,
+      "timestamp": "2025-04-11T11:50:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-01-24T19:38:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_025",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-02-05T21:41:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_068",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-05-19T11:33:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_198",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-06-15T21:03:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_176",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-05-27T04:27:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_062",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-03-14T10:03:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_129",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-05-04T23:55:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_131",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-05-05T20:34:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_098",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-04-21T20:38:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_112",
+      "interaction_type": "annotation",
+      "strength": 0.7,
+      "timestamp": "2025-06-10T04:53:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_053",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-06-09T14:04:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_018",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-05-13T14:09:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_083",
+      "interaction_type": "view",
+      "strength": 0.39,
+      "timestamp": "2025-02-13T19:29:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_138",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-05-14T00:24:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_159",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-06-16T04:00:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_113",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-04-27T00:46:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_126",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-04-29T08:00:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_197",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-04-13T02:40:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_079",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-02-09T13:41:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_085",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-05-26T05:23:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_185",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-03-01T02:21:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_033",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-04-19T15:34:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_053",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-06-10T01:03:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_159",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-01-24T01:38:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_175",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-05-17T20:22:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_192",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-03-08T20:45:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_144",
+      "interaction_type": "view",
+      "strength": 0.32,
+      "timestamp": "2025-03-08T05:32:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_026",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-04-11T08:19:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_105",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-04-12T06:27:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_021",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-02-16T17:18:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_110",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-01-01T06:30:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_166",
+      "interaction_type": "annotation",
+      "strength": 0.55,
+      "timestamp": "2025-02-07T08:12:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_043",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-03-10T16:43:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_122",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-03-10T03:16:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_076",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-01-11T13:01:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_014",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-01-06T17:20:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_160",
+      "interaction_type": "share",
+      "strength": 0.65,
+      "timestamp": "2025-02-27T09:54:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_040",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-01-26T16:49:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_141",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-03-22T08:20:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_084",
+      "interaction_type": "bookmark",
+      "strength": 0.7,
+      "timestamp": "2025-05-01T01:40:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_083",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-04-25T02:24:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_016",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-01-05T16:46:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_035",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-02-19T03:21:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_023",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-04-19T11:22:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_138",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-12T23:28:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_110",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-04-24T02:57:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_107",
+      "interaction_type": "share",
+      "strength": 0.62,
+      "timestamp": "2025-03-19T00:25:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_138",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-01-21T14:51:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_039",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-03-15T05:49:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_001",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-06-18T17:43:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_191",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-06-04T12:05:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_095",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-04-28T02:00:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_059",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-05-13T06:35:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_180",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-04-11T17:18:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_059",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-06-12T20:24:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_080",
+      "interaction_type": "annotation",
+      "strength": 0.67,
+      "timestamp": "2025-04-08T13:13:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_052",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-04-16T16:13:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_199",
+      "interaction_type": "share",
+      "strength": 0.7,
+      "timestamp": "2025-04-05T01:44:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_082",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-06-28T08:08:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_139",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-01-26T07:42:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_050",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-03-23T17:50:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_112",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-06-10T09:46:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_003",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-03-28T02:30:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_069",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-06-04T15:45:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_032",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-06-13T23:17:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_062",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-06-05T21:44:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_061",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-03-24T19:03:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_112",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-17T03:44:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_040",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-03-26T11:16:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_200",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-06-09T20:37:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_122",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-04-22T13:59:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_076",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-02-03T20:11:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_013",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-06-13T11:06:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_122",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-02-15T01:53:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_098",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-04-27T16:38:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_113",
+      "interaction_type": "share",
+      "strength": 0.75,
+      "timestamp": "2025-04-08T16:33:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_110",
+      "interaction_type": "bookmark",
+      "strength": 0.85,
+      "timestamp": "2025-03-27T04:02:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_053",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-02-18T23:25:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_151",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-04-02T10:43:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_063",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-05-02T22:08:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_200",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-06-12T00:48:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_098",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-05-18T04:47:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_016",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-05-29T07:57:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_047",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-05-27T12:51:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_036",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-04-08T09:35:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_166",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-01-04T23:21:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_040",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-02-07T14:59:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_015",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-04-26T19:23:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_004",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-06-02T18:32:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_108",
+      "interaction_type": "view",
+      "strength": 0.39,
+      "timestamp": "2025-06-20T12:17:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_064",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-04-06T04:35:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_144",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-05-15T17:45:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_166",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-03-06T00:29:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_016",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-03-13T08:08:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_087",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-02-12T18:38:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_161",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-04-12T22:02:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_164",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-02-09T01:23:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_098",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-01-01T02:50:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_028",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-06-07T22:43:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_106",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-05-05T18:38:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_038",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-06-29T03:12:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_126",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-25T07:43:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_002",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-04-25T08:21:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_053",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-02-09T18:36:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_027",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-10T09:35:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_170",
+      "interaction_type": "annotation",
+      "strength": 0.53,
+      "timestamp": "2025-01-21T19:55:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_068",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-01-21T14:54:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_089",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-05-27T04:36:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_153",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-02-15T12:38:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_022",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-01-20T00:04:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_001",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-03-29T02:53:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_074",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-02-06T11:19:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_115",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-04-20T11:24:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_142",
+      "interaction_type": "annotation",
+      "strength": 0.7,
+      "timestamp": "2025-06-16T05:32:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_035",
+      "interaction_type": "annotation",
+      "strength": 0.67,
+      "timestamp": "2025-01-06T09:29:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_176",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-03-27T14:56:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_104",
+      "interaction_type": "bookmark",
+      "strength": 0.85,
+      "timestamp": "2025-01-15T19:25:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_079",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-02-04T00:06:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_051",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-05-13T01:25:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_009",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-05-03T22:52:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_093",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-04-26T13:10:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_051",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-04-24T07:47:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_105",
+      "interaction_type": "share",
+      "strength": 0.62,
+      "timestamp": "2025-02-23T05:24:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_016",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-05-31T01:31:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_159",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-01-03T15:08:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_196",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-01-04T22:46:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_058",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-01-21T20:54:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_047",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-04-13T21:47:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_157",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-06-16T17:46:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_163",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-03-22T06:26:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_084",
+      "interaction_type": "view",
+      "strength": 0.39,
+      "timestamp": "2025-04-29T22:13:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_181",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-04-05T20:29:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_151",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-04-26T14:42:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_148",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-05-06T22:43:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_016",
+      "interaction_type": "annotation",
+      "strength": 0.66,
+      "timestamp": "2025-02-02T01:27:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_164",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-30T02:49:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_146",
+      "interaction_type": "share",
+      "strength": 0.7,
+      "timestamp": "2025-04-07T11:34:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_038",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-01-12T12:28:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_162",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-06-09T22:18:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_141",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-01-29T09:15:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_156",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-03-04T14:23:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_148",
+      "interaction_type": "collection_add",
+      "strength": 0.82,
+      "timestamp": "2025-01-29T16:08:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_096",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-02-10T02:19:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_134",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-06-26T10:33:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_176",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-06-28T22:23:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_121",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-01-21T00:16:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_064",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-01-20T18:23:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_149",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-31T06:33:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_003",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-03-16T06:00:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_090",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-05-02T15:11:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_189",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-06-20T22:33:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_005",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-03-28T23:02:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_195",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-02-21T04:15:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_040",
+      "interaction_type": "share",
+      "strength": 0.8,
+      "timestamp": "2025-01-18T19:47:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_016",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-02-13T18:04:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_139",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-02-20T11:56:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_180",
+      "interaction_type": "view",
+      "strength": 0.4,
+      "timestamp": "2025-05-28T17:08:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_114",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-03-26T03:02:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_069",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-04-19T15:38:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_018",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-04-15T05:49:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_170",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-06-13T12:52:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_107",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-04-14T00:14:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_117",
+      "interaction_type": "collection_add",
+      "strength": 0.8,
+      "timestamp": "2025-03-08T03:04:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_155",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-03-23T08:33:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_032",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-03-31T00:11:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_045",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-02-21T21:59:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_179",
+      "interaction_type": "collection_add",
+      "strength": 1.0,
+      "timestamp": "2025-04-20T06:54:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_009",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-06-25T16:59:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_056",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-01-31T02:54:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_030",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-01-20T03:52:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_061",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-03-22T10:53:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_181",
+      "interaction_type": "annotation",
+      "strength": 0.59,
+      "timestamp": "2025-03-02T11:06:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_040",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-05-06T23:41:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_160",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-06-11T23:42:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_137",
+      "interaction_type": "share",
+      "strength": 0.75,
+      "timestamp": "2025-01-11T06:06:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_014",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-06-26T22:31:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_011",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-06-11T19:24:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_077",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-06-26T18:14:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_061",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-05T16:33:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_185",
+      "interaction_type": "share",
+      "strength": 0.65,
+      "timestamp": "2025-03-19T00:00:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_193",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-05-21T02:18:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_042",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-06-22T00:53:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_059",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-04-17T11:11:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_061",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-05-28T20:04:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_170",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-03-26T23:07:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_190",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-02-20T10:12:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_026",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-04-16T01:36:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_149",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-06-11T16:02:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_153",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-02-27T04:55:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_132",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-05-21T10:45:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_149",
+      "interaction_type": "annotation",
+      "strength": 0.55,
+      "timestamp": "2025-06-03T07:25:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_026",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-01-26T09:55:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_133",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-03-03T04:47:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_169",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-06-14T00:03:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_028",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-05-17T19:28:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_050",
+      "interaction_type": "share",
+      "strength": 0.62,
+      "timestamp": "2025-06-08T09:51:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_064",
+      "interaction_type": "bookmark",
+      "strength": 0.9,
+      "timestamp": "2025-03-26T20:45:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_179",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-04-01T13:38:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_139",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-06-13T16:24:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_194",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-02-11T14:40:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_189",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-06-07T06:51:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_007",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-04-26T12:22:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_148",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-03-06T12:53:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_047",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-06-13T14:39:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_076",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-02-05T13:38:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_055",
+      "interaction_type": "view",
+      "strength": 0.32,
+      "timestamp": "2025-03-27T02:07:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_123",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-05-10T22:26:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_009",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-03-04T20:18:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_092",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-02-26T08:12:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_116",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-03-18T20:53:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_099",
+      "interaction_type": "view",
+      "strength": 0.38,
+      "timestamp": "2025-03-01T06:43:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_027",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-03-18T04:24:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_107",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-04-25T09:40:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_041",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-06-24T15:49:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_046",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-05-02T03:28:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_137",
+      "interaction_type": "annotation",
+      "strength": 0.59,
+      "timestamp": "2025-04-29T08:54:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_035",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-02-12T15:08:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_176",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-05-14T13:18:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_003",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-04-22T20:50:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_077",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-06-22T04:20:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_033",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-06-03T19:56:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_159",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-02-10T11:23:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_190",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-03-30T01:41:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_166",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-06-14T17:33:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_100",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-06-08T04:07:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_074",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-01-16T02:41:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_183",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-02-16T21:51:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_069",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-06-05T06:49:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_106",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-05-02T22:58:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_045",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-03-15T04:11:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_071",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-05-24T10:58:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_117",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-04-18T09:50:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_031",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-06-19T15:39:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_187",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-04-08T14:55:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_004",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-01-22T23:57:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_103",
+      "interaction_type": "annotation",
+      "strength": 0.59,
+      "timestamp": "2025-01-11T19:47:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_177",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-04-08T18:06:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_157",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-05-22T05:28:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_104",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-01-01T21:55:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_064",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-04T11:02:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_039",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-05-23T19:03:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_027",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-04-15T10:20:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_019",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-02-10T11:19:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_147",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-01-06T17:41:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_142",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-01-29T05:49:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_024",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-05-22T15:03:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_058",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-05-07T05:04:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_194",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-06-23T00:40:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_021",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-06-13T08:49:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_063",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-02-08T10:32:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_009",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-01-30T07:47:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_108",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-02-06T22:17:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_077",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-06-26T05:03:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_181",
+      "interaction_type": "view",
+      "strength": 0.4,
+      "timestamp": "2025-05-26T15:45:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_048",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-01-13T12:28:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_124",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-06-17T05:38:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_162",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-06-12T18:27:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_047",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-08T14:06:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_123",
+      "interaction_type": "collection_add",
+      "strength": 0.8,
+      "timestamp": "2025-04-21T09:38:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_065",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-04-06T14:47:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_098",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-01-12T05:58:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_013",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-04-12T09:49:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_124",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-06-08T16:30:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_177",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-05-25T05:20:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_148",
+      "interaction_type": "share",
+      "strength": 0.7,
+      "timestamp": "2025-03-20T15:01:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_043",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-05-04T09:47:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_067",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-06-17T07:19:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_103",
+      "interaction_type": "share",
+      "strength": 0.62,
+      "timestamp": "2025-03-06T15:44:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_050",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-06-10T15:29:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_098",
+      "interaction_type": "annotation",
+      "strength": 0.59,
+      "timestamp": "2025-01-31T22:33:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_117",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-05-29T04:10:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_043",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-04-19T12:04:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_105",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-02-10T15:24:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_040",
+      "interaction_type": "collection_add",
+      "strength": 1.0,
+      "timestamp": "2025-06-21T04:08:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_005",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-04-25T11:05:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_148",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-05-02T15:41:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_069",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-06-30T11:04:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_177",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-06-29T11:57:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_011",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-05-17T08:26:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_165",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-06-24T16:22:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_022",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-06-12T04:47:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_064",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-04-03T22:12:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_007",
+      "interaction_type": "annotation",
+      "strength": 0.61,
+      "timestamp": "2025-06-12T22:56:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_181",
+      "interaction_type": "bookmark",
+      "strength": 0.71,
+      "timestamp": "2025-04-29T14:02:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_112",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-01-17T20:13:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_087",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-01-06T01:15:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_144",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-03-09T06:15:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_056",
+      "interaction_type": "share",
+      "strength": 0.7,
+      "timestamp": "2025-04-24T08:11:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_074",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-03-12T03:44:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_113",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-06-28T21:27:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_028",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-04-04T16:00:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_155",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-01-25T11:32:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_138",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-02-20T14:07:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_105",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-03-21T21:53:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_168",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-02-01T21:01:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_082",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-02-17T16:04:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_013",
+      "interaction_type": "share",
+      "strength": 0.65,
+      "timestamp": "2025-06-03T13:05:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_134",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-01-04T22:39:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_092",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-01-08T07:27:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_139",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-02-15T12:20:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_069",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-01-08T10:51:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_089",
+      "interaction_type": "view",
+      "strength": 0.32,
+      "timestamp": "2025-06-06T16:25:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_019",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-02-08T00:13:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_169",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-03-06T14:01:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_174",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-04-04T18:41:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_135",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-04-24T23:41:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_139",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-04-20T17:49:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_073",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-22T14:00:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_114",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-05-25T00:50:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_113",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-04-07T11:46:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_167",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-03-09T07:39:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_095",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-06-25T00:22:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_104",
+      "interaction_type": "share",
+      "strength": 0.75,
+      "timestamp": "2025-01-05T11:43:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_077",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-05-18T09:11:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_162",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-03-22T15:19:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_175",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-02-21T07:47:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_056",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-05-13T12:38:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_055",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-03-08T05:23:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_009",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-06-06T07:40:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_038",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-04-05T09:01:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_181",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-01-11T02:20:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_153",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-02-07T15:59:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_198",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-04-09T01:10:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_144",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-04-15T21:31:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_021",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-01-15T16:58:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_066",
+      "interaction_type": "annotation",
+      "strength": 0.59,
+      "timestamp": "2025-03-17T08:29:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_076",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-06-08T08:43:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_016",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-05-22T04:39:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_098",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-01-25T15:08:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_100",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-03-14T14:40:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_101",
+      "interaction_type": "collection_add",
+      "strength": 0.82,
+      "timestamp": "2025-05-25T06:37:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_178",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-04-15T21:31:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_068",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-02-12T13:17:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_123",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-01-23T20:52:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_074",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-06-11T13:05:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_150",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-03-04T00:02:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_068",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-04-10T05:23:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_181",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-04-23T12:21:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_150",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-05-08T17:53:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_022",
+      "interaction_type": "view",
+      "strength": 0.38,
+      "timestamp": "2025-04-30T09:43:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_104",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-01-04T22:55:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_049",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-02-05T07:07:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_024",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-05-24T18:22:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_040",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-01-31T16:06:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_045",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-01-13T11:41:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_182",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-01-12T07:25:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_119",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-06-21T17:05:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_059",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-02-15T02:45:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_149",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-03-30T22:04:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_063",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-03-22T06:48:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_189",
+      "interaction_type": "collection_add",
+      "strength": 0.8,
+      "timestamp": "2025-06-18T12:17:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_138",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-06-15T15:06:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_058",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-03-09T16:20:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_069",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-06-12T13:25:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_013",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-04-02T15:05:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_170",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-03-03T15:40:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_063",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-06-03T19:00:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_091",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-03-17T08:58:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_175",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-02-23T15:24:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_074",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-03-16T07:52:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_146",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-06-28T14:06:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_023",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-03-04T13:37:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_011",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-01-21T19:02:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_134",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-05-23T12:35:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_194",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-01-01T23:02:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_019",
+      "interaction_type": "annotation",
+      "strength": 0.68,
+      "timestamp": "2025-03-21T20:44:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_170",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-02-05T08:18:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_170",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-04-08T11:37:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_141",
+      "interaction_type": "share",
+      "strength": 0.65,
+      "timestamp": "2025-04-13T16:27:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_033",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-06-29T23:05:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_027",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-01-05T05:16:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_105",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-04-27T12:26:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_046",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-01-13T10:15:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_008",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-01-30T00:47:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_055",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-06-12T02:53:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_083",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-01-19T08:49:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_139",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-04-06T19:20:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_124",
+      "interaction_type": "annotation",
+      "strength": 0.61,
+      "timestamp": "2025-06-16T15:47:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_059",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-03-14T06:27:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_041",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-06-01T15:51:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_005",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-05-30T18:46:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_102",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-02-07T09:02:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_124",
+      "interaction_type": "annotation",
+      "strength": 0.67,
+      "timestamp": "2025-03-12T13:21:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_168",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-02-24T00:40:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_036",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-06-10T02:46:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_119",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-02-07T01:17:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_072",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-06-19T13:39:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_159",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-06-22T03:26:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_074",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-05-30T05:39:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_049",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-06-09T00:18:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_031",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-06-16T12:14:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_071",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-02-19T14:59:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_016",
+      "interaction_type": "bookmark",
+      "strength": 0.71,
+      "timestamp": "2025-01-20T21:03:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_167",
+      "interaction_type": "annotation",
+      "strength": 0.67,
+      "timestamp": "2025-02-16T05:47:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_041",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-02-07T23:01:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_064",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-06-28T11:58:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_196",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-01-09T13:56:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_069",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-02-21T16:00:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_067",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-05-26T02:06:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_096",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-02-21T12:57:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_200",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-02-16T04:27:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_020",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-05-12T03:24:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_127",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-06-18T19:55:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_055",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-04-01T02:09:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_001",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-03-20T03:13:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_114",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-06-08T07:20:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_128",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-03-11T13:53:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_163",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-03-04T10:24:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_153",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-03-25T00:40:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_018",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-03-20T12:30:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_153",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-03-29T15:12:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_151",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-01-28T14:45:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_183",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-01-15T19:17:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_072",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-01-11T23:31:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_018",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-03-30T17:26:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_108",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-04-07T14:04:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_069",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-04-28T19:11:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_056",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-01-19T00:37:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_135",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-06-08T04:38:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_040",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-05-06T19:26:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_120",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-05-16T13:09:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-04-04T12:58:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_049",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-04-16T03:22:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_008",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-01-26T16:43:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_094",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-01-11T23:28:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_167",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-05-21T08:52:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_134",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-02-07T01:42:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_161",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-02-07T18:37:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_011",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-05-02T18:35:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_150",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-03-19T15:35:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_025",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-03-10T16:57:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-05-31T18:42:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_083",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-01-10T01:11:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_177",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-06-11T09:50:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_153",
+      "interaction_type": "bookmark",
+      "strength": 0.85,
+      "timestamp": "2025-03-29T05:45:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_077",
+      "interaction_type": "annotation",
+      "strength": 0.68,
+      "timestamp": "2025-04-15T12:28:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_172",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-06-17T13:14:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_058",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-05-13T09:54:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_171",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-06-25T07:10:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_009",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-05-20T15:11:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_120",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-05-08T15:32:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_113",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-04-30T10:26:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_042",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-05-30T08:00:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_077",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-04-27T21:28:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_034",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-03-22T19:24:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_079",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-05-27T21:34:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_042",
+      "interaction_type": "annotation",
+      "strength": 0.55,
+      "timestamp": "2025-03-10T13:20:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_186",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-06-15T16:09:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_178",
+      "interaction_type": "annotation",
+      "strength": 0.53,
+      "timestamp": "2025-01-30T01:20:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_185",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-04-12T08:52:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_062",
+      "interaction_type": "bookmark",
+      "strength": 0.85,
+      "timestamp": "2025-03-24T07:19:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_190",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-01-19T23:43:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_165",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-04-11T02:37:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_016",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-04-07T17:59:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_180",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-01-21T15:19:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_149",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-05-19T15:41:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_199",
+      "interaction_type": "annotation",
+      "strength": 0.66,
+      "timestamp": "2025-04-16T11:33:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_045",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-06-26T22:28:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_005",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-01-01T00:42:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_081",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-04-14T22:40:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_030",
+      "interaction_type": "view",
+      "strength": 0.23,
+      "timestamp": "2025-04-13T15:19:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_037",
+      "interaction_type": "annotation",
+      "strength": 0.68,
+      "timestamp": "2025-05-02T11:44:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_197",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-06-14T12:22:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_094",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-04-12T21:23:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_004",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-06-11T16:05:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_058",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-02-10T22:45:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_033",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-03-06T06:39:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_035",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-05-17T00:44:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_064",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-04-25T11:14:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_164",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-05-24T06:41:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_138",
+      "interaction_type": "view",
+      "strength": 0.38,
+      "timestamp": "2025-04-12T16:18:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_041",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-03-21T14:31:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_031",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-05-19T05:34:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_014",
+      "interaction_type": "collection_add",
+      "strength": 0.81,
+      "timestamp": "2025-03-12T06:07:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_062",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-01-14T04:10:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_058",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-05-25T16:20:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_130",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-02-06T22:51:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_180",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-05-07T09:42:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_043",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-06-10T02:13:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_061",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-02-17T04:30:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_105",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-03-14T12:29:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_087",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-03-07T09:05:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_055",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-02-10T02:17:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_139",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-01-29T21:55:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_031",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-05-29T16:16:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_056",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-05-25T01:52:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_118",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-02-23T18:26:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_194",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-01-13T04:22:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_122",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-01-20T20:52:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_122",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-06-22T15:43:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_075",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-01-11T12:42:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_174",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-01-25T00:13:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_076",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-03-14T22:01:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_061",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-02-18T13:44:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_189",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-06-28T07:39:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_014",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-02-04T09:45:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_070",
+      "interaction_type": "annotation",
+      "strength": 0.62,
+      "timestamp": "2025-06-15T13:01:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_051",
+      "interaction_type": "collection_add",
+      "strength": 1.0,
+      "timestamp": "2025-01-30T03:15:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_197",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-03-13T22:59:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_120",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-05-04T05:31:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_086",
+      "interaction_type": "share",
+      "strength": 0.6,
+      "timestamp": "2025-04-25T12:43:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_128",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-06-11T16:36:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_073",
+      "interaction_type": "view",
+      "strength": 0.32,
+      "timestamp": "2025-05-27T06:21:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_049",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-01-13T20:21:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_063",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-04-18T22:48:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_161",
+      "interaction_type": "bookmark",
+      "strength": 0.79,
+      "timestamp": "2025-04-22T18:50:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_009",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-02-03T02:58:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_066",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-05-24T22:02:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_022",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-04-01T20:51:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_011",
+      "interaction_type": "annotation",
+      "strength": 0.66,
+      "timestamp": "2025-05-31T23:42:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_083",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-02-09T16:14:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_188",
+      "interaction_type": "view",
+      "strength": 0.2,
+      "timestamp": "2025-05-14T16:43:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_156",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-06-10T21:30:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_109",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-03-28T08:04:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_194",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-06-28T19:59:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_076",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-01-20T21:48:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_087",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-01-20T18:08:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_014",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-03-24T03:06:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_087",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-03-19T15:15:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_150",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-06-11T23:39:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_189",
+      "interaction_type": "view",
+      "strength": 0.38,
+      "timestamp": "2025-02-07T06:59:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_117",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-02-22T17:53:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_171",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-02-12T03:08:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_008",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-02-04T10:57:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_118",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-03-29T07:56:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_026",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-01-30T00:54:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_121",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-03-27T22:27:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_103",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-04-01T11:31:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_053",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-03-05T19:22:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_170",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-02-25T14:19:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_197",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-06-05T15:55:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_193",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-21T02:21:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_142",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-02-26T10:49:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_004",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-01-03T02:24:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_031",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-06-28T19:45:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_114",
+      "interaction_type": "annotation",
+      "strength": 0.68,
+      "timestamp": "2025-06-30T22:41:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_074",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-02-04T02:28:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_126",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-03-29T07:20:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_196",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-02-27T03:22:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_056",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-04-07T20:50:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_120",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-06-09T10:55:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_151",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-03-27T20:05:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_034",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-31T16:10:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_197",
+      "interaction_type": "share",
+      "strength": 0.76,
+      "timestamp": "2025-03-12T02:52:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_172",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-06-06T09:48:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_154",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-04-04T22:28:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_104",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-01-10T20:08:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-04-17T14:36:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_135",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-06-08T04:05:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_011",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-02-15T05:43:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_198",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-05-20T07:09:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_142",
+      "interaction_type": "bookmark",
+      "strength": 0.76,
+      "timestamp": "2025-06-07T18:28:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_170",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-03-05T23:40:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_025",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-01-10T23:51:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_018",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-04-30T08:14:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_112",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-06-10T09:39:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_190",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-03-21T19:03:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_016",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-03-13T19:34:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_109",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-02-28T12:05:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_012",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-01-08T08:03:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_145",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-03-22T00:13:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_103",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-01-05T04:03:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_179",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-02-04T08:30:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_140",
+      "interaction_type": "annotation",
+      "strength": 0.61,
+      "timestamp": "2025-03-02T08:30:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_061",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-05-02T17:03:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_160",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-02-05T22:46:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_192",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-02-25T04:06:00"
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_060",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-02-27T14:21:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_012",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-05-07T01:28:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_122",
+      "interaction_type": "view",
+      "strength": 0.29,
+      "timestamp": "2025-03-27T08:23:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_199",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-01-03T00:44:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_195",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-03-01T16:41:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_068",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-04-14T11:32:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_101",
+      "interaction_type": "bookmark",
+      "strength": 0.7,
+      "timestamp": "2025-05-06T15:27:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_055",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-04-01T19:27:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_152",
+      "interaction_type": "bookmark",
+      "strength": 0.81,
+      "timestamp": "2025-05-25T06:53:00"
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_125",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-03-02T23:28:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_153",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-01-12T20:39:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_161",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-06-23T10:35:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_069",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-02-01T13:22:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_029",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-05-05T21:27:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_136",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-03-19T06:33:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_161",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-01-23T16:25:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_085",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-02-22T20:08:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_069",
+      "interaction_type": "bookmark",
+      "strength": 0.86,
+      "timestamp": "2025-04-22T18:46:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_040",
+      "interaction_type": "share",
+      "strength": 0.75,
+      "timestamp": "2025-04-16T12:15:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_173",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-01-21T13:40:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_139",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-06-30T12:47:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_014",
+      "interaction_type": "annotation",
+      "strength": 0.7,
+      "timestamp": "2025-05-04T03:15:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_076",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-02-07T07:33:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_077",
+      "interaction_type": "bookmark",
+      "strength": 0.77,
+      "timestamp": "2025-05-11T17:31:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_123",
+      "interaction_type": "bookmark",
+      "strength": 0.87,
+      "timestamp": "2025-03-29T02:09:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_192",
+      "interaction_type": "annotation",
+      "strength": 0.53,
+      "timestamp": "2025-02-10T11:38:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_035",
+      "interaction_type": "collection_add",
+      "strength": 0.82,
+      "timestamp": "2025-01-21T16:58:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_148",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-05-18T18:16:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_065",
+      "interaction_type": "annotation",
+      "strength": 0.68,
+      "timestamp": "2025-05-31T23:54:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_172",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-06-21T13:32:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_005",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-01-04T06:59:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_117",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-02-12T19:08:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_169",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-04-25T22:10:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_020",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-05-10T17:20:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_177",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-26T01:38:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_157",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-02-19T20:22:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_081",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-01-14T02:27:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_198",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-06-06T08:43:00"
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_101",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-04-26T14:52:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_156",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-04-09T23:50:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_027",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-04-10T10:36:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_160",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-03-31T03:11:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_153",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-01-14T10:59:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_138",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-02-17T08:17:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_062",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-06-26T20:15:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_152",
+      "interaction_type": "share",
+      "strength": 0.64,
+      "timestamp": "2025-06-29T05:03:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_155",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-04-20T03:10:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_161",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-03-15T22:38:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_159",
+      "interaction_type": "view",
+      "strength": 0.32,
+      "timestamp": "2025-04-29T10:35:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_138",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-03-31T19:52:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_057",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-06-19T23:15:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_012",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-01-02T16:42:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_034",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-01-28T10:15:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_035",
+      "interaction_type": "share",
+      "strength": 0.63,
+      "timestamp": "2025-05-23T12:53:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_037",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-06-04T06:37:00"
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_130",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-01-29T18:07:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_136",
+      "interaction_type": "annotation",
+      "strength": 0.64,
+      "timestamp": "2025-03-14T05:57:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_131",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-05-24T22:49:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_057",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-03-03T01:15:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_055",
+      "interaction_type": "collection_add",
+      "strength": 0.96,
+      "timestamp": "2025-03-05T08:41:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_098",
+      "interaction_type": "share",
+      "strength": 0.73,
+      "timestamp": "2025-05-21T05:56:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_176",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-03-09T05:28:00"
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_099",
+      "interaction_type": "view",
+      "strength": 0.21,
+      "timestamp": "2025-02-21T23:23:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_078",
+      "interaction_type": "annotation",
+      "strength": 0.67,
+      "timestamp": "2025-03-12T02:41:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_002",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-04-23T05:14:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_101",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-05-27T19:34:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_052",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-01-10T14:22:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_055",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-04-06T04:43:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_051",
+      "interaction_type": "bookmark",
+      "strength": 0.82,
+      "timestamp": "2025-06-16T17:11:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_187",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-06-11T15:37:00"
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_113",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-05-05T12:41:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_097",
+      "interaction_type": "annotation",
+      "strength": 0.56,
+      "timestamp": "2025-06-30T16:58:00"
+    },
+    {
+      "user_id": "user_005",
+      "resource_id": "resource_029",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-06-03T05:34:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_142",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-02-24T13:47:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_113",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-04-09T22:27:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_145",
+      "interaction_type": "bookmark",
+      "strength": 0.74,
+      "timestamp": "2025-01-02T16:49:00"
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_098",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-02-22T13:32:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_058",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-03-20T22:45:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_030",
+      "interaction_type": "share",
+      "strength": 0.72,
+      "timestamp": "2025-01-15T09:42:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_084",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-03-05T11:25:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_057",
+      "interaction_type": "view",
+      "strength": 0.33,
+      "timestamp": "2025-01-24T19:38:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_148",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-04-21T03:18:00"
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_136",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-03-12T23:16:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_063",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-04-09T06:58:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_113",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-03-23T23:55:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_187",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-05-05T03:56:00"
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_155",
+      "interaction_type": "view",
+      "strength": 0.38,
+      "timestamp": "2025-05-08T09:49:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_106",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-01-20T23:59:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_121",
+      "interaction_type": "annotation",
+      "strength": 0.53,
+      "timestamp": "2025-02-07T05:49:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_124",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-04-27T01:02:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_171",
+      "interaction_type": "collection_add",
+      "strength": 0.82,
+      "timestamp": "2025-04-17T01:59:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_176",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-05-02T21:22:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_080",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-06-12T18:37:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_103",
+      "interaction_type": "collection_add",
+      "strength": 0.88,
+      "timestamp": "2025-01-26T21:33:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_077",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-03-28T17:28:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_069",
+      "interaction_type": "share",
+      "strength": 0.62,
+      "timestamp": "2025-04-14T14:36:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_183",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-01-27T12:32:00"
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_156",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-06-07T19:02:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_081",
+      "interaction_type": "bookmark",
+      "strength": 0.88,
+      "timestamp": "2025-06-17T21:30:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_193",
+      "interaction_type": "annotation",
+      "strength": 0.66,
+      "timestamp": "2025-04-11T01:05:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_028",
+      "interaction_type": "annotation",
+      "strength": 0.54,
+      "timestamp": "2025-06-06T19:17:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_028",
+      "interaction_type": "annotation",
+      "strength": 0.7,
+      "timestamp": "2025-03-19T00:19:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_070",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-02-04T08:11:00"
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_023",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-06-24T12:33:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_187",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-03-14T09:15:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_064",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-03-01T12:40:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_108",
+      "interaction_type": "bookmark",
+      "strength": 0.89,
+      "timestamp": "2025-01-11T14:58:00"
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_108",
+      "interaction_type": "annotation",
+      "strength": 0.6,
+      "timestamp": "2025-03-13T23:23:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_110",
+      "interaction_type": "annotation",
+      "strength": 0.5,
+      "timestamp": "2025-03-05T07:45:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_035",
+      "interaction_type": "share",
+      "strength": 0.78,
+      "timestamp": "2025-03-12T20:08:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_172",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-05-11T13:26:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_071",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-04-02T13:22:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_063",
+      "interaction_type": "bookmark",
+      "strength": 0.8,
+      "timestamp": "2025-06-25T12:10:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_053",
+      "interaction_type": "collection_add",
+      "strength": 0.91,
+      "timestamp": "2025-03-15T14:56:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_133",
+      "interaction_type": "annotation",
+      "strength": 0.51,
+      "timestamp": "2025-01-07T23:37:00"
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_047",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-04-27T08:53:00"
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_077",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-04-12T12:44:00"
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_095",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-06-04T22:27:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_015",
+      "interaction_type": "view",
+      "strength": 0.3,
+      "timestamp": "2025-03-19T05:10:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_194",
+      "interaction_type": "collection_add",
+      "strength": 0.85,
+      "timestamp": "2025-02-21T04:49:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_200",
+      "interaction_type": "annotation",
+      "strength": 0.57,
+      "timestamp": "2025-01-20T07:22:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_074",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-01-29T09:28:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_039",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-05-24T06:23:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_060",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-05-01T06:23:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_091",
+      "interaction_type": "share",
+      "strength": 0.71,
+      "timestamp": "2025-01-22T09:13:00"
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_181",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-03-26T15:29:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_056",
+      "interaction_type": "bookmark",
+      "strength": 0.78,
+      "timestamp": "2025-04-02T19:01:00"
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_130",
+      "interaction_type": "view",
+      "strength": 0.36,
+      "timestamp": "2025-01-24T14:32:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_124",
+      "interaction_type": "collection_add",
+      "strength": 0.87,
+      "timestamp": "2025-05-28T04:36:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_007",
+      "interaction_type": "view",
+      "strength": 0.35,
+      "timestamp": "2025-05-06T20:01:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_123",
+      "interaction_type": "view",
+      "strength": 0.39,
+      "timestamp": "2025-05-27T12:54:00"
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_134",
+      "interaction_type": "annotation",
+      "strength": 0.58,
+      "timestamp": "2025-03-12T01:35:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_081",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-05-20T15:16:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_026",
+      "interaction_type": "view",
+      "strength": 0.22,
+      "timestamp": "2025-03-13T18:22:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_013",
+      "interaction_type": "collection_add",
+      "strength": 0.92,
+      "timestamp": "2025-02-19T07:17:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_150",
+      "interaction_type": "collection_add",
+      "strength": 0.84,
+      "timestamp": "2025-03-23T03:53:00"
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_166",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-06-06T17:36:00"
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_098",
+      "interaction_type": "collection_add",
+      "strength": 0.93,
+      "timestamp": "2025-06-28T17:26:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_193",
+      "interaction_type": "bookmark",
+      "strength": 0.75,
+      "timestamp": "2025-06-24T22:24:00"
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_142",
+      "interaction_type": "view",
+      "strength": 0.34,
+      "timestamp": "2025-05-13T03:18:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_169",
+      "interaction_type": "share",
+      "strength": 0.74,
+      "timestamp": "2025-05-24T09:34:00"
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_162",
+      "interaction_type": "annotation",
+      "strength": 0.61,
+      "timestamp": "2025-03-24T23:29:00"
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_172",
+      "interaction_type": "annotation",
+      "strength": 0.65,
+      "timestamp": "2025-06-23T03:56:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_075",
+      "interaction_type": "share",
+      "strength": 0.6,
+      "timestamp": "2025-04-01T07:36:00"
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_105",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-02-20T06:07:00"
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_186",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-04-30T19:02:00"
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_059",
+      "interaction_type": "bookmark",
+      "strength": 0.72,
+      "timestamp": "2025-01-17T15:28:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_001",
+      "interaction_type": "collection_add",
+      "strength": 0.94,
+      "timestamp": "2025-03-22T22:02:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_090",
+      "interaction_type": "view",
+      "strength": 0.28,
+      "timestamp": "2025-04-12T16:23:00"
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_017",
+      "interaction_type": "annotation",
+      "strength": 0.69,
+      "timestamp": "2025-04-23T19:31:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_038",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-01-13T20:18:00"
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_060",
+      "interaction_type": "view",
+      "strength": 0.25,
+      "timestamp": "2025-03-01T01:42:00"
+    },
+    {
+      "user_id": "user_047",
+      "resource_id": "resource_189",
+      "interaction_type": "collection_add",
+      "strength": 0.89,
+      "timestamp": "2025-01-08T01:41:00"
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_130",
+      "interaction_type": "share",
+      "strength": 0.79,
+      "timestamp": "2025-02-25T18:22:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_050",
+      "interaction_type": "share",
+      "strength": 0.68,
+      "timestamp": "2025-06-07T06:28:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_200",
+      "interaction_type": "view",
+      "strength": 0.31,
+      "timestamp": "2025-01-01T12:44:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_053",
+      "interaction_type": "view",
+      "strength": 0.37,
+      "timestamp": "2025-05-22T06:37:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_017",
+      "interaction_type": "share",
+      "strength": 0.61,
+      "timestamp": "2025-01-15T07:38:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_127",
+      "interaction_type": "annotation",
+      "strength": 0.52,
+      "timestamp": "2025-01-27T04:07:00"
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_153",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-01-12T18:41:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_062",
+      "interaction_type": "share",
+      "strength": 0.75,
+      "timestamp": "2025-04-27T21:31:00"
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-06-07T15:42:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_148",
+      "interaction_type": "collection_add",
+      "strength": 0.9,
+      "timestamp": "2025-05-11T08:25:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_087",
+      "interaction_type": "collection_add",
+      "strength": 0.98,
+      "timestamp": "2025-05-13T08:51:00"
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_168",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-02-19T19:33:00"
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_181",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-04-10T21:31:00"
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_065",
+      "interaction_type": "view",
+      "strength": 0.27,
+      "timestamp": "2025-01-18T11:15:00"
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_018",
+      "interaction_type": "share",
+      "strength": 0.77,
+      "timestamp": "2025-01-27T16:46:00"
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_033",
+      "interaction_type": "collection_add",
+      "strength": 0.97,
+      "timestamp": "2025-06-28T19:02:00"
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_027",
+      "interaction_type": "bookmark",
+      "strength": 0.83,
+      "timestamp": "2025-05-25T23:58:00"
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_169",
+      "interaction_type": "annotation",
+      "strength": 0.63,
+      "timestamp": "2025-06-10T20:02:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_043",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-01-18T06:20:00"
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_071",
+      "interaction_type": "share",
+      "strength": 0.67,
+      "timestamp": "2025-05-01T03:43:00"
+    },
+    {
+      "user_id": "user_039",
+      "resource_id": "resource_036",
+      "interaction_type": "collection_add",
+      "strength": 0.99,
+      "timestamp": "2025-03-23T05:25:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_179",
+      "interaction_type": "bookmark",
+      "strength": 0.73,
+      "timestamp": "2025-04-16T10:28:00"
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_141",
+      "interaction_type": "collection_add",
+      "strength": 0.81,
+      "timestamp": "2025-02-07T18:45:00"
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_099",
+      "interaction_type": "bookmark",
+      "strength": 0.84,
+      "timestamp": "2025-02-08T11:01:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_179",
+      "interaction_type": "collection_add",
+      "strength": 0.86,
+      "timestamp": "2025-02-10T23:27:00"
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_144",
+      "interaction_type": "share",
+      "strength": 0.69,
+      "timestamp": "2025-01-29T23:55:00"
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_060",
+      "interaction_type": "collection_add",
+      "strength": 0.95,
+      "timestamp": "2025-06-02T00:17:00"
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_042",
+      "interaction_type": "share",
+      "strength": 0.66,
+      "timestamp": "2025-02-25T18:17:00"
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_109",
+      "interaction_type": "view",
+      "strength": 0.24,
+      "timestamp": "2025-03-11T04:01:00"
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_177",
+      "interaction_type": "view",
+      "strength": 0.26,
+      "timestamp": "2025-05-25T07:36:00"
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_045",
+      "interaction_type": "collection_add",
+      "strength": 0.83,
+      "timestamp": "2025-04-05T05:36:00"
+    }
+  ],
+  "held_out_test": [
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_185",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_170",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_052",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_017",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_122",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_086",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_109",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_164",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_187",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_100",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_170",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_026",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_105",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_003",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_026",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_196",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_140",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_017",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_127",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_057",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_125",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_167",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_013",
+      "resource_id": "resource_141",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_001",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_149",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_115",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_179",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_169",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_146",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_175",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_114",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_013",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_015",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_042",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_139",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_002",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_140",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_120",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_074",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_050",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_059",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_106",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_122",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_182",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_007",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_139",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_064",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_028",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_048",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_089",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_021",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_079",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_016",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_030",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_137",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_017",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_098",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_063",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_173",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_125",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_028",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_125",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_030",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_009",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_125",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_179",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_147",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_180",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_109",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_105",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_040",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_183",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_134",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_068",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_154",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_055",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_141",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_056",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_122",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_055",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_196",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_143",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_187",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_041",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_046",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_110",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_175",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_016",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_033",
+      "resource_id": "resource_002",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_014",
+      "resource_id": "resource_114",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_054",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_052",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_166",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_112",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_049",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_070",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_190",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_145",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_151",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_059",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_014",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_116",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_134",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_041",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_005",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_049",
+      "resource_id": "resource_019",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_120",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_167",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_059",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_195",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_128",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_036",
+      "resource_id": "resource_167",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_183",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_031",
+      "resource_id": "resource_061",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_191",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_142",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_123",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_028",
+      "resource_id": "resource_081",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_041",
+      "resource_id": "resource_026",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_007",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_016",
+      "resource_id": "resource_048",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_030",
+      "resource_id": "resource_117",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_021",
+      "resource_id": "resource_142",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_012",
+      "resource_id": "resource_087",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_035",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_095",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_110",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_026",
+      "resource_id": "resource_106",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_164",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_045",
+      "resource_id": "resource_096",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_141",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_029",
+      "resource_id": "resource_107",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_070",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_001",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_135",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_004",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_017",
+      "resource_id": "resource_118",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_158",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_159",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_098",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_020",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_188",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_091",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_134",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_034",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_027",
+      "resource_id": "resource_169",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_042",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_013",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_030",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_048",
+      "resource_id": "resource_116",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_007",
+      "resource_id": "resource_088",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_042",
+      "resource_id": "resource_079",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_161",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_043",
+      "resource_id": "resource_081",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_068",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_191",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_121",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_149",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_040",
+      "resource_id": "resource_058",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_189",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_147",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_034",
+      "resource_id": "resource_033",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_073",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_008",
+      "resource_id": "resource_015",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_084",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_083",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_015",
+      "resource_id": "resource_117",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_169",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_114",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_156",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_025",
+      "resource_id": "resource_195",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_038",
+      "resource_id": "resource_035",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_140",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_023",
+      "resource_id": "resource_090",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_021",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_032",
+      "resource_id": "resource_115",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_009",
+      "resource_id": "resource_177",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_143",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_035",
+      "resource_id": "resource_165",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_010",
+      "resource_id": "resource_113",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_139",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_006",
+      "resource_id": "resource_147",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_143",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_063",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_117",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_044",
+      "resource_id": "resource_164",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_004",
+      "resource_id": "resource_056",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_187",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_011",
+      "resource_id": "resource_105",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_020",
+      "resource_id": "resource_071",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_024",
+      "resource_id": "resource_030",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_046",
+      "resource_id": "resource_177",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_019",
+      "resource_id": "resource_191",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_003",
+      "resource_id": "resource_132",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_002",
+      "resource_id": "resource_195",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_050",
+      "resource_id": "resource_184",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_001",
+      "resource_id": "resource_051",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_022",
+      "resource_id": "resource_121",
+      "is_relevant": true
+    },
+    {
+      "user_id": "user_018",
+      "resource_id": "resource_018",
+      "is_relevant": false
+    },
+    {
+      "user_id": "user_037",
+      "resource_id": "resource_056",
+      "is_relevant": true
+    }
+  ]
+}

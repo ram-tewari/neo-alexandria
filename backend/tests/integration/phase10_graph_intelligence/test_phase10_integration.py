@@ -7,7 +7,6 @@ Tests end-to-end workflows including:
 """
 
 import pytest
-from sqlalchemy.orm import Session
 from backend.app.database.models import Resource, Citation, GraphEdge, GraphEmbedding, DiscoveryHypothesis
 from backend.app.services.graph_service import GraphService
 from backend.app.services.graph_embeddings_service import GraphEmbeddingsService

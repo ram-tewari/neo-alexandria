@@ -17,11 +17,13 @@ from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 
 import numpy as np
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from backend.app.database.models import User, UserProfile, UserInteraction, Resource
 from backend.app.utils.performance_monitoring import timing_decorator, metrics
+from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +351,19 @@ class UserProfileService:
             
             self.db.commit()
             self.db.refresh(interaction)
+            
+            # Emit user.interaction_tracked event
+            event_emitter.emit(
+                SystemEvent.USER_INTERACTION_TRACKED,
+                {
+                    "user_id": str(user_id),
+                    "resource_id": str(resource_id),
+                    "interaction_type": interaction_type,
+                    "total_interactions": profile.total_interactions,
+                    "interaction_strength": interaction_strength
+                },
+                priority=EventPriority.LOW
+            )
             
             return interaction
             

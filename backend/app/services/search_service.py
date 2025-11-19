@@ -26,6 +26,8 @@ Features:
 from __future__ import annotations
 
 import logging
+import hashlib
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple
@@ -34,9 +36,12 @@ from sqlalchemy import text, func, or_, asc, desc, String, cast
 from sqlalchemy.orm import Session
 
 from backend.app.database.models import Resource
-from backend.app.schemas.search import SearchQuery, Facets, FacetBucket, SearchFilters
+from backend.app.schemas.search import Facets, FacetBucket, SearchFilters
+from backend.app.schemas.search import SearchQuery as SearchQuerySchema
+from backend.app.domain.search import SearchQuery as DomainSearchQuery
 from backend.app.config.settings import get_settings
 from backend.app.services.ai_core import generate_embedding
+from backend.app.cache.redis_cache import cache
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -65,6 +70,668 @@ class _FtsSupport:
 
 
 _fts_support = _FtsSupport()
+
+
+@dataclass
+class RetrievalCandidates:
+    """Intermediate data structure for retrieval phase results.
+    
+    Encapsulates the results from all three retrieval methods before fusion.
+    This enables independent testing and modification of the retrieval phase.
+    
+    Attributes:
+        fts5_results: Results from FTS5 keyword search
+        dense_results: Results from dense vector search
+        sparse_results: Results from sparse vector search
+        retrieval_time_ms: Total time taken for retrieval phase
+        method_times_ms: Individual times for each method
+    """
+    fts5_results: List[Tuple[str, float]]
+    dense_results: List[Tuple[str, float]]
+    sparse_results: List[Tuple[str, float]]
+    retrieval_time_ms: float
+    method_times_ms: Dict[str, float]
+    
+    def get_all_candidate_ids(self) -> set[str]:
+        """Get all unique candidate IDs across all methods.
+        
+        Returns:
+            Set of unique resource IDs
+        """
+        all_ids = set()
+        all_ids.update(rid for rid, _ in self.fts5_results)
+        all_ids.update(rid for rid, _ in self.dense_results)
+        all_ids.update(rid for rid, _ in self.sparse_results)
+        return all_ids
+    
+    def get_method_counts(self) -> Dict[str, int]:
+        """Get count of results from each method.
+        
+        Returns:
+            Dictionary with counts for each method
+        """
+        return {
+            'fts5': len(self.fts5_results),
+            'dense': len(self.dense_results),
+            'sparse': len(self.sparse_results)
+        }
+
+
+@dataclass
+class FusedCandidates:
+    """Intermediate data structure for fusion phase results.
+    
+    Encapsulates the results after RRF fusion but before reranking.
+    This enables independent testing and modification of the fusion phase.
+    
+    Attributes:
+        fused_results: Ranked list of (resource_id, score) after RRF fusion
+        weights_used: RRF weights applied to each method
+        fusion_time_ms: Time taken for fusion phase
+        method_contributions: Count of results contributed by each method
+    """
+    fused_results: List[Tuple[str, float]]
+    weights_used: List[float]
+    fusion_time_ms: float
+    method_contributions: Dict[str, int]
+    
+    def get_top_k(self, k: int) -> List[Tuple[str, float]]:
+        """Get top k results.
+        
+        Args:
+            k: Number of top results to return
+            
+        Returns:
+            List of top k (resource_id, score) tuples
+        """
+        return self.fused_results[:k]
+    
+    def get_candidate_ids(self) -> List[str]:
+        """Get ordered list of candidate IDs.
+        
+        Returns:
+            List of resource IDs in ranked order
+        """
+        return [rid for rid, _ in self.fused_results]
+
+
+class HybridSearchQuery:
+    """Encapsulates three-way hybrid search pipeline.
+    
+    This class combines FTS5 keyword search, dense vector search, and sparse
+    vector search using Reciprocal Rank Fusion (RRF) with optional reranking.
+    
+    Attributes:
+        db: Database session
+        query: Domain SearchQuery object with query text and configuration
+        enable_reranking: Whether to apply ColBERT reranking
+        adaptive_weighting: Whether to use query-adaptive RRF weights
+    """
+    
+    def __init__(
+        self,
+        db: Session,
+        query: DomainSearchQuery,
+        enable_reranking: bool = True,
+        adaptive_weighting: bool = True
+    ):
+        """Initialize hybrid search query.
+        
+        Args:
+            db: Database session
+            query: Domain SearchQuery object with query text and configuration
+            enable_reranking: Whether to apply ColBERT reranking (default: True)
+            adaptive_weighting: Whether to use query-adaptive RRF weights (default: True)
+        """
+        self.db = db
+        self.query = query
+        self.enable_reranking = enable_reranking
+        self.adaptive_weighting = adaptive_weighting
+        
+        # Diagnostic information
+        self._diagnostics: Dict[str, Any] = {
+            'query_analysis': {},
+            'retrieval_times': {},
+            'method_results': {},
+            'fusion_time': 0.0,
+            'reranking_time': 0.0,
+            'total_time': 0.0
+        }
+    
+    def execute(self) -> Tuple[List[Resource], int, Facets, Dict[str, str], Dict[str, Any]]:
+        """Execute the hybrid search pipeline.
+        
+        Returns:
+            Tuple of:
+            - resources: List of Resource objects
+            - total: Total count of unique matching resources
+            - facets: Faceted search results
+            - snippets: Dict mapping resource_id to snippet text
+            - metadata: Dict with latency_ms, method_contributions, weights_used
+        """
+        import time
+        
+        start_time = time.time()
+        
+        # Ensure tables exist
+        self._ensure_tables_exist()
+        
+        # Check if Phase 8 services are available
+        if not self._check_services_available():
+            return self._fallback_to_two_way_hybrid(start_time)
+        
+        # 1. Query Analysis
+        query_analysis = self._analyze_query()
+        self._diagnostics['query_analysis'] = query_analysis
+        logger.debug(f"Query analysis: {query_analysis}")
+        
+        # PHASE 1: Candidate Retrieval
+        # Execute all three retrieval methods and collect results
+        retrieval_candidates = self._execute_retrieval_phase()
+        
+        # PHASE 2: Fusion
+        # Fuse candidates using RRF with adaptive weighting
+        fused_candidates = self._execute_fusion_phase(retrieval_candidates)
+        
+        # PHASE 3: Reranking (optional)
+        # Apply ColBERT reranking to improve ranking quality
+        final_results = self._execute_reranking_phase(fused_candidates)
+        
+        # 6. Fetch Resources
+        resources = self._fetch_paginated_resources(final_results)
+        
+        # Total count is the number of unique documents in fused results
+        total = len(final_results)
+        
+        # 7. Compute Facets
+        facets = self._compute_facets(final_results)
+        
+        # 8. Generate Snippets
+        snippets = self._generate_snippets(resources)
+        
+        # 9. Compute Metadata
+        total_time = (time.time() - start_time) * 1000
+        self._diagnostics['total_time'] = total_time
+        
+        metadata = {
+            'latency_ms': total_time,
+            'method_contributions': fused_candidates.method_contributions,
+            'weights_used': fused_candidates.weights_used,
+            'reranking_enabled': self.enable_reranking,
+            'adaptive_weighting': self.adaptive_weighting
+        }
+        
+        # Log slow queries
+        if total_time > 500:
+            logger.warning(
+                f"Slow query detected: {total_time:.1f}ms for query '{self.query.query_text[:50]}...'"
+            )
+        
+        logger.info(
+            f"Three-way hybrid search completed in {total_time:.1f}ms: "
+            f"{len(resources)} results returned, {total} total matches"
+        )
+        
+        return resources, total, facets, snippets, metadata
+    
+    def get_diagnostic_info(self) -> Dict[str, Any]:
+        """Get diagnostic information about the search execution.
+        
+        Returns:
+            Dictionary with diagnostic information including:
+            - query_analysis: Query characteristics
+            - retrieval_times: Time taken for each retrieval method
+            - method_results: Number of results from each method
+            - fusion_time: Time taken for RRF fusion
+            - reranking_time: Time taken for reranking (if enabled)
+            - total_time: Total execution time
+        """
+        return self._diagnostics.copy()
+    
+    def _convert_to_schema_filters(self) -> SearchFilters | None:
+        """Convert domain SearchQuery to schema SearchFilters for compatibility.
+        
+        Returns:
+            SearchFilters object or None
+        """
+        # For now, return None as the domain SearchQuery doesn't have filters
+        # This will be enhanced when filters are added to the domain object
+        return None
+    
+    def _ensure_tables_exist(self) -> None:
+        """Ensure database tables exist."""
+        from backend.app.database.base import Base
+        try:
+            Base.metadata.create_all(bind=self.db.get_bind())
+        except Exception:
+            pass
+    
+    def _check_services_available(self) -> bool:
+        """Check if Phase 8 services are available.
+        
+        Returns:
+            True if all required services are available, False otherwise
+        """
+        return (
+            ReciprocalRankFusionService is not None and
+            SparseEmbeddingService is not None and
+            (not self.enable_reranking or RerankingService is not None)
+        )
+    
+    def _fallback_to_two_way_hybrid(self, start_time: float) -> Tuple[List[Resource], int, Facets, Dict[str, str], Dict[str, Any]]:
+        """Fallback to two-way hybrid search when Phase 8 services unavailable.
+        
+        Args:
+            start_time: Start time for timing calculation
+            
+        Returns:
+            Search results tuple
+        """
+        logger.warning(
+            "Phase 8 services not fully available, falling back to two-way hybrid search"
+        )
+        
+        # Convert domain SearchQuery to schema SearchQuery for compatibility
+        schema_query = SearchQuerySchema(
+            text=self.query.query_text,
+            limit=self.query.limit,
+            offset=0,
+            hybrid_weight=0.5
+        )
+        
+        results = AdvancedSearchService.hybrid_search(
+            self.db, schema_query, 0.5
+        )
+        
+        # Unpack and add empty metadata
+        if len(results) == 4:
+            resources, total, facets, snippets = results
+        else:
+            resources, total, facets = results
+            snippets = {}
+        
+        metadata = {
+            'latency_ms': (time.time() - start_time) * 1000,
+            'method_contributions': {'fts5': 0, 'dense': 0, 'sparse': 0},
+            'weights_used': [0.5, 0.5, 0.0],
+            'reranking_enabled': self.enable_reranking,
+            'adaptive_weighting': self.adaptive_weighting
+        }
+        return resources, total, facets, snippets, metadata
+    
+    def _analyze_query(self) -> Dict[str, Any]:
+        """Analyze query characteristics.
+        
+        Returns:
+            Dictionary with query analysis results
+        """
+        return AdvancedSearchService._analyze_query(self.query.query_text or "")
+    
+    def _execute_retrieval_phase(self) -> RetrievalCandidates:
+        """Execute Phase 1: Candidate Retrieval.
+        
+        Executes all three retrieval methods in parallel and collects results
+        into an intermediate data structure. This phase is independent of fusion
+        and reranking, enabling separate testing and optimization.
+        
+        Returns:
+            RetrievalCandidates with results from all three methods
+        """
+        import time
+        
+        retrieval_start = time.time()
+        method_times: Dict[str, float] = {}
+        
+        # Execute three retrieval methods
+        fts5_start = time.time()
+        fts5_results = self._search_fts5()
+        method_times['fts5'] = (time.time() - fts5_start) * 1000
+        
+        dense_start = time.time()
+        dense_results = self._search_dense()
+        method_times['dense'] = (time.time() - dense_start) * 1000
+        
+        sparse_start = time.time()
+        sparse_results = self._search_sparse()
+        method_times['sparse'] = (time.time() - sparse_start) * 1000
+        
+        retrieval_time = (time.time() - retrieval_start) * 1000
+        
+        # Create intermediate data structure
+        candidates = RetrievalCandidates(
+            fts5_results=fts5_results,
+            dense_results=dense_results,
+            sparse_results=sparse_results,
+            retrieval_time_ms=retrieval_time,
+            method_times_ms=method_times
+        )
+        
+        # Update diagnostics
+        self._diagnostics['retrieval_times'] = method_times
+        self._diagnostics['retrieval_times']['total'] = retrieval_time
+        self._diagnostics['method_results'] = candidates.get_method_counts()
+        
+        logger.debug(
+            f"Retrieval phase completed in {retrieval_time:.1f}ms: "
+            f"FTS5={len(fts5_results)}, Dense={len(dense_results)}, Sparse={len(sparse_results)}"
+        )
+        
+        return candidates
+    
+    def _execute_fusion_phase(self, candidates: RetrievalCandidates) -> FusedCandidates:
+        """Execute Phase 2: Fusion.
+        
+        Fuses results from all three retrieval methods using Reciprocal Rank Fusion
+        with optional adaptive weighting. This phase is independent of retrieval
+        and reranking, enabling separate testing and optimization.
+        
+        Args:
+            candidates: RetrievalCandidates from retrieval phase
+            
+        Returns:
+            FusedCandidates with merged and ranked results
+        """
+        import time
+        
+        fusion_start = time.time()
+        
+        # Compute adaptive weights based on query characteristics
+        weights = self._compute_weights()
+        
+        # Apply RRF fusion
+        rrf_service = ReciprocalRankFusionService(k=60)
+        result_lists = [
+            candidates.fts5_results,
+            candidates.dense_results,
+            candidates.sparse_results
+        ]
+        fused_results = rrf_service.fuse_results(result_lists, weights)
+        
+        # Compute method contributions
+        method_contributions = self._compute_method_contributions(
+            candidates.fts5_results,
+            candidates.dense_results,
+            candidates.sparse_results
+        )
+        
+        fusion_time = (time.time() - fusion_start) * 1000
+        
+        # Create intermediate data structure
+        fused = FusedCandidates(
+            fused_results=fused_results,
+            weights_used=weights,
+            fusion_time_ms=fusion_time,
+            method_contributions=method_contributions
+        )
+        
+        # Update diagnostics
+        self._diagnostics['fusion_time'] = fusion_time
+        
+        logger.debug(
+            f"Fusion phase completed in {fusion_time:.1f}ms: "
+            f"{len(fused_results)} unique documents, "
+            f"weights=[{weights[0]:.3f}, {weights[1]:.3f}, {weights[2]:.3f}]"
+        )
+        
+        return fused
+    
+    def _execute_reranking_phase(self, fused: FusedCandidates) -> List[Tuple[str, float]]:
+        """Execute Phase 3: Reranking (optional).
+        
+        Applies ColBERT reranking to improve ranking quality. This phase is
+        independent of retrieval and fusion, enabling separate testing and
+        can be disabled for faster results.
+        
+        Args:
+            fused: FusedCandidates from fusion phase
+            
+        Returns:
+            Final ranked list of (resource_id, score) tuples
+        """
+        import time
+        
+        # If reranking is disabled, return fused results as-is
+        if not self.enable_reranking or not fused.fused_results:
+            logger.debug("Reranking phase skipped")
+            return fused.fused_results
+        
+        reranking_start = time.time()
+        
+        try:
+            reranking_service = RerankingService(self.db)
+            
+            # Take top 100 candidates for reranking
+            candidates = fused.get_top_k(100)
+            candidate_ids = [rid for rid, _ in candidates]
+            
+            reranked_results = reranking_service.rerank(
+                self.query.query_text or "",
+                candidate_ids,
+                top_k=100,
+                timeout=1.0  # 1 second timeout
+            )
+            
+            if reranked_results:
+                # Combine reranked top 100 with remaining fused results
+                final_results = reranked_results + fused.fused_results[100:]
+                reranking_time = (time.time() - reranking_start) * 1000
+                self._diagnostics['reranking_time'] = reranking_time
+                logger.debug(f"Reranking phase completed in {reranking_time:.1f}ms")
+                return final_results
+            else:
+                logger.warning("Reranking returned no results, using fusion results")
+                return fused.fused_results
+        
+        except Exception as e:
+            logger.error(f"Reranking phase failed: {e}", exc_info=True)
+            return fused.fused_results
+    
+
+    
+    def _search_fts5(self) -> List[Tuple[str, float]]:
+        """Execute FTS5 full-text search.
+        
+        Returns:
+            List of (resource_id, score) tuples
+        """
+        import time
+        
+        start = time.time()
+        results = []
+        
+        try:
+            if self.query.query_text and _detect_fts5(self.db) and _fts_index_ready(self.db):
+                parsed_match = AdvancedSearchService.parse_search_query(self.query.query_text)
+                # Convert domain SearchQuery to schema SearchFilters for compatibility
+                filters = self._convert_to_schema_filters()
+                items, _, _, bm25_scores, _ = AdvancedSearchService.fts_search(
+                    self.db, parsed_match, filters, limit=100, offset=0
+                )
+                results = [(str(item.id), bm25_scores.get(str(item.id), 1.0)) for item in items]
+                logger.debug(f"FTS5 search returned {len(results)} results")
+        except Exception as e:
+            logger.error(f"FTS5 search failed: {e}", exc_info=True)
+        
+        self._diagnostics['retrieval_times']['fts5'] = (time.time() - start) * 1000
+        return results
+    
+    def _search_dense(self) -> List[Tuple[str, float]]:
+        """Execute dense vector search.
+        
+        Returns:
+            List of (resource_id, score) tuples
+        """
+        import time
+        import json
+        
+        start = time.time()
+        results = []
+        
+        try:
+            if self.query.query_text and np is not None:
+                # Check if we have embeddings
+                has_embeddings = self.db.query(Resource).filter(
+                    Resource.embedding.isnot(None),
+                    func.json_array_length(Resource.embedding) > 0
+                ).first() is not None
+                
+                if has_embeddings:
+                    # Generate query embedding
+                    query_embedding = generate_embedding(self.query.query_text)
+                    
+                    if query_embedding:
+                        # Get all resources with embeddings
+                        resources_with_embeddings = self.db.query(Resource).filter(
+                            Resource.embedding.isnot(None),
+                            func.json_array_length(Resource.embedding) > 0
+                        ).all()
+                        
+                        # Compute cosine similarities
+                        query_vec = np.array(query_embedding)
+                        query_norm = np.linalg.norm(query_vec)
+                        
+                        similarities = []
+                        for resource in resources_with_embeddings:
+                            try:
+                                resource_vec = np.array(json.loads(resource.embedding))
+                                resource_norm = np.linalg.norm(resource_vec)
+                                
+                                if query_norm > 0 and resource_norm > 0:
+                                    similarity = np.dot(query_vec, resource_vec) / (query_norm * resource_norm)
+                                    similarities.append((str(resource.id), float(similarity)))
+                            except Exception:
+                                continue
+                        
+                        # Sort by similarity and take top 100
+                        similarities.sort(key=lambda x: x[1], reverse=True)
+                        results = similarities[:100]
+                        logger.debug(f"Dense vector search returned {len(results)} results")
+        except Exception as e:
+            logger.error(f"Dense vector search failed: {e}", exc_info=True)
+        
+        self._diagnostics['retrieval_times']['dense'] = (time.time() - start) * 1000
+        return results
+    
+    def _search_sparse(self) -> List[Tuple[str, float]]:
+        """Execute sparse vector search.
+        
+        Returns:
+            List of (resource_id, score) tuples
+        """
+        import time
+        
+        start = time.time()
+        results = []
+        
+        try:
+            if self.query.query_text:
+                results = AdvancedSearchService._search_sparse(self.db, self.query.query_text, limit=100)
+                logger.debug(f"Sparse vector search returned {len(results)} results")
+        except Exception as e:
+            logger.error(f"Sparse vector search failed: {e}", exc_info=True)
+        
+        self._diagnostics['retrieval_times']['sparse'] = (time.time() - start) * 1000
+        return results
+    
+    def _compute_weights(self) -> List[float]:
+        """Compute RRF weights based on query characteristics.
+        
+        Returns:
+            List of three weights for [fts5, dense, sparse]
+        """
+        rrf_service = ReciprocalRankFusionService(k=60)
+        
+        if self.adaptive_weighting and self.query.query_text:
+            weights = rrf_service.adaptive_weights(self.query.query_text)
+        else:
+            # Equal weights
+            weights = [1.0 / 3, 1.0 / 3, 1.0 / 3]
+        
+        logger.debug(f"Using RRF weights: FTS5={weights[0]:.3f}, Dense={weights[1]:.3f}, Sparse={weights[2]:.3f}")
+        return weights
+    
+
+    
+    def _compute_method_contributions(
+        self,
+        fts5_results: List[Tuple[str, float]],
+        dense_results: List[Tuple[str, float]],
+        sparse_results: List[Tuple[str, float]]
+    ) -> Dict[str, int]:
+        """Compute how many results each method contributed.
+        
+        Args:
+            fts5_results: FTS5 search results
+            dense_results: Dense vector search results
+            sparse_results: Sparse vector search results
+            
+        Returns:
+            Dictionary with counts for each method
+        """
+        fts5_ids = {rid for rid, _ in fts5_results}
+        dense_ids = {rid for rid, _ in dense_results}
+        sparse_ids = {rid for rid, _ in sparse_results}
+        
+        return {
+            'fts5': len(fts5_ids),
+            'dense': len(dense_ids),
+            'sparse': len(sparse_ids)
+        }
+    
+
+    
+    def _fetch_paginated_resources(self, fused_results: List[Tuple[str, float]]) -> List[Resource]:
+        """Fetch resources with pagination applied.
+        
+        Args:
+            fused_results: Fused and ranked results
+            
+        Returns:
+            List of Resource objects
+        """
+        # Apply pagination to fused results
+        # Note: offset and pagination will be handled by the caller
+        # For now, take the first 'limit' results
+        paginated_ids = [rid for rid, _ in fused_results[:self.query.limit]]
+        
+        return AdvancedSearchService._fetch_resources_ordered(
+            self.db,
+            paginated_ids,
+            None  # No filters for now
+        )
+    
+    def _compute_facets(self, fused_results: List[Tuple[str, float]]) -> Facets:
+        """Compute facets from fused results.
+        
+        Args:
+            fused_results: Fused and ranked results
+            
+        Returns:
+            Facets object
+        """
+        # Use all fused result IDs for facet computation
+        all_fused_ids = [rid for rid, _ in fused_results]
+        facet_query = self.db.query(Resource).filter(Resource.id.in_(all_fused_ids))
+        # No filters for now
+        return _compute_facets(self.db, facet_query)
+    
+    def _generate_snippets(self, resources: List[Resource]) -> Dict[str, str]:
+        """Generate snippets for resources.
+        
+        Args:
+            resources: List of Resource objects
+            
+        Returns:
+            Dictionary mapping resource_id to snippet text
+        """
+        snippets: Dict[str, str] = {}
+        if self.query.query_text:
+            for resource in resources:
+                snippets[str(resource.id)] = AdvancedSearchService.generate_snippets(
+                    (resource.description or resource.title or ""),
+                    self.query.query_text
+                )
+        return snippets
 
 
 def _detect_fts5(db: Session) -> bool:
@@ -187,7 +854,77 @@ def _compute_facets(db: Session, base_query) -> Facets:
 
 class AdvancedSearchService:
     @staticmethod
+    def _generate_cache_key(query: SearchQuery) -> str:
+        """Generate cache key from search query.
+        
+        Args:
+            query: SearchQuery object
+            
+        Returns:
+            Cache key string
+        """
+        # Create a dict representation of the query for hashing
+        query_dict = {
+            "text": query.text,
+            "limit": query.limit,
+            "offset": query.offset,
+            "sort_by": query.sort_by,
+            "sort_dir": query.sort_dir,
+            "hybrid_weight": query.hybrid_weight,
+            "filters": {
+                "classification": query.filters.classification if query.filters else None,
+                "type": query.filters.type if query.filters else None,
+                "language": query.filters.language if query.filters else None,
+                "subjects": query.filters.subjects if query.filters else None,
+                "min_quality": query.filters.min_quality if query.filters else None,
+                "max_quality": query.filters.max_quality if query.filters else None,
+                "start_date": str(query.filters.start_date) if query.filters and query.filters.start_date else None,
+                "end_date": str(query.filters.end_date) if query.filters and query.filters.end_date else None,
+            }
+        }
+        
+        # Generate hash from query dict
+        query_json = json.dumps(query_dict, sort_keys=True)
+        query_hash = hashlib.md5(query_json.encode()).hexdigest()
+        
+        return f"search_query:{query_hash}"
+    
+    @staticmethod
     def search(db: Session, query: SearchQuery):
+        # Try cache first
+        cache_key = AdvancedSearchService._generate_cache_key(query)
+        cached_result = cache.get(cache_key)
+        
+        if cached_result is not None:
+            logger.debug(f"Cache hit for search query: {query.text}")
+            # Reconstruct result from cache
+            # Note: We need to fetch resources from DB as we can't cache ORM objects
+            resource_ids = cached_result.get("resource_ids", [])
+            if resource_ids:
+                resources = db.query(Resource).filter(Resource.id.in_(resource_ids)).all()
+                # Maintain order from cache
+                id_to_resource = {str(r.id): r for r in resources}
+                ordered_resources = [id_to_resource[rid] for rid in resource_ids if rid in id_to_resource]
+            else:
+                ordered_resources = []
+            
+            total = cached_result.get("total", 0)
+            facets_data = cached_result.get("facets", {})
+            snippets = cached_result.get("snippets", {})
+            
+            # Reconstruct Facets object
+            facets = Facets(
+                classification=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("classification", [])],
+                type=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("type", [])],
+                language=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("language", [])],
+                read_status=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("read_status", [])],
+                subject=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("subject", [])]
+            )
+            
+            return ordered_resources, total, facets, snippets
+        
+        logger.debug(f"Cache miss for search query: {query.text}")
+        
         # Ensure tables exist
         from backend.app.database.base import Base
         try:
@@ -243,6 +980,8 @@ class AdvancedSearchService:
                 )
 
             # Attach snippets via return structure
+            # Cache the results
+            AdvancedSearchService._cache_search_results(cache_key, ranked_items, total, facets, snippets)
             # Return tuple extended with snippets mapping
             return ranked_items, total, facets, snippets
 
@@ -354,6 +1093,9 @@ class AdvancedSearchService:
                     (it.description or it.title or ""), query.text
                 )
 
+        # Cache the results
+        AdvancedSearchService._cache_search_results(cache_key, items, total, facets, snippets)
+        
         return items, total, facets, snippets
 
     @staticmethod
@@ -666,10 +1408,8 @@ class AdvancedSearchService:
             - facets: Search facets
             - snippets: Search result snippets
         """
-        from backend.app.schemas.search import SearchQuery, SearchFilters
-        
-        # Build SearchQuery object for standard search
-        search_query = SearchQuery(
+        # Build schema SearchQuery object for standard search
+        search_query = SearchQuerySchema(
             text=query,
             filters=SearchFilters(),
             limit=limit,
@@ -892,7 +1632,7 @@ class AdvancedSearchService:
     @staticmethod
     def search_three_way_hybrid(
         db: Session,
-        query: SearchQuery,
+        query: SearchQuery | SearchQuerySchema,
         enable_reranking: bool = True,
         adaptive_weighting: bool = True
     ) -> Tuple[List[Resource], int, Facets, Dict[str, str], Dict[str, Any]]:
@@ -908,7 +1648,7 @@ class AdvancedSearchService:
         
         Args:
             db: Database session
-            query: Search query with text and filters
+            query: SearchQuery object (schema or domain) with query text and configuration
             enable_reranking: Whether to apply ColBERT reranking (default: True)
             adaptive_weighting: Whether to use query-adaptive RRF weights (default: True)
             
@@ -920,225 +1660,47 @@ class AdvancedSearchService:
             - snippets: Dict mapping resource_id to snippet text
             - metadata: Dict with latency_ms, method_contributions, weights_used
         """
-        import time
+        # Convert schema SearchQuery to domain SearchQuery if needed
+        from backend.app.domain.search import SearchQuery as DomainSearchQuery
         
-        start_time = time.time()
-        
-        # Ensure tables exist
-        from backend.app.database.base import Base
-        try:
-            Base.metadata.create_all(bind=db.get_bind())
-        except Exception:
-            pass
-        
-        # Check if Phase 8 services are available
-        if (ReciprocalRankFusionService is None or 
-            SparseEmbeddingService is None or 
-            (enable_reranking and RerankingService is None)):
-            logger.warning(
-                "Phase 8 services not fully available, falling back to two-way hybrid search"
+        if not isinstance(query, DomainSearchQuery):
+            # It's a schema SearchQuery, convert it
+            domain_query = DomainSearchQuery(
+                query_text=query.text or "",
+                limit=query.limit,
+                enable_reranking=enable_reranking,
+                adaptive_weights=adaptive_weighting,
+                search_method="three_way"
             )
-            # Fall back to existing hybrid search
-            results = AdvancedSearchService.hybrid_search(db, query, query.hybrid_weight or 0.5)
-            # Unpack and add empty metadata
-            if len(results) == 4:
-                resources, total, facets, snippets = results
-            else:
-                resources, total, facets = results
-                snippets = {}
-            
-            metadata = {
-                'latency_ms': (time.time() - start_time) * 1000,
-                'method_contributions': {'fts5': 0, 'dense': 0, 'sparse': 0},
-                'weights_used': [0.5, 0.5, 0.0]
-            }
-            return resources, total, facets, snippets, metadata
-        
-        # 1. Query Analysis
-        query_analysis = AdvancedSearchService._analyze_query(query.text or "")
-        logger.debug(f"Query analysis: {query_analysis}")
-        
-        # Note: query_analysis is used for logging, kept for debugging purposes
-        
-        # 2. Parallel Retrieval (execute three methods)
-        retrieval_start = time.time()
-        
-        # 2a. FTS5 Search
-        fts5_results = []
-        try:
-            if query.text and _detect_fts5(db) and _fts_index_ready(db):
-                parsed_match = AdvancedSearchService.parse_search_query(query.text)
-                items, _, _, bm25_scores, _ = AdvancedSearchService.fts_search(
-                    db, parsed_match, query.filters, limit=100, offset=0
-                )
-                fts5_results = [(str(item.id), bm25_scores.get(str(item.id), 1.0)) for item in items]
-                logger.debug(f"FTS5 search returned {len(fts5_results)} results")
-        except Exception as e:
-            logger.error(f"FTS5 search failed: {e}", exc_info=True)
-        
-        # 2b. Dense Vector Search
-        dense_results = []
-        try:
-            if query.text and np is not None:
-                # Check if we have embeddings
-                has_embeddings = db.query(Resource).filter(
-                    Resource.embedding.isnot(None),
-                    func.json_array_length(Resource.embedding) > 0
-                ).first() is not None
-                
-                if has_embeddings:
-                    # Generate query embedding
-                    query_embedding = generate_embedding(query.text)
-                    
-                    if query_embedding:
-                        # Get all resources with embeddings
-                        resources_with_embeddings = db.query(Resource).filter(
-                            Resource.embedding.isnot(None),
-                            func.json_array_length(Resource.embedding) > 0
-                        ).all()
-                        
-                        # Compute cosine similarities
-                        import json
-                        query_vec = np.array(query_embedding)
-                        query_norm = np.linalg.norm(query_vec)
-                        
-                        similarities = []
-                        for resource in resources_with_embeddings:
-                            try:
-                                resource_vec = np.array(json.loads(resource.embedding))
-                                resource_norm = np.linalg.norm(resource_vec)
-                                
-                                if query_norm > 0 and resource_norm > 0:
-                                    similarity = np.dot(query_vec, resource_vec) / (query_norm * resource_norm)
-                                    similarities.append((str(resource.id), float(similarity)))
-                            except Exception:
-                                continue
-                        
-                        # Sort by similarity and take top 100
-                        similarities.sort(key=lambda x: x[1], reverse=True)
-                        dense_results = similarities[:100]
-                        logger.debug(f"Dense vector search returned {len(dense_results)} results")
-        except Exception as e:
-            logger.error(f"Dense vector search failed: {e}", exc_info=True)
-        
-        # 2c. Sparse Vector Search
-        sparse_results = []
-        try:
-            if query.text:
-                sparse_results = AdvancedSearchService._search_sparse(db, query.text, limit=100)
-                logger.debug(f"Sparse vector search returned {len(sparse_results)} results")
-        except Exception as e:
-            logger.error(f"Sparse vector search failed: {e}", exc_info=True)
-        
-        retrieval_time = (time.time() - retrieval_start) * 1000
-        logger.debug(f"Three retrieval methods completed in {retrieval_time:.1f}ms")
-        
-        # 3. Adaptive Weighting
-        rrf_service = ReciprocalRankFusionService(k=60)
-        
-        if adaptive_weighting and query.text:
-            weights = rrf_service.adaptive_weights(query.text)
         else:
-            # Equal weights
-            weights = [1.0 / 3, 1.0 / 3, 1.0 / 3]
+            domain_query = query
         
-        logger.debug(f"Using RRF weights: FTS5={weights[0]:.3f}, Dense={weights[1]:.3f}, Sparse={weights[2]:.3f}")
+        # Delegate to HybridSearchQuery class
+        hybrid_query = HybridSearchQuery(
+            db=db,
+            query=domain_query,
+            enable_reranking=enable_reranking,
+            adaptive_weighting=adaptive_weighting
+        )
+        return hybrid_query.execute()
+    
+    @staticmethod
+    def _convert_schema_to_domain_query(schema_query: SearchQuerySchema) -> DomainSearchQuery:
+        """Convert schema SearchQuery to domain SearchQuery.
         
-        # 4. RRF Fusion
-        fusion_start = time.time()
-        result_lists = [fts5_results, dense_results, sparse_results]
-        fused_results = rrf_service.fuse_results(result_lists, weights)
-        fusion_time = (time.time() - fusion_start) * 1000
-        logger.debug(f"RRF fusion completed in {fusion_time:.1f}ms, {len(fused_results)} unique documents")
-        
-        # Track method contributions
-        fts5_ids = {rid for rid, _ in fts5_results}
-        dense_ids = {rid for rid, _ in dense_results}
-        sparse_ids = {rid for rid, _ in sparse_results}
-        
-        method_contributions = {
-            'fts5': len(fts5_ids),
-            'dense': len(dense_ids),
-            'sparse': len(sparse_ids)
-        }
-        
-        # 5. Reranking (optional)
-        if enable_reranking and fused_results:
-            reranking_start = time.time()
-            try:
-                reranking_service = RerankingService(db)
-                
-                # Take top 100 candidates for reranking
-                candidates = [rid for rid, _ in fused_results[:100]]
-                
-                reranked_results = reranking_service.rerank(
-                    query.text or "",
-                    candidates,
-                    top_k=100,
-                    timeout=1.0  # 1 second timeout
-                )
-                
-                if reranked_results:
-                    # Use reranked results
-                    fused_results = reranked_results + fused_results[100:]
-                    reranking_time = (time.time() - reranking_start) * 1000
-                    logger.debug(f"Reranking completed in {reranking_time:.1f}ms")
-                else:
-                    logger.warning("Reranking returned no results, using RRF results")
+        Args:
+            schema_query: Pydantic schema SearchQuery from API
             
-            except Exception as e:
-                logger.error(f"Reranking failed: {e}", exc_info=True)
-        
-        # 6. Fetch Resources
-        # Apply pagination to fused results
-        paginated_ids = [rid for rid, _ in fused_results[query.offset:query.offset + query.limit]]
-        
-        resources = AdvancedSearchService._fetch_resources_ordered(
-            db,
-            paginated_ids,
-            query.filters
+        Returns:
+            Domain SearchQuery object
+        """
+        return DomainSearchQuery(
+            query_text=schema_query.text or "",
+            limit=schema_query.limit,
+            enable_reranking=True,  # Default value
+            adaptive_weights=True,  # Default value
+            search_method="hybrid"  # Default to hybrid search
         )
-        
-        # Total count is the number of unique documents in fused results
-        total = len(fused_results)
-        
-        # 7. Compute Facets
-        # Use all fused result IDs for facet computation
-        all_fused_ids = [rid for rid, _ in fused_results]
-        facet_query = db.query(Resource).filter(Resource.id.in_(all_fused_ids))
-        facet_query = _apply_structured_filters(facet_query, query.filters)
-        facets = _compute_facets(db, facet_query)
-        
-        # 8. Generate Snippets
-        snippets: Dict[str, str] = {}
-        if query.text:
-            for resource in resources:
-                snippets[str(resource.id)] = AdvancedSearchService.generate_snippets(
-                    (resource.description or resource.title or ""),
-                    query.text
-                )
-        
-        # 9. Compute Metadata
-        total_time = (time.time() - start_time) * 1000
-        
-        metadata = {
-            'latency_ms': total_time,
-            'method_contributions': method_contributions,
-            'weights_used': weights
-        }
-        
-        # Log slow queries
-        if total_time > 500:
-            logger.warning(
-                f"Slow query detected: {total_time:.1f}ms for query '{query.text[:50]}...'"
-            )
-        
-        logger.info(
-            f"Three-way hybrid search completed in {total_time:.1f}ms: "
-            f"{len(resources)} results returned, {total} total matches"
-        )
-        
-        return resources, total, facets, snippets, metadata
     
     @staticmethod
     def _search_sparse(

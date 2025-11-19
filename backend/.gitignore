@@ -133,12 +133,16 @@ dmypy.json
 *.sqlite
 *.sqlite3
 
-# Database files
+# Database files (keep in data/ directory)
 neo_alexandria.db
 backend.db
 *.db
 *.sqlite
 *.sqlite3
+
+# Database files at root (should be in data/)
+/backend.db
+/neo_alexandria.db
 
 # Alembic
 # Keep migrations but ignore any temporary files

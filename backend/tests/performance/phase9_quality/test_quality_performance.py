@@ -11,10 +11,7 @@ from backend.app.services.summarization_evaluator import SummarizationEvaluator
 from backend.app.database.models import Resource
 
 
-@pytest.fixture
-def quality_service(db_session: Session):
-    """Create QualityService instance."""
-    return QualityService(db_session)
+# quality_service fixture is now in performance/phase9_quality/conftest.py
 
 
 @pytest.fixture

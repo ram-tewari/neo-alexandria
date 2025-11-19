@@ -9,7 +9,6 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import schemas directly without going through app/__init__.py
-from pydantic import ValidationError
 
 # Direct import to avoid app initialization
 import importlib.util

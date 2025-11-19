@@ -94,7 +94,7 @@ def verify_get_descendants():
         print(f"   ✓ Found {len(leaf_descendants)} descendants")
         
         if len(leaf_descendants) == 0:
-            print(f"   ✓ Correctly returned empty list for leaf node")
+            print("   ✓ Correctly returned empty list for leaf node")
         else:
             print(f"   ✗ ERROR: Expected 0 descendants, got {len(leaf_descendants)}")
             return False
@@ -105,7 +105,7 @@ def verify_get_descendants():
             if not desc.path.startswith(f"{root.path}/"):
                 print(f"   ✗ ERROR: Descendant path {desc.path} doesn't start with {root.path}/")
                 return False
-        print(f"   ✓ All descendants have correct path prefix")
+        print("   ✓ All descendants have correct path prefix")
         
         # Test 6: Verify ordering (by level and name)
         print("\n6. Verifying ordering (by level and name)...")
@@ -113,21 +113,21 @@ def verify_get_descendants():
         prev_name = ""
         for desc in descendants:
             if desc.level < prev_level:
-                print(f"   ✗ ERROR: Descendants not ordered by level")
+                print("   ✗ ERROR: Descendants not ordered by level")
                 return False
             if desc.level == prev_level and desc.name < prev_name:
-                print(f"   ✗ ERROR: Descendants not ordered by name within same level")
+                print("   ✗ ERROR: Descendants not ordered by name within same level")
                 return False
             prev_level = desc.level
             prev_name = desc.name
-        print(f"   ✓ Descendants correctly ordered by level and name")
+        print("   ✓ Descendants correctly ordered by level and name")
         
         # Test 7: Test with non-existent node
         print("\n7. Testing get_descendants() with non-existent node...")
         try:
             fake_id = uuid.uuid4()
             service.get_descendants(fake_id)
-            print(f"   ✗ ERROR: Should have raised ValueError for non-existent node")
+            print("   ✗ ERROR: Should have raised ValueError for non-existent node")
             return False
         except ValueError as e:
             print(f"   ✓ Correctly raised ValueError: {e}")

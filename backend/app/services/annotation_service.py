@@ -34,6 +34,14 @@ from sqlalchemy import select, or_, and_
 from backend.app.database.models import Annotation, Resource
 from backend.app.services.ai_core import EmbeddingGenerator
 
+# Constants
+DEFAULT_CONTEXT_LENGTH = 50
+DEFAULT_SEARCH_LIMIT = 50
+DEFAULT_SEMANTIC_LIMIT = 10
+DEFAULT_USER_ANNOTATIONS_LIMIT = 100
+DEFAULT_COLOR = "#FFFF00"
+MAX_EXPORT_ANNOTATIONS = 1000
+
 
 class AnnotationService:
     """
@@ -63,7 +71,7 @@ class AnnotationService:
         highlighted_text: str,
         note: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        color: str = "#FFFF00",
+        color: str = DEFAULT_COLOR,
         collection_ids: Optional[List[str]] = None
     ) -> Annotation:
         """
@@ -94,35 +102,82 @@ class AnnotationService:
         Raises:
             ValueError: If validation fails (resource not found, invalid offsets)
         """
-        # Validate offsets
+        # Validate inputs
+        self._validate_offsets(start_offset, end_offset)
+        resource_uuid = self._validate_resource_id(resource_id)
+        resource = self._fetch_resource(resource_uuid)
+        
+        # Extract context from resource content
+        content = self._get_resource_content(resource)
+        context_before = self._extract_context(content, start_offset, before=True)
+        context_after = self._extract_context(content, end_offset, before=False)
+        
+        # Create annotation
+        annotation = self._build_annotation(
+            resource_uuid=resource_uuid,
+            user_id=user_id,
+            start_offset=start_offset,
+            end_offset=end_offset,
+            highlighted_text=highlighted_text,
+            note=note,
+            tags=tags,
+            color=color,
+            collection_ids=collection_ids,
+            context_before=context_before,
+            context_after=context_after
+        )
+        
+        self._save_annotation(annotation)
+        
+        # Generate embedding if note provided (async in background)
+        if note:
+            self._generate_annotation_embedding(annotation)
+        
+        return annotation
+    
+    def _validate_offsets(self, start_offset: int, end_offset: int) -> None:
+        """Validate annotation offsets."""
         if start_offset < 0 or end_offset < 0:
             raise ValueError("Offsets must be non-negative")
         
         if start_offset >= end_offset:
             raise ValueError("start_offset must be less than end_offset")
-        
-        # Validate resource exists
+    
+    def _validate_resource_id(self, resource_id: str) -> uuid.UUID:
+        """Validate and convert resource ID to UUID."""
         try:
-            resource_uuid = uuid.UUID(resource_id)
+            return uuid.UUID(resource_id)
         except (ValueError, TypeError):
             raise ValueError(f"Invalid resource_id format: {resource_id}")
-        
+    
+    def _fetch_resource(self, resource_uuid: uuid.UUID) -> Resource:
+        """Fetch resource from database."""
         result = self.db.execute(
             select(Resource).filter(Resource.id == resource_uuid)
         )
         resource = result.scalar_one_or_none()
         
         if not resource:
-            raise ValueError(f"Resource not found: {resource_id}")
+            raise ValueError(f"Resource not found: {resource_uuid}")
         
-        # Extract context from resource content
-        # Get the resource content for context extraction
-        content = self._get_resource_content(resource)
-        context_before = self._extract_context(content, start_offset, before=True)
-        context_after = self._extract_context(content, end_offset, before=False)
-        
-        # Create annotation
-        annotation = Annotation(
+        return resource
+    
+    def _build_annotation(
+        self,
+        resource_uuid: uuid.UUID,
+        user_id: str,
+        start_offset: int,
+        end_offset: int,
+        highlighted_text: str,
+        note: Optional[str],
+        tags: Optional[List[str]],
+        color: str,
+        collection_ids: Optional[List[str]],
+        context_before: str,
+        context_after: str
+    ) -> Annotation:
+        """Build annotation object."""
+        return Annotation(
             id=uuid.uuid4(),
             resource_id=resource_uuid,
             user_id=user_id,
@@ -139,16 +194,12 @@ class AnnotationService:
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
         )
-        
+    
+    def _save_annotation(self, annotation: Annotation) -> None:
+        """Save annotation to database."""
         self.db.add(annotation)
         self.db.commit()
         self.db.refresh(annotation)
-        
-        # Generate embedding if note provided (async in background)
-        if note:
-            self._generate_annotation_embedding(annotation)
-        
-        return annotation
 
     def update_annotation(
         self,

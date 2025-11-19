@@ -10,14 +10,7 @@ from backend.app.database.models import Resource, Citation
 from backend.app.services.citation_service import CitationService
 
 
-@pytest.fixture
-def db_session(test_db):
-    """Create a database session for tests."""
-    db = test_db()
-    try:
-        yield db
-    finally:
-        db.close()
+# db_session fixture is now in integration/conftest.py
 
 
 class TestCitationModel:

@@ -4,8 +4,6 @@ Test script for Phase 8.5 Taxonomy API Endpoints
 This script tests all taxonomy management endpoints to verify they work correctly.
 """
 
-import sys
-import os
 
 from fastapi.testclient import TestClient
 from backend.app import app

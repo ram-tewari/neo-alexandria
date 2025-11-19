@@ -98,29 +98,29 @@ def main():
             # Check for key features in the function
             if endpoint['path'] == "/classify/":
                 if "background" in content and "202" in content:
-                    print(f"  ✓ Returns 202 Accepted for background task")
+                    print("  ✓ Returns 202 Accepted for background task")
                 if "resource_id" in content:
-                    print(f"  ✓ Accepts resource_id parameter")
+                    print("  ✓ Accepts resource_id parameter")
             
             elif endpoint['path'] == "/active-learning/uncertain":
                 if "limit" in content and "Query" in content:
-                    print(f"  ✓ Accepts limit query parameter")
+                    print("  ✓ Accepts limit query parameter")
                 if "identify_uncertain_samples" in content:
-                    print(f"  ✓ Calls MLClassificationService.identify_uncertain_samples()")
+                    print("  ✓ Calls MLClassificationService.identify_uncertain_samples()")
             
             elif endpoint['path'] == "/active-learning/feedback":
                 if "ClassificationFeedback" in content:
-                    print(f"  ✓ Accepts ClassificationFeedback request")
+                    print("  ✓ Accepts ClassificationFeedback request")
                 if "update_from_human_feedback" in content:
-                    print(f"  ✓ Calls MLClassificationService.update_from_human_feedback()")
+                    print("  ✓ Calls MLClassificationService.update_from_human_feedback()")
             
             elif endpoint['path'] == "/train":
                 if "ClassifierTrainingRequest" in content:
-                    print(f"  ✓ Accepts ClassifierTrainingRequest")
+                    print("  ✓ Accepts ClassifierTrainingRequest")
                 if "202" in content:
-                    print(f"  ✓ Returns 202 Accepted for background task")
+                    print("  ✓ Returns 202 Accepted for background task")
         else:
-            print(f"  ✗ Endpoint NOT found")
+            print("  ✗ Endpoint NOT found")
             all_passed = False
     
     print("\n" + "="*80)

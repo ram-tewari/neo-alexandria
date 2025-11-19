@@ -16,20 +16,17 @@ Related files:
 - app/services/hybrid_recommendation_service.py: Uses NCF predictions
 """
 
-import json
 import logging
 import os
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import UserInteraction, Resource
+from backend.app.database.models import UserInteraction
 
 logger = logging.getLogger(__name__)
 

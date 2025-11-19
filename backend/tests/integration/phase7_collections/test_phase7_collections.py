@@ -10,14 +10,7 @@ from backend.app.database.models import Resource
 from backend.app.services.collection_service import CollectionService
 
 
-@pytest.fixture
-def db_session(test_db):
-    """Create a database session for tests."""
-    db = test_db()
-    try:
-        yield db
-    finally:
-        db.close()
+# db_session fixture is now in integration/conftest.py
 
 
 @pytest.fixture

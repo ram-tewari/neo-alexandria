@@ -37,8 +37,6 @@ from backend.app.services.recommendation_service import (
     generate_recommendations
 )
 import numpy as np
-from datetime import datetime, timezone
-import uuid
 
 
 def setup_test_db():

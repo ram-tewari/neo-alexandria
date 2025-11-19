@@ -37,11 +37,11 @@ export const Navbar = () => {
           <motion.div 
             className="nav-logo" 
             onClick={() => navigate('/')}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
             style={{ cursor: 'pointer' }}
           >
             <div className="logo-icon">
-              <Icon icon={icons.brain} size={24} color="white" />
+              <Icon icon={icons.brain} size={20} />
             </div>
             <span className="logo-text">Neo Alexandria</span>
           </motion.div>

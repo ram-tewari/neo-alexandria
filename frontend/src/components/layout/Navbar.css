@@ -7,19 +7,19 @@
 }
 
 .navbar-glass {
-  background: var(--black);
+  background: var(--background);
   border-bottom: 1px solid var(--border-subtle);
   padding: 0.75rem 1.5rem;
+  transition: all var(--transition-base);
 }
 
 .navbar.scrolled .navbar-glass {
-  background: var(--black);
+  background: var(--background);
   box-shadow: var(--shadow-md);
+  border-bottom-color: var(--border-medium);
 }
 
 .nav-content {
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -46,21 +46,27 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .logo-icon {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: var(--white);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-base);
 }
 
+.logo-icon svg {
+  color: var(--primary-foreground);
+}
+
 .nav-logo:hover .logo-icon {
-  background: var(--charcoal-light);
+  background: var(--accent-bright);
+  transform: scale(1.05);
 }
 
 .logo-text {
@@ -74,6 +80,8 @@
   display: flex;
   gap: 1.5rem;
   align-items: center;
+  flex: 1;
+  justify-content: center;
 }
 
 .nav-link {
@@ -111,6 +119,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .notification-btn {

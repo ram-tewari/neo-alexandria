@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from '../ui/sidebar';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
+import { SidebarCollapseButton } from '../ui/SidebarCollapseButton';
 import { Icon } from '../common/Icon';
 import { icons } from '../../config/icons';
 import { sidebarSections } from '../../config/sidebarConfig';
@@ -119,6 +120,9 @@ export function AppSidebar() {
           </div>
         ))}
       </SidebarContent>
+      <div style={{ padding: '0.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+        <SidebarCollapseButton showKeyboardHint={true} />
+      </div>
       <SidebarRail />
     </Sidebar>
   );

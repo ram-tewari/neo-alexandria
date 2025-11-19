@@ -4,6 +4,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { FAB } from './components/layout/FAB';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { CommandPalette } from './components/common/CommandPalette';
+import { KeyboardShortcutIndicator } from './components/ui/KeyboardShortcutIndicator';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import './styles/globals.css';
@@ -40,6 +41,7 @@ function App() {
           </Routes>
           <FAB />
           <CommandPalette />
+          <KeyboardShortcutIndicator shortcut="Ctrl+B" maxUses={3} />
         </Suspense>
       </BrowserRouter>
     </ThemeProvider>

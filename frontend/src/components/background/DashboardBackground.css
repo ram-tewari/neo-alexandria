@@ -260,7 +260,7 @@
   display: none; /* Hide extra orbs on low performance */
 }
 
-/* Light mode adjustments - Olive/Forest Green theme */
+/* Light mode adjustments - Green and Off-White/Steel theme */
 .light .dashboard-background {
   background: var(--background);
 }
@@ -268,8 +268,8 @@
 .light .dashboard-background .gradient-orb-1 {
   background: radial-gradient(
     circle at center,
-    rgba(58, 74, 42, 0.25) 0%,
-    rgba(58, 74, 42, 0.15) 40%,
+    rgba(46, 125, 50, 0.18) 0%,
+    rgba(46, 125, 50, 0.08) 40%,
     transparent 70%
   );
 }
@@ -277,8 +277,8 @@
 .light .dashboard-background .gradient-orb-2 {
   background: radial-gradient(
     circle at center,
-    rgba(90, 106, 74, 0.2) 0%,
-    rgba(90, 106, 74, 0.1) 40%,
+    rgba(102, 187, 106, 0.15) 0%,
+    rgba(102, 187, 106, 0.06) 40%,
     transparent 70%
   );
 }
@@ -286,8 +286,8 @@
 .light .dashboard-background .gradient-orb-3 {
   background: radial-gradient(
     circle at center,
-    rgba(74, 90, 58, 0.18) 0%,
-    rgba(74, 90, 58, 0.08) 40%,
+    rgba(120, 144, 156, 0.12) 0%,
+    rgba(120, 144, 156, 0.05) 40%,
     transparent 70%
   );
 }
@@ -295,8 +295,8 @@
 .light .dashboard-background .gradient-orb-4 {
   background: radial-gradient(
     circle at center,
-    rgba(66, 82, 50, 0.22) 0%,
-    rgba(66, 82, 50, 0.12) 40%,
+    rgba(69, 90, 100, 0.14) 0%,
+    rgba(69, 90, 100, 0.06) 40%,
     transparent 70%
   );
 }
@@ -304,19 +304,19 @@
 .light .dashboard-background .gradient-orb-5 {
   background: radial-gradient(
     circle at center,
-    rgba(82, 98, 66, 0.19) 0%,
-    rgba(82, 98, 66, 0.09) 40%,
+    rgba(236, 239, 241, 0.25) 0%,
+    rgba(236, 239, 241, 0.12) 40%,
     transparent 70%
   );
 }
 
 .light .dashboard-background .gradient-orb {
-  opacity: 0.15;
-  filter: blur(80px);
+  opacity: 0.2;
+  filter: blur(90px);
 }
 
 .light .dashboard-background.reduced-motion .gradient-orb {
-  opacity: 0.08;
+  opacity: 0.1;
 }
 
 /* Responsive adjustments for mobile */

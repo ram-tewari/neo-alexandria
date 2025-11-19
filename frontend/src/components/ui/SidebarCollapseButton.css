@@ -1,0 +1,147 @@
+.sidebar-collapse-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.sidebar-collapse-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.5;
+}
+
+.sidebar-collapse-button:hover {
+  background: var(--sidebar-accent);
+  color: var(--primary);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.sidebar-collapse-button:active {
+  transform: scale(0.95);
+}
+
+.collapse-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.sidebar-collapse-button:hover .collapse-arrow {
+  transform: scale(1.1);
+}
+
+.collapse-arrow svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Keyboard Hint Tooltip */
+.keyboard-hint {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem 0.4rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+  z-index: 1000;
+}
+
+.keyboard-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  padding: 0.1rem 0.25rem;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.2rem;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.keyboard-hint span {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Collapsed state adjustments */
+.sidebar-root[data-state="collapsed"] .sidebar-collapse-wrapper {
+  justify-content: center;
+}
+
+/* Animation for continuous pulse when not hovered */
+@keyframes arrowPulse {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 0.7;
+  }
+}
+
+.sidebar-collapse-button:not(:hover) .collapse-arrow {
+  animation: arrowPulse 2s ease-in-out infinite;
+}
+
+/* Hover state increases animation intensity */
+@keyframes arrowBounce {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+}
+
+.sidebar-collapse-button:hover .collapse-arrow {
+  animation: arrowBounce 0.6s ease-in-out infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .collapse-arrow,
+  .sidebar-collapse-button:hover .collapse-arrow,
+  .sidebar-collapse-button:not(:hover) .collapse-arrow {
+    animation: none !important;
+  }
+  
+  .keyboard-hint {
+    transition: none;
+  }
+}
+
+/* Light mode adjustments */
+.light .keyboard-hint kbd {
+  background: var(--surface-accent);
+  border-color: var(--border-medium);
+}

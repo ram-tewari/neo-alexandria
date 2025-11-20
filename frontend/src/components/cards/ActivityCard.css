@@ -16,7 +16,9 @@
 
 .activity-icon {
   width: 28px;
+
   height: 28px;
+  
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;

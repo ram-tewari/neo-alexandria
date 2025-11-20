@@ -164,7 +164,7 @@
   --surface-base: oklch(0.95 0 0); /* Very light gray */
   --surface-raised: oklch(0.98 0 0); /* Almost white */
   --surface-overlay: oklch(0.92 0 0); /* Light gray */
-  --surface-purple: oklch(0.45 0.08 300 / 0.05); /* Very subtle purple */
+  --surface-purple: oklch(0.7 0.15 85 / 0.05); /* Very subtle gold */
   
   /* Card & Popover */
   --card: var(--surface-raised);
@@ -184,7 +184,7 @@
   --border-subtle: oklch(0 0 0 / 0.06);
   --border-medium: oklch(0 0 0 / 0.12);
   --border-strong: oklch(0 0 0 / 0.2);
-  --border-purple: oklch(0.45 0.08 300 / 0.3);
+  --border-purple: oklch(0.6 0.15 85 / 0.3); /* Gold border */
   --border: var(--border-medium);
   
   /* Input */
@@ -196,14 +196,21 @@
   --text-secondary: oklch(0.3 0 0); /* Dark gray */
   --text-tertiary: oklch(0.5 0 0); /* Medium gray */
   --text-disabled: oklch(0.7 0 0); /* Light gray */
-  --text-purple: oklch(0.45 0.12 300); /* Darker purple for light mode */
+  --text-purple: oklch(0.6 0.15 85); /* Gold text for light mode */
   
-  /* Purple accents - slightly adjusted for light mode */
-  --purple-deep: oklch(0.35 0.08 300);
-  --purple-medium: oklch(0.45 0.12 300); /* More saturated for visibility */
-  --purple-bright: oklch(0.55 0.15 300); /* Brighter for light mode */
-  --purple-glow: oklch(0.45 0.12 300 / 0.2);
-  --purple-subtle: oklch(0.45 0.12 300 / 0.05);
+  /* Gold accents for light mode - replacing purple */
+  --purple-deep: oklch(0.6 0.15 85); /* Deep gold */
+  --purple-medium: oklch(0.7 0.15 85); /* Medium gold */
+  --purple-bright: oklch(0.8 0.15 85); /* Bright gold */
+  --purple-glow: oklch(0.7 0.15 85 / 0.25); /* Gold glow */
+  --purple-subtle: oklch(0.7 0.15 85 / 0.08); /* Subtle gold */
+  
+  /* Primary and accent updated to use gold */
+  --primary: var(--purple-medium); /* Gold primary */
+  --primary-foreground: var(--foreground);
+  --accent: var(--purple-medium); /* Gold accent */
+  --accent-foreground: var(--foreground);
+  --ring: var(--purple-medium); /* Gold focus ring */
   
   /* Sidebar */
   --sidebar-background: var(--surface-raised);
@@ -211,7 +218,7 @@
   --sidebar-primary: var(--purple-medium);
   --sidebar-primary-foreground: var(--foreground);
   --sidebar-accent: var(--purple-subtle);
-  --sidebar-accent-foreground: var(--purple-medium);
+  --sidebar-accent-foreground: var(--purple-deep);
   --sidebar-border: var(--border-subtle);
   --sidebar-ring: var(--purple-medium);
   

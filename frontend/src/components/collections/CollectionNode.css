@@ -14,11 +14,11 @@
 }
 
 .collection-node__item:hover {
-  background: linear-gradient(90deg, rgba(107, 33, 168, 0.2), rgba(124, 58, 237, 0.15));
-  border-left: 3px solid var(--purple-vibrant);
+  background: linear-gradient(90deg, var(--accent-glow), var(--accent-subtle));
+  border-left: 3px solid var(--accent-medium);
   padding-left: calc(0.75rem - 3px);
   transform: translateX(4px);
-  box-shadow: 0 2px 15px rgba(107, 33, 168, 0.3);
+  box-shadow: 0 2px 15px var(--accent-glow);
 }
 
 .collection-node__item.active {
@@ -26,7 +26,7 @@
   color: var(--white);
   box-shadow: 
     0 4px 20px var(--purple-glow),
-    0 0 30px rgba(107, 33, 168, 0.5),
+    0 0 30px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   border: 2px solid var(--purple-bright);
   border-left: 4px solid var(--white);

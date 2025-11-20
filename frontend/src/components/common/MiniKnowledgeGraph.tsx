@@ -41,7 +41,13 @@ export const MiniKnowledgeGraph = () => {
     // Create nodes
     const nodes: Node[] = [];
     const nodeCount = 12;
-    const colors = ['#a855f7', '#ec4899', '#3b82f6', '#06b6d4'];
+    // Use hex colors that work with canvas
+    const colors = [
+      '#8b5cf6', // Purple accent
+      '#ec4899', // Pink
+      '#3b82f6', // Blue  
+      '#06b6d4'  // Cyan
+    ];
 
     for (let i = 0; i < nodeCount; i++) {
       nodes.push({
@@ -119,7 +125,11 @@ export const MiniKnowledgeGraph = () => {
           node.y,
           node.radius * 2
         );
-        gradient.addColorStop(0, node.color + '40');
+        // Convert hex to rgba for gradient
+        const r = parseInt(node.color.slice(1, 3), 16);
+        const g = parseInt(node.color.slice(3, 5), 16);
+        const b = parseInt(node.color.slice(5, 7), 16);
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.25)`);
         gradient.addColorStop(1, 'transparent');
         ctx.fillStyle = gradient;
         ctx.beginPath();

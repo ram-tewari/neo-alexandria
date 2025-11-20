@@ -4,7 +4,7 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--background);
   contain: layout style paint;
 }
 
@@ -260,7 +260,7 @@
   display: none; /* Hide extra orbs on low performance */
 }
 
-/* Light mode adjustments - Royal Gold theme */
+/* Light mode adjustments - Gold theme using OKLCH */
 .light .dashboard-background {
   background: var(--background);
 }

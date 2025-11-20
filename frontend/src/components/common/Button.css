@@ -33,7 +33,7 @@
   background: linear-gradient(135deg, var(--purple-vibrant), var(--purple-deep));
   color: var(--white);
   border: 2px solid var(--purple-bright);
-  box-shadow: 0 4px 15px rgba(107, 33, 168, 0.3);
+  box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 .btn-primary::before {
@@ -52,7 +52,7 @@
   color: var(--purple-deep);
   border-color: var(--white);
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px var(--purple-glow), 0 0 40px rgba(107, 33, 168, 0.4);
+  box-shadow: 0 8px 25px var(--accent-glow), 0 0 40px var(--accent-glow);
   animation: purpleBounce 0.6s ease;
 }
 
@@ -84,7 +84,7 @@
 .btn-secondary:hover {
   color: var(--white);
   border-color: var(--purple-vibrant);
-  box-shadow: 0 4px 20px rgba(107, 33, 168, 0.3);
+  box-shadow: 0 4px 20px var(--accent-glow);
   transform: translateY(-2px);
 }
 

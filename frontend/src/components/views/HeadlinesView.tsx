@@ -26,10 +26,10 @@ export const HeadlinesView = ({
   onShare,
 }: HeadlinesViewProps) => {
   const getQualityColor = (score: number) => {
-    if (score >= 0.8) return '#10b981';
-    if (score >= 0.6) return '#3b82f6';
-    if (score >= 0.4) return '#f59e0b';
-    return '#ef4444';
+    if (score >= 0.8) return 'oklch(0.7 0.2 120)'; // Green
+    if (score >= 0.6) return 'oklch(0.7 0.2 200)'; // Blue
+    if (score >= 0.4) return 'oklch(0.7 0.2 50)';  // Orange
+    return 'var(--destructive)'; // Red
   };
 
   const getStatusIcon = (status: string) => {

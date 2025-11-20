@@ -21,8 +21,8 @@
 
 .mode-toggle-button:hover {
   background: var(--surface-raised);
-  border-color: var(--border-purple);
-  box-shadow: 0 0 12px var(--purple-glow);
+  border-color: var(--border-accent);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .mode-toggle-button:focus-visible {
@@ -79,13 +79,13 @@
 }
 
 .mode-toggle-option:hover {
-  background: var(--surface-purple);
-  color: var(--text-purple);
+  background: var(--surface-accent);
+  color: var(--text-accent);
 }
 
 .mode-toggle-option.active {
-  background: var(--purple-subtle);
-  color: var(--text-purple);
+  background: var(--accent-subtle);
+  color: var(--text-accent);
   font-weight: var(--font-weight-medium);
 }
 

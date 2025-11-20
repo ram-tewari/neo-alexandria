@@ -192,10 +192,10 @@
   align-items: center;
   gap: 1rem;
   padding: 2rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--destructive / 0.1);
+  border: 1px solid var(--destructive / 0.3);
   border-radius: var(--radius-md);
-  color: #ef4444;
+  color: var(--destructive);
   margin-bottom: 2rem;
 }
 
@@ -222,17 +222,17 @@
 }
 
 
-/* Purple Accent Animations */
-@keyframes purpleGlow {
+/* Accent Animations - Uses CSS variables for theme compatibility */
+@keyframes accentGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-subtle);
   }
   50% {
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-subtle);
   }
 }
 
-@keyframes purplePulse {
+@keyframes accentPulse {
   0%, 100% {
     opacity: 0.6;
     transform: scale(1);

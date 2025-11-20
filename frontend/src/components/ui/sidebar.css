@@ -280,8 +280,8 @@
 
 .sidebar-menu-sub-button.active,
 .sidebar-menu-sub-button[data-active="true"] {
-  color: var(--accent-purple);
-  background: rgba(168, 85, 247, 0.1);
+  color: var(--text-accent);
+  background: var(--accent-subtle);
 }
 
 /* Sidebar Separator */

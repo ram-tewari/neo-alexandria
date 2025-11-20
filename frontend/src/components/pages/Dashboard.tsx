@@ -145,7 +145,7 @@ export const Dashboard = () => {
             background: 'rgba(239, 68, 68, 0.1)', 
             border: '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: 'var(--radius-md)',
-            color: '#ef4444',
+            color: 'var(--destructive)',
             marginBottom: '1rem'
           }}>
             Error loading resources: {error}

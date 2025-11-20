@@ -43,17 +43,17 @@ export const ResourceCard = memo(({
     switch (resource.type) {
       case 'article': return 'rgba(59, 130, 246, 0.2)';
       case 'video': return 'rgba(6, 182, 212, 0.2)';
-      case 'book': return 'rgba(139, 92, 246, 0.2)';
+      case 'book': return 'var(--accent-subtle)';
       case 'paper': return 'rgba(20, 184, 166, 0.2)';
       default: return 'rgba(59, 130, 246, 0.2)';
     }
   };
 
   const getQualityColor = (score: number) => {
-    if (score >= 0.8) return '#10b981'; // green
-    if (score >= 0.6) return '#3b82f6'; // blue
-    if (score >= 0.4) return '#f59e0b'; // orange
-    return '#ef4444'; // red
+    if (score >= 0.8) return 'oklch(0.7 0.2 120)'; // green
+    if (score >= 0.6) return 'oklch(0.7 0.2 200)'; // blue
+    if (score >= 0.4) return 'oklch(0.7 0.2 50)';  // orange
+    return 'var(--destructive)'; // red
   };
 
   const getStatusIcon = () => {

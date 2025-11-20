@@ -20,50 +20,50 @@
 /* Dark Mode (Default) */
 :root,
 .dark {
-  /* Background Colors */
-  --background: var(--black);
+  /* Background Colors - Pure black base */
+  --background: #000000;
   --background-secondary: #1a1a1a;
-  --background-tertiary: #2a2a2a;
+  --background-tertiary: #262626;
   
-  /* Vibrant Purple Accent System */
+  /* Purple Accent System */
   --accent-deep: #7c3aed;
   --accent-medium: #8b5cf6;
   --accent-bright: #a78bfa;
   --accent-light: #c4b5fd;
-  --accent-glow: rgba(139, 92, 246, 0.35);
-  --accent-subtle: rgba(139, 92, 246, 0.12);
+  --accent-glow: rgba(139, 92, 246, 0.25);
+  --accent-subtle: rgba(139, 92, 246, 0.08);
   
   /* Semantic Colors */
   --primary: var(--accent-medium);
-  --primary-foreground: var(--white);
+  --primary-foreground: #ffffff;
   
-  /* Borders */
+  /* Borders - Light on dark */
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-medium: rgba(255, 255, 255, 0.12);
   --border-strong: rgba(255, 255, 255, 0.2);
-  --border-accent: rgba(139, 92, 246, 0.3);
+  --border-accent: rgba(139, 92, 246, 0.2);
   
-  /* Surfaces */
+  /* Surfaces - Dark theme surfaces */
   --surface-base: #1a1a1a;
   --surface-raised: #2a2a2a;
   --surface-overlay: #3a3a3a;
-  --surface-accent: rgba(124, 58, 237, 0.12);
+  --surface-accent: rgba(139, 92, 246, 0.12);
   
-  /* Text */
-  --text-primary: var(--white);
-  --text-secondary: #9a9a9a;
-  --text-tertiary: #6a6a6a;
-  --text-disabled: #4a4a4a;
+  /* Text - Light text on dark background */
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #808080;
+  --text-disabled: #4d4d4d;
   --text-accent: var(--accent-bright);
   
-  /* Shadows */
+  /* Shadows - Darker for dark theme */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
   
-  /* Sidebar Specific */
-  --sidebar-background: var(--black);
-  --sidebar-foreground: var(--white);
+  /* Sidebar Specific - Dark sidebar with purple accents */
+  --sidebar-background: #000000;
+  --sidebar-foreground: #ffffff;
   --sidebar-accent: var(--accent-subtle);
   --sidebar-accent-foreground: var(--accent-bright);
   --sidebar-border: var(--border-subtle);
@@ -73,53 +73,53 @@
 
 /* Light Mode */
 .light {
-  /* Background Colors - Inverted */
-  --background: var(--white);
-  --background-secondary: var(--gray-50);
-  --background-tertiary: var(--gray-100);
+  /* Background Colors - Pure white/light surfaces */
+  --background: #ffffff;
+  --background-secondary: #fafafa;
+  --background-tertiary: #f5f5f5;
   
-  /* Royal Gold Accent System */
+  /* Gold Accent System */
   --accent-deep: #b8860b;
   --accent-medium: #daa520;
   --accent-bright: #ffd700;
   --accent-light: #ffe55c;
-  --accent-glow: rgba(218, 165, 32, 0.3);
-  --accent-subtle: rgba(218, 165, 32, 0.1);
+  --accent-glow: rgba(218, 165, 32, 0.25);
+  --accent-subtle: rgba(218, 165, 32, 0.08);
   
   /* Semantic Colors */
   --primary: var(--accent-medium);
-  --primary-foreground: var(--black);
+  --primary-foreground: #000000;
   
-  /* Borders - Inverted */
+  /* Borders - Dark on light */
   --border-subtle: rgba(0, 0, 0, 0.06);
   --border-medium: rgba(0, 0, 0, 0.12);
   --border-strong: rgba(0, 0, 0, 0.2);
-  --border-accent: rgba(218, 165, 32, 0.35);
+  --border-accent: rgba(184, 134, 11, 0.3);
   
-  /* Surfaces - Inverted */
-  --surface-base: var(--gray-50);
-  --surface-raised: var(--white);
-  --surface-overlay: var(--gray-100);
-  --surface-accent: rgba(218, 165, 32, 0.08);
+  /* Surfaces - Light theme surfaces */
+  --surface-base: #f5f5f5;
+  --surface-raised: #fafafa;
+  --surface-overlay: #ebebeb;
+  --surface-accent: rgba(218, 165, 32, 0.05);
   
-  /* Text - Inverted */
-  --text-primary: var(--black);
-  --text-secondary: var(--gray-600);
-  --text-tertiary: var(--gray-500);
-  --text-disabled: var(--gray-400);
+  /* Text - Dark text on light background */
+  --text-primary: #000000;
+  --text-secondary: #4d4d4d;
+  --text-tertiary: #808080;
+  --text-disabled: #b3b3b3;
   --text-accent: var(--accent-deep);
   
-  /* Shadows - Lighter */
+  /* Shadows - Lighter for light theme */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
   
-  /* Sidebar Specific - Inverted */
-  --sidebar-background: var(--white);
-  --sidebar-foreground: var(--black);
-  --sidebar-accent: var(--accent-subtle);
-  --sidebar-accent-foreground: var(--accent-deep);
-  --sidebar-border: var(--border-subtle);
+  /* Sidebar Specific - Light sidebar with gold accents */
+  --sidebar-background: #fafafa;
+  --sidebar-foreground: #000000;
+  --sidebar-accent: rgba(218, 165, 32, 0.08);
+  --sidebar-accent-foreground: #b8860b;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
   --sidebar-active: var(--accent-medium);
   --sidebar-hover: rgba(218, 165, 32, 0.08);
 }
@@ -128,10 +128,26 @@
 :root {
   /* Legacy Support - Map to new variables */
   --purple-deep: var(--accent-deep);
+  --purple-dark: var(--accent-deep);
   --purple-vibrant: var(--accent-medium);
   --purple-bright: var(--accent-bright);
   --purple-glow: var(--accent-glow);
   --purple-subtle: var(--accent-subtle);
+  
+  /* Charcoal colors for dark theme */
+  --charcoal-dark: #1a1a1a;
+  --charcoal-light: #2a2a2a;
+  
+  /* Legacy color names */
+  --primary-black: var(--background);
+  --primary-white: var(--text-primary);
+  
+  /* Glass morphism effects */
+  --glass-bg: rgba(26, 26, 26, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Accent color aliases */
+  --accent-purple: var(--accent-medium);
   
   /* Typography Scale - Reduced */
   --font-size-h1: 1.75rem;

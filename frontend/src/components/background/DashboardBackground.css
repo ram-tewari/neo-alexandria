@@ -4,7 +4,7 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: var(--background);
+  background: #ffffff;
   contain: layout style paint;
 }
 
@@ -18,14 +18,14 @@
   backface-visibility: hidden;
 }
 
-/* Orb 1 - Large purple gradient (top-left, slow diagonal flow) */
+/* Orb 1 - Large black gradient (top-left, slow diagonal flow) */
 .gradient-orb-1 {
   width: 600px;
   height: 600px;
   background: radial-gradient(
     circle at center,
-    rgba(138, 43, 226, 0.35) 0%,
-    rgba(138, 43, 226, 0.18) 40%,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 40%,
     transparent 70%
   );
   top: -200px;
@@ -34,14 +34,14 @@
   animation: float1 25s ease-in-out infinite;
 }
 
-/* Orb 2 - Medium purple gradient (bottom-right, circular motion) */
+/* Orb 2 - Medium dark gradient (bottom-right, circular motion) */
 .gradient-orb-2 {
   width: 500px;
   height: 500px;
   background: radial-gradient(
     circle at center,
-    rgba(147, 51, 234, 0.32) 0%,
-    rgba(147, 51, 234, 0.16) 40%,
+    rgba(10, 5, 20, 0.5) 0%,
+    rgba(10, 5, 20, 0.25) 40%,
     transparent 70%
   );
   bottom: -150px;
@@ -50,14 +50,14 @@
   animation: float2 30s ease-in-out infinite;
 }
 
-/* Orb 3 - Large accent gradient (center, pulsing) */
+/* Orb 3 - Large dark accent gradient (center, pulsing) */
 .gradient-orb-3 {
   width: 700px;
   height: 700px;
   background: radial-gradient(
     circle at center,
-    rgba(168, 85, 247, 0.28) 0%,
-    rgba(168, 85, 247, 0.14) 40%,
+    rgba(15, 10, 25, 0.45) 0%,
+    rgba(15, 10, 25, 0.22) 40%,
     transparent 70%
   );
   top: 50%;
@@ -67,14 +67,14 @@
   animation: float3 35s ease-in-out infinite;
 }
 
-/* Orb 4 - Medium gradient (top-right, wave motion) */
+/* Orb 4 - Medium dark gradient (top-right, wave motion) */
 .gradient-orb-4 {
   width: 550px;
   height: 550px;
   background: radial-gradient(
     circle at center,
-    rgba(124, 58, 237, 0.3) 0%,
-    rgba(124, 58, 237, 0.15) 40%,
+    rgba(5, 0, 15, 0.48) 0%,
+    rgba(5, 0, 15, 0.24) 40%,
     transparent 70%
   );
   top: -100px;
@@ -83,14 +83,14 @@
   animation: float4 28s ease-in-out infinite;
 }
 
-/* Orb 5 - Small accent gradient (bottom-left, figure-8 motion) */
+/* Orb 5 - Small black accent gradient (bottom-left, figure-8 motion) */
 .gradient-orb-5 {
   width: 450px;
   height: 450px;
   background: radial-gradient(
     circle at center,
-    rgba(159, 122, 234, 0.26) 0%,
-    rgba(159, 122, 234, 0.13) 40%,
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.21) 40%,
     transparent 70%
   );
   bottom: 10%;
@@ -260,7 +260,7 @@
   display: none; /* Hide extra orbs on low performance */
 }
 
-/* Light mode adjustments - Green and Off-White/Steel theme */
+/* Light mode adjustments - Royal Gold theme */
 .light .dashboard-background {
   background: var(--background);
 }
@@ -268,8 +268,8 @@
 .light .dashboard-background .gradient-orb-1 {
   background: radial-gradient(
     circle at center,
-    rgba(46, 125, 50, 0.18) 0%,
-    rgba(46, 125, 50, 0.08) 40%,
+    rgba(184, 134, 11, 0.15) 0%,
+    rgba(184, 134, 11, 0.06) 40%,
     transparent 70%
   );
 }
@@ -277,8 +277,8 @@
 .light .dashboard-background .gradient-orb-2 {
   background: radial-gradient(
     circle at center,
-    rgba(102, 187, 106, 0.15) 0%,
-    rgba(102, 187, 106, 0.06) 40%,
+    rgba(218, 165, 32, 0.18) 0%,
+    rgba(218, 165, 32, 0.08) 40%,
     transparent 70%
   );
 }
@@ -286,8 +286,8 @@
 .light .dashboard-background .gradient-orb-3 {
   background: radial-gradient(
     circle at center,
-    rgba(120, 144, 156, 0.12) 0%,
-    rgba(120, 144, 156, 0.05) 40%,
+    rgba(255, 215, 0, 0.12) 0%,
+    rgba(255, 215, 0, 0.05) 40%,
     transparent 70%
   );
 }
@@ -295,8 +295,8 @@
 .light .dashboard-background .gradient-orb-4 {
   background: radial-gradient(
     circle at center,
-    rgba(69, 90, 100, 0.14) 0%,
-    rgba(69, 90, 100, 0.06) 40%,
+    rgba(255, 229, 92, 0.14) 0%,
+    rgba(255, 229, 92, 0.06) 40%,
     transparent 70%
   );
 }
@@ -304,19 +304,19 @@
 .light .dashboard-background .gradient-orb-5 {
   background: radial-gradient(
     circle at center,
-    rgba(236, 239, 241, 0.25) 0%,
-    rgba(236, 239, 241, 0.12) 40%,
+    rgba(240, 200, 80, 0.16) 0%,
+    rgba(240, 200, 80, 0.07) 40%,
     transparent 70%
   );
 }
 
 .light .dashboard-background .gradient-orb {
-  opacity: 0.2;
+  opacity: 0.25;
   filter: blur(90px);
 }
 
 .light .dashboard-background.reduced-motion .gradient-orb {
-  opacity: 0.1;
+  opacity: 0.12;
 }
 
 /* Responsive adjustments for mobile */

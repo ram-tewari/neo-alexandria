@@ -10,7 +10,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
-  background: var(--black);
+  background: var(--background);
   color: var(--text-primary);
   overflow-x: hidden;
   line-height: 1.5;
@@ -25,39 +25,39 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--black);
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--charcoal-light);
+  background: var(--border-medium);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray);
+  background: var(--border-strong);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--charcoal-light) var(--black);
+  scrollbar-color: var(--border-medium) var(--background);
 }
 
 /* Focus visible styles */
 *:focus-visible {
-  outline: 2px solid var(--white);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 /* Selection styles */
 ::selection {
-  background: var(--white);
-  color: var(--black);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 ::-moz-selection {
-  background: var(--white);
-  color: var(--black);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 /* Reduced motion support */

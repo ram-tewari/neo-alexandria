@@ -78,13 +78,13 @@
   --background-secondary: var(--gray-50);
   --background-tertiary: var(--gray-100);
   
-  /* Green and Steel Accent System */
-  --accent-deep: #2e7d32;
-  --accent-medium: #43a047;
-  --accent-bright: #66bb6a;
-  --accent-light: #81c784;
-  --accent-glow: rgba(67, 160, 71, 0.25);
-  --accent-subtle: rgba(67, 160, 71, 0.08);
+  /* Royal Gold Accent System */
+  --accent-deep: #b8860b;
+  --accent-medium: #daa520;
+  --accent-bright: #ffd700;
+  --accent-light: #ffe55c;
+  --accent-glow: rgba(218, 165, 32, 0.3);
+  --accent-subtle: rgba(218, 165, 32, 0.1);
   
   /* Semantic Colors */
   --primary: var(--accent-medium);
@@ -94,13 +94,13 @@
   --border-subtle: rgba(0, 0, 0, 0.06);
   --border-medium: rgba(0, 0, 0, 0.12);
   --border-strong: rgba(0, 0, 0, 0.2);
-  --border-accent: rgba(67, 160, 71, 0.3);
+  --border-accent: rgba(218, 165, 32, 0.35);
   
   /* Surfaces - Inverted */
   --surface-base: var(--gray-50);
   --surface-raised: var(--white);
   --surface-overlay: var(--gray-100);
-  --surface-accent: rgba(46, 125, 50, 0.08);
+  --surface-accent: rgba(218, 165, 32, 0.08);
   
   /* Text - Inverted */
   --text-primary: var(--black);
@@ -121,7 +121,7 @@
   --sidebar-accent-foreground: var(--accent-deep);
   --sidebar-border: var(--border-subtle);
   --sidebar-active: var(--accent-medium);
-  --sidebar-hover: rgba(67, 160, 71, 0.08);
+  --sidebar-hover: rgba(218, 165, 32, 0.08);
 }
 
 /* Shared Variables */

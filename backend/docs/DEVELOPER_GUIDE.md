@@ -222,6 +222,7 @@ Create a `.env` file in the project root:
 # Database Configuration
 DATABASE_URL=sqlite:///backend.db
 # For PostgreSQL: DATABASE_URL=postgresql://user:password@localhost/backend
+TEST_DATABASE_URL=sqlite:///:memory:
 
 # AI Model Configuration
 EMBEDDING_MODEL_NAME=nomic-ai/nomic-embed-text-v1
@@ -249,6 +250,360 @@ GRAPH_VECTOR_MIN_SIM_THRESHOLD=0.85
 DEBUG=true
 LOG_LEVEL=INFO
 ```
+
+### Database Configuration (Phase 13)
+
+Neo Alexandria 2.0 supports both SQLite and PostgreSQL databases with automatic detection and configuration based on the DATABASE_URL environment variable.
+
+#### Database Selection
+
+**SQLite (Development):**
+```bash
+# File-based database
+DATABASE_URL=sqlite:///./backend.db
+
+# In-memory database (testing)
+DATABASE_URL=sqlite:///:memory:
+```
+
+**Use Cases:**
+- Local development and prototyping
+- Single-user deployments
+- Testing and CI/CD pipelines
+- Small datasets (<10,000 resources)
+
+**Advantages:**
+- Zero configuration
+- File-based (portable)
+- No separate server needed
+- Fast for small datasets
+
+**Limitations:**
+- Single writer (limited concurrency)
+- No advanced indexing (GIN, JSONB)
+- Not suitable for production with multiple users
+
+**PostgreSQL (Production):**
+```bash
+# Basic connection
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+
+# With SSL (recommended for production)
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name?sslmode=require
+
+# With connection pool parameters
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name?pool_size=20&max_overflow=40
+```
+
+**Use Cases:**
+- Production deployments
+- Multi-user environments
+- High concurrency (100+ simultaneous users)
+- Large datasets (>10,000 resources)
+- Advanced search and analytics
+
+**Advantages:**
+- Excellent concurrent write performance
+- Advanced indexing (GIN for JSONB, full-text search)
+- Native JSONB support for efficient JSON queries
+- Connection pooling with health checks
+- Production-grade reliability
+- Point-in-time recovery and replication
+
+**Requirements:**
+- PostgreSQL 15 or higher
+- Dedicated database server or managed service
+
+#### Database Type Detection
+
+The system automatically detects the database type from the connection URL:
+
+```python
+# backend/app/database/base.py
+def get_database_type(engine) -> str:
+    """Detect database type from engine."""
+    dialect_name = engine.dialect.name
+    if dialect_name == 'sqlite':
+        return 'sqlite'
+    elif dialect_name == 'postgresql':
+        return 'postgresql'
+    else:
+        raise ValueError(f"Unsupported database: {dialect_name}")
+```
+
+#### Connection Pool Configuration
+
+**PostgreSQL Connection Pool:**
+```python
+postgresql_params = {
+    'pool_size': 20,              # Base connections
+    'max_overflow': 40,           # Additional connections for burst traffic
+    'pool_recycle': 3600,         # Recycle connections after 1 hour
+    'pool_pre_ping': True,        # Validate connections before use
+    'echo_pool': True,            # Log pool events
+    'connect_args': {
+        'statement_timeout': '30000',  # 30 seconds
+        'options': '-c timezone=utc'
+    }
+}
+```
+
+**SQLite Connection Pool:**
+```python
+sqlite_params = {
+    'pool_size': 5,
+    'max_overflow': 10,
+    'pool_pre_ping': False,
+    'connect_args': {
+        'check_same_thread': False,
+        'timeout': 30
+    }
+}
+```
+
+#### Database-Specific Features
+
+**PostgreSQL-Only Features:**
+- JSONB columns with GIN indexes for efficient containment queries
+- Native full-text search with tsvector and tsquery
+- Advanced indexing strategies (GIN, GiST, BRIN)
+- Concurrent writes without locking
+- Materialized views and partitioning
+
+**SQLite Features:**
+- FTS5 virtual tables for full-text search
+- JSON functions (limited compared to JSONB)
+- Simple file-based storage
+- Embedded database (no server)
+
+#### Testing with Different Databases
+
+**Default (In-Memory SQLite):**
+```bash
+pytest backend/tests/ -v
+```
+
+**PostgreSQL Testing:**
+```bash
+# Set TEST_DATABASE_URL environment variable
+export TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db
+
+# Run tests
+pytest backend/tests/ -v
+
+# Or inline
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest backend/tests/
+```
+
+**PostgreSQL-Specific Tests:**
+```bash
+# Run only PostgreSQL-specific tests
+pytest backend/tests/ -m postgresql -v
+```
+
+**Test Fixtures:**
+```python
+# backend/tests/conftest.py
+@pytest.fixture(scope="session")
+def db_engine():
+    """Create database engine based on TEST_DATABASE_URL."""
+    test_db_url = os.getenv('TEST_DATABASE_URL', 'sqlite:///:memory:')
+    engine = create_engine(test_db_url)
+    Base.metadata.create_all(engine)
+    yield engine
+    Base.metadata.drop_all(engine)
+```
+
+#### Database Migration
+
+**Forward Migration (SQLite → PostgreSQL):**
+```bash
+# 1. Backup SQLite database
+cp backend.db backend.db.backup
+
+# 2. Run schema migrations
+alembic upgrade head
+
+# 3. Migrate data
+python backend/scripts/migrate_sqlite_to_postgresql.py \
+  --source sqlite:///./backend.db \
+  --target postgresql://user:password@host:5432/database \
+  --validate
+
+# 4. Update environment
+export DATABASE_URL=postgresql://user:password@host:5432/database
+
+# 5. Restart application
+uvicorn backend.app.main:app --reload
+```
+
+**Reverse Migration (PostgreSQL → SQLite):**
+```bash
+# 1. Stop application
+pkill -f "uvicorn backend.app.main:app"
+
+# 2. Migrate data
+python backend/scripts/migrate_postgresql_to_sqlite.py \
+  --source postgresql://user:password@host:5432/database \
+  --target sqlite:///./backend.db \
+  --validate
+
+# 3. Update environment
+export DATABASE_URL=sqlite:///./backend.db
+
+# 4. Restart application
+uvicorn backend.app.main:app --reload
+```
+
+**Migration Validation:**
+```python
+# Verify row counts match
+from sqlalchemy import create_engine, inspect
+
+source_engine = create_engine(source_url)
+target_engine = create_engine(target_url)
+
+for table in inspect(source_engine).get_table_names():
+    source_count = source_engine.execute(f'SELECT COUNT(*) FROM {table}').scalar()
+    target_count = target_engine.execute(f'SELECT COUNT(*) FROM {table}').scalar()
+    assert source_count == target_count, f"Mismatch in {table}"
+```
+
+#### Connection Pool Monitoring
+
+**Monitoring Endpoint:**
+```bash
+curl http://localhost:8000/monitoring/database
+```
+
+**Response:**
+```json
+{
+  "database_type": "postgresql",
+  "pool_size": 20,
+  "connections_in_use": 5,
+  "connections_available": 15,
+  "overflow_connections": 0,
+  "total_connections": 20
+}
+```
+
+**Slow Query Logging:**
+```python
+# Automatically logs queries exceeding 1 second
+import logging
+from sqlalchemy import event
+
+logger = logging.getLogger(__name__)
+
+@event.listens_for(Engine, "before_cursor_execute")
+def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    context._query_start_time = time.time()
+
+@event.listens_for(Engine, "after_cursor_execute")
+def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    total_time = time.time() - context._query_start_time
+    if total_time > 1.0:
+        logger.warning(f"Slow query ({total_time:.2f}s): {statement}")
+```
+
+#### Database Backup and Recovery
+
+**PostgreSQL Backups:**
+```bash
+# Full database backup
+pg_dump -h localhost -U postgres -d neo_alexandria > backup_$(date +%Y%m%d).sql
+
+# Compressed backup
+pg_dump -h localhost -U postgres -d neo_alexandria | gzip > backup_$(date +%Y%m%d).sql.gz
+
+# Custom format (supports parallel restore)
+pg_dump -h localhost -U postgres -d neo_alexandria -Fc > backup_$(date +%Y%m%d).dump
+
+# Automated backup script
+chmod +x backend/scripts/backup_postgresql.sh
+./backend/scripts/backup_postgresql.sh
+```
+
+**PostgreSQL Restore:**
+```bash
+# Restore from SQL dump
+psql -h localhost -U postgres -d neo_alexandria < backup_20250120.sql
+
+# Restore from custom format
+pg_restore -h localhost -U postgres -d neo_alexandria -c backup_20250120.dump
+```
+
+**SQLite Backups:**
+```bash
+# Simple file copy
+cp backend.db backend.db.backup_$(date +%Y%m%d)
+
+# Using SQLite backup command
+sqlite3 backend.db ".backup 'backend.db.backup_$(date +%Y%m%d)'"
+```
+
+#### Performance Optimization
+
+**PostgreSQL Query Optimization:**
+```sql
+-- Analyze query performance
+EXPLAIN ANALYZE
+SELECT * FROM resources
+WHERE subject @> '["Machine Learning"]'::jsonb
+ORDER BY created_at DESC
+LIMIT 25;
+
+-- Check index usage
+SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public'
+ORDER BY idx_scan DESC;
+
+-- Check cache hit ratio (should be >90%)
+SELECT 
+  sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read)) as cache_hit_ratio
+FROM pg_statio_user_tables;
+```
+
+**Connection Pool Sizing:**
+```
+Recommended pool_size = (number_of_cpu_cores * 2) + effective_spindle_count
+
+For Neo Alexandria with 4 CPU cores and SSD:
+pool_size = (4 * 2) + 1 = 9
+
+Current configuration (20 base + 40 overflow) is conservative and suitable for high-concurrency scenarios.
+```
+
+#### Troubleshooting
+
+**Common Issues:**
+
+1. **Connection Pool Exhausted**
+   - Symptom: "QueuePool limit exceeded"
+   - Solution: Increase `max_overflow` or optimize query performance
+   - Monitor: Check `/monitoring/database` endpoint
+
+2. **Slow Queries**
+   - Symptom: Requests timeout or take >1 second
+   - Solution: Add indexes, optimize queries, use EXPLAIN ANALYZE
+   - Monitor: Check application logs for slow query warnings
+
+3. **Database Connection Errors**
+   - Symptom: "could not connect to server"
+   - Solution: Verify DATABASE_URL, check PostgreSQL is running
+   - Test: `psql -h host -U user -d database`
+
+4. **Migration Failures**
+   - Symptom: Row count mismatch after migration
+   - Solution: Check foreign key constraints, re-run with --validate
+   - Verify: Compare row counts between source and target
+
+**Additional Resources:**
+- [PostgreSQL Migration Guide](backend/docs/POSTGRESQL_MIGRATION_GUIDE.md)
+- [PostgreSQL Backup Guide](backend/docs/POSTGRESQL_BACKUP_GUIDE.md)
+- [SQLite Compatibility Guide](backend/docs/SQLITE_COMPATIBILITY_MAINTENANCE.md)
 
 ### Development Tools
 

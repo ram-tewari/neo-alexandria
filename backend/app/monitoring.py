@@ -34,7 +34,7 @@ def _get_or_create_metric(metric_class, name, description, labelnames=None):
     try:
         # Try to get existing metric from registry
         return REGISTRY._names_to_collectors.get(name)
-    except:
+    except Exception:
         pass
     
     # Create new metric

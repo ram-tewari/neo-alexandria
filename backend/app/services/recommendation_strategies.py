@@ -251,7 +251,6 @@ class ContentBasedStrategy(RecommendationStrategy):
         
         try:
             from backend.app.database.models import Resource, UserInteraction
-            import numpy as np
             
             # Get user's interaction history
             interactions = self.db.query(UserInteraction).filter(
@@ -473,7 +472,7 @@ class GraphBasedStrategy(RecommendationStrategy):
         )
         
         try:
-            from backend.app.database.models import Resource, UserInteraction, Citation
+            from backend.app.database.models import UserInteraction
             
             # Get user's interaction history
             interactions = self.db.query(UserInteraction).filter(

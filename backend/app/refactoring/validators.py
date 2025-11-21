@@ -9,7 +9,6 @@ import ast
 from pathlib import Path
 from typing import List, Dict, Set, Tuple, Optional
 from dataclasses import dataclass
-from collections import defaultdict
 
 from .models import CodeSmell, SmellType, Severity, Location, RefactoringTechnique
 from .constants import (

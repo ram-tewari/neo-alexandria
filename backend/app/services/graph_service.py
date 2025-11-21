@@ -15,7 +15,7 @@ Related files:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple
 from uuid import UUID
 
 # Import numpy with fallback for vector operations

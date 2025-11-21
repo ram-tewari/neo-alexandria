@@ -17,7 +17,6 @@ import logging
 from backend.app.services.recommendation_strategies import (
     RecommendationStrategyFactory
 )
-from backend.app.domain.recommendation import Recommendation
 
 logger = logging.getLogger(__name__)
 

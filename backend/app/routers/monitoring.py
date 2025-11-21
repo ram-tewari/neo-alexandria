@@ -399,6 +399,79 @@ async def ml_model_health_check() -> Dict[str, Any]:
         }
 
 
+@router.get("/database")
+async def get_database_metrics(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """
+    Get comprehensive database metrics including connection pool status,
+    database type, and health information.
+    
+    This endpoint provides detailed monitoring data for database operations,
+    including connection pool utilization, database type detection, and
+    PostgreSQL-specific metrics when applicable.
+    
+    Args:
+        db: Database session for connectivity check
+        
+    Returns:
+        Dictionary with database metrics including:
+        - database_type: Type of database (sqlite/postgresql)
+        - connection_pool: Detailed pool statistics
+        - health: Database connectivity status
+        - warnings: Any warnings about pool capacity or performance
+    """
+    try:
+        # Get pool statistics
+        pool_stats = get_pool_status()
+        
+        # Check database connectivity
+        try:
+            db.execute("SELECT 1")
+            db_healthy = True
+            health_message = "Database connection healthy"
+        except Exception as e:
+            db_healthy = False
+            health_message = f"Database connection failed: {str(e)}"
+            logger.error(f"Database health check failed: {str(e)}")
+        
+        # Check for pool capacity warnings
+        warnings = []
+        if pool_stats["pool_usage_percent"] > 90:
+            warnings.append({
+                "level": "warning",
+                "message": f"Connection pool near capacity: {pool_stats['pool_usage_percent']:.1f}% in use",
+                "recommendation": "Consider increasing pool size or investigating connection leaks"
+            })
+        elif pool_stats["pool_usage_percent"] > 75:
+            warnings.append({
+                "level": "info",
+                "message": f"Connection pool usage elevated: {pool_stats['pool_usage_percent']:.1f}% in use",
+                "recommendation": "Monitor pool usage trends"
+            })
+        
+        # Build response
+        response = {
+            "status": "ok" if db_healthy else "unhealthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": {
+                "type": pool_stats["database_type"],
+                "healthy": db_healthy,
+                "health_message": health_message
+            },
+            "connection_pool": pool_stats,
+            "warnings": warnings
+        }
+        
+        return response
+    
+    except Exception as e:
+        logger.error(f"Error getting database metrics: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+
 @router.get("/db/pool")
 async def get_db_pool_status() -> Dict[str, Any]:
     """

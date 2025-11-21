@@ -7,7 +7,7 @@ detection across service modules.
 
 import ast
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 from dataclasses import dataclass
 
 from .models import (
@@ -24,7 +24,6 @@ from .validators import (
     TypeHintCoverageChecker,
     CodeDuplicationDetector,
 )
-from .constants import MAX_FUNCTION_LINES, MAX_CLASS_LINES
 
 
 @dataclass

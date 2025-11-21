@@ -4,7 +4,7 @@ Neo Alexandria 2.0 - Quality Service
 Combined implementation with QualityService and ContentQualityAnalyzer.
 """
 
-from typing import Dict, List, Optional, Any, Mapping, Union
+from typing import Dict, List, Optional, Any, Mapping
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 import json

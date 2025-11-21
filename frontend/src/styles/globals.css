@@ -60,6 +60,16 @@ body {
   color: var(--primary-foreground);
 }
 
+/* Ensure SVG icons inherit text color */
+svg {
+  color: inherit;
+}
+
+/* Light mode specific fixes */
+.light svg {
+  color: currentColor;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   *,

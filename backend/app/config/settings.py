@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     """
     
     DATABASE_URL: str = "sqlite:///./backend.db"
+    TEST_DATABASE_URL: str | None = None  # Optional test database URL
     ENV: Literal["dev", "staging", "prod"] = "dev"
     MIN_QUALITY_THRESHOLD: float = 0.7
     BACKUP_FREQUENCY: Literal["daily", "weekly", "monthly"] = "weekly"

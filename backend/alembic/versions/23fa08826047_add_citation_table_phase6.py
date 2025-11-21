@@ -20,12 +20,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - Add citations table for Phase 6."""
+    from sqlalchemy.dialects.postgresql import UUID
+    
+    # Determine the appropriate ID type based on database dialect
+    bind = op.get_bind()
+    id_type = UUID(as_uuid=True) if bind.dialect.name == 'postgresql' else sa.String(36)
+    
     # Create citations table
     op.create_table(
         'citations',
-        sa.Column('id', sa.String(36), primary_key=True),
-        sa.Column('source_resource_id', sa.String(36), nullable=False),
-        sa.Column('target_resource_id', sa.String(36), nullable=True),
+        sa.Column('id', id_type, primary_key=True),
+        sa.Column('source_resource_id', id_type, nullable=False),
+        sa.Column('target_resource_id', id_type, nullable=True),
         sa.Column('target_url', sa.String(), nullable=False),
         sa.Column('citation_type', sa.String(), nullable=False, server_default='reference'),
         sa.Column('context_snippet', sa.Text(), nullable=True),

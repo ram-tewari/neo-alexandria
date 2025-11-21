@@ -266,10 +266,190 @@ The core data model follows Dublin Core metadata standards with custom extension
 
 ## Configuration
 
+### Database Configuration
+
+Neo Alexandria 2.0 supports both SQLite and PostgreSQL databases. Choose the appropriate database based on your deployment scenario:
+
+#### SQLite (Development)
+- **Use Case**: Local development, testing, small deployments
+- **Advantages**: Zero configuration, file-based, portable
+- **Limitations**: Limited concurrency, no advanced features
+- **Configuration**:
+  ```bash
+  DATABASE_URL=sqlite:///./backend.db
+  ```
+
+#### PostgreSQL (Production)
+- **Use Case**: Production deployments, high concurrency, large datasets
+- **Advantages**: Advanced indexing, JSONB support, full-text search, high concurrency
+- **Requirements**: PostgreSQL 15 or higher
+- **Configuration**:
+  ```bash
+  DATABASE_URL=postgresql://user:password@host:5432/database
+  ```
+
+#### Database Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | Yes | `sqlite:///./backend.db` | Primary database connection string |
+| `TEST_DATABASE_URL` | No | `sqlite:///:memory:` | Test database connection string (overrides default test database) |
+| `ENV` | No | `dev` | Environment name (`dev`, `staging`, `prod`) |
+
+#### Database URL Format
+
+**SQLite:**
+```bash
+# File-based database
+DATABASE_URL=sqlite:///./backend.db
+
+# In-memory database (testing only)
+DATABASE_URL=sqlite:///:memory:
+
+# Absolute path
+DATABASE_URL=sqlite:////absolute/path/to/database.db
+```
+
+**PostgreSQL:**
+```bash
+# Basic connection
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+
+# With SSL (recommended for production)
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name?sslmode=require
+
+# With connection pool parameters
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name?pool_size=20&max_overflow=40
+```
+
+#### Environment-Specific Configuration Files
+
+Neo Alexandria provides example configuration files for different environments:
+
+- **`.env.development`** - Local development with SQLite
+- **`.env.staging`** - Staging environment with PostgreSQL
+- **`.env.production`** - Production environment with PostgreSQL
+
+Copy the appropriate file to `.env` and customize for your environment:
+
+```bash
+# For local development
+cp .env.development .env
+
+# For staging
+cp .env.staging .env
+# Edit .env and update database credentials
+
+# For production
+cp .env.production .env
+# Edit .env and update database credentials
+```
+
+#### Testing with Different Databases
+
+By default, tests use in-memory SQLite for speed. To test against PostgreSQL:
+
+```bash
+# Set TEST_DATABASE_URL in your .env file
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db
+
+# Or set it inline when running tests
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest backend/tests/
+```
+
+#### Database Migration
+
+When switching from SQLite to PostgreSQL or vice versa:
+
+1. **Run migrations** to ensure schema is up to date:
+   ```bash
+   cd backend
+   alembic upgrade head
+   ```
+
+2. **Migrate data** (if switching databases):
+   ```bash
+   # SQLite to PostgreSQL (forward migration)
+   python backend/scripts/migrate_sqlite_to_postgresql.py \
+     --source sqlite:///./backend.db \
+     --target postgresql://user:password@host:5432/database \
+     --validate
+   
+   # PostgreSQL to SQLite (rollback/reverse migration)
+   python backend/scripts/migrate_postgresql_to_sqlite.py \
+     --source postgresql://user:password@host:5432/database \
+     --target sqlite:///./backend.db \
+     --validate
+   ```
+
+3. **Verify migration** by checking row counts and running tests
+
+#### Rollback Procedures
+
+If you need to rollback from PostgreSQL to SQLite:
+
+1. **Stop the application**:
+   ```bash
+   # Docker Compose
+   docker-compose down
+   
+   # Or kill the process
+   pkill -f "uvicorn backend.app.main:app"
+   ```
+
+2. **Restore SQLite backup** (if available):
+   ```bash
+   cp backend.db.backup backend.db
+   ```
+
+3. **Or run reverse migration** (if no backup):
+   ```bash
+   python backend/scripts/migrate_postgresql_to_sqlite.py \
+     --source postgresql://user:password@host:5432/database \
+     --target sqlite:///./backend.db \
+     --validate
+   ```
+
+4. **Update environment configuration**:
+   ```bash
+   # Update .env file
+   DATABASE_URL=sqlite:///./backend.db
+   ```
+
+5. **Restart the application**:
+   ```bash
+   uvicorn backend.app.main:app --reload
+   ```
+
+**⚠️ Important Rollback Limitations:**
+- JSONB columns are converted to JSON text (no binary optimization)
+- PostgreSQL full-text search vectors are not migrated (FTS5 must be rebuilt)
+- Some PostgreSQL-specific indexes cannot be recreated in SQLite
+- Array types are converted to JSON arrays
+
+For detailed rollback procedures and troubleshooting, see:
+- **[PostgreSQL Migration Guide](backend/docs/POSTGRESQL_MIGRATION_GUIDE.md)** - Complete migration and rollback procedures
+- **[SQLite Compatibility Maintenance](backend/docs/SQLITE_COMPATIBILITY_MAINTENANCE.md)** - Maintaining compatibility during transition
+
+#### Connection Pool Configuration
+
+PostgreSQL connection pooling is automatically configured with optimal defaults:
+
+- **Pool Size**: 20 base connections
+- **Max Overflow**: 40 additional connections for burst traffic
+- **Pool Recycle**: 3600 seconds (1 hour)
+- **Pool Pre-Ping**: Enabled (validates connections before use)
+
+Monitor connection pool usage via the monitoring endpoint:
+```bash
+curl http://localhost:8000/monitoring/database
+```
+
 ### Environment Variables
 ```bash
 # Database Configuration
 DATABASE_URL=sqlite:///backend.db
+TEST_DATABASE_URL=sqlite:///:memory:
 
 # AI Model Configuration
 EMBEDDING_MODEL_NAME=nomic-ai/nomic-embed-text-v1
@@ -666,20 +846,281 @@ pytest backend/tests/ -m "integration"     # Integration tests
 
 ### System Requirements
 - **CPU**: 4+ cores recommended
-- **RAM**: 8GB minimum, 16GB recommended
-- **Storage**: SSD recommended for database performance
+- **RAM**: 8GB minimum, 16GB recommended for AI features
+- **Storage**: SSD recommended for database performance (minimum 20GB free space)
 - **Network**: Stable internet connection for content ingestion
+- **Database**: PostgreSQL 15+ for production (SQLite for development)
 
-### Database Considerations
-- **SQLite**: Suitable for development and small deployments
-- **PostgreSQL**: Recommended for production with high concurrency
-- **Backup Strategy**: Regular database backups and migration testing
+### Database Selection Guide
+
+#### SQLite (Development & Small Deployments)
+**Use Cases:**
+- Local development and testing
+- Single-user deployments
+- Prototyping and demos
+- Small datasets (<10,000 resources)
+
+**Advantages:**
+- Zero configuration required
+- File-based (portable)
+- No separate database server needed
+- Perfect for development
+
+**Limitations:**
+- Limited concurrent writes (single writer)
+- No advanced indexing (GIN, JSONB)
+- File locking can cause issues under load
+- Not suitable for production with multiple users
+
+#### PostgreSQL (Production & High Concurrency)
+**Use Cases:**
+- Production deployments
+- Multi-user environments
+- High concurrency requirements (100+ simultaneous users)
+- Large datasets (>10,000 resources)
+- Advanced search and analytics
+
+**Advantages:**
+- Excellent concurrent write performance
+- Advanced indexing (GIN indexes for JSONB, full-text search)
+- Native JSONB support for efficient JSON queries
+- Connection pooling with health checks
+- Production-grade reliability and ACID compliance
+- Point-in-time recovery and replication support
+
+**Requirements:**
+- PostgreSQL 15 or higher
+- Dedicated database server or managed service (AWS RDS, Google Cloud SQL, Azure Database)
+- Regular backups and monitoring
+
+### PostgreSQL Setup for Production
+
+#### Option 1: Docker Compose (Recommended for Development/Staging)
+```bash
+# Start PostgreSQL with Docker
+cd backend/docker
+docker-compose up -d postgres
+
+# Verify PostgreSQL is running
+docker-compose ps
+
+# Check logs
+docker-compose logs postgres
+```
+
+#### Option 2: Managed Database Service (Recommended for Production)
+**AWS RDS:**
+```bash
+# Create PostgreSQL RDS instance
+aws rds create-db-instance \
+  --db-instance-identifier neo-alexandria-prod \
+  --db-instance-class db.t3.medium \
+  --engine postgres \
+  --engine-version 15.4 \
+  --master-username admin \
+  --master-user-password <secure-password> \
+  --allocated-storage 100 \
+  --backup-retention-period 7 \
+  --multi-az
+```
+
+**Google Cloud SQL:**
+```bash
+# Create PostgreSQL instance
+gcloud sql instances create neo-alexandria-prod \
+  --database-version=POSTGRES_15 \
+  --tier=db-custom-2-7680 \
+  --region=us-central1 \
+  --backup \
+  --backup-start-time=02:00
+```
+
+#### Option 3: Self-Hosted PostgreSQL
+```bash
+# Install PostgreSQL 15 (Ubuntu/Debian)
+sudo apt update
+sudo apt install postgresql-15 postgresql-contrib-15
+
+# Create database and user
+sudo -u postgres psql
+CREATE DATABASE neo_alexandria;
+CREATE USER neo_user WITH ENCRYPTED PASSWORD 'secure_password';
+GRANT ALL PRIVILEGES ON DATABASE neo_alexandria TO neo_user;
+\q
+```
+
+### Migration from SQLite to PostgreSQL
+
+**Prerequisites:**
+- Backup your SQLite database
+- PostgreSQL 15+ installed and running
+- Python environment with all dependencies
+
+**Migration Steps:**
+```bash
+# 1. Backup SQLite database
+cp backend.db backend.db.backup
+
+# 2. Set up PostgreSQL connection
+export DATABASE_URL="postgresql://user:password@host:5432/database"
+
+# 3. Run schema migrations
+cd backend
+alembic upgrade head
+
+# 4. Migrate data from SQLite to PostgreSQL
+python scripts/migrate_sqlite_to_postgresql.py \
+  --source sqlite:///./backend.db \
+  --target postgresql://user:password@host:5432/database \
+  --validate
+
+# 5. Verify migration
+# Check row counts match between source and target
+
+# 6. Update environment configuration
+# Edit .env file
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# 7. Restart application
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+**Migration Validation:**
+```bash
+# Compare row counts
+python -c "
+from sqlalchemy import create_engine, inspect
+sqlite_engine = create_engine('sqlite:///./backend.db')
+pg_engine = create_engine('postgresql://user:password@host:5432/database')
+
+for table in inspect(sqlite_engine).get_table_names():
+    sqlite_count = sqlite_engine.execute(f'SELECT COUNT(*) FROM {table}').scalar()
+    pg_count = pg_engine.execute(f'SELECT COUNT(*) FROM {table}').scalar()
+    print(f'{table}: SQLite={sqlite_count}, PostgreSQL={pg_count}')
+"
+```
+
+### Database Backup Strategy
+
+#### PostgreSQL Backups
+```bash
+# Full database backup
+pg_dump -h localhost -U postgres -d neo_alexandria > backup_$(date +%Y%m%d).sql
+
+# Compressed backup
+pg_dump -h localhost -U postgres -d neo_alexandria | gzip > backup_$(date +%Y%m%d).sql.gz
+
+# Custom format (supports parallel restore)
+pg_dump -h localhost -U postgres -d neo_alexandria -Fc > backup_$(date +%Y%m%d).dump
+```
+
+**Automated Backup Script:**
+```bash
+# Use the provided backup script
+chmod +x backend/scripts/backup_postgresql.sh
+./backend/scripts/backup_postgresql.sh
+
+# Schedule with cron (daily at 2 AM)
+crontab -e
+0 2 * * * /path/to/backend/scripts/backup_postgresql.sh
+```
+
+**Backup Retention Policy:**
+- Daily backups: Keep for 7 days
+- Weekly backups: Keep for 4 weeks
+- Monthly backups: Keep for 12 months
+
+#### SQLite Backups
+```bash
+# Simple file copy
+cp backend.db backend.db.backup_$(date +%Y%m%d)
+
+# Using SQLite backup command
+sqlite3 backend.db ".backup 'backend.db.backup_$(date +%Y%m%d)'"
+```
+
+### Monitoring and Performance
+
+#### Connection Pool Monitoring
+```bash
+# Check connection pool status
+curl http://localhost:8000/monitoring/database
+
+# Response includes:
+# - database_type: "postgresql" or "sqlite"
+# - pool_size: 20 (PostgreSQL)
+# - connections_in_use: current active connections
+# - connections_available: idle connections
+# - overflow_connections: connections beyond pool_size
+```
+
+#### Performance Tuning (PostgreSQL)
+```sql
+-- Check slow queries
+SELECT query, calls, total_time, mean_time
+FROM pg_stat_statements
+ORDER BY mean_time DESC
+LIMIT 10;
+
+-- Check index usage
+SELECT schemaname, tablename, indexname, idx_scan
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public'
+ORDER BY idx_scan DESC;
+
+-- Check cache hit ratio (should be >90%)
+SELECT 
+  sum(heap_blks_read) as heap_read,
+  sum(heap_blks_hit) as heap_hit,
+  sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read)) as ratio
+FROM pg_statio_user_tables;
+```
+
+### Rollback Procedures
+
+If you need to rollback from PostgreSQL to SQLite:
+
+```bash
+# 1. Stop the application
+pkill -f "uvicorn backend.app.main:app"
+
+# 2. Run reverse migration
+python backend/scripts/migrate_postgresql_to_sqlite.py \
+  --source postgresql://user:password@host:5432/database \
+  --target sqlite:///./backend.db \
+  --validate
+
+# 3. Update environment
+DATABASE_URL=sqlite:///./backend.db
+
+# 4. Restart application
+uvicorn backend.app.main:app --reload
+```
+
+**⚠️ Rollback Limitations:**
+- JSONB columns converted to JSON text (no binary optimization)
+- PostgreSQL full-text search vectors not migrated (FTS5 must be rebuilt)
+- Some PostgreSQL-specific indexes cannot be recreated in SQLite
+- Performance may degrade for large datasets
 
 ### Security Considerations
-- API key authentication (future release)
-- Rate limiting and abuse prevention
-- Input validation and sanitization
-- Secure content storage and access controls
+- **Database Security:**
+  - Use strong passwords for database users
+  - Enable SSL/TLS for database connections in production
+  - Restrict database access to application servers only
+  - Regular security updates for PostgreSQL
+  
+- **Application Security:**
+  - API key authentication (future release)
+  - Rate limiting and abuse prevention
+  - Input validation and sanitization
+  - Secure content storage and access controls
+
+### Additional Resources
+- **[PostgreSQL Migration Guide](backend/docs/POSTGRESQL_MIGRATION_GUIDE.md)** - Complete migration procedures
+- **[PostgreSQL Backup Guide](backend/docs/POSTGRESQL_BACKUP_GUIDE.md)** - Backup and recovery procedures
+- **[SQLite Compatibility Guide](backend/docs/SQLITE_COMPATIBILITY_MAINTENANCE.md)** - Maintaining compatibility
+- **[Developer Guide](backend/docs/DEVELOPER_GUIDE.md)** - Database configuration details
 
 ## Support and Documentation
 

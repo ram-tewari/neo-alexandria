@@ -14,7 +14,6 @@ from sqlalchemy import func
 from backend.app.database.base import get_db
 from backend.app.database import models as db_models
 from backend.app.schemas import scholarly as schemas
-from backend.app.services.metadata_extractor import MetadataExtractor
 
 logger = logging.getLogger(__name__)
 

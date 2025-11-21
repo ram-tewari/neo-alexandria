@@ -61,6 +61,15 @@
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
   
+  /* Marble Backdrop Colors - Midnight black marble with purple veining */
+  --marble-base: #000000;
+  --marble-vein-purple-primary: rgba(139, 92, 246, 0.12);
+  --marble-vein-purple-secondary: rgba(124, 58, 237, 0.08);
+  --marble-vein-purple-subtle: rgba(167, 139, 250, 0.06);
+  --marble-vein-dark: rgba(30, 30, 35, 0.15);
+  --marble-gradient-purple: rgba(139, 92, 246, 0.04);
+  --marble-gradient-soft: rgba(10, 10, 15, 0.4);
+  
   /* Sidebar Specific - Dark sidebar with purple accents */
   --sidebar-background: #000000;
   --sidebar-foreground: #ffffff;
@@ -78,35 +87,44 @@
   --background-secondary: #fafafa;
   --background-tertiary: #f5f5f5;
   
-  /* Gold Accent System */
-  --accent-deep: #b8860b;
-  --accent-medium: #daa520;
-  --accent-bright: #ffd700;
-  --accent-light: #ffe55c;
-  --accent-glow: rgba(218, 165, 32, 0.25);
-  --accent-subtle: rgba(218, 165, 32, 0.08);
+  /* Gold Accent System - Darker for better visibility */
+  --accent-deep: #8b6914;
+  --accent-medium: #b8860b;
+  --accent-bright: #daa520;
+  --accent-light: #f0c040;
+  --accent-glow: rgba(184, 134, 11, 0.3);
+  --accent-subtle: rgba(184, 134, 11, 0.12);
+  
+  /* Marble Backdrop Colors - Pure white marble with subtle gold veining */
+  --marble-base: #fefefe;
+  --marble-vein-gold-primary: rgba(218, 165, 32, 0.12);
+  --marble-vein-gold-secondary: rgba(184, 134, 11, 0.08);
+  --marble-vein-gold-subtle: rgba(240, 192, 64, 0.06);
+  --marble-vein-gray: rgba(230, 230, 225, 0.15);
+  --marble-gradient-gold: rgba(218, 165, 32, 0.04);
+  --marble-gradient-soft: rgba(255, 255, 250, 0.5);
   
   /* Semantic Colors */
   --primary: var(--accent-medium);
   --primary-foreground: #000000;
   
-  /* Borders - Dark on light */
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-medium: rgba(0, 0, 0, 0.12);
-  --border-strong: rgba(0, 0, 0, 0.2);
-  --border-accent: rgba(184, 134, 11, 0.3);
+  /* Borders - Dark on light with better visibility */
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --border-medium: rgba(0, 0, 0, 0.2);
+  --border-strong: rgba(0, 0, 0, 0.3);
+  --border-accent: rgba(184, 134, 11, 0.4);
   
-  /* Surfaces - Light theme surfaces */
-  --surface-base: #f5f5f5;
-  --surface-raised: #fafafa;
-  --surface-overlay: #ebebeb;
-  --surface-accent: rgba(218, 165, 32, 0.05);
+  /* Surfaces - Light theme surfaces with better contrast */
+  --surface-base: #f0f0f0;
+  --surface-raised: #f8f8f8;
+  --surface-overlay: #e8e8e8;
+  --surface-accent: rgba(184, 134, 11, 0.08);
   
-  /* Text - Dark text on light background */
+  /* Text - Dark text on light background with better contrast */
   --text-primary: #000000;
-  --text-secondary: #4d4d4d;
-  --text-tertiary: #808080;
-  --text-disabled: #b3b3b3;
+  --text-secondary: #1a1a1a;
+  --text-tertiary: #404040;
+  --text-disabled: #999999;
   --text-accent: var(--accent-deep);
   
   /* Shadows - Lighter for light theme */

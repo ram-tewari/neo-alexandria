@@ -12,7 +12,6 @@ from backend.app.domain import (
     ValueObject,
     validate_non_empty,
     validate_range,
-    validate_non_negative,
 )
 
 

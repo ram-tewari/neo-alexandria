@@ -5,18 +5,63 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Phase 8">
-      <change beforePath="$PROJECT_DIR$/backend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/alembic/env.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/alembic/env.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/database/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/schemas/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/schemas/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/services/classification_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/classification_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/services/resource_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/resource_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/API_DOCUMENTATION.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/CHANGELOG.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/conftest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/conftest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PROJECT_CLEANUP_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TEST_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/add_test_resources.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/CLASSIFICATION_MOCK_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docs/ARCHITECTURE_DIAGRAM.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/ARCHITECTURE_DIAGRAM.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/requirements-core.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/requirements-minimal.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/requirements-simple.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/rollback_log.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/scripts/analyze_test_failures.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test_failure_analysis.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test_failure_analysis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test_failure_pattern_matrix.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test_failures.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test_quality_output.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/ASSERTION_MISMATCH_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/ATTRIBUTE_ERROR_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/DATABASE_FIXTURES_OPTIMIZATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/DATABASE_OPTIMIZATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/DOMAIN_TESTS_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/FIXTURE_REFACTORING_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/FIXTURE_UPDATES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/INTEGRATION_FIXTURES_UPDATE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/ML_MODEL_OPTIMIZATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/ML_MODEL_OPTIMIZATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/PARALLEL_EXECUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/PARALLEL_EXECUTION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/RECOMMENDATION_MOCK_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/SEARCH_MOCK_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/TYPE_ERROR_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/UUID_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/run_recommendation_tests.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/test_assertion_helpers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/test_domain_dict_access.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/test_domain_object_attributes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/test_fixture_factories.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/test_mock_utilities.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/_metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/_metadata.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/zustand.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/zustand.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,6 +128,7 @@
       <workItem from="1759299127036" duration="3357000" />
       <workItem from="1762397701972" duration="1305000" />
       <workItem from="1762640851216" duration="10275000" />
+      <workItem from="1763589743385" duration="2904000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />
@@ -187,8 +233,18 @@
     <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="08fde18e-99e5-4f27-af0f-6e9c0eda3849" value="TOOL_WINDOW" />
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
+        <entry key="08fde18e-99e5-4f27-af0f-6e9c0eda3849">
+          <value>
+            <State />
+          </value>
+        </entry>
         <entry key="MAIN">
           <value>
             <State />

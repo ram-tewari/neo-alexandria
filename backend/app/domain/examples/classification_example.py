@@ -155,7 +155,7 @@ def example_analysis():
     
     # Count by confidence level
     counts = result.count_by_confidence_level()
-    print(f"\nConfidence distribution:")
+    print("\nConfidence distribution:")
     print(f"  High (≥0.8): {counts['high']}")
     print(f"  Medium (0.5-0.8): {counts['medium']}")
     print(f"  Low (<0.5): {counts['low']}")

@@ -90,19 +90,12 @@ export const Dashboard = () => {
       <div className="container">
         <div className="page-header">
           <motion.h1 
-            className="page-title"
-            style={{
-              background: 'linear-gradient(135deg, var(--white) 0%, var(--purple-bright) 50%, var(--purple-vibrant) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              backgroundSize: '200% 200%',
-            }}
+            className="page-title welcome-text"
             animate={{
               backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
             }}
             transition={{
-              duration: 5,
+              duration: 6,
               repeat: Infinity,
               ease: "easeInOut"
             }}

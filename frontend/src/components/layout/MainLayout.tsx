@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { AnimatedOrbs } from '../background/AnimatedOrbs';
 import { GridPattern } from '../background/GridPattern';
+import { MarbleBackdrop } from '../background/MarbleBackdrop';
 import { Navbar } from './Navbar';
 import { AppSidebar } from './AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
@@ -10,6 +11,7 @@ export const MainLayout = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="app">
+        <MarbleBackdrop />
         <AnimatedOrbs />
         <GridPattern />
         <Navbar />

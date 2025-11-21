@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useNavigationStore } from '../../store/navigationStore';
+import { useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { sidebarItemVariants } from '../../animations/variants';
 import { Icon } from '../common/Icon';
@@ -11,7 +12,6 @@ import './Sidebar.css';
 const mainItems: SidebarItem[] = [
   { iconName: 'dashboard', label: 'Dashboard', path: '/' },
   { iconName: 'library', label: 'Library', path: '/library' },
-  { iconName: 'search', label: 'Search', path: '/search' },
   { iconName: 'graph', label: 'Knowledge Graph', path: '/graph' },
 ];
 
@@ -25,10 +25,18 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { sidebarOpen, toggleSidebar } = useNavigationStore();
+  const { openCommandPalette } = useUIStore();
   const isMobile = useIsMobile();
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    if (isMobile) {
+      toggleSidebar();
+    }
+  };
+
+  const handleSearchClick = () => {
+    openCommandPalette();
     if (isMobile) {
       toggleSidebar();
     }
@@ -41,6 +49,28 @@ export const Sidebar = () => {
       )}
       <aside className={`sidebar ${isMobile && sidebarOpen ? 'open' : ''}`} aria-label="Sidebar navigation">
         <div className="sidebar-glass">
+        {/* Search Button */}
+        <div className="sidebar-search">
+          <motion.button
+            className="sidebar-search-button"
+            onClick={handleSearchClick}
+            variants={sidebarItemVariants}
+            initial="rest"
+            whileHover="hover"
+            aria-label="Open search"
+          >
+            <motion.div 
+              className="sidebar-item-glow"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            />
+            <Icon icon={icons.search} size={20} />
+            <span>Search</span>
+            <kbd className="sidebar-search-kbd">⌘K</kbd>
+          </motion.button>
+        </div>
+
         <div className="sidebar-section">
           <div className="sidebar-title">Main</div>
           {mainItems.map((item) => {

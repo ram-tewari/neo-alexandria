@@ -27,7 +27,6 @@ Design Patterns:
 """
 
 import logging
-from typing import List
 
 from .event_system import Event, event_emitter
 from .event_types import SystemEvent

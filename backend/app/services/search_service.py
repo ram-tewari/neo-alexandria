@@ -14,6 +14,7 @@ Related files:
 
 Features:
 - FTS5 full-text search with SQLite contentless virtual tables
+- PostgreSQL full-text search with tsvector and tsquery
 - Phase 4 hybrid search with vector similarity and weighted fusion
 - Advanced filtering, pagination, and sorting capabilities
 - Faceted search with counts for classification, type, language, and subjects
@@ -21,6 +22,7 @@ Features:
 - Graceful fallback to LIKE search when FTS5 unavailable
 - Automatic detection of search capabilities and method routing
 - Comprehensive error handling and performance optimization
+- Database-agnostic full-text search abstraction (Phase 13)
 """
 
 from __future__ import annotations
@@ -28,6 +30,7 @@ from __future__ import annotations
 import logging
 import hashlib
 import json
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple
@@ -42,6 +45,7 @@ from backend.app.domain.search import SearchQuery as DomainSearchQuery
 from backend.app.config.settings import get_settings
 from backend.app.services.ai_core import generate_embedding
 from backend.app.cache.redis_cache import cache
+from backend.app.database.base import get_database_type
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -51,6 +55,229 @@ try:
     import numpy as np
 except ImportError:  # pragma: no cover
     np = None
+
+
+# ============================================================================
+# Full-Text Search Strategy Pattern (Phase 13)
+# ============================================================================
+
+class FullTextSearchStrategy(ABC):
+    """
+    Abstract base class for full-text search strategies.
+    
+    Provides a common interface for different database-specific full-text
+    search implementations (SQLite FTS5, PostgreSQL tsvector, etc.).
+    """
+    
+    def __init__(self, db: Session):
+        """
+        Initialize the search strategy.
+        
+        Args:
+            db: Database session
+        """
+        self.db = db
+    
+    @abstractmethod
+    def search(
+        self,
+        query: str,
+        filters: SearchFilters | None = None,
+        limit: int = 25,
+        offset: int = 0
+    ) -> Tuple[List[Resource], int, Dict[str, float], Dict[str, str]]:
+        """
+        Execute full-text search.
+        
+        Args:
+            query: Search query text
+            filters: Optional structured filters
+            limit: Maximum number of results
+            offset: Pagination offset
+            
+        Returns:
+            Tuple of:
+            - resources: List of Resource objects
+            - total: Total count of matching resources
+            - scores: Dict mapping resource_id to relevance score
+            - snippets: Dict mapping resource_id to snippet text
+        """
+        pass
+    
+    @abstractmethod
+    def is_available(self) -> bool:
+        """
+        Check if this search strategy is available.
+        
+        Returns:
+            True if the search method is available, False otherwise
+        """
+        pass
+
+
+class SQLiteFTS5Strategy(FullTextSearchStrategy):
+    """
+    SQLite FTS5 full-text search strategy.
+    
+    Uses SQLite's FTS5 virtual tables for full-text search with BM25 ranking.
+    """
+    
+    def is_available(self) -> bool:
+        """Check if FTS5 is available and index is ready."""
+        return _detect_fts5(self.db) and _fts_index_ready(self.db)
+    
+    def search(
+        self,
+        query: str,
+        filters: SearchFilters | None = None,
+        limit: int = 25,
+        offset: int = 0
+    ) -> Tuple[List[Resource], int, Dict[str, float], Dict[str, str]]:
+        """
+        Execute FTS5 full-text search.
+        
+        Args:
+            query: Search query text
+            filters: Optional structured filters
+            limit: Maximum number of results
+            offset: Pagination offset
+            
+        Returns:
+            Tuple of (resources, total, scores, snippets)
+        """
+        if not self.is_available():
+            logger.warning("FTS5 not available, returning empty results")
+            return [], 0, {}, {}
+        
+        # Parse query into FTS5 MATCH syntax
+        from backend.app.services.search_service import AdvancedSearchService
+        parsed_query = AdvancedSearchService.parse_search_query(query)
+        
+        # Execute FTS5 search
+        items, total, _, bm25_scores, snippets = AdvancedSearchService.fts_search(
+            self.db, parsed_query, filters, limit=limit, offset=offset
+        )
+        
+        return items, total, bm25_scores, snippets
+
+
+class PostgreSQLFullTextStrategy(FullTextSearchStrategy):
+    """
+    PostgreSQL full-text search strategy.
+    
+    Uses PostgreSQL's tsvector and tsquery for full-text search with
+    ts_rank ranking.
+    """
+    
+    def is_available(self) -> bool:
+        """Check if PostgreSQL full-text search is available."""
+        try:
+            db_type = get_database_type(self.db.bind.url.render_as_string(hide_password=True))
+            if db_type != "postgresql":
+                return False
+            
+            # Check if search_vector column exists
+            result = self.db.execute(
+                text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'resources' 
+                    AND column_name = 'search_vector'
+                """)
+            ).fetchone()
+            
+            return result is not None
+        except Exception as e:
+            logger.debug(f"PostgreSQL FTS availability check failed: {e}")
+            return False
+    
+    def search(
+        self,
+        query: str,
+        filters: SearchFilters | None = None,
+        limit: int = 25,
+        offset: int = 0
+    ) -> Tuple[List[Resource], int, Dict[str, float], Dict[str, str]]:
+        """
+        Execute PostgreSQL full-text search.
+        
+        Args:
+            query: Search query text
+            filters: Optional structured filters
+            limit: Maximum number of results
+            offset: Pagination offset
+            
+        Returns:
+            Tuple of (resources, total, scores, snippets)
+        """
+        if not self.is_available():
+            logger.warning("PostgreSQL FTS not available, returning empty results")
+            return [], 0, {}, {}
+        
+        try:
+            # Convert query to tsquery format
+            # Simple approach: split on spaces and join with &
+            query_terms = query.strip().split()
+            tsquery_str = " & ".join(query_terms)
+            
+            # Build base query with full-text search
+            sql_query = text("""
+                SELECT 
+                    id,
+                    ts_rank(search_vector, to_tsquery('english', :query)) as rank,
+                    ts_headline('english', 
+                        COALESCE(description, title), 
+                        to_tsquery('english', :query),
+                        'MaxWords=20, MinWords=10, MaxFragments=1'
+                    ) as snippet
+                FROM resources
+                WHERE search_vector @@ to_tsquery('english', :query)
+                ORDER BY rank DESC
+                LIMIT :limit OFFSET :offset
+            """)
+            
+            # Execute search
+            results = self.db.execute(
+                sql_query,
+                {"query": tsquery_str, "limit": limit, "offset": offset}
+            ).fetchall()
+            
+            # Get total count
+            count_query = text("""
+                SELECT COUNT(*) 
+                FROM resources 
+                WHERE search_vector @@ to_tsquery('english', :query)
+            """)
+            total = self.db.execute(count_query, {"query": tsquery_str}).scalar() or 0
+            
+            # Extract resource IDs, scores, and snippets
+            resource_ids = [str(row[0]) for row in results]
+            scores = {str(row[0]): float(row[1]) for row in results}
+            snippets = {str(row[0]): str(row[2]) for row in results}
+            
+            # Fetch full Resource objects
+            if resource_ids:
+                resources_query = self.db.query(Resource).filter(
+                    Resource.id.in_(resource_ids)
+                )
+                
+                # Apply structured filters
+                resources_query = _apply_structured_filters(resources_query, filters)
+                
+                # Preserve ranking order
+                resources = resources_query.all()
+                resource_map = {str(r.id): r for r in resources}
+                ordered_resources = [
+                    resource_map[rid] for rid in resource_ids if rid in resource_map
+                ]
+            else:
+                ordered_resources = []
+            
+            return ordered_resources, int(total), scores, snippets
+            
+        except Exception as e:
+            logger.error(f"PostgreSQL FTS search failed: {e}", exc_info=True)
+            return [], 0, {}, {}
 
 # Import Phase 8 services for three-way hybrid search
 try:
@@ -327,6 +554,8 @@ class HybridSearchQuery:
         Returns:
             Search results tuple
         """
+        import time
+        
         logger.warning(
             "Phase 8 services not fully available, falling back to two-way hybrid search"
         )
@@ -529,7 +758,11 @@ class HybridSearchQuery:
 
     
     def _search_fts5(self) -> List[Tuple[str, float]]:
-        """Execute FTS5 full-text search.
+        """Execute full-text search using appropriate strategy.
+        
+        Uses database-specific full-text search strategy:
+        - SQLite: FTS5 virtual tables
+        - PostgreSQL: tsvector and tsquery
         
         Returns:
             List of (resource_id, score) tuples
@@ -540,20 +773,54 @@ class HybridSearchQuery:
         results = []
         
         try:
-            if self.query.query_text and _detect_fts5(self.db) and _fts_index_ready(self.db):
-                parsed_match = AdvancedSearchService.parse_search_query(self.query.query_text)
+            if not self.query.query_text:
+                return results
+            
+            # Select appropriate full-text search strategy
+            strategy = self._get_fts_strategy()
+            
+            if strategy and strategy.is_available():
                 # Convert domain SearchQuery to schema SearchFilters for compatibility
                 filters = self._convert_to_schema_filters()
-                items, _, _, bm25_scores, _ = AdvancedSearchService.fts_search(
-                    self.db, parsed_match, filters, limit=100, offset=0
+                
+                # Execute search using strategy
+                items, _, scores, _ = strategy.search(
+                    self.query.query_text,
+                    filters=filters,
+                    limit=100,
+                    offset=0
                 )
-                results = [(str(item.id), bm25_scores.get(str(item.id), 1.0)) for item in items]
-                logger.debug(f"FTS5 search returned {len(results)} results")
+                
+                results = [(str(item.id), scores.get(str(item.id), 1.0)) for item in items]
+                logger.debug(f"Full-text search returned {len(results)} results using {strategy.__class__.__name__}")
+            else:
+                logger.debug("No full-text search strategy available")
         except Exception as e:
-            logger.error(f"FTS5 search failed: {e}", exc_info=True)
+            logger.error(f"Full-text search failed: {e}", exc_info=True)
         
         self._diagnostics['retrieval_times']['fts5'] = (time.time() - start) * 1000
         return results
+    
+    def _get_fts_strategy(self) -> FullTextSearchStrategy | None:
+        """
+        Get appropriate full-text search strategy for current database.
+        
+        Returns:
+            FullTextSearchStrategy instance or None if no strategy available
+        """
+        try:
+            db_type = get_database_type(self.db.bind.url.render_as_string(hide_password=True))
+            
+            if db_type == "postgresql":
+                return PostgreSQLFullTextStrategy(self.db)
+            elif db_type == "sqlite":
+                return SQLiteFTS5Strategy(self.db)
+            else:
+                logger.warning(f"Unsupported database type for FTS: {db_type}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to determine FTS strategy: {e}", exc_info=True)
+            return None
     
     def _search_dense(self) -> List[Tuple[str, float]]:
         """Execute dense vector search.
@@ -854,11 +1121,36 @@ def _compute_facets(db: Session, base_query) -> Facets:
 
 class AdvancedSearchService:
     @staticmethod
-    def _generate_cache_key(query: SearchQuery) -> str:
+    def _get_fts_strategy_for_db(db: Session) -> FullTextSearchStrategy | None:
+        """
+        Get appropriate full-text search strategy for the database.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            FullTextSearchStrategy instance or None if no strategy available
+        """
+        try:
+            db_type = get_database_type(db.bind.url.render_as_string(hide_password=True))
+            
+            if db_type == "postgresql":
+                return PostgreSQLFullTextStrategy(db)
+            elif db_type == "sqlite":
+                return SQLiteFTS5Strategy(db)
+            else:
+                logger.warning(f"Unsupported database type for FTS: {db_type}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to determine FTS strategy: {e}", exc_info=True)
+            return None
+    
+    @staticmethod
+    def _generate_cache_key(query: SearchQuerySchema) -> str:
         """Generate cache key from search query.
         
         Args:
-            query: SearchQuery object
+            query: SearchQuerySchema object
             
         Returns:
             Cache key string
@@ -872,14 +1164,14 @@ class AdvancedSearchService:
             "sort_dir": query.sort_dir,
             "hybrid_weight": query.hybrid_weight,
             "filters": {
-                "classification": query.filters.classification if query.filters else None,
+                "classification_code": query.filters.classification_code if query.filters else None,
                 "type": query.filters.type if query.filters else None,
                 "language": query.filters.language if query.filters else None,
-                "subjects": query.filters.subjects if query.filters else None,
+                "subject_any": query.filters.subject_any if query.filters else None,
+                "subject_all": query.filters.subject_all if query.filters else None,
                 "min_quality": query.filters.min_quality if query.filters else None,
-                "max_quality": query.filters.max_quality if query.filters else None,
-                "start_date": str(query.filters.start_date) if query.filters and query.filters.start_date else None,
-                "end_date": str(query.filters.end_date) if query.filters and query.filters.end_date else None,
+                "created_from": str(query.filters.created_from) if query.filters and query.filters.created_from else None,
+                "created_to": str(query.filters.created_to) if query.filters and query.filters.created_to else None,
             }
         }
         
@@ -890,7 +1182,52 @@ class AdvancedSearchService:
         return f"search_query:{query_hash}"
     
     @staticmethod
-    def search(db: Session, query: SearchQuery):
+    def _cache_search_results(
+        cache_key: str,
+        resources: List[Resource],
+        total: int,
+        facets: Facets,
+        snippets: Dict[str, str]
+    ) -> None:
+        """
+        Cache search results for faster subsequent queries.
+        
+        Args:
+            cache_key: Cache key for this query
+            resources: List of Resource objects
+            total: Total count of results
+            facets: Facets object
+            snippets: Snippets dictionary
+        """
+        try:
+            # Extract resource IDs to cache (we'll fetch full objects from DB on cache hit)
+            resource_ids = [str(r.id) for r in resources]
+            
+            # Convert facets to dict for caching
+            facets_data = {
+                "classification_code": [{"key": b.key, "count": b.count} for b in facets.classification_code],
+                "type": [{"key": b.key, "count": b.count} for b in facets.type],
+                "language": [{"key": b.key, "count": b.count} for b in facets.language],
+                "read_status": [{"key": b.key, "count": b.count} for b in facets.read_status],
+                "subject": [{"key": b.key, "count": b.count} for b in facets.subject],
+            }
+            
+            # Create cache data
+            cache_data = {
+                "resource_ids": resource_ids,
+                "total": total,
+                "facets": facets_data,
+                "snippets": snippets
+            }
+            
+            # Cache for 5 minutes (300 seconds)
+            cache.set(cache_key, cache_data, ttl=300)
+            logger.debug(f"Cached search results for key: {cache_key}")
+        except Exception as e:
+            logger.warning(f"Failed to cache search results: {e}")
+    
+    @staticmethod
+    def search(db: Session, query: SearchQuerySchema):
         # Try cache first
         cache_key = AdvancedSearchService._generate_cache_key(query)
         cached_result = cache.get(cache_key)
@@ -914,11 +1251,11 @@ class AdvancedSearchService:
             
             # Reconstruct Facets object
             facets = Facets(
-                classification=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("classification", [])],
-                type=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("type", [])],
-                language=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("language", [])],
-                read_status=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("read_status", [])],
-                subject=[FacetBucket(value=b["value"], count=b["count"]) for b in facets_data.get("subject", [])]
+                classification_code=[FacetBucket(key=b["key"], count=b["count"]) for b in facets_data.get("classification_code", [])],
+                type=[FacetBucket(key=b["key"], count=b["count"]) for b in facets_data.get("type", [])],
+                language=[FacetBucket(key=b["key"], count=b["count"]) for b in facets_data.get("language", [])],
+                read_status=[FacetBucket(key=b["key"], count=b["count"]) for b in facets_data.get("read_status", [])],
+                subject=[FacetBucket(key=b["key"], count=b["count"]) for b in facets_data.get("subject", [])]
             )
             
             return ordered_resources, total, facets, snippets
@@ -948,15 +1285,30 @@ class AdvancedSearchService:
             if has_embeddings:
                 return AdvancedSearchService.hybrid_search(db, query, hybrid_weight)
         
-        use_fts = bool(query.text) and _detect_fts5(db) and _fts_index_ready(db)
+        # Determine if full-text search is available using strategy pattern
+        fts_strategy = AdvancedSearchService._get_fts_strategy_for_db(db)
+        use_fts = bool(query.text) and fts_strategy is not None and fts_strategy.is_available()
 
         base = db.query(Resource)
 
         if use_fts and query.text:
-            parsed_match = AdvancedSearchService.parse_search_query(query.text)
-            items, total, facets, bm25_scores, snippets = AdvancedSearchService.fts_search(
-                db, parsed_match, query.filters, limit=query.limit, offset=query.offset
+            # Use strategy pattern for database-agnostic full-text search
+            items, total, bm25_scores, snippets = fts_strategy.search(
+                query.text, query.filters, limit=query.limit, offset=query.offset
             )
+            
+            # Compute facets from results
+            if items:
+                facets_query = db.query(Resource).filter(Resource.id.in_([r.id for r in items]))
+                facets = _compute_facets(db, facets_query)
+            else:
+                facets = Facets(
+                    classification_code=[],
+                    type=[],
+                    language=[],
+                    read_status=[],
+                    subject=[]
+                )
 
             # Apply ranking with BM25 + boosts
             ranked_items = AdvancedSearchService.rank_results(items, bm25_scores, query.filters)
@@ -1347,7 +1699,7 @@ class AdvancedSearchService:
         return text[:200] + ("…" if len(text) > 200 else "")
 
     @staticmethod
-    def hybrid_search(db: Session, query: SearchQuery, hybrid_weight: float) -> Tuple[List[Resource], int, Facets, Dict[str, str]]:
+    def hybrid_search(db: Session, query: SearchQuerySchema, hybrid_weight: float) -> Tuple[List[Resource], int, Facets, Dict[str, str]]:
         """Execute hybrid search combining FTS5 and vector similarity.
         
         Args:
@@ -1632,7 +1984,7 @@ class AdvancedSearchService:
     @staticmethod
     def search_three_way_hybrid(
         db: Session,
-        query: SearchQuery | SearchQuerySchema,
+        query: DomainSearchQuery | SearchQuerySchema,
         enable_reranking: bool = True,
         adaptive_weighting: bool = True
     ) -> Tuple[List[Resource], int, Facets, Dict[str, str], Dict[str, Any]]:
@@ -1648,7 +2000,7 @@ class AdvancedSearchService:
         
         Args:
             db: Database session
-            query: SearchQuery object (schema or domain) with query text and configuration
+            query: SearchQuerySchema or DomainSearchQuery object with query text and configuration
             enable_reranking: Whether to apply ColBERT reranking (default: True)
             adaptive_weighting: Whether to use query-adaptive RRF weights (default: True)
             

@@ -21,10 +21,10 @@ The application includes the following feature modules:
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database.base import Base, sync_engine
+from .database.base import Base, sync_engine, get_pool_usage_warning
 # Ensure models are imported so Base.metadata is populated for create_all
 from .database import models  # noqa: F401
 from .routers.resources import router as resources_router
@@ -116,6 +116,30 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Add connection pool monitoring middleware
+    @app.middleware("http")
+    async def monitor_connection_pool(request: Request, call_next):
+        """
+        Middleware to monitor database connection pool usage.
+        
+        Checks pool usage before processing each request and logs warnings
+        when pool capacity exceeds 90%. This helps identify potential
+        connection exhaustion issues before they cause request failures.
+        """
+        # Check pool usage before request
+        warning = get_pool_usage_warning()
+        if warning:
+            logger.warning(
+                f"Connection pool near capacity: {warning['pool_usage_percent']:.1f}% "
+                f"({warning['checked_out']}/{warning['total_capacity']} connections in use)",
+                extra=warning
+            )
+        
+        # Process request
+        response = await call_next(request)
+        
+        return response
     
     # Ensure tables exist for SQLite environments without migrations
     try:

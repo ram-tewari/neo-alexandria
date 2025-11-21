@@ -219,8 +219,6 @@ class MLClassificationService:
         
         Requirements: 15.1, 15.2
         """
-        import torch
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
     
     def _load_tokenizer(self) -> None:
         """
@@ -290,7 +288,6 @@ class MLClassificationService:
         
         Requirements: 15.1, 15.2
         """
-        from transformers import AutoModelForSequenceClassification
         
         if checkpoint_to_load:
             self._try_load_checkpoint(checkpoint_to_load, loaded_version)
@@ -436,7 +433,6 @@ class MLClassificationService:
         
         Requirements: 2.2, 2.3, 8.4, 10.1
         """
-        import numpy as np
         
         logits, labels = eval_pred
         predictions = self._convert_logits_to_predictions(logits)

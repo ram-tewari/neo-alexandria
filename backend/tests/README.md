@@ -88,6 +88,101 @@ pytest tests/services/test_search_service.py
 pytest --cov=app --cov-report=html
 ```
 
+### Multi-Database Testing (Phase 13)
+
+The test suite supports running tests against both SQLite and PostgreSQL databases. By default, tests use SQLite (in-memory for unit tests, file-based for integration tests).
+
+#### Running Tests Against PostgreSQL
+
+Set the `TEST_DATABASE_URL` environment variable to use PostgreSQL:
+
+```bash
+# Using a local PostgreSQL database
+export TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db
+pytest
+
+# Or inline for a single test run
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest
+```
+
+#### PostgreSQL-Specific Tests
+
+Some tests are marked with `@pytest.mark.postgresql` and will only run when using a PostgreSQL database:
+
+```bash
+# Run only PostgreSQL-specific tests
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest -m postgresql
+
+# Run PostgreSQL JSONB tests
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest tests/test_postgresql_jsonb.py -v
+
+# Run PostgreSQL full-text search tests
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/test_db pytest tests/test_postgresql_fulltext.py -v
+```
+
+#### Database-Agnostic Tests
+
+Most tests are database-agnostic and will run against both SQLite and PostgreSQL. The test fixtures automatically detect the database type and configure appropriately.
+
+#### Setting Up PostgreSQL for Testing
+
+1. **Using Docker:**
+```bash
+# Start PostgreSQL container
+docker run -d \
+  --name postgres-test \
+  -e POSTGRES_USER=test_user \
+  -e POSTGRES_PASSWORD=test_pass \
+  -e POSTGRES_DB=test_db \
+  -p 5432:5432 \
+  postgres:15
+
+# Run tests
+TEST_DATABASE_URL=postgresql://test_user:test_pass@localhost:5432/test_db pytest
+```
+
+2. **Using Docker Compose:**
+```bash
+# Start services
+cd backend/docker
+docker-compose up -d postgres
+
+# Run tests
+TEST_DATABASE_URL=postgresql://postgres:password@localhost:5432/backend pytest
+```
+
+3. **Using Local PostgreSQL:**
+```bash
+# Create test database
+createdb test_db
+
+# Run tests
+TEST_DATABASE_URL=postgresql://localhost/test_db pytest
+```
+
+#### Test Database Cleanup
+
+PostgreSQL test databases should be cleaned between test runs:
+
+```bash
+# Drop and recreate test database
+dropdb test_db
+createdb test_db
+
+# Or use a dedicated test database that gets recreated
+TEST_DATABASE_URL=postgresql://localhost/test_neo_alexandria pytest
+```
+
+#### Continuous Integration
+
+In CI environments, set `TEST_DATABASE_URL` in your workflow configuration:
+
+```yaml
+# .github/workflows/test.yml
+env:
+  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+```
+
 ### Parallel Execution (Phase 12.6)
 ```bash
 # Run tests in parallel with automatic worker count

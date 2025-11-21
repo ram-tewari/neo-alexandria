@@ -154,6 +154,15 @@ class Resource(Base):
         nullable=True
     )
     
+    # Phase 13: PostgreSQL full-text search vector (PostgreSQL only)
+    # This column is added by migration for PostgreSQL databases
+    # SQLite continues to use FTS5 virtual tables
+    # Note: This is defined as optional since it only exists in PostgreSQL
+    search_vector: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )  # TSVector type in PostgreSQL, NULL in SQLite
+    
     # Phase 6.5: Scholarly Metadata Fields
     # Author and Attribution
     authors: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON: [{"name": "...", "affiliation": "...", "orcid": "..."}]

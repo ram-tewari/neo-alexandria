@@ -52,19 +52,21 @@ def upgrade() -> None:
     ]
 
     for code, title, description, parent_code, keywords in seeds:
-        op.execute(
-            sa.text(
-                "INSERT INTO classification_codes (code, title, description, parent_code, keywords) "
-                "VALUES (:code, :title, :description, :parent_code, :keywords)"
-            ),
+        # Use bind parameters properly with sa.text()
+        bind = op.get_bind()
+        stmt = sa.text(
+            "INSERT INTO classification_codes (code, title, description, parent_code, keywords) "
+            "VALUES (:code, :title, :description, :parent_code, CAST(:keywords AS JSON))"
+        )
+        bind.execute(
+            stmt,
             {
                 "code": code,
                 "title": title,
                 "description": description,
                 "parent_code": parent_code,
-                "keywords": sa.text("json(:kw)") if op.get_bind().dialect.name != 'postgresql' else keywords,
-                "kw": None,
-            },
+                "keywords": str(keywords).replace("'", '"'),  # Convert Python list to JSON string
+            }
         )
         # Fallback for SQLite which supports JSON natively via Python binding
         if op.get_bind().dialect.name != 'postgresql':

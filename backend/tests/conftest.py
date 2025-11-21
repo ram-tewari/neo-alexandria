@@ -24,11 +24,14 @@ def temp_dir() -> Generator[Path, None, None]:
 @pytest.fixture(scope="function")
 def test_db(request):
     """
-    Create an optimized SQLite database for testing.
+    Create an optimized database for testing with multi-database support.
     
     Uses in-memory SQLite for unit tests (fast, isolated) and file-based
     SQLite for integration tests (more realistic). The scope is determined
     by the test path.
+    
+    Supports TEST_DATABASE_URL environment variable to override default
+    database selection, enabling testing against PostgreSQL or other databases.
     
     Performance optimizations:
     - In-memory database for unit tests (10-100x faster)
@@ -36,6 +39,7 @@ def test_db(request):
     - Connection pooling disabled for test isolation
     - WAL mode disabled for simplicity
     - SQLite PRAGMA optimizations for faster writes
+    - PostgreSQL connection pooling for integration tests
     - Batch operations support via session context
     
     Args:
@@ -46,50 +50,77 @@ def test_db(request):
     """
     import tempfile
     import os
+    from backend.app.config.settings import get_settings
+    from backend.app.database.base import get_database_type
     
-    # Determine if this is a unit test or integration test
-    test_path = str(request.fspath)
-    is_unit_test = "/unit/" in test_path or "/tests/services/" in test_path
+    settings = get_settings()
     
-    # Use in-memory database for unit tests, file-based for integration tests
-    if is_unit_test:
-        # In-memory database - much faster for unit tests
-        db_url = "sqlite:///:memory:"
+    # Check if TEST_DATABASE_URL is set
+    if settings.TEST_DATABASE_URL:
+        # Use the configured test database URL
+        db_url = settings.TEST_DATABASE_URL
         temp_db_file = None
+        is_unit_test = False  # Treat as integration test for PostgreSQL
+        db_type = get_database_type(db_url)
     else:
-        # File-based database for integration tests
-        temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
-        temp_db.close()
-        temp_db_file = temp_db.name
-        db_url = f"sqlite:///{temp_db_file}"
+        # Determine if this is a unit test or integration test
+        test_path = str(request.fspath)
+        is_unit_test = "/unit/" in test_path or "/tests/services/" in test_path
+        
+        # Use in-memory database for unit tests, file-based for integration tests
+        if is_unit_test:
+            # In-memory database - much faster for unit tests
+            db_url = "sqlite:///:memory:"
+            temp_db_file = None
+        else:
+            # File-based database for integration tests
+            temp_db = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+            temp_db.close()
+            temp_db_file = temp_db.name
+            db_url = f"sqlite:///{temp_db_file}"
+        db_type = "sqlite"
     
     try:
-        # Create engine with optimizations for testing
-        engine = create_engine(
-            db_url,
-            echo=False,
-            # Disable connection pooling for test isolation
-            poolclass=None if is_unit_test else None,
-            # SQLite-specific optimizations
-            connect_args={
-                "check_same_thread": False,  # Allow multi-threaded access
-            }
-        )
-        
-        # Apply SQLite PRAGMA optimizations for faster writes
-        @event.listens_for(engine, "connect")
-        def set_sqlite_pragma(dbapi_conn, connection_record):
-            cursor = dbapi_conn.cursor()
-            # Disable synchronous writes for testing (much faster)
-            cursor.execute("PRAGMA synchronous = OFF")
-            # Use memory for temporary tables
-            cursor.execute("PRAGMA temp_store = MEMORY")
-            # Increase cache size (default is 2000 pages, we use 10000)
-            cursor.execute("PRAGMA cache_size = 10000")
-            # Disable journal for in-memory databases (faster)
-            if is_unit_test:
-                cursor.execute("PRAGMA journal_mode = OFF")
-            cursor.close()
+        # Create engine with database-specific optimizations
+        if db_type == "postgresql":
+            # PostgreSQL-specific configuration for tests
+            engine = create_engine(
+                db_url,
+                echo=False,
+                pool_size=5,
+                max_overflow=10,
+                pool_pre_ping=True,
+                connect_args={
+                    "options": "-c timezone=utc"
+                }
+            )
+        else:
+            # SQLite-specific configuration
+            engine = create_engine(
+                db_url,
+                echo=False,
+                # Disable connection pooling for test isolation
+                poolclass=None if is_unit_test else None,
+                # SQLite-specific optimizations
+                connect_args={
+                    "check_same_thread": False,  # Allow multi-threaded access
+                }
+            )
+            
+            # Apply SQLite PRAGMA optimizations for faster writes
+            @event.listens_for(engine, "connect")
+            def set_sqlite_pragma(dbapi_conn, connection_record):
+                cursor = dbapi_conn.cursor()
+                # Disable synchronous writes for testing (much faster)
+                cursor.execute("PRAGMA synchronous = OFF")
+                # Use memory for temporary tables
+                cursor.execute("PRAGMA temp_store = MEMORY")
+                # Increase cache size (default is 2000 pages, we use 10000)
+                cursor.execute("PRAGMA cache_size = 10000")
+                # Disable journal for in-memory databases (faster)
+                if is_unit_test:
+                    cursor.execute("PRAGMA journal_mode = OFF")
+                cursor.close()
         
         # Create all tables with current schema
         Base.metadata.create_all(engine)
@@ -153,6 +184,37 @@ def db_session(test_db):
     session = TestingSessionLocal()
     yield session
     session.close()
+
+
+@pytest.fixture
+def db_type(test_db):
+    """
+    Get the database type for the current test session.
+    
+    This fixture provides the database type (sqlite or postgresql) being
+    used for the current test, allowing tests to conditionally execute
+    database-specific logic or skip tests that require specific databases.
+    
+    Args:
+        test_db: Test database fixture
+        
+    Returns:
+        str: Database type ("sqlite" or "postgresql")
+        
+    Example:
+        def test_database_feature(db_session, db_type):
+            if db_type == "postgresql":
+                # Test PostgreSQL-specific feature
+                pass
+            else:
+                pytest.skip("PostgreSQL-only test")
+    """
+    from backend.app.database.base import get_database_type
+    from backend.app.config.settings import get_settings
+    
+    settings = get_settings()
+    db_url = settings.TEST_DATABASE_URL or "sqlite:///:memory:"
+    return get_database_type(db_url)
 
 
 @pytest.fixture
@@ -2039,3 +2101,85 @@ def mock_ml_models_in_unit_tests(request):
                 yield
     else:
         yield
+
+
+# ============================================================================
+# Async Database Fixtures for Transaction Isolation Tests
+# ============================================================================
+
+@pytest.fixture
+async def async_db_session(test_db):
+    """
+    Create an async database session for testing async operations.
+    
+    This fixture provides an async database session for testing
+    transaction isolation and concurrency features.
+    
+    Args:
+        test_db: Test database fixture
+        
+    Yields:
+        AsyncSession: SQLAlchemy async session
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+    import os
+    from backend.app.config.settings import get_settings
+    
+    settings = get_settings()
+    
+    # Determine database URL
+    if settings.TEST_DATABASE_URL:
+        db_url = settings.TEST_DATABASE_URL
+        # Convert to async URL
+        if db_url.startswith("sqlite:///"):
+            db_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
+        elif db_url.startswith("postgresql://"):
+            db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+    else:
+        # Use in-memory SQLite for async tests
+        db_url = "sqlite+aiosqlite:///:memory:"
+    
+    # Create async engine
+    engine = create_async_engine(
+        db_url,
+        echo=False,
+        connect_args={"check_same_thread": False} if "sqlite" in db_url else {}
+    )
+    
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create session factory
+    async_session_factory = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    
+    # Create and yield session
+    async with async_session_factory() as session:
+        yield session
+    
+    # Cleanup
+    await engine.dispose()
+
+
+@pytest.fixture
+def sync_db_session(test_db):
+    """
+    Create a synchronous database session for testing sync operations.
+    
+    This is an alias for db_session fixture to maintain consistency
+    with async_db_session naming.
+    
+    Args:
+        test_db: Test database fixture
+        
+    Yields:
+        Session: SQLAlchemy synchronous session
+    """
+    TestingSessionLocal = test_db
+    session = TestingSessionLocal()
+    yield session
+    session.close()

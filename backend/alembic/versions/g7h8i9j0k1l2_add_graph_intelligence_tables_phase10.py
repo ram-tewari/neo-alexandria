@@ -20,19 +20,23 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - Add graph_edges, graph_embeddings, and discovery_hypotheses tables for Phase 10."""
+    from sqlalchemy.dialects.postgresql import UUID
     
     # Check if tables already exist (they might be auto-created by SQLAlchemy)
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     existing_tables = inspector.get_table_names()
     
+    # Determine the appropriate ID type based on database dialect
+    id_type = UUID(as_uuid=True) if conn.dialect.name == 'postgresql' else sa.String(36)
+    
     # Create graph_edges table only if it doesn't exist
     if 'graph_edges' not in existing_tables:
         op.create_table(
             'graph_edges',
-            sa.Column('id', sa.String(36), primary_key=True),
-            sa.Column('source_id', sa.String(36), nullable=False),
-            sa.Column('target_id', sa.String(36), nullable=False),
+            sa.Column('id', id_type, primary_key=True),
+            sa.Column('source_id', id_type, nullable=False),
+            sa.Column('target_id', id_type, nullable=False),
             sa.Column('edge_type', sa.String(50), nullable=False),
             sa.Column('weight', sa.Float(), nullable=False),
             sa.Column('metadata', sa.Text(), nullable=True),
@@ -54,8 +58,8 @@ def upgrade() -> None:
     if 'graph_embeddings' not in existing_tables:
         op.create_table(
             'graph_embeddings',
-            sa.Column('id', sa.String(36), primary_key=True),
-            sa.Column('resource_id', sa.String(36), nullable=False, unique=True),
+            sa.Column('id', id_type, primary_key=True),
+            sa.Column('resource_id', id_type, nullable=False, unique=True),
             sa.Column('structural_embedding', sa.JSON(), nullable=True),
             sa.Column('fusion_embedding', sa.JSON(), nullable=True),
             sa.Column('embedding_method', sa.String(50), nullable=False),
@@ -73,9 +77,9 @@ def upgrade() -> None:
     if 'discovery_hypotheses' not in existing_tables:
         op.create_table(
             'discovery_hypotheses',
-            sa.Column('id', sa.String(36), primary_key=True),
-            sa.Column('a_resource_id', sa.String(36), nullable=False),
-            sa.Column('c_resource_id', sa.String(36), nullable=False),
+            sa.Column('id', id_type, primary_key=True),
+            sa.Column('a_resource_id', id_type, nullable=False),
+            sa.Column('c_resource_id', id_type, nullable=False),
             sa.Column('b_resource_ids', sa.Text(), nullable=False),
             sa.Column('hypothesis_type', sa.String(20), nullable=False),
             sa.Column('plausibility_score', sa.Float(), nullable=False),

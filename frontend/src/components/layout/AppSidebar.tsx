@@ -19,15 +19,24 @@ import { SidebarCollapseButton } from '../ui/SidebarCollapseButton';
 import { Icon } from '../common/Icon';
 import { icons } from '../../config/icons';
 import { sidebarSections } from '../../config/sidebarConfig';
+import { useUIStore } from '../../store';
 import type { SidebarItem, SidebarSection } from '../../types';
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { openCommandPalette } = useUIStore();
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const handleSearchClick = () => {
+    openCommandPalette();
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -113,6 +122,23 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        {/* Search Button */}
+        <div style={{ padding: '0.75rem 0.75rem 0 0.75rem' }}>
+          <motion.button
+            onClick={handleSearchClick}
+            className="sidebar-search-button"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            aria-label="Open search"
+          >
+            <Icon icon={icons.search} size={20} />
+            <span>Search</span>
+            <kbd className="sidebar-search-kbd">⌘K</kbd>
+          </motion.button>
+        </div>
+        <SidebarSeparator style={{ margin: '0.75rem 0' }} />
+        
         {sidebarSections.map((section, index) => (
           <div key={section.id}>
             {renderSection(section, index)}

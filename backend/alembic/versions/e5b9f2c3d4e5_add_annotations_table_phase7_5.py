@@ -20,12 +20,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - Add annotations table for Phase 7.5."""
+    from sqlalchemy.dialects.postgresql import UUID
+    
+    # Determine the appropriate ID type based on database dialect
+    bind = op.get_bind()
+    id_type = UUID(as_uuid=True) if bind.dialect.name == 'postgresql' else sa.String(36)
     
     # Create annotations table
     op.create_table(
         'annotations',
-        sa.Column('id', sa.String(36), primary_key=True),
-        sa.Column('resource_id', sa.String(36), nullable=False),
+        sa.Column('id', id_type, primary_key=True),
+        sa.Column('resource_id', id_type, nullable=False),
         sa.Column('user_id', sa.String(255), nullable=False),
         sa.Column('start_offset', sa.Integer(), nullable=False),
         sa.Column('end_offset', sa.Integer(), nullable=False),

@@ -5,7 +5,6 @@ Provides commands to run code smell detection, generate reports,
 and validate refactoring progress.
 """
 
-import sys
 import json
 from pathlib import Path
 from typing import Optional
@@ -13,7 +12,7 @@ import argparse
 
 from .detector import CodeSmellDetector
 from .models import SmellReport
-from .constants import SERVICE_DIR, REPORT_OUTPUT_DIR
+from .constants import SERVICE_DIR
 
 
 def analyze_service(service_name: Optional[str] = None) -> None:
@@ -108,7 +107,7 @@ def generate_json_report(output_file: str) -> None:
         print(f"Error: Service directory not found: {service_path}")
         return
     
-    print(f"Analyzing all services...")
+    print("Analyzing all services...")
     reports = detector.analyze_directory(service_path)
     
     # Convert to JSON-serializable format

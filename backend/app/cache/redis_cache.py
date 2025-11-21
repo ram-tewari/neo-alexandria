@@ -19,7 +19,7 @@ Related files:
 
 import json
 import logging
-from typing import Any, Optional, List
+from typing import Any, Optional
 import redis
 
 from backend.app.config.settings import get_settings

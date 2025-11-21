@@ -1,0 +1,145 @@
+/**
+ * MarbleBackdrop Styles
+ * 
+ * Creates an elegant marble texture with animated gradient overlay
+ * Only visible in light mode
+ */
+
+.marble-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Light mode: White marble with gold veins */
+.marble-backdrop.light .marble-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--marble-base);
+  background-image: 
+    /* Primary gold veins - flowing and organic */
+    linear-gradient(118deg, transparent 0%, transparent 48.5%, var(--marble-vein-gold-primary) 49.5%, var(--marble-vein-gold-primary) 50.5%, transparent 51.5%, transparent 100%),
+    linear-gradient(62deg, transparent 0%, transparent 48.8%, var(--marble-vein-gold-primary) 49.8%, var(--marble-vein-gold-primary) 50.2%, transparent 51.2%, transparent 100%),
+    /* Secondary gold veins - subtle accents */
+    linear-gradient(88deg, transparent 0%, transparent 48%, var(--marble-vein-gold-secondary) 49%, var(--marble-vein-gold-secondary) 51%, transparent 52%, transparent 100%),
+    linear-gradient(158deg, transparent 0%, transparent 48.5%, var(--marble-vein-gold-secondary) 49.5%, var(--marble-vein-gold-secondary) 50.5%, transparent 51.5%, transparent 100%),
+    /* Delicate gold highlights */
+    linear-gradient(75deg, transparent 0%, transparent 49%, var(--marble-vein-gold-subtle) 50%, transparent 51%, transparent 100%),
+    linear-gradient(135deg, transparent 0%, transparent 49%, var(--marble-vein-gold-subtle) 50%, transparent 51%, transparent 100%),
+    /* Soft gray veining for natural depth */
+    linear-gradient(105deg, transparent 0%, transparent 48.5%, var(--marble-vein-gray) 50%, transparent 51.5%, transparent 100%);
+  background-size: 
+    2400px 2400px,
+    1800px 1800px,
+    1400px 1400px,
+    1600px 1600px,
+    1200px 1200px,
+    1500px 1500px,
+    1000px 1000px;
+  background-position: 
+    0 0,
+    300px 150px,
+    600px 250px,
+    150px 500px,
+    400px 100px,
+    200px 350px,
+    100px 200px;
+  
+  /* Smooth blending and glossy finish */
+  filter: blur(0.5px) brightness(1.02);
+  
+  /* GPU acceleration */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Light mode gradient overlay */
+.marble-backdrop.light .marble-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    /* Subtle gold shimmer */
+    radial-gradient(
+      ellipse at 20% 30%,
+      var(--marble-gradient-gold) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 70%,
+      var(--marble-gradient-gold) 0%,
+      transparent 55%
+    ),
+    /* Soft white glow for glossy effect */
+    radial-gradient(
+      ellipse at 50% 50%,
+      var(--marble-gradient-soft) 0%,
+      transparent 60%
+    ),
+    /* Enhanced glossy highlight overlay */
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.3) 20%,
+      transparent 40%,
+      transparent 60%,
+      rgba(255, 255, 255, 0.2) 80%,
+      rgba(255, 255, 255, 0.4) 100%
+    ),
+    /* Diagonal shine streak */
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      transparent 45%,
+      rgba(255, 255, 255, 0.5) 48%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.5) 52%,
+      transparent 55%,
+      transparent 100%
+    );
+  background-size: 200% 200%, 200% 200%, 150% 150%, 100% 100%, 300% 300%;
+  background-position: 0% 0%;
+  animation: marbleShift 30s ease-in-out infinite, glossyShine 8s ease-in-out infinite;
+  
+  /* Enhanced glossy finish */
+  filter: blur(1.5px);
+  
+  /* GPU acceleration */
+  will-change: background-position;
+  transform: translateZ(0);
+}
+
+@keyframes marbleShift {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+}
+
+@keyframes glossyShine {
+  0%, 100% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, -100% -100%;
+  }
+  50% {
+    background-position: 100% 100%, 100% 100%, 50% 50%, 100% 100%, 200% 200%;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .marble-gradient {
+    animation: none;
+  }
+}

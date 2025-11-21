@@ -20,16 +20,21 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - Add collections and collection_resources tables for Phase 7."""
+    from sqlalchemy.dialects.postgresql import UUID
+    
+    # Determine the appropriate ID type based on database dialect
+    bind = op.get_bind()
+    id_type = UUID(as_uuid=True) if bind.dialect.name == 'postgresql' else sa.String(36)
     
     # Create collections table
     op.create_table(
         'collections',
-        sa.Column('id', sa.String(36), primary_key=True),
+        sa.Column('id', id_type, primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('owner_id', sa.String(255), nullable=False),
         sa.Column('visibility', sa.String(20), nullable=False, server_default='private'),
-        sa.Column('parent_id', sa.String(36), nullable=True),
+        sa.Column('parent_id', id_type, nullable=True),
         sa.Column('embedding', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.current_timestamp()),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.current_timestamp()),
@@ -45,8 +50,8 @@ def upgrade() -> None:
     # Create collection_resources association table
     op.create_table(
         'collection_resources',
-        sa.Column('collection_id', sa.String(36), primary_key=True),
-        sa.Column('resource_id', sa.String(36), primary_key=True),
+        sa.Column('collection_id', id_type, primary_key=True),
+        sa.Column('resource_id', id_type, primary_key=True),
         sa.Column('added_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.current_timestamp()),
         sa.ForeignKeyConstraint(['collection_id'], ['collections.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['resource_id'], ['resources.id'], ondelete='CASCADE')

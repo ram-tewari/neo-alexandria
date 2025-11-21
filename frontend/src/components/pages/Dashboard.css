@@ -60,6 +60,28 @@
   letter-spacing: -0.01em;
 }
 
+.page-title.welcome-text {
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--white) 0%, var(--purple-bright) 50%, var(--purple-vibrant) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+}
+
+/* Light mode: Black to gold animation */
+.light .page-title.welcome-text {
+  background: linear-gradient(90deg, #000000 0%, #b8860b 25%, #daa520 50%, #b8860b 75%, #000000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 100%;
+  text-shadow: 0 2px 8px rgba(218, 165, 32, 0.15);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
 .page-subtitle {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);

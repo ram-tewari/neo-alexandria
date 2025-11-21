@@ -30,12 +30,12 @@
 │                         APPLICATION FOUNDATION                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  ┌──────────────────┐      ┌──────────────────┐      ┌───────────────┐  │
-│  │   FastAPI App    │      │   Configuration  │      │   Database    │  │
-│  │   (main.py)      │◄─────┤   (settings.py)  │      │   (base.py)   │  │
-│  └────────┬─────────┘      └──────────────────┘      └───────┬───────┘  │
-│           │                                                  │          │
-│           │                                                  │          │
+│  ┌──────────────────┐      ┌──────────────────┐     ┌───────────────┐   │
+│  │   FastAPI App    │      │   Configuration  │     │   Database    │   │
+│  │   (main.py)      │◄─────┤   (settings.py)  │     │   (base.py)   │   │
+│  └────────┬─────────┘      └──────────────────┘     └───────┬───────┘   │
+│           │                                                 │           │
+│           │                                                 │           │
 │  ┌────────▼─────────────────────────────────────────────────▼──────┐    │
 │  │                      Router Layer                               │    │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐         │    │
@@ -46,10 +46,10 @@
 │          │             │             │             │                    │
 │  ┌───────▼─────────────▼─────────────▼─────────────▼───────────────┐    │
 │  │                      Service Layer                              │    │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │    │
-│  │  │  Resource    │  │  Taxonomy    │  │  Collection  │           │    │
-│  │  │  Service     │  │  Service     │  │  Service     │           │    │
-│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │    │
+│  │  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐         │    │
+│  │  │  Resource    │   │  Taxonomy    │   │  Collection  │         │    │
+│  │  │  Service     │   │  Service     │   │  Service     │         │    │
+│  │  └──────┬───────┘   └──────┬───────┘   └──────┬──────           │    │
 │  └─────────┼──────────────────┼──────────────────┼─────────────────┘    │
 │            │                  │                  │                      │
 │  ┌─────────▼──────────────────▼──────────────────▼─────────────────┐    │
@@ -198,8 +198,8 @@
 │  ┌─────────────────────────────────────────────────────────────────┐    │
 │  │         Classification Router (POST /api/classification)        │    │
 │  └────────────────────────────┬────────────────────────────────────┘    │
-│                                │                                        │
-│                                ▼                                        │
+│                               │                                         │
+│                               ▼                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐    │
 │  │                  MLClassificationService                        │    │
 │  │                                                                 │    │
@@ -853,7 +853,7 @@ Graph Traversal for Recommendations:
 │  │  • total_results: int                                        │      │
 │  │  • search_time_ms: float                                     │      │
 │  │  • reranked: bool = False                                    │      │
-│  ├──────────────────────────────────────────
+│  ├──────────────────────────────────────────────────────────────|      |
 
 
 ## Service Layer Architecture
@@ -2319,59 +2319,59 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    EVENT-DRIVEN ARCHITECTURE (Phase 12.5)                    │
+│                    EVENT-DRIVEN ARCHITECTURE (Phase 12.5)                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         Event System Core                            │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │                     EventEmitter (Singleton)                  │  │   │
-│  │  │  • on(event_type, handler) - Register listener               │  │   │
-│  │  │  • off(event_type, handler) - Unregister listener            │  │   │
-│  │  │  • emit(event_type, data, priority) - Dispatch event         │  │   │
-│  │  │  • get_event_history(limit) - Retrieve event log             │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  │                                                                       │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │                    SystemEvent Enum                           │  │   │
-│  │  │  Resource: created, updated, deleted, content_changed         │  │   │
-│  │  │  Processing: ingestion, embedding, quality, classification    │  │   │
-│  │  │  User: interaction_tracked, profile_updated                   │  │   │
-│  │  │  System: cache_invalidated, search_index_updated              │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                    Celery Distributed Task Queue                     │   │
-│  │                                                                       │   │
-│  │  ┌──────────────┐         ┌──────────────┐         ┌─────────────┐ │   │
-│  │  │    Redis     │◄────────┤ Celery App   │────────►│   Workers   │ │   │
-│  │  │   (Broker)   │         │  (celery_app)│         │  (4x nodes) │ │   │
-│  │  └──────────────┘         └──────┬───────┘         └─────────────┘ │   │
-│  │                                   │                                  │   │
-│  │  ┌──────────────────────────────▼────────────────────────────────┐ │   │
-│  │  │                        Task Routing                            │ │   │
-│  │  │  • urgent queue (priority 9) - Search index, cache             │ │   │
-│  │  │  • high_priority queue (priority 7) - Embeddings               │ │   │
-│  │  │  • ml_tasks queue (priority 5) - Classification, quality       │ │   │
-│  │  │  • batch queue (priority 3) - Batch processing                 │ │   │
-│  │  │  • default queue (priority 5) - General tasks                  │ │   │
-│  │  └────────────────────────────────────────────────────────────────┘ │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      Event Hooks (Auto-Consistency)                  │   │
-│  │                                                                       │   │
-│  │  resource.content_changed ──► regenerate_embedding_task (5s delay)  │   │
-│  │  resource.metadata_changed ─► recompute_quality_task (10s delay)    │   │
-│  │  resource.updated ──────────► update_search_index_task (1s delay)   │   │
-│  │  citations.extracted ────────► update_graph_edges_task (30s delay)  │   │
-│  │  resource.updated ──────────► invalidate_cache_task (immediate)     │   │
-│  │  user.interaction_tracked ───► refresh_profile_task (every 10)      │   │
-│  │  resource.created ───────────► classify_resource_task (20s delay)   │   │
-│  │  authors.extracted ──────────► normalize_names_task (60s delay)     │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         Event System Core                           │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │                     EventEmitter (Singleton)                 │   │    │
+│  │  │  • on(event_type, handler) - Register listener               │   │    │
+│  │  │  • off(event_type, handler) - Unregister listener            │   │    │
+│  │  │  • emit(event_type, data, priority) - Dispatch event         │   │    │
+│  │  │  • get_event_history(limit) - Retrieve event log             │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  │                                                                     │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │                    SystemEvent Enum                          │   │    │
+│  │  │  Resource: created, updated, deleted, content_changed        │   │    │
+│  │  │  Processing: ingestion, embedding, quality, classification   │   │    │
+│  │  │  User: interaction_tracked, profile_updated                  │   │    │
+│  │  │  System: cache_invalidated, search_index_updated             │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                    Celery Distributed Task Queue                    │    │
+│  │                                                                     │    │
+│  │  ┌──────────────┐        ┌──────────────┐         ┌─────────────┐   │    │
+│  │  │    Redis     │◄───────┤ Celery App   │────────►│   Workers   │   │    │
+│  │  │   (Broker)   │        │  (celery_app)│         │  (4x nodes) │   │    │
+│  │  └──────────────┘        └──────┬───────┘         └─────────────┘   │    │
+│  │                                 │                                   │    │
+│  │  ┌──────────────────────────────▼────────────────────────────────┐  │    │
+│  │  │                        Task Routing                           │  │    │
+│  │  │  • urgent queue (priority 9) - Search index, cache            │  │    │
+│  │  │  • high_priority queue (priority 7) - Embeddings              │  │    │ 
+│  │  │  • ml_tasks queue (priority 5) - Classification, quality      │  │    │
+│  │  │  • batch queue (priority 3) - Batch processing                │  │    │
+│  │  │  • default queue (priority 5) - General tasks                 │  │    │
+│  │  └───────────────────────────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      Event Hooks (Auto-Consistency)                 │    │
+│  │                                                                     │    │
+│  │  resource.content_changed ──► regenerate_embedding_task (5s delay)  │    │
+│  │  resource.metadata_changed ─► recompute_quality_task (10s delay)    │    │
+│  │  resource.updated ──────────► update_search_index_task (1s delay)   │    │
+│  │  citations.extracted ────────► update_graph_edges_task (30s delay)  │    │
+│  │  resource.updated ──────────► invalidate_cache_task (immediate)     │    │
+│  │  user.interaction_tracked ───► refresh_profile_task (every 10)      │    │
+│  │  resource.created ───────────► classify_resource_task (20s delay)   │    │
+│  │  authors.extracted ──────────► normalize_names_task (60s delay)     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2379,46 +2379,46 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          CELERY TASK HIERARCHY                               │
+│                          CELERY TASK HIERARCHY                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│                         ┌──────────────────┐                                 │
-│                         │  DatabaseTask    │                                 │
-│                         │  (Base Class)    │                                 │
-│                         │  • __call__()    │                                 │
-│                         │  • Session mgmt  │                                 │
-│                         └────────┬─────────┘                                 │
-│                                  │                                            │
-│         ┌────────────────────────┼────────────────────────┐                 │
-│         │                        │                        │                  │
-│  ┌──────▼──────────┐   ┌────────▼─────────┐   ┌─────────▼────────┐        │
-│  │ regenerate_     │   │ recompute_       │   │ update_search_   │        │
-│  │ embedding_task  │   │ quality_task     │   │ index_task       │        │
-│  ├─────────────────┤   ├──────────────────┤   ├──────────────────┤        │
-│  │ • max_retries=3 │   │ • max_retries=2  │   │ • priority=9     │        │
-│  │ • retry_delay=60│   │ • priority=5     │   │ • max_retries=3  │        │
-│  │ • priority=7    │   │ • countdown=10   │   │ • countdown=1    │        │
-│  │ • countdown=5   │   └──────────────────┘   └──────────────────┘        │
-│  └─────────────────┘                                                         │
-│                                                                               │
-│  ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐       │
-│  │ update_graph_    │   │ classify_        │   │ invalidate_      │       │
-│  │ edges_task       │   │ resource_task    │   │ cache_task       │       │
-│  ├──────────────────┤   ├──────────────────┤   ├──────────────────┤       │
-│  │ • priority=5     │   │ • max_retries=2  │   │ • priority=9     │       │
-│  │ • countdown=30   │   │ • priority=5     │   │ • countdown=0    │       │
-│  │ • batch_delay    │   │ • countdown=20   │   │ • pattern support│       │
-│  └──────────────────┘   └──────────────────┘   └──────────────────┘       │
-│                                                                               │
-│  ┌──────────────────┐   ┌──────────────────────────────────────────┐       │
-│  │ refresh_         │   │ batch_process_resources_task             │       │
-│  │ recommendation_  │   ├──────────────────────────────────────────┤       │
-│  │ profile_task     │   │ • Progress tracking with update_state()  │       │
-│  ├──────────────────┤   │ • Operations: regenerate_embeddings,     │       │
-│  │ • priority=3     │   │   recompute_quality                      │       │
-│  │ • countdown=300  │   │ • Returns: processed_count, status       │       │
-│  └──────────────────┘   └──────────────────────────────────────────┘       │
-│                                                                               │
+│                                                                             │
+│                        ┌──────────────────┐                                 │
+│                        │  DatabaseTask    │                                 │
+│                        │  (Base Class)    │                                 │
+│                        │  • __call__()    │                                 │
+│                        │  • Session mgmt  │                                 │
+│                        └────────┬─────────┘                                 │
+│                                 │                                           │
+│         ┌───────────────────────┼───────────────────────┐                   │
+│         │                       │                       │                   │
+│  ┌──────▼──────────┐   ┌────────▼─────────┐   ┌─────────▼────────┐          │
+│  │ regenerate_     │   │ recompute_       │   │ update_search_   │          │
+│  │ embedding_task  │   │ quality_task     │   │ index_task       │          │
+│  ├─────────────────┤   ├──────────────────┤   ├──────────────────┤          │
+│  │ • max_retries=3 │   │ • max_retries=2  │   │ • priority=9     │          │
+│  │ • retry_delay=60│   │ • priority=5     │   │ • max_retries=3  │          │
+│  │ • priority=7    │   │ • countdown=10   │   │ • countdown=1    │          │
+│  │ • countdown=5   │   └──────────────────┘   └──────────────────┘          │
+│  └─────────────────┘                                                        │
+│                                                                             │
+│  ┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐         │
+│  │ update_graph_    │   │ classify_        │   │ invalidate_      │         │
+│  │ edges_task       │   │ resource_task    │   │ cache_task       │         │
+│  ├──────────────────┤   ├──────────────────┤   ├──────────────────┤         │
+│  │ • priority=5     │   │ • max_retries=2  │   │ • priority=9     │         │
+│  │ • countdown=30   │   │ • priority=5     │   │ • countdown=0    │         │
+│  │ • batch_delay    │   │ • countdown=20   │   │ • pattern support│         │
+│  └──────────────────┘   └──────────────────┘   └──────────────────┘         │
+│                                                                             │
+│  ┌──────────────────┐   ┌──────────────────────────────────────────┐        │
+│  │ refresh_         │   │ batch_process_resources_task             │        │
+│  │ recommendation_  │   ├──────────────────────────────────────────┤        │
+│  │ profile_task     │   │ • Progress tracking with update_state()  │        │
+│  ├──────────────────┤   │ • Operations: regenerate_embeddings,     │        │
+│  │ • priority=3     │   │   recompute_quality                      │        │
+│  │ • countdown=300  │   │ • Returns: processed_count, status       │        │
+│  └──────────────────┘   └──────────────────────────────────────────┘        │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2426,49 +2426,49 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        MULTI-LAYER REDIS CACHING                             │
+│                        MULTI-LAYER REDIS CACHING                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         RedisCache Class                             │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │  Methods:                                                     │  │   │
-│  │  │  • get(key) → value | None                                   │  │   │
-│  │  │  • set(key, value, ttl) → None                               │  │   │
-│  │  │  • delete(key) → None                                        │  │   │
-│  │  │  • delete_pattern(pattern) → int (count)                     │  │   │
-│  │  │  • get_default_ttl(key) → int (seconds)                      │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  │                                                                       │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │                    CacheStats Tracking                        │  │   │
-│  │  │  • hits: int                                                  │  │   │
-│  │  │  • misses: int                                                │  │   │
-│  │  │  • invalidations: int                                         │  │   │
-│  │  │  • hit_rate() → float (0.0-1.0)                               │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                        Cache Key Strategy                            │   │
-│  │                                                                       │   │
-│  │  embedding:{resource_id}           TTL: 3600s (1 hour)              │   │
-│  │  quality:{resource_id}             TTL: 1800s (30 minutes)           │   │
-│  │  search_query:{hash}               TTL: 300s (5 minutes)             │   │
-│  │  resource:{resource_id}            TTL: 600s (10 minutes)            │   │
-│  │  graph:{resource_id}:neighbors     TTL: 1800s (30 minutes)           │   │
-│  │  user:{user_id}:profile            TTL: 600s (10 minutes)            │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                    Cache Invalidation Patterns                       │   │
-│  │                                                                       │   │
-│  │  resource:{resource_id}:*          → All resource-related caches     │   │
-│  │  search_query:*                    → All search result caches        │   │
-│  │  graph:*                           → All graph caches                │   │
-│  │  user:{user_id}:*                  → All user-related caches         │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         RedisCache Class                            │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  Methods:                                                    │   │    │
+│  │  │  • get(key) → value | None                                   │   │    │
+│  │  │  • set(key, value, ttl) → None                               │   │    │
+│  │  │  • delete(key) → None                                        │   │    │
+│  │  │  • delete_pattern(pattern) → int (count)                     │   │    │
+│  │  │  • get_default_ttl(key) → int (seconds)                      │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  │                                                                     │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │                    CacheStats Tracking                       │   │    │
+│  │  │  • hits: int                                                 │   │    │
+│  │  │  • misses: int                                               │   │    │
+│  │  │  • invalidations: int                                        │   │    │
+│  │  │  • hit_rate() → float (0.0-1.0)                              │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                        Cache Key Strategy                           │    │
+│  │                                                                     │    │
+│  │  embedding:{resource_id}           TTL: 3600s (1 hour)              │    │
+│  │  quality:{resource_id}             TTL: 1800s (30 minutes)          │    │
+│  │  search_query:{hash}               TTL: 300s (5 minutes)            │    │
+│  │  resource:{resource_id}            TTL: 600s (10 minutes)           │    │
+│  │  graph:{resource_id}:neighbors     TTL: 1800s (30 minutes)          │    │
+│  │  user:{user_id}:profile            TTL: 600s (10 minutes)           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                    Cache Invalidation Patterns                      │    │
+│  │                                                                     │    │
+│  │  resource:{resource_id}:*          → All resource-related caches    │    │
+│  │  search_query:*                    → All search result caches       │    │
+│  │  graph:*                           → All graph caches               │    │
+│  │  user:{user_id}:*                  → All user-related caches        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2476,60 +2476,60 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    SERVICE LAYER EVENT INTEGRATION                           │
+│                    SERVICE LAYER EVENT INTEGRATION                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                       ResourceService                                │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │  create(data) → Resource                                      │  │   │
-│  │  │    1. Create resource in database                            │  │   │
-│  │  │    2. Emit: resource.created                                 │  │   │
-│  │  │    3. Hooks trigger: classify_resource_task                  │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │  update(id, data) → Resource                                 │  │   │
-│  │  │    1. Update resource in database                            │  │   │
-│  │  │    2. Detect changes (content vs metadata)                   │  │   │
-│  │  │    3. Emit: resource.updated                                 │  │   │
-│  │  │    4. Emit: resource.content_changed (if content changed)    │  │   │
-│  │  │    5. Emit: resource.metadata_changed (if metadata changed)  │  │   │
-│  │  │    6. Hooks trigger:                                         │  │   │
-│  │  │       - regenerate_embedding_task (if content)               │  │   │
-│  │  │       - recompute_quality_task (if metadata)                 │  │   │
-│  │  │       - update_search_index_task (always)                    │  │   │
-│  │  │       - invalidate_cache_task (always)                       │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                      IngestionService                                │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │  process(url) → Resource                                     │  │   │
-│  │  │    1. Emit: ingestion.started                                │  │   │
-│  │  │    2. Fetch and extract content                              │  │   │
-│  │  │    3. Generate embeddings                                    │  │   │
-│  │  │    4. Extract citations → Emit: citations.extracted          │  │   │
-│  │  │    5. Extract authors → Emit: authors.extracted              │  │   │
-│  │  │    6. Compute quality                                        │  │   │
-│  │  │    7. Create resource → Emit: resource.created               │  │   │
-│  │  │    8. Emit: ingestion.completed                              │  │   │
-│  │  │    9. Hooks trigger all downstream tasks                     │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                   UserInteractionTracking                            │   │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │   │
-│  │  │  track_interaction(user_id, resource_id, type) → None        │  │   │
-│  │  │    1. Record interaction in database                         │  │   │
-│  │  │    2. Get total interaction count for user                   │  │   │
-│  │  │    3. Emit: user.interaction_tracked                         │  │   │
-│  │  │    4. Hook checks: if count % 10 == 0                        │  │   │
-│  │  │       → refresh_recommendation_profile_task                  │  │   │
-│  │  └──────────────────────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       ResourceService                               │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  create(data) → Resource                                     │   │    │
+│  │  │    1. Create resource in database                            │   │    │
+│  │  │    2. Emit: resource.created                                 │   │    │
+│  │  │    3. Hooks trigger: classify_resource_task                  │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  update(id, data) → Resource                                 │   │    │
+│  │  │    1. Update resource in database                            │   │    │
+│  │  │    2. Detect changes (content vs metadata)                   │   │    │
+│  │  │    3. Emit: resource.updated                                 │   │    │
+│  │  │    4. Emit: resource.content_changed (if content changed)    │   │    │
+│  │  │    5. Emit: resource.metadata_changed (if metadata changed)  │   │    │
+│  │  │    6. Hooks trigger:                                         │   │    │
+│  │  │       - regenerate_embedding_task (if content)               │   │    │
+│  │  │       - recompute_quality_task (if metadata)                 │   │    │
+│  │  │       - update_search_index_task (always)                    │   │    │
+│  │  │       - invalidate_cache_task (always)                       │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      IngestionService                               │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  process(url) → Resource                                     │   │    │
+│  │  │    1. Emit: ingestion.started                                │   │    │
+│  │  │    2. Fetch and extract content                              │   │    │
+│  │  │    3. Generate embeddings                                    │   │    │
+│  │  │    4. Extract citations → Emit: citations.extracted          │   │    │
+│  │  │    5. Extract authors → Emit: authors.extracted              │   │    │ 
+│  │  │    6. Compute quality                                        │   │    │
+│  │  │    7. Create resource → Emit: resource.created               │   │    │
+│  │  │    8. Emit: ingestion.completed                              │   │    │
+│  │  │    9. Hooks trigger all downstream tasks                     │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                   UserInteractionTracking                           │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  track_interaction(user_id, resource_id, type) → None        │   │    │
+│  │  │    1. Record interaction in database                         │   │    │
+│  │  │    2. Get total interaction count for user                   │   │    │
+│  │  │    3. Emit: user.interaction_tracked                         │   │    │
+│  │  │    4. Hook checks: if count % 10 == 0                        │   │    │
+│  │  │       → refresh_recommendation_profile_task                  │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2537,38 +2537,38 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      DOCKER COMPOSE ORCHESTRATION                            │
+│                      DOCKER COMPOSE ORCHESTRATION                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                            Redis                                     │   │
-│  │  • Image: redis:7-alpine                                            │   │
-│  │  • Memory: 2GB with allkeys-lru eviction                            │   │
-│  │  • Persistence: appendonly yes                                      │   │
-│  │  • Port: 6379                                                       │   │
-│  │  • Health check: redis-cli ping                                     │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                    │                                          │
-│                    ┌───────────────┼───────────────┐                        │
-│                    │               │               │                         │
-│  ┌─────────────────▼──┐  ┌────────▼────────┐  ┌──▼──────────────────┐     │
-│  │  Celery Workers    │  │  Celery Beat    │  │     Flower          │     │
-│  │  (4 replicas)      │  │  (Scheduler)    │  │   (Monitoring)      │     │
-│  ├────────────────────┤  ├─────────────────┤  ├─────────────────────┤     │
-│  │ • Concurrency: 4   │  │ • Schedules:    │  │ • Port: 5555        │     │
-│  │ • CPU: 2 cores     │  │   - Daily 2 AM  │  │ • Web dashboard     │     │
-│  │ • Memory: 2GB      │  │   - Weekly Sun  │  │ • Task monitoring   │     │
-│  │ • Queues: all      │  │   - Monthly 1st │  │ • Worker stats      │     │
-│  │ • Auto-restart     │  │   - Daily 4 AM  │  │ • Real-time graphs  │     │
-│  └────────────────────┘  └─────────────────┘  └─────────────────────┘     │
-│                                                                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         FastAPI Application                          │   │
-│  │  • Depends on: Redis                                                │   │
-│  │  • Environment: CELERY_BROKER_URL, CELERY_RESULT_BACKEND           │   │
-│  │  • Startup: register_all_hooks(), initialize Redis cache            │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                            Redis                                    │    │
+│  │  • Image: redis:7-alpine                                            │    │
+│  │  • Memory: 2GB with allkeys-lru eviction                            │    │
+│  │  • Persistence: appendonly yes                                      │    │
+│  │  • Port: 6379                                                       │    │
+│  │  • Health check: redis-cli ping                                     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                   │                                         │
+│                    ┌──────────────┼──────────────┐                          │
+│                    │              │              │                          │
+│  ┌─────────────────▼──┐  ┌────────▼────────┐  ┌──▼──────────────────┐       │
+│  │  Celery Workers    │  │  Celery Beat    │  │     Flower          │       │
+│  │  (4 replicas)      │  │  (Scheduler)    │  │   (Monitoring)      │       │
+│  ├────────────────────┤  ├─────────────────┤  ├─────────────────────┤       │
+│  │ • Concurrency: 4   │  │ • Schedules:    │  │ • Port: 5555        │       │
+│  │ • CPU: 2 cores     │  │   - Daily 2 AM  │  │ • Web dashboard     │       │
+│  │ • Memory: 2GB      │  │   - Weekly Sun  │  │ • Task monitoring   │       │
+│  │ • Queues: all      │  │   - Monthly 1st │  │ • Worker stats      │       │
+│  │ • Auto-restart     │  │   - Daily 4 AM  │  │ • Real-time graphs  │       │
+│  └────────────────────┘  └─────────────────┘  └─────────────────────┘       │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         FastAPI Application                         │    │
+│  │  • Depends on: Redis                                                │    │
+│  │  • Environment: CELERY_BROKER_URL, CELERY_RESULT_BACKEND            │    │
+│  │  • Startup: register_all_hooks(), initialize Redis cache            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2576,46 +2576,46 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│              RESOURCE UPDATE EVENT CASCADE (Phase 12.5)                      │
+│              RESOURCE UPDATE EVENT CASCADE (Phase 12.5)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  1. API Request: PUT /resources/{id}                                         │
-│     │                                                                          │
-│     ▼                                                                          │
-│  2. ResourceService.update(id, data)                                         │
-│     │                                                                          │
-│     ├─► Update database                                                      │
-│     │                                                                          │
-│     ├─► Detect changes: content_changed = True, metadata_changed = False     │
-│     │                                                                          │
-│     ├─► Emit: resource.updated                                               │
-│     │   └─► Hook: on_resource_updated_sync_search_index                      │
-│     │       └─► Queue: update_search_index_task (priority=9, countdown=1s)   │
-│     │                                                                          │
-│     ├─► Emit: resource.updated                                               │
-│     │   └─► Hook: on_resource_updated_invalidate_caches                      │
-│     │       └─► Queue: invalidate_cache_task (priority=9, countdown=0s)      │
-│     │           └─► Invalidate: resource:{id}:*, search_query:*              │
-│     │                                                                          │
-│     └─► Emit: resource.content_changed                                       │
-│         └─► Hook: on_content_changed_regenerate_embedding                    │
-│             └─► Queue: regenerate_embedding_task (priority=7, countdown=5s)  │
-│                 └─► Generate embedding → Store in cache                      │
-│                                                                               │
-│  3. Celery Workers Process Tasks (in parallel)                               │
-│     │                                                                          │
-│     ├─► Worker 1: update_search_index_task (1s delay)                        │
-│     │   └─► Update FTS5 index → Resource searchable                          │
-│     │                                                                          │
-│     ├─► Worker 2: invalidate_cache_task (immediate)                          │
-│     │   └─► Delete cache keys → Fresh data on next request                   │
-│     │                                                                          │
-│     └─► Worker 3: regenerate_embedding_task (5s delay)                       │
-│         └─► Generate embedding → Cache → Enable semantic search              │
-│                                                                               │
-│  4. All tasks complete within 10 seconds                                     │
-│     └─► Resource fully updated and consistent across all systems             │
-│                                                                               │
+│                                                                             │
+│  1. API Request: PUT /resources/{id}                                        │
+│     │                                                                       │
+│     ▼                                                                       │
+│  2. ResourceService.update(id, data)                                        │
+│     │                                                                       │
+│     ├─► Update database                                                     │
+│     │                                                                       │
+│     ├─► Detect changes: content_changed = True, metadata_changed = False    │
+│     │                                                                       │
+│     ├─► Emit: resource.updated                                              │
+│     │   └─► Hook: on_resource_updated_sync_search_index                     │
+│     │       └─► Queue: update_search_index_task (priority=9, countdown=1s)  │
+│     │                                                                       │
+│     ├─► Emit: resource.updated                                              │
+│     │   └─► Hook: on_resource_updated_invalidate_caches                     │
+│     │       └─► Queue: invalidate_cache_task (priority=9, countdown=0s)     │
+│     │           └─► Invalidate: resource:{id}:*, search_query:*             │
+│     │                                                                       │
+│     └─► Emit: resource.content_changed                                      │
+│         └─► Hook: on_content_changed_regenerate_embedding                   │
+│             └─► Queue: regenerate_embedding_task (priority=7, countdown=5s) │
+│                 └─► Generate embedding → Store in cache                     │
+│                                                                             │
+│  3. Celery Workers Process Tasks (in parallel)                              │
+│     │                                                                       │
+│     ├─► Worker 1: update_search_index_task (1s delay)                       │
+│     │   └─► Update FTS5 index → Resource searchable                         │
+│     │                                                                       │
+│     ├─► Worker 2: invalidate_cache_task (immediate)                         │
+│     │   └─► Delete cache keys → Fresh data on next request                  │
+│     │                                                                       │
+│     └─► Worker 3: regenerate_embedding_task (5s delay)                      │
+│         └─► Generate embedding → Cache → Enable semantic search             │
+│                                                                             │
+│  4. All tasks complete within 10 seconds                                    │
+│     └─► Resource fully updated and consistent across all systems            │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2623,49 +2623,770 @@ This supplementary document includes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    PHASE 12.5 PERFORMANCE METRICS                            │
+│                    PHASE 12.5 PERFORMANCE METRICS                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  Scalability:                                                                │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • 100+ concurrent ingestions without degradation                   │   │
-│  │  • Linear throughput scaling with worker count                      │   │
-│  │  • Horizontal scaling across multiple machines                      │   │
-│  │  • 4 workers → 400 tasks/minute                                     │   │
-│  │  • 8 workers → 800 tasks/minute (linear)                            │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  Cache Performance:                                                          │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • 60-70% cache hit rate for repeated operations                    │   │
-│  │  • 50-70% computation reduction through caching                     │   │
-│  │  • Sub-millisecond cache lookups                                    │   │
-│  │  • Pattern-based invalidation in <10ms                              │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  Task Reliability:                                                           │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • <1% task failure rate with automatic retries                     │   │
-│  │  • Exponential backoff for transient errors                         │   │
-│  │  • Dead letter queue for permanent failures                         │   │
-│  │  • Task acknowledgment after completion                             │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  Search Index Updates:                                                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • Complete within 5 seconds of resource updates                    │   │
-│  │  • URGENT priority ensures immediate searchability                  │   │
-│  │  • Automatic retry on failure                                       │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
-│  Database Connection Pooling:                                                │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │  • 20 base connections + 40 overflow = 60 total                     │   │
-│  │  • Connection recycling after 1 hour                                │   │
-│  │  • Pre-ping health checks                                           │   │
-│  │  • Handles 100+ concurrent requests                                 │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                               │
+│                                                                             │
+│  Scalability:                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  • 100+ concurrent ingestions without degradation                   │    │
+│  │  • Linear throughput scaling with worker count                      │    │
+│  │  • Horizontal scaling across multiple machines                      │    │
+│  │  • 4 workers → 400 tasks/minute                                     │    │
+│  │  • 8 workers → 800 tasks/minute (linear)                            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  Cache Performance:                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  • 60-70% cache hit rate for repeated operations                    │    │
+│  │  • 50-70% computation reduction through caching                     │    │
+│  │  • Sub-millisecond cache lookups                                    │    │
+│  │  • Pattern-based invalidation in <10ms                              │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  Task Reliability:                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  • <1% task failure rate with automatic retries                     │    │
+│  │  • Exponential backoff for transient errors                         │    │
+│  │  • Dead letter queue for permanent failures                         │    │
+│  │  • Task acknowledgment after completion                             │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  Search Index Updates:                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  • Complete within 5 seconds of resource updates                    │    │
+│  │  • URGENT priority ensures immediate searchability                  │    │
+│  │  • Automatic retry on failure                                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  Database Connection Pooling:                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  • 20 base connections + 40 overflow = 60 total                     │    │
+│  │  • Connection recycling after 1 hour                                │    │
+│  │  • Pre-ping health checks                                           │    │
+│  │  • Handles 100+ concurrent requests                                 │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
+
+---
+
+## Complete System Architecture - Layered View
+
+### Neo Alexandria 2.0 - Full Stack Architecture (All Phases Integrated)
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                          LAYER 1: PRESENTATION                              ║
+║                  (FastAPI Routers)                                          ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  /api/resources      /api/search         /api/collections                   ║
+║  /api/taxonomy       /aotations    /api/recommendations                     ║
+║  /api/quality        /api/classification /api/monitoring                    ║
+║  /api/scholarly                                                             ║
+║                                                                             ║
+║  • Request lidation (Pydantic)                                              ║
+║  • Authentication & authorization                                           ║
+║  • Response serialization                                                   ║
+║  • OpenAPI documentation                                                    ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ HTTP Requests
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                          LAYER 2: DOMAIN LAYER                              ║
+║                      (Phase 11: Domain-Driven Design)                       ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Rich Domain Objects with Business Logic:                                   ║
+║                                                                             ║
+║  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              ║
+║  │ ResourceDomain  │  │  SearchDomain   │  │ QualityDomain   │              ║
+║  │ • validate()    │  │  • execute()    │  │  • compute()    │              ║
+║  │ • to_dict()     │  │  • to_dict()    │  │  • to_dict()    │              ║
+║  └─────────────────┘  └─────────────────┘  └─────────────────┘              ║
+║                                                                             ║
+║  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              ║
+║  │RecommendDomain  │  │ClassifyDomain   │  │AnnotationDomain │              ║
+║  │ • execute()     │  │  • predict()    │  │  • validate()   │              ║
+║  │ • to_dict()     │  │  • to_dict()    │  │  • to_dict()    │              ║
+║  └─────────────────┘  └─────────────────┘  └─────────────────┘              ║
+║                                                                             ║
+║  • Encapsulates business rules                                              ║
+║  • Independent of persistence                                               ║
+║  • Ubiquitous language                                                      ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ Business Logic
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                          LAYER 3: SERVICE LAYER                             ║
+║                         (Core Business Services)                            ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Core Services:                                                             ║
+║  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           ║
+║  │ ResourceService  │  │  SearchService   │  │ QualityService   │           ║
+║  │ • create()       │  │  • hybrid()      │  │  • compute()     │           ║
+║  │ • update()       │  │  • three_way()   │  │  • dimensions()  │           ║
+║  │ • delete()       │  │  • rerank()      │  │  • outliers()    │           ║
+║  └──────────────────┘  └──────────────────┘  └──────────────────┘           ║
+║                                                                             ║
+║  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           ║
+║  │RecommendService  │  │MLClassifyService │  │ EmbeddingService │           ║
+║  │ • get_similar()  │  │  • predict()     │  │  • generate()    │           ║
+║  │ • graph_based()  │  │  • fine_tune()   │  │  • batch()       │           ║
+║  │ • collaborative()│  │  • active_learn()│  │  • similarity()  │           ║
+║  └──────────────────┘  └──────────────────┘  └──────────────────┘           ║
+║                                                                             ║
+║  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           ║
+║  │ CitationService  │  │ TaxonomyService  │  │AnnotationService │           ║
+║  │ • extract()      │  │  • classify()    │  │  • create()      │           ║
+║  │ • parse()        │  │  • get_tree()    │  │  • update()      │           ║
+║  │ • graph_update() │  │  • suggest()     │  │  • by_resource() │           ║
+║  └──────────────────┘  └──────────────────┘  └──────────────────┘           ║
+║                                                                             ║
+║  • Orchestrates business operations                                         ║
+║  • Emits domain events                                                      ║
+║  • Transaction management                                                   ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ Event Emission
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                       LAYER 4: EVENT-DRIVEN LAYER                           ║
+║                      (Phase 12.5: Event System)                             ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  EventEmitter (Singleton):                                                  ║
+║  • on(event_type, handler)  - Register listeners                            ║
+║  • emit(event_type, data)   - Dispatch events                               ║
+║  • off(event_type, handler) - Unregister                                    ║
+║                                                                             ║
+║  Event Types:                                                               ║
+║  • resource.created, resource.updated, resource.deleted                     ║
+║  • resource.content_changed, resource.metadata_changed                      ║
+║  • ingestion_started, ingestion_completed                                   ║
+║  • classification_completed, quality_computed                               ║
+║  • user.interaction_tracked, cache_invalidated                              ║
+║                                                                             ║
+║  Event Hooks (Auto-Consistency):                                            ║
+║  resource.content_changed  ──► regenerate_embedding_task (5s, priority=7)   ║
+║  resource.metadata_changed ──► recompute_quality_task (10s, priority=5)     ║
+║  resource.updated          ──► update_search_index_task (1s, priority=9)    ║
+║  resource.updated          ──► invalidate_cache_task (immediate, priority=9)║
+║  citations.extracted       ──► update_graph_edges_task (30s, priority=5)    ║
+║  user.interaction_tracked  ──► refresh_profile_task (every 10 interactions) ║
+║                                                                             ║
+║  • Loose coupling between components                                        ║
+║  • Asynchronous processing                                                  ║
+║  • Eventual consistency                                                     ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ Task Queue
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                      LAYER 5: TASK PROCESSING LAYER                         ║
+║                          (Celery + Redis)                                   ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Redis Message Broker:                                                      ║
+║  • Task queue management                                                    ║
+║  • Result backend storage                                                   ║
+║  • Priority queues: urgent(9), high(7), ml_tasks(5), batch(3), default(5)   ║
+║                                                                             ║
+║  Celery Workers (4 replicas):                                               ║
+║  ┌──────────────────────┐  ┌──────────────────────┐                         ║
+║  │ regenerate_embedding │  │ recompute_quality    │                         ║
+║  │ Priority: 7          │  │ Priority: 5          │                         ║
+║  │ Retry: 3x, Delay: 5s │  │ Retry: 2x, Delay:10s │                         ║
+║  └──────────────────────┘  └──────────────────────┘                         ║
+║                                                                             ║
+║  ┌──────────────────────┐  ┌──────────────────────┐                         ║
+║  │ update_search_index  │  │ classify_resource    │                         ║
+║  │ Priority: 9 (urgent) │  │ Priority: 5          │                         ║
+║  │ Retry: 3x, Delay: 1s │  │ Retry: 2x, Delay:20s │                         ║
+║  └──────────────────────┘  └──────────────────────┘                         ║
+║                                                                             ║
+║  ┌──────────────────────┐  ┌──────────────────────┐                         ║
+║  │ invalidate_cache     │  │ update_graph_edges   │                         ║
+║  │ Priority: 9 (urgent) │  │ Priority: 5          │                         ║
+║  │ Immediate execution  │  │ Delay: 30s, Batch    │                         ║
+║  └──────────────────────┘  └──────────────────────┘                         ║
+║                                                                             ║
+║  Celery Beat (Scheduler):                                                   ║
+║  • Daily maintenance (2 AM): cleanup, optimization                          ║
+║  • Weekly reports (Sunday): analytics, metrics                              ║
+║  • Monthly archival (1st): old data archival                                ║
+║                                                                             ║
+║  • Distributed processing                                                   ║
+║  • Automatic retries with exponential backoff                               ║
+║  • Progress tracking                                                        ║
+║  • 400 tasks/minute throughput (4 workers)                                  ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ Cache Access
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                         LAYER 6: CACHING LAYER                              ║
+║                            (Redis Cache)                                    ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  RedisCache Service:                                                        ║
+║  • get(key) → value | None                                                  ║
+║  • set(key, value, ttl) → None                                              ║
+║  • delete(key) → None                                                       ║
+║  • delete_pattern(pattern) → int                                            ║
+║  • get_stats() → CacheStats                                                 ║
+║                                                                             ║
+║  Cache Key Strategy:                                                        ║
+║  embedding:{resource_id}        TTL: 3600s (1 hour)                         ║
+║  quality:{resource_id}          TTL: 1800s (30 min)                         ║
+║  search_query:{hash}            TTL: 300s (5 min)                           ║
+║  resource:{resource_id}         TTL: 600s (10 min)                          ║
+║  graph:{resource_id}:neighbors  TTL: 1800s (30 min)                         ║
+║  classification:{resource_id}   TTL: 3600s (1 hour)                         ║
+║                                                                             ║
+║  Performance:                                                               ║
+║  • 60-70% cache hit rate                                                    ║
+║  • Sub-millisecond lookups                                                  ║
+║  • 50-70% computation reduction                                             ║
+║  • Pattern-based invalidation <10ms                                         ║
+║  • 2GB memory with allkeys-lru eviction                                     ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ Data Access
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                       LAYER 7: DATA ACCESS LAYER                            ║
+║                         (SQLAlchemy ORM)                                    ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  ORM Models:                                                                ║
+║  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 ║
+║  │   Resource     │  │ TaxonomyNode   │  │  Collection    │                 ║
+║  │ • id: UUID     │  │ • id: UUID     │  │ • id: UUID     │                 ║
+║  │ • title        │  │ • code         │  │ • name         │                 ║
+║  │ • description  │  │ • name         │  │ • owner_id     │                 ║
+║  │ • embedding    │  │ • parent_id    │  │ • public       │                 ║
+║  │ • created_at   │  │ • level        │  │ • resources    │                 ║
+║  └────────────────┘  └────────────────┘  └────────────────┘                 ║
+║                                                                             ║
+║  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 ║
+║  │  Annotation    │  │ QualityScore   │  │ MLPrediction   │                 ║
+║  │ • id: UUID     │  │ • id: UUID     │  │ • id: UUID     │                 ║
+║  │ • content      │  │ • resource_id  │  │ • resource_id  │                 ║
+║  │ • user_id      │  │ • overall      │  │ • label        │                 ║
+║  │ • resource_id  │  │ • accuracy     │  │ • confidence   │                 ║
+║  │ • type         │  │ • completeness │  │ • model_ver    │                 ║
+║  └────────────────┘  └────────────────┘  └────────────────┘                 ║
+║                                                                             ║
+║  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 ║
+║  │ResourceTaxonomy│  │UserInteraction │  │   GraphEdge    │                 ║
+║  │ • resource_id  │  │ • user_id      │  │ • source_id    │                 ║
+║  │ • taxonomy_id  │  │ • resource_id  │  │ • target_id    │                 ║
+║  │ • confidence   │  │ • type         │  │ • edge_type    │                 ║
+║  │ • method       │  │ • timestamp    │  │ • weight       │                 ║
+║  └────────────────┘  └────────────────┘  └────────────────┘                 ║
+║                                                                             ║
+║  • Declarative models                                                       ║
+║  • Relationship management                                                  ║
+║  • Connection pooling (20 base + 40 overflow)                               ║
+║  • Lazy loading strategies                                                  ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ SQL Queries
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                         LAYER 8: DATABASE LAYER                             ║
+║                            (SQLite 3.x)                                     ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Core Tables:                                                               ║
+║  • resources              - Main resource storage                           ║
+║  • taxonomy_nodes         - Hierarchical classification tree                ║
+║  • collections            - User-created collections                        ║
+║  • annotations            - User annotations and notes                      ║
+║  • quality_scores         - 5-dimensional quality assessments               ║
+║  • resource_taxonomy      - Many-to-many resource-taxonomy mapping          ║
+║  • user_interactions      - User activity tracking                          ║
+║  • graph_edges            - Citation and relationship graph                 ║
+║  • ml_predictions         - ML classification results                       ║
+║                                                                             ║
+║  FTS5 Virtual Tables (Phase 4):                                             ║
+║  • resources_fts          - Full-text search index                          ║
+║    - BM25 ranking algorithm                                                 ║
+║    - Tokenization and stemming                                              ║
+║    - Phrase and proximity search                                            ║
+║                                                                             ║
+║  Vector Storage (Phase 4, 8):                                               ║
+║  • resources.embedding         - Dense vectors (768-dim BERT)               ║
+║  • resources.sparse_embedding  - Sparse vectors (SPLADE/TF-IDF)             ║
+║    - Cosine similarity search                                               ║
+║    - Efficient vector indexing                                              ║
+║                                                                             ║
+║  Optimizations:                                                             ║
+║  • WAL mode for concurrent reads/writes                                     ║
+║  • Indexes on: id, created_at, updated_at, type, language                   ║
+║  • Composite indexes for common queries                                     ║
+║  • Connection recycling: 1 hour                                             ║
+║  • Pre-ping health checks                                                   ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+                                    │
+                                    │ ML Processing
+                                    ▼
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                      LAYER 9: MACHINE LEARNING LAYER                        ║
+║                    (PyTorch + Transformers)                                 ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Classification Models (Phase 5-7):                                         ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ DistilBERT / BERT Transformer                                   │        ║
+║  │ • Multi-label classification                                    │        ║
+║  │ • Fine-tuned on academic taxonomy                               │        ║
+║  │ • Sigmoid activation for multi-label                            │        ║
+║  │ • Top-k predictions with confidence scores                      │        ║
+║  │ • GPU acceleration (CUDA if available)                          │        ║
+║  │ • Lazy loading for memory efficiency                            │        ║
+║  │ • Active learning with uncertainty sampling                     │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Embedding Models (Phase 4, 8):                                             ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Dense Embeddings (BERT/Sentence-BERT)                           │        ║
+║  │ • 768-dimensional vectors                                       │        ║
+║  │ • Semantic similarity capture                                   │        ║
+║  │ • Batch processing support                                      │        ║
+║  │ • Cached for performance                                        │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Sparse Embeddings (SPLADE/TF-IDF)                               │        ║
+║  │ • Term importance weighting                                     │        ║
+║  │ • Interpretable features                                        │        ║
+║  │ • Efficient storage                                             │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Reranking Models (Phase 8):                                                ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ ColBERT Cross-Encoder                                           │        ║
+║  │ • Query-document interaction modeling                           │        ║
+║  │ • Fine-grained relevance scoring                                │        ║
+║  │ • Applied to top-100 candidates                                 │        ║
+║  │ • 1-second timeout for responsiveness                           │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Quality Assessment Models (Phase 9):                                       ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Isolation Forest (Outlier Detection)                            │        ║
+║  │ • 9-dimensional feature space                                   │        ║
+║  │ • Anomaly scoring                                               │        ║
+║  │ • Contamination rate: 0.1                                       │        ║
+║  │ • Flags resources for manual review                             │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Performance:                                                               ║
+║  • Classification: 200ms avg (GPU), 800ms (CPU)                             ║
+║  • Embedding generation: 200ms avg (GPU), 800ms (CPU)                       ║
+║  • Batch processing: 100 docs/min                                           ║
+║  • Model memory: ~1.5GB loaded                                              ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+### Cross-Cutting Concerns
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                         CROSS-CUTTING CONCERNS                              ║
+║                    (Applied Across All Layers)                              ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Monitoring & Observability:                                                ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • PredictionMonitor - ML model performance tracking             │        ║
+║  │ • Flower Dashboard - Celery task monitoring                     │        ║
+║  │ • Event history logging                                         │        ║ 
+║  │ • Cache statistics tracking                                     │        ║
+║  │ • API endpoints: /api/monitoring/health, /metrics, /cache-stats │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Error Handling & Resilience:                                               ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • Automatic task retries with exponential backoff               │        ║
+║  │ • Circuit breakers for external services                        │        ║
+║  │ • Graceful degradation (fallback to cached data)                │        ║
+║  │ • Dead letter queues for failed tasks                           │        ║
+║  │ • Comprehensive error logging                                   │        ║
+║  │ • Health checks for all services                                │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Security & Authentication:                                                 ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • API key authentication                                        │        ║
+║  │ • Role-based access control (RBAC)                              │        ║
+║  │ • Input validation and sanitization                             │        ║
+║  │ • SQL injection prevention (ORM)                                │        ║
+║  │ • Rate limiting                                                 │        ║
+║  │ • CORS configuration                                            │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Configuration Management:                                                  ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • Environment-based configuration (.env files)                  │        ║
+║  │ • Centralized settings (settings.py)                            │        ║
+║  │ • Feature flags                                                 │        ║
+║  │ • Dynamic configuration updates                                 │        ║
+║  │ • Secrets management                                            │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+### Design Patterns Applied
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                          DESIGN PATTERNS SUMMARY                            ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  1. LAYERED ARCHITECTURE                                                    ║
+║     • Clear separation of concerns across 9 layers                          ║
+║     • Dependencies flow downward                                            ║
+║     • Each layer has single responsibility                                  ║
+║                                                                             ║
+║  2. DOMAIN-DRIVEN DESIGN (Phase 11)                                         ║
+║     • Rich domain models with business logic                                ║
+║     • Ubiquitous language across codebase                                   ║
+║     • Bounded contexts for different domains                                ║
+║     • Separation from persistence layer                                     ║
+║                                                                             ║
+║  3. EVENT-DRIVEN ARCHITECTURE (Phase 12.5)                                  ║
+║     • Loose coupling between components                                     ║
+║     • Asynchronous processing                                               ║
+║     • Pub/sub pattern for notifications                                     ║
+║     • Automatic consistency maintenance                                     ║
+║                                                                             ║
+║  4. REPOSITORY PATTERN                                                      ║
+║     • Abstract data access layer                                            ║
+║     • Services interact with repositories, not DB directly                  ║
+║     • Testable with mock repositories                                       ║
+║                                                                             ║
+║  5. STRATEGY PATTERN                                                        ║
+║     • Pluggable algorithms (recommendations, search)                        ║
+║     • Runtime strategy selection                                            ║
+║     • Easy to add new strategies                                            ║
+║                                                                             ║
+║  6. SINGLETON PATTERN                                                       ║
+║     • EventEmitter, Cache - single instance across application              ║
+║     • Global access point                                                   ║
+║                                                                             ║
+║  7. OBSERVER PATTERN                                                        ║
+║     • Event listeners register for notifications                            ║
+║     • Decoupled event producers and consumers                               ║
+║     • Multiple handlers per event                                           ║
+║                                                                             ║
+║  8. LAZY LOADING                                                            ║
+║     • ML models loaded on-demand                                            ║
+║     • Faster application startup                                            ║
+║     • Memory efficiency                                                     ║
+║                                                                             ║
+║  9. CACHING PATTERN                                                         ║
+║     • Cache-aside pattern                                                   ║
+║     • TTL-based expiration                                                  ║
+║     • Pattern-based invalidation                                            ║
+║                                                                             ║
+║  10. TASK QUEUE PATTERN                                                     ║
+║      • Asynchronous task execution                                          ║
+║      • Priority-based scheduling                                            ║
+║      • Retry logic with backoff                                             ║
+║      • Distributed processing                                               ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+### Request Lifecycle Example
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║              EXAMPLE: Resource Update Request Flow                          ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  1. CLIENT REQUEST                                                          ║
+║     PUT /api/resources/abc-123                                              ║
+║     Body: { "title": "Updated Title", "description": "New content..." }     ║
+║                                                                             ║
+║  2. PRESENTATION LAYER (FastAPI Router)                                     ║
+║     • Validate request schema                                               ║
+║     • Authenticate user                                                     ║
+║     • Call ResourceService.update(id, data)                                 ║
+║                                                                             ║
+║  3. SERVICE LAYER (ResourceService)                                         ║
+║     • Fetch existing resource from database                                 ║
+║     • Convert to ResourceDomain object                                      ║
+║     • Apply updates and validate business rules                             ║
+║     • Detect changes: content_changed = True                                ║
+║     • Persist to database via ORM                                           ║
+║     • Emit events: resource.updated, resource.content_changed               ║
+║                                                                             ║
+║  4. EVENT LAYER (EventEmitter)                                              ║
+║     • Dispatch resource.updated event                                       ║
+║       ├─► Hook: update_search_index_task (priority=9, countdown=1s)         ║
+║       └─► Hook: invalidate_cache_task (priority=9, immediate)               ║
+║     • Dispatch resource.content_changed event                               ║
+║       └─► Hook: regenerate_embedding_task (priority=7, countdown=5s)        ║
+║                                                                             ║
+║  5. TASK LAYER (Celery Workers - Parallel Execution)                        ║
+║     Worker 1 (t=0s):  invalidate_cache_task                                 ║
+║       • Delete cache keys: resource:abc-123:*                               ║
+║       • Duration: ~5ms                                                      ║
+║                                                                             ║
+║     Worker 2 (t=1s):  update_search_index_task                              ║
+║       • Update FTS5 index with new content                                  ║
+║       • Duration: ~50ms                                                     ║
+║                                                                             ║
+║     Worker 3 (t=5s):  regenerate_embedding_task                             ║
+║       • Generate new BERT embedding (768-dim)                               ║
+║       • Store in database and cache                                         ║
+║       • Duration: ~200ms (GPU)                                              ║
+║                                                                             ║
+║  6. RESPONSE TO CLIENT                                                      ║
+║     Status: 200 OK                                                          ║
+║     Body: { "id": "abc-123", "title": "Updated Title", ... }                ║
+║     Response Time: ~50ms (synchronous part only)                            ║
+║                                                                             ║
+║  7. EVENTUAL CONSISTENCY                                                    ║
+║     • t=0s:  Cache invalidated → Fresh data on next request                 ║
+║     • t=1s:  Search index updated → Resource searchable                     ║
+║     • t=5s:  Embedding regenerated → Semantic search updated                ║
+║     • Total async processing time: ~5 seconds                               ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+### Performance Characteristics
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                      SYSTEM PERFORMANCE METRICS                             ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  API Response Times:                                                        ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Endpoint                   Avg      P95      P99    Cache Impact│        ║
+║  ├─────────────────────────────────────────────────────────────────┤        ║
+║  │ GET /resources/{id}         15ms     30ms     50ms   -80%       │        ║
+║  │ POST /resources             50ms    100ms    150ms   N/A        │        ║
+║  │ PUT /resources/{id}         45ms     90ms    130ms   N/A        │        ║
+║  │ POST /search/hybrid        150ms    300ms    500ms   -60%       │        ║
+║  │ POST /search/three-way     250ms    500ms    800ms   -50%       │        ║
+║  │ POST /classification       200ms    400ms    600ms   -70%       │        ║
+║  │ POST /quality/compute      100ms    200ms    300ms   -65%       │        ║
+║  │ GET /recommendations       120ms    250ms    400ms   -55%       │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Throughput Capacity:                                                       ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Component              Throughput      Scaling Strategy         │        ║
+║  ├─────────────────────────────────────────────────────────────────┤        ║
+║  │ FastAPI Application    1000 req/s     Horizontal (load balance) │        ║
+║  │ Database (SQLite)      500 writes/s   Migrate to PostgreSQL     │        ║
+║  │ Redis Cache            100k ops/s     Redis Cluster             │        ║
+║  │ Celery Workers (4x)    400 tasks/min  Add more workers          │        ║
+║  │ ML Classification      50 infer/s     Batch processing          │        ║
+║  │ Embedding Generation   100 docs/min   Batch + GPU acceleration  │        ║
+║  │ Search (FTS5)          500 queries/s  Sharding                  │        ║
+║  │ Vector Search          200 queries/s  Approximate NN (FAISS)    │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Cache Performance:                                                         ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Cache Type          Hit Rate    Latency (hit)   Latency (miss)  │        ║
+║  ├─────────────────────────────────────────────────────────────────┤        ║
+║  │ Embeddings          70%         0.5ms           200ms           │        ║
+║  │ Quality Scores      65%         0.3ms           100ms           │        ║
+║  │ Search Results      60%         0.8ms           150ms           │        ║
+║  │ Resource Data       75%         0.4ms           15ms            │        ║
+║  │ Graph Neighbors     68%         0.6ms           50ms            │        ║
+║  │ ML Predictions      72%         0.5ms           200ms           │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Overall Cache Impact: 50-70% reduction in computation time                 ║
+║                                                                             ║
+║  Task Processing:                                                           ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ Task Type                Duration    Success Rate   Retry Rate  │        ║
+║  ├─────────────────────────────────────────────────────────────────┤        ║
+║  │ regenerate_embedding     200ms      99.5%          0.3%         │        ║
+║  │ recompute_quality        100ms      99.8%          0.1%         │        ║
+║  │ update_search_index      50ms       99.9%          0.05%        │        ║
+║  │ classify_resource        250ms      99.2%          0.5%         │        ║
+║  │ invalidate_cache         5ms        100%           0%           │        ║
+║  │ update_graph_edges       80ms       99.5%          0.3%         │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Overall Task Reliability: >99% success rate with automatic retries         ║
+║                                                                             ║
+║  Scalability Limits:                                                        ║
+║  • Current: ~1M documents, ~100 concurrent users                            ║
+║  • Recommended for 1M+ resources: Migrate to PostgreSQL + pgvector          ║
+║  • Recommended for 500+ users: Add load balancer + multiple instances       ║
+║  • Recommended for 100M+ vectors: Use FAISS or Milvus for approximate NN    ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+### Technology Stack
+
+```
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                          COMPLETE TECHNOLOGY STACK                          ║
+╠═════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  Web Framework:        FastAPI 0.104+                                       ║
+║                        • Async/await support                                ║
+║                        • Automatic OpenAPI docs                             ║
+║                        • Pydantic validation                                ║
+║                        • High performance (Starlette + Uvicorn)             ║
+║                                                                             ║
+║  Database:             SQLite 3.x (Development/Small Scale)                 ║
+║                        • FTS5 full-text search                              ║
+║                        • JSON support                                       ║
+║                        • WAL mode for concurrency                           ║
+║                        • Migration path to PostgreSQL                       ║
+║                                                                             ║
+║  ORM:                  SQLAlchemy 2.0+                                      ║
+║                        • Declarative models                                 ║
+║                        • Relationship management                            ║
+║                        • Connection pooling                                 ║
+║                        • Migration support (Alembic)                        ║
+║                                                                             ║
+║  Cache:                Redis 7.x                                            ║
+║                        • In-memory data store                               ║
+║                        • Pub/sub messaging                                  ║
+║                        • TTL-based expiration                               ║
+║                        • Pattern-based operations                           ║
+║                                                                             ║
+║  Task Queue:           Celery 5.x                                           ║
+║                        • Distributed task processing                        ║
+║                        • Priority queues                                    ║
+║                        • Retry mechanisms                                   ║
+║                        • Scheduled tasks (Celery Beat)                      ║
+║                        • Monitoring (Flower)                                ║
+║                                                                             ║
+║  ML Framework:         PyTorch 2.x                                          ║
+║                        • Neural network training                            ║
+║                        • GPU acceleration (CUDA)                            ║
+║                        • Model serialization                                ║
+║                        • Automatic differentiation                          ║
+║                                                                             ║
+║  Transformers:         Hugging Face Transformers 4.x                        ║
+║                        • Pre-trained models (BERT, DistilBERT)              ║
+║                        • Tokenizers                                         ║
+║                        • Fine-tuning utilities                              ║
+║                        • Model hub integration                              ║
+║                                                                             ║
+║  ML Models:            • DistilBERT (Classification)                        ║
+║                        • BERT/Sentence-BERT (Embeddings)                    ║
+║                        • SPLADE (Sparse vectors)                            ║
+║                        • ColBERT (Reranking)                                ║
+║                        • Isolation Forest (Outlier detection)               ║
+║                                                                             ║
+║  Search:               • SQLite FTS5 (Keyword search)                       ║
+║                        • Custom vector similarity (Dense)                   ║
+║                        • TF-IDF/SPLADE (Sparse)                             ║
+║                        • Reciprocal Rank Fusion (RRF)                       ║
+║                                                                             ║
+║  Data Science:         • NumPy (Numerical computing)                        ║
+║                        • Pandas (Data manipulation)                         ║
+║                        • Scikit-learn (ML utilities, Isolation Forest)      ║
+║                                                                             ║
+║  Testing:              • Pytest (Test framework)                            ║
+║                        • pytest-asyncio (Async tests)                       ║
+║                        • pytest-xdist (Parallel execution)                  ║
+║                        • pytest-cov (Coverage)                              ║
+║                                                                             ║
+║  Containerization:     Docker & Docker Compose                              ║
+║                        • Multi-service orchestration                        ║
+║                        • Service isolation                                  ║
+║                        • Volume management                                  ║
+║                        • Health checks                                      ║
+║                                                                             ║
+║  Python Version:       Python 3.11+                                         ║
+║                        • Type hints support                                 ║
+║                        • Performance improvements                           ║
+║                        • Enhanced error messages                            ║
+║                                                                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+```
+
+
+---
+
+## Architecture Evolution Summary
+
+Neo Alexandria 2.0 has evolved through 12+ phases, each building upon the previous foundation:
+
+**Phase 1-3**: Core CRUD operations, basic search, taxonomy management  
+**Phase 4**: Advanced hybrid search (FTS5 + vector)  
+**Phase 5-7**: ML classification with active learning  
+**Phase 8**: Three-way hybrid search with reranking  
+**Phase 9**: Quality assessment and monitoring  
+**Phase 10**: Graph-based recommendations  
+**Phase 11**: Domain-driven design refactoring  
+**Phase 12**: Fowler refactoring framework  
+**Phase 12.5**: Event-driven architecture with Celery
+
+### Current System Features
+
+The system now features:
+- **9 distinct architectural layers** working in harmony
+- **10+ design patterns** applied throughout
+- **Event-driven consistency** with automatic task orchestration
+- **Multi-level caching** for 50-70% performance improvement
+- **Distributed task processing** with priority queues
+- **Rich domain models** with business logic encapsulation
+- **ML-powered features** (classification, embeddings, quality assessment)
+- **Three-way hybrid search** with multiple retrieval strategies
+- **Comprehensive monitoring** and observability
+
+### Design Principles
+
+The architecture is designed for:
+- **Scalability**: Horizontal scaling of services, workers, and cache
+- **Reliability**: Automatic retries, health checks, graceful degradation
+- **Performance**: Sub-second response times with caching
+- **Maintainability**: Clear separation of concerns, testable components
+- **Extensibility**: Plugin architecture for new strategies and features
+
+### Key Architectural Decisions
+
+1. **Layered Architecture**: Clear separation between presentation, domain, service, event, task, cache, data access, database, and ML layers
+2. **Event-Driven Design**: Loose coupling through events enables automatic consistency maintenance
+3. **Asynchronous Processing**: Celery task queue handles long-running operations without blocking API responses
+4. **Multi-Level Caching**: Redis cache dramatically reduces computation time for repeated operations
+5. **Domain-Driven Design**: Rich domain objects encapsulate business logic and validation
+6. **ML Integration**: Lazy-loaded models with GPU acceleration for efficient inference
+7. **Hybrid Search**: Combines keyword, dense vector, and sparse vector search for optimal results
+8. **Quality Assessment**: Multi-dimensional quality scoring with outlier detection
+
+---
+
+*For implementation details, see individual service documentation and inline code comments.*

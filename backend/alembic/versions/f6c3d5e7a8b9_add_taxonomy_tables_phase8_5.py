@@ -20,20 +20,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - Add taxonomy_nodes and resource_taxonomy tables for Phase 8.5."""
+    from sqlalchemy.dialects.postgresql import UUID
     
     # Check if tables already exist (they might be auto-created by SQLAlchemy)
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     existing_tables = inspector.get_table_names()
     
+    # Determine the appropriate ID type based on database dialect
+    id_type = UUID(as_uuid=True) if conn.dialect.name == 'postgresql' else sa.String(36)
+    
     # Create taxonomy_nodes table only if it doesn't exist
     if 'taxonomy_nodes' not in existing_tables:
         op.create_table(
             'taxonomy_nodes',
-            sa.Column('id', sa.String(36), primary_key=True),
+            sa.Column('id', id_type, primary_key=True),
             sa.Column('name', sa.String(255), nullable=False),
             sa.Column('slug', sa.String(255), nullable=False, unique=True),
-            sa.Column('parent_id', sa.String(36), nullable=True),
+            sa.Column('parent_id', id_type, nullable=True),
             sa.Column('level', sa.Integer(), nullable=False, server_default='0'),
             sa.Column('path', sa.String(1000), nullable=False),
             sa.Column('description', sa.Text(), nullable=True),
@@ -57,9 +61,9 @@ def upgrade() -> None:
     if 'resource_taxonomy' not in existing_tables:
         op.create_table(
             'resource_taxonomy',
-            sa.Column('id', sa.String(36), primary_key=True),
-            sa.Column('resource_id', sa.String(36), nullable=False),
-            sa.Column('taxonomy_node_id', sa.String(36), nullable=False),
+            sa.Column('id', id_type, primary_key=True),
+            sa.Column('resource_id', id_type, nullable=False),
+            sa.Column('taxonomy_node_id', id_type, nullable=False),
             sa.Column('confidence', sa.Float(), nullable=False, server_default='0.0'),
             sa.Column('is_predicted', sa.Integer(), nullable=False, server_default='1'),
             sa.Column('predicted_by', sa.String(100), nullable=True),

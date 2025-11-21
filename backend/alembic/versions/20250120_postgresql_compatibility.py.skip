@@ -1,0 +1,1180 @@
+"""
+Neo Alexandria 2.0 - PostgreSQL Compatibility Migration (Phase 13)
+
+This migration adds PostgreSQL-specific optimizations while maintaining SQLite compatibility.
+It converts JSON columns to JSONB for improved query performance, installs required extensions,
+and creates GIN indexes for efficient JSON containment queries.
+
+Related files:
+- app/database/models.py: All models with JSON columns
+- app/database/base.py: Database configuration with type detection
+- docs/POSTGRESQL_MIGRATION_GUIDE.md: Migration documentation
+
+Features:
+- PostgreSQL extension installation (pg_trgm, uuid-ossp)
+- JSON to JSONB conversion for all JSON columns (PostgreSQL only)
+- GIN indexes on JSONB columns for efficient containment queries
+- Full-text search setup with tsvector and GIN indexes
+- Maintains SQLite compatibility (no changes for SQLite)
+
+Revision ID: 20250120_postgresql_compatibility
+Revises: j0k1l2m3n4o5
+Create Date: 2025-01-20 12:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+from sqlalchemy import text
+
+
+# revision identifiers, used by Alembic.
+revision = '20250120_postgresql_compatibility'
+down_revision = 'j0k1l2m3n4o5'
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """
+    Upgrade database schema with PostgreSQL-specific optimizations.
+    
+    For PostgreSQL:
+    - Install required extensions (pg_trgm, uuid-ossp)
+    - Convert JSON columns to JSONB for better performance
+    - Create GIN indexes on JSONB columns
+    - Set up full-text search with tsvector columns and triggers
+    
+    For SQLite:
+    - No changes (maintains existing JSON columns and FTS5)
+    """
+    # Get bind to detect database type
+    bind = op.get_bind()
+    dialect_name = bind.dialect.name
+    
+    if dialect_name == 'postgresql':
+        upgrade_postgresql()
+    else:
+        # SQLite: No changes needed, already compatible
+        pass
+
+
+def upgrade_postgresql() -> None:
+    """Apply PostgreSQL-specific upgrades."""
+    
+    # ========================================================================
+    # STEP 1: Install PostgreSQL Extensions
+    # ========================================================================
+    print("Installing PostgreSQL extensions...")
+    
+    # pg_trgm: Trigram-based text similarity search
+    op.execute(text('CREATE EXTENSION IF NOT EXISTS pg_trgm'))
+    
+    # uuid-ossp: UUID generation functions
+    op.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+    
+    # ========================================================================
+    # STEP 2: Convert JSON to JSONB for Resources Table
+    # ========================================================================
+    print("Converting JSON to JSONB for resources table...")
+    
+    # Convert subject array (multi-valued Dublin Core field)
+    op.execute(text("""
+        ALTER TABLE resources 
+        ALTER COLUMN subject TYPE JSONB USING subject::text::jsonb
+    """))
+    
+    # Convert relation array (multi-valued Dublin Core field)
+    op.execute(text("""
+        ALTER TABLE resources 
+        ALTER COLUMN relation TYPE JSONB USING relation::text::jsonb
+    """))
+    
+    # Convert embedding array (vector embeddings for semantic search)
+    op.execute(text("""
+        ALTER TABLE resources 
+        ALTER COLUMN embedding TYPE JSONB USING embedding::text::jsonb
+    """))
+    
+    # ========================================================================
+    # STEP 3: Create GIN Indexes on Resources JSONB Columns
+    # ========================================================================
+    print("Creating GIN indexes on resources JSONB columns...")
+    
+    # Index for subject containment queries (e.g., WHERE subject @> '["AI"]')
+    op.create_index(
+        'idx_resources_subject_gin',
+        'resources',
+        ['subject'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'subject': 'jsonb_path_ops'}
+    )
+    
+    # Index for relation containment queries
+    op.create_index(
+        'idx_resources_relation_gin',
+        'resources',
+        ['relation'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'relation': 'jsonb_path_ops'}
+    )
+    
+    # Index for embedding queries (if using JSONB for vector operations)
+    op.create_index(
+        'idx_resources_embedding_gin',
+        'resources',
+        ['embedding'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'embedding': 'jsonb_path_ops'}
+    )
+    
+    # ========================================================================
+    # STEP 4: Convert JSON to JSONB for Classification and Authority Tables
+    # ========================================================================
+    print("Converting JSON to JSONB for classification and authority tables...")
+    
+    # ClassificationCode: keywords array
+    op.execute(text("""
+        ALTER TABLE classification_codes 
+        ALTER COLUMN keywords TYPE JSONB USING keywords::text::jsonb
+    """))
+    
+    # AuthoritySubject: variants array
+    op.execute(text("""
+        ALTER TABLE authority_subjects 
+        ALTER COLUMN variants TYPE JSONB USING variants::text::jsonb
+    """))
+    
+    # AuthorityCreator: variants array
+    op.execute(text("""
+        ALTER TABLE authority_creators 
+        ALTER COLUMN variants TYPE JSONB USING variants::text::jsonb
+    """))
+    
+    # AuthorityPublisher: variants array
+    op.execute(text("""
+        ALTER TABLE authority_publishers 
+        ALTER COLUMN variants TYPE JSONB USING variants::text::jsonb
+    """))
+    
+    # ========================================================================
+    # STEP 5: Convert JSON to JSONB for Collection and Taxonomy Tables
+    # ========================================================================
+    print("Converting JSON to JSONB for collection and taxonomy tables...")
+    
+    # Collection: embedding array
+    op.execute(text("""
+        ALTER TABLE collections 
+        ALTER COLUMN embedding TYPE JSONB USING embedding::text::jsonb
+    """))
+    
+    # TaxonomyNode: keywords array
+    op.execute(text("""
+        ALTER TABLE taxonomy_nodes 
+        ALTER COLUMN keywords TYPE JSONB USING keywords::text::jsonb
+    """))
+    
+    # ========================================================================
+    # STEP 6: Convert JSON to JSONB for Annotation Table
+    # ========================================================================
+    print("Converting JSON to JSONB for annotations table...")
+    
+    # Annotation: embedding array
+    op.execute(text("""
+        ALTER TABLE annotations 
+        ALTER COLUMN embedding TYPE JSONB USING embedding::text::jsonb
+    """))
+    
+    # Annotation: tags array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE annotations 
+        ALTER COLUMN tags TYPE JSONB USING 
+        CASE 
+            WHEN tags IS NULL THEN NULL
+            WHEN tags = '' THEN NULL
+            ELSE tags::jsonb 
+        END
+    """))
+    
+    # Annotation: collection_ids array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE annotations 
+        ALTER COLUMN collection_ids TYPE JSONB USING 
+        CASE 
+            WHEN collection_ids IS NULL THEN NULL
+            WHEN collection_ids = '' THEN NULL
+            ELSE collection_ids::jsonb 
+        END
+    """))
+    
+    # ========================================================================
+    # STEP 7: Convert JSON to JSONB for Graph Intelligence Tables
+    # ========================================================================
+    print("Converting JSON to JSONB for graph intelligence tables...")
+    
+    # GraphEdge: edge_metadata (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE graph_edges 
+        ALTER COLUMN edge_metadata TYPE JSONB USING 
+        CASE 
+            WHEN edge_metadata IS NULL THEN NULL
+            WHEN edge_metadata = '' THEN NULL
+            ELSE edge_metadata::jsonb 
+        END
+    """))
+    
+    # GraphEmbedding: embedding array
+    op.execute(text("""
+        ALTER TABLE graph_embeddings 
+        ALTER COLUMN embedding TYPE JSONB USING embedding::text::jsonb
+    """))
+    
+    # GraphEmbedding: structural_embedding array
+    op.execute(text("""
+        ALTER TABLE graph_embeddings 
+        ALTER COLUMN structural_embedding TYPE JSONB USING structural_embedding::text::jsonb
+    """))
+    
+    # GraphEmbedding: fusion_embedding array
+    op.execute(text("""
+        ALTER TABLE graph_embeddings 
+        ALTER COLUMN fusion_embedding TYPE JSONB USING fusion_embedding::text::jsonb
+    """))
+    
+    # DiscoveryHypothesis: supporting_resources array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE discovery_hypotheses 
+        ALTER COLUMN supporting_resources TYPE JSONB USING supporting_resources::text::jsonb
+    """))
+    
+    # ========================================================================
+    # STEP 8: Convert JSON to JSONB for User Profile and Interaction Tables
+    # ========================================================================
+    print("Converting JSON to JSONB for user profile tables...")
+    
+    # UserProfile: research_domains array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE user_profiles 
+        ALTER COLUMN research_domains TYPE JSONB USING 
+        CASE 
+            WHEN research_domains IS NULL THEN NULL
+            WHEN research_domains = '' THEN NULL
+            ELSE research_domains::jsonb 
+        END
+    """))
+    
+    # UserProfile: preferred_taxonomy_ids array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE user_profiles 
+        ALTER COLUMN preferred_taxonomy_ids TYPE JSONB USING 
+        CASE 
+            WHEN preferred_taxonomy_ids IS NULL THEN NULL
+            WHEN preferred_taxonomy_ids = '' THEN NULL
+            ELSE preferred_taxonomy_ids::jsonb 
+        END
+    """))
+    
+    # UserProfile: preferred_authors array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE user_profiles 
+        ALTER COLUMN preferred_authors TYPE JSONB USING 
+        CASE 
+            WHEN preferred_authors IS NULL THEN NULL
+            WHEN preferred_authors = '' THEN NULL
+            ELSE preferred_authors::jsonb 
+        END
+    """))
+    
+    # UserProfile: preferred_sources array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE user_profiles 
+        ALTER COLUMN preferred_sources TYPE JSONB USING 
+        CASE 
+            WHEN preferred_sources IS NULL THEN NULL
+            WHEN preferred_sources = '' THEN NULL
+            ELSE preferred_sources::jsonb 
+        END
+    """))
+    
+    # UserProfile: excluded_sources array (stored as Text in model)
+    op.execute(text("""
+        ALTER TABLE user_profiles 
+        ALTER COLUMN excluded_sources TYPE JSONB USING 
+        CASE 
+            WHEN excluded_sources IS NULL THEN NULL
+            WHEN excluded_sources = '' THEN NULL
+            ELSE excluded_sources::jsonb 
+        END
+    """))
+    
+    # ========================================================================
+    # STEP 9: Convert JSON to JSONB for ML Model Tables
+    # ========================================================================
+    print("Converting JSON to JSONB for ML model tables...")
+    
+    # ModelVersion: model_metadata (stored as JSON in model)
+    op.execute(text("""
+        ALTER TABLE model_versions 
+        ALTER COLUMN metadata TYPE JSONB USING 
+        CASE 
+            WHEN metadata IS NULL THEN NULL
+            ELSE metadata::text::jsonb 
+        END
+    """))
+    
+    # ModelVersion: model_metrics (stored as JSON in model)
+    op.execute(text("""
+        ALTER TABLE model_versions 
+        ALTER COLUMN metrics TYPE JSONB USING 
+        CASE 
+            WHEN metrics IS NULL THEN NULL
+            ELSE metrics::text::jsonb 
+        END
+    """))
+    
+    # ABTestExperiment: results
+    op.execute(text("""
+        ALTER TABLE ab_test_experiments 
+        ALTER COLUMN results TYPE JSONB USING 
+        CASE 
+            WHEN results IS NULL THEN NULL
+            ELSE results::text::jsonb 
+        END
+    """))
+    
+    # PredictionLog: predictions
+    op.execute(text("""
+        ALTER TABLE prediction_logs 
+        ALTER COLUMN predictions TYPE JSONB USING predictions::text::jsonb
+    """))
+    
+    # RetrainingRun: metrics
+    op.execute(text("""
+        ALTER TABLE retraining_runs 
+        ALTER COLUMN metrics TYPE JSONB USING 
+        CASE 
+            WHEN metrics IS NULL THEN NULL
+            ELSE metrics::text::jsonb 
+        END
+    """))
+    
+    # ========================================================================
+    # STEP 10: Create Additional GIN Indexes for Common Query Patterns
+    # ========================================================================
+    print("Creating additional GIN indexes for common query patterns...")
+    
+    # Index for classification_codes keywords
+    op.create_index(
+        'idx_classification_codes_keywords_gin',
+        'classification_codes',
+        ['keywords'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'keywords': 'jsonb_path_ops'}
+    )
+    
+    # Index for graph_embeddings embedding
+    op.create_index(
+        'idx_graph_embeddings_embedding_gin',
+        'graph_embeddings',
+        ['embedding'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'embedding': 'jsonb_path_ops'}
+    )
+    
+    # Index for discovery_hypotheses supporting_resources
+    op.create_index(
+        'idx_discovery_hypotheses_supporting_gin',
+        'discovery_hypotheses',
+        ['supporting_resources'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'supporting_resources': 'jsonb_path_ops'}
+    )
+    
+    # ========================================================================
+    # STEP 11: Set up Full-Text Search for Resources
+    # ========================================================================
+    print("Setting up full-text search for resources...")
+    
+    # Add tsvector column for full-text search
+    op.add_column('resources', sa.Column('search_vector', postgresql.TSVECTOR, nullable=True))
+    
+    # Create trigger function to auto-update search_vector
+    op.execute(text("""
+        CREATE OR REPLACE FUNCTION resources_search_vector_update() RETURNS trigger AS $$
+        BEGIN
+            NEW.search_vector :=
+                setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(NEW.description, '')), 'B') ||
+                setweight(to_tsvector('english', coalesce(NEW.creator, '')), 'C') ||
+                setweight(to_tsvector('english', coalesce(NEW.publisher, '')), 'D');
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    """))
+    
+    # Create trigger to call the function on INSERT or UPDATE
+    op.execute(text("""
+        CREATE TRIGGER resources_search_vector_trigger
+        BEFORE INSERT OR UPDATE ON resources
+        FOR EACH ROW EXECUTE FUNCTION resources_search_vector_update();
+    """))
+    
+    # Create GIN index on search_vector for fast full-text search
+    op.create_index(
+        'idx_resources_search_vector_gin',
+        'resources',
+        ['search_vector'],
+        unique=False,
+        postgresql_using='gin'
+    )
+    
+    # Populate search_vector for existing rows
+    print("Populating search_vector for existing resources...")
+    op.execute(text("""
+        UPDATE resources SET search_vector = 
+            setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+            setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
+            setweight(to_tsvector('english', coalesce(creator, '')), 'C') ||
+            setweight(to_tsvector('english', coalesce(publisher, '')), 'D')
+    """))
+    
+    # ========================================================================
+    # STEP 12: Create B-tree Indexes on Foreign Key Columns
+    # ========================================================================
+    print("Creating B-tree indexes on foreign key columns...")
+    
+    # ClassificationCode: parent_code (self-referential FK)
+    op.create_index(
+        'idx_classification_codes_parent',
+        'classification_codes',
+        ['parent_code'],
+        unique=False
+    )
+    
+    # Citation: source_resource_id and target_resource_id
+    op.create_index(
+        'idx_citations_source_resource',
+        'citations',
+        ['source_resource_id'],
+        unique=False
+    )
+    op.create_index(
+        'idx_citations_target_resource',
+        'citations',
+        ['target_resource_id'],
+        unique=False
+    )
+    
+    # CollectionResource: collection_id and resource_id (composite already exists in model)
+    # These are already created as part of __table_args__ in the model
+    
+    # Collection: owner_id, parent_id
+    op.create_index(
+        'idx_collections_owner',
+        'collections',
+        ['owner_id'],
+        unique=False
+    )
+    op.create_index(
+        'idx_collections_parent',
+        'collections',
+        ['parent_id'],
+        unique=False
+    )
+    
+    # TaxonomyNode: parent_id (already exists in model __table_args__)
+    
+    # ResourceTaxonomy: resource_id and taxonomy_node_id (already exist in model)
+    
+    # Annotation: resource_id and user_id (already exist in model)
+    
+    # GraphEdge: source_resource_id and target_resource_id (already exist in model)
+    
+    # GraphEmbedding: resource_id (already exists in model with unique=True)
+    
+    # DiscoveryHypothesis: resource_a_id, resource_b_id, resource_c_id
+    op.create_index(
+        'idx_discovery_hypotheses_resource_a',
+        'discovery_hypotheses',
+        ['resource_a_id'],
+        unique=False
+    )
+    op.create_index(
+        'idx_discovery_hypotheses_resource_b',
+        'discovery_hypotheses',
+        ['resource_b_id'],
+        unique=False
+    )
+    op.create_index(
+        'idx_discovery_hypotheses_resource_c',
+        'discovery_hypotheses',
+        ['resource_c_id'],
+        unique=False
+    )
+    
+    # UserProfile: user_id (already exists in model with unique=True)
+    
+    # UserInteraction: user_id and resource_id (composite already exists in model)
+    
+    # RecommendationFeedback: user_id and resource_id (already exist in model)
+    
+    # ModelVersion: No foreign keys
+    
+    # ABTestExperiment: control_version_id and treatment_version_id
+    op.create_index(
+        'idx_ab_test_experiments_control_version',
+        'ab_test_experiments',
+        ['control_version_id'],
+        unique=False
+    )
+    op.create_index(
+        'idx_ab_test_experiments_treatment_version',
+        'ab_test_experiments',
+        ['treatment_version_id'],
+        unique=False
+    )
+    
+    # PredictionLog: experiment_id, model_version_id, user_id (already exist in model)
+    
+    # RetrainingRun: model_version_id (already exists in model)
+    
+    # ========================================================================
+    # STEP 13: Create Indexes on Timestamp Columns
+    # ========================================================================
+    print("Creating indexes on timestamp columns for sorting and filtering...")
+    
+    # Resources: created_at, updated_at, ingestion_completed_at
+    op.create_index(
+        'idx_resources_created_at',
+        'resources',
+        ['created_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_resources_updated_at',
+        'resources',
+        ['updated_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_resources_ingestion_completed_at',
+        'resources',
+        ['ingestion_completed_at'],
+        unique=False
+    )
+    
+    # Citations: created_at, updated_at
+    op.create_index(
+        'idx_citations_created_at',
+        'citations',
+        ['created_at'],
+        unique=False
+    )
+    
+    # Collections: created_at, updated_at
+    op.create_index(
+        'idx_collections_created_at',
+        'collections',
+        ['created_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_collections_updated_at',
+        'collections',
+        ['updated_at'],
+        unique=False
+    )
+    
+    # TaxonomyNode: created_at, updated_at
+    op.create_index(
+        'idx_taxonomy_nodes_created_at',
+        'taxonomy_nodes',
+        ['created_at'],
+        unique=False
+    )
+    
+    # ResourceTaxonomy: created_at, updated_at
+    op.create_index(
+        'idx_resource_taxonomy_created_at',
+        'resource_taxonomy',
+        ['created_at'],
+        unique=False
+    )
+    
+    # Annotation: created_at (already exists in model)
+    
+    # GraphEdge: created_at
+    op.create_index(
+        'idx_graph_edges_created_at',
+        'graph_edges',
+        ['created_at'],
+        unique=False
+    )
+    
+    # GraphEmbedding: created_at, updated_at
+    op.create_index(
+        'idx_graph_embeddings_created_at',
+        'graph_embeddings',
+        ['created_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_graph_embeddings_updated_at',
+        'graph_embeddings',
+        ['updated_at'],
+        unique=False
+    )
+    
+    # DiscoveryHypothesis: created_at
+    op.create_index(
+        'idx_discovery_hypotheses_created_at',
+        'discovery_hypotheses',
+        ['created_at'],
+        unique=False
+    )
+    
+    # UserProfile: last_active_at
+    op.create_index(
+        'idx_user_profiles_last_active_at',
+        'user_profiles',
+        ['last_active_at'],
+        unique=False
+    )
+    
+    # UserInteraction: interaction_timestamp (already exists in model)
+    
+    # RecommendationFeedback: recommended_at, feedback_at
+    op.create_index(
+        'idx_recommendation_feedback_recommended_at',
+        'recommendation_feedback',
+        ['recommended_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_recommendation_feedback_feedback_at',
+        'recommendation_feedback',
+        ['feedback_at'],
+        unique=False
+    )
+    
+    # ModelVersion: created_at, promoted_at
+    op.create_index(
+        'idx_model_versions_created_at',
+        'model_versions',
+        ['created_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_model_versions_promoted_at',
+        'model_versions',
+        ['promoted_at'],
+        unique=False
+    )
+    
+    # ABTestExperiment: start_date, end_date (composite already exists in model)
+    
+    # PredictionLog: created_at (already exists in model)
+    
+    # RetrainingRun: started_at (already exists in model), completed_at
+    op.create_index(
+        'idx_retraining_runs_completed_at',
+        'retraining_runs',
+        ['completed_at'],
+        unique=False
+    )
+    
+    # ========================================================================
+    # STEP 14: Create Composite Indexes for Common Query Patterns
+    # ========================================================================
+    print("Creating composite indexes for common query patterns...")
+    
+    # Resources: classification_code + quality_score (for filtered sorting)
+    # Common pattern: Get high-quality resources in a classification category
+    op.create_index(
+        'idx_resources_classification_quality',
+        'resources',
+        ['classification_code', 'quality_score'],
+        unique=False
+    )
+    
+    # Resources: created_at + read_status (for timeline views with filters)
+    # Common pattern: Get unread resources sorted by date
+    op.create_index(
+        'idx_resources_created_read_status',
+        'resources',
+        ['created_at', 'read_status'],
+        unique=False
+    )
+    
+    # Resources: ingestion_status + ingestion_started_at (for monitoring)
+    # Common pattern: Track pending/failed ingestions
+    op.create_index(
+        'idx_resources_ingestion_status_started',
+        'resources',
+        ['ingestion_status', 'ingestion_started_at'],
+        unique=False
+    )
+    
+    # Resources: publication_year + quality_score (for scholarly filtering)
+    # Common pattern: Get recent high-quality papers
+    op.create_index(
+        'idx_resources_publication_year_quality',
+        'resources',
+        ['publication_year', 'quality_score'],
+        unique=False
+    )
+    
+    # Collections: owner_id + visibility (for access control queries)
+    # Common pattern: Get user's collections with specific visibility
+    op.create_index(
+        'idx_collections_owner_visibility',
+        'collections',
+        ['owner_id', 'visibility'],
+        unique=False
+    )
+    
+    # UserInteraction: user_id + interaction_timestamp (for user activity timeline)
+    # Common pattern: Get recent user interactions
+    op.create_index(
+        'idx_user_interactions_user_timestamp',
+        'user_interactions',
+        ['user_id', 'interaction_timestamp'],
+        unique=False
+    )
+    
+    # UserInteraction: resource_id + is_positive (for recommendation training)
+    # Common pattern: Get positive interactions for a resource
+    op.create_index(
+        'idx_user_interactions_resource_positive',
+        'user_interactions',
+        ['resource_id', 'is_positive'],
+        unique=False
+    )
+    
+    # RecommendationFeedback: user_id + was_clicked (for CTR analysis)
+    # Common pattern: Calculate click-through rate per user
+    op.create_index(
+        'idx_recommendation_feedback_user_clicked',
+        'recommendation_feedback',
+        ['user_id', 'was_clicked'],
+        unique=False
+    )
+    
+    # RecommendationFeedback: recommendation_strategy + was_clicked (for strategy comparison)
+    # Common pattern: Compare strategy effectiveness
+    op.create_index(
+        'idx_recommendation_feedback_strategy_clicked',
+        'recommendation_feedback',
+        ['recommendation_strategy', 'was_clicked'],
+        unique=False
+    )
+    
+    # GraphEdge: edge_type + weight (for graph analysis)
+    # Common pattern: Get strong edges of a specific type
+    op.create_index(
+        'idx_graph_edges_type_weight',
+        'graph_edges',
+        ['edge_type', 'weight'],
+        unique=False
+    )
+    
+    # DiscoveryHypothesis: status + confidence_score (for hypothesis ranking)
+    # Common pattern: Get pending hypotheses sorted by confidence
+    op.create_index(
+        'idx_discovery_hypotheses_status_confidence',
+        'discovery_hypotheses',
+        ['status', 'confidence_score'],
+        unique=False
+    )
+    
+    # ABTestExperiment: status + start_date (for active experiment tracking)
+    # Common pattern: Get running experiments
+    op.create_index(
+        'idx_ab_test_experiments_status_start',
+        'ab_test_experiments',
+        ['status', 'start_date'],
+        unique=False
+    )
+    
+    # RetrainingRun: status + started_at (for pipeline monitoring)
+    # Common pattern: Track recent retraining runs
+    op.create_index(
+        'idx_retraining_runs_status_started',
+        'retraining_runs',
+        ['status', 'started_at'],
+        unique=False
+    )
+    
+    # ========================================================================
+    # STEP 15: Create Additional GIN Indexes on JSONB Columns
+    # ========================================================================
+    print("Creating additional GIN indexes on JSONB columns...")
+    
+    # Annotation: tags (for tag-based search)
+    op.create_index(
+        'idx_annotations_tags_gin',
+        'annotations',
+        ['tags'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'tags': 'jsonb_path_ops'}
+    )
+    
+    # Annotation: collection_ids (for collection membership queries)
+    op.create_index(
+        'idx_annotations_collection_ids_gin',
+        'annotations',
+        ['collection_ids'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'collection_ids': 'jsonb_path_ops'}
+    )
+    
+    # Collection: embedding (for semantic similarity search)
+    op.create_index(
+        'idx_collections_embedding_gin',
+        'collections',
+        ['embedding'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'embedding': 'jsonb_path_ops'}
+    )
+    
+    # TaxonomyNode: keywords (for keyword-based taxonomy search)
+    op.create_index(
+        'idx_taxonomy_nodes_keywords_gin',
+        'taxonomy_nodes',
+        ['keywords'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'keywords': 'jsonb_path_ops'}
+    )
+    
+    # GraphEmbedding: structural_embedding and fusion_embedding
+    op.create_index(
+        'idx_graph_embeddings_structural_gin',
+        'graph_embeddings',
+        ['structural_embedding'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'structural_embedding': 'jsonb_path_ops'}
+    )
+    op.create_index(
+        'idx_graph_embeddings_fusion_gin',
+        'graph_embeddings',
+        ['fusion_embedding'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'fusion_embedding': 'jsonb_path_ops'}
+    )
+    
+    # UserProfile: research_domains, preferred_taxonomy_ids, preferred_authors, preferred_sources
+    op.create_index(
+        'idx_user_profiles_research_domains_gin',
+        'user_profiles',
+        ['research_domains'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'research_domains': 'jsonb_path_ops'}
+    )
+    op.create_index(
+        'idx_user_profiles_preferred_taxonomy_gin',
+        'user_profiles',
+        ['preferred_taxonomy_ids'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'preferred_taxonomy_ids': 'jsonb_path_ops'}
+    )
+    
+    # ModelVersion: metadata and metrics (for model comparison queries)
+    op.create_index(
+        'idx_model_versions_metadata_gin',
+        'model_versions',
+        ['metadata'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'metadata': 'jsonb_path_ops'}
+    )
+    op.create_index(
+        'idx_model_versions_metrics_gin',
+        'model_versions',
+        ['metrics'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'metrics': 'jsonb_path_ops'}
+    )
+    
+    # ABTestExperiment: results (for experiment analysis)
+    op.create_index(
+        'idx_ab_test_experiments_results_gin',
+        'ab_test_experiments',
+        ['results'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'results': 'jsonb_path_ops'}
+    )
+    
+    # PredictionLog: predictions (for prediction analysis)
+    op.create_index(
+        'idx_prediction_logs_predictions_gin',
+        'prediction_logs',
+        ['predictions'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'predictions': 'jsonb_path_ops'}
+    )
+    
+    # RetrainingRun: metrics (for retraining analysis)
+    op.create_index(
+        'idx_retraining_runs_metrics_gin',
+        'retraining_runs',
+        ['metrics'],
+        unique=False,
+        postgresql_using='gin',
+        postgresql_ops={'metrics': 'jsonb_path_ops'}
+    )
+    
+    print("PostgreSQL compatibility migration completed successfully!")
+    print("")
+    print("=" * 80)
+    print("INDEX USAGE DOCUMENTATION")
+    print("=" * 80)
+    print("")
+    print("B-TREE INDEXES (Foreign Keys):")
+    print("  - Enable efficient JOIN operations and foreign key constraint checks")
+    print("  - Automatically used for equality and range queries on indexed columns")
+    print("  - Critical for maintaining referential integrity performance")
+    print("")
+    print("GIN INDEXES (JSONB Columns):")
+    print("  - Enable fast containment queries using @> operator")
+    print("  - Support efficient JSON key existence checks with ? operator")
+    print("  - Optimized for multi-valued fields (arrays, nested objects)")
+    print("  - Example: WHERE subject @> '[\"Machine Learning\"]'::jsonb")
+    print("")
+    print("COMPOSITE INDEXES (Common Query Patterns):")
+    print("  - Optimize multi-column WHERE clauses and ORDER BY combinations")
+    print("  - Column order matters: most selective column should be first")
+    print("  - Can satisfy queries using only indexed columns (index-only scans)")
+    print("  - Examples:")
+    print("    * classification_code + quality_score: Filtered category browsing")
+    print("    * created_at + read_status: Timeline views with status filters")
+    print("    * owner_id + visibility: Access control queries")
+    print("")
+    print("TIMESTAMP INDEXES:")
+    print("  - Enable efficient sorting by date (ORDER BY created_at)")
+    print("  - Support range queries (WHERE created_at > '2024-01-01')")
+    print("  - Critical for pagination and timeline features")
+    print("")
+    print("FULL-TEXT SEARCH:")
+    print("  - GIN index on search_vector enables fast text search")
+    print("  - Automatically updated via trigger on INSERT/UPDATE")
+    print("  - Use ts_rank() for relevance scoring")
+    print("  - Example: WHERE search_vector @@ to_tsquery('english', 'machine & learning')")
+    print("")
+    print("MONITORING INDEX USAGE:")
+    print("  - Query pg_stat_user_indexes to see index usage statistics")
+    print("  - Use EXPLAIN ANALYZE to verify index usage in queries")
+    print("  - Monitor idx_scan (index scans) vs seq_scan (table scans)")
+    print("  - Drop unused indexes to reduce write overhead")
+    print("")
+    print("=" * 80)
+
+
+def downgrade() -> None:
+    """
+    Downgrade database schema (revert PostgreSQL-specific optimizations).
+    
+    For PostgreSQL:
+    - Drop full-text search trigger and function
+    - Drop search_vector column
+    - Drop GIN indexes
+    - Convert JSONB columns back to JSON
+    - Drop extensions (optional, may be used by other databases)
+    
+    For SQLite:
+    - No changes needed
+    """
+    # Get bind to detect database type
+    bind = op.get_bind()
+    dialect_name = bind.dialect.name
+    
+    if dialect_name == 'postgresql':
+        downgrade_postgresql()
+    else:
+        # SQLite: No changes needed
+        pass
+
+
+def downgrade_postgresql() -> None:
+    """Revert PostgreSQL-specific upgrades."""
+    
+    print("Reverting PostgreSQL compatibility migration...")
+    
+    # ========================================================================
+    # STEP 1: Drop Full-Text Search Infrastructure
+    # ========================================================================
+    print("Dropping full-text search infrastructure...")
+    
+    # Drop GIN index on search_vector
+    op.drop_index('idx_resources_search_vector_gin', table_name='resources')
+    
+    # Drop trigger
+    op.execute(text('DROP TRIGGER IF EXISTS resources_search_vector_trigger ON resources'))
+    
+    # Drop trigger function
+    op.execute(text('DROP FUNCTION IF EXISTS resources_search_vector_update()'))
+    
+    # Drop search_vector column
+    op.drop_column('resources', 'search_vector')
+    
+    # ========================================================================
+    # STEP 2: Drop Composite Indexes
+    # ========================================================================
+    print("Dropping composite indexes...")
+    
+    op.drop_index('idx_resources_classification_quality', table_name='resources')
+    op.drop_index('idx_resources_created_read_status', table_name='resources')
+    op.drop_index('idx_resources_ingestion_status_started', table_name='resources')
+    op.drop_index('idx_resources_publication_year_quality', table_name='resources')
+    op.drop_index('idx_collections_owner_visibility', table_name='collections')
+    op.drop_index('idx_user_interactions_user_timestamp', table_name='user_interactions')
+    op.drop_index('idx_user_interactions_resource_positive', table_name='user_interactions')
+    op.drop_index('idx_recommendation_feedback_user_clicked', table_name='recommendation_feedback')
+    op.drop_index('idx_recommendation_feedback_strategy_clicked', table_name='recommendation_feedback')
+    op.drop_index('idx_graph_edges_type_weight', table_name='graph_edges')
+    op.drop_index('idx_discovery_hypotheses_status_confidence', table_name='discovery_hypotheses')
+    op.drop_index('idx_ab_test_experiments_status_start', table_name='ab_test_experiments')
+    op.drop_index('idx_retraining_runs_status_started', table_name='retraining_runs')
+    
+    # ========================================================================
+    # STEP 3: Drop Timestamp Indexes
+    # ========================================================================
+    print("Dropping timestamp indexes...")
+    
+    op.drop_index('idx_resources_created_at', table_name='resources')
+    op.drop_index('idx_resources_updated_at', table_name='resources')
+    op.drop_index('idx_resources_ingestion_completed_at', table_name='resources')
+    op.drop_index('idx_citations_created_at', table_name='citations')
+    op.drop_index('idx_collections_created_at', table_name='collections')
+    op.drop_index('idx_collections_updated_at', table_name='collections')
+    op.drop_index('idx_taxonomy_nodes_created_at', table_name='taxonomy_nodes')
+    op.drop_index('idx_resource_taxonomy_created_at', table_name='resource_taxonomy')
+    op.drop_index('idx_graph_edges_created_at', table_name='graph_edges')
+    op.drop_index('idx_graph_embeddings_created_at', table_name='graph_embeddings')
+    op.drop_index('idx_graph_embeddings_updated_at', table_name='graph_embeddings')
+    op.drop_index('idx_discovery_hypotheses_created_at', table_name='discovery_hypotheses')
+    op.drop_index('idx_user_profiles_last_active_at', table_name='user_profiles')
+    op.drop_index('idx_recommendation_feedback_recommended_at', table_name='recommendation_feedback')
+    op.drop_index('idx_recommendation_feedback_feedback_at', table_name='recommendation_feedback')
+    op.drop_index('idx_model_versions_created_at', table_name='model_versions')
+    op.drop_index('idx_model_versions_promoted_at', table_name='model_versions')
+    op.drop_index('idx_retraining_runs_completed_at', table_name='retraining_runs')
+    
+    # ========================================================================
+    # STEP 4: Drop B-tree Indexes on Foreign Keys
+    # ========================================================================
+    print("Dropping B-tree indexes on foreign keys...")
+    
+    op.drop_index('idx_classification_codes_parent', table_name='classification_codes')
+    op.drop_index('idx_citations_source_resource', table_name='citations')
+    op.drop_index('idx_citations_target_resource', table_name='citations')
+    op.drop_index('idx_collections_owner', table_name='collections')
+    op.drop_index('idx_collections_parent', table_name='collections')
+    op.drop_index('idx_discovery_hypotheses_resource_a', table_name='discovery_hypotheses')
+    op.drop_index('idx_discovery_hypotheses_resource_b', table_name='discovery_hypotheses')
+    op.drop_index('idx_discovery_hypotheses_resource_c', table_name='discovery_hypotheses')
+    op.drop_index('idx_ab_test_experiments_control_version', table_name='ab_test_experiments')
+    op.drop_index('idx_ab_test_experiments_treatment_version', table_name='ab_test_experiments')
+    
+    # ========================================================================
+    # STEP 5: Drop Additional GIN Indexes on JSONB Columns
+    # ========================================================================
+    print("Dropping additional GIN indexes on JSONB columns...")
+    
+    op.drop_index('idx_annotations_tags_gin', table_name='annotations')
+    op.drop_index('idx_annotations_collection_ids_gin', table_name='annotations')
+    op.drop_index('idx_collections_embedding_gin', table_name='collections')
+    op.drop_index('idx_taxonomy_nodes_keywords_gin', table_name='taxonomy_nodes')
+    op.drop_index('idx_graph_embeddings_structural_gin', table_name='graph_embeddings')
+    op.drop_index('idx_graph_embeddings_fusion_gin', table_name='graph_embeddings')
+    op.drop_index('idx_user_profiles_research_domains_gin', table_name='user_profiles')
+    op.drop_index('idx_user_profiles_preferred_taxonomy_gin', table_name='user_profiles')
+    op.drop_index('idx_model_versions_metadata_gin', table_name='model_versions')
+    op.drop_index('idx_model_versions_metrics_gin', table_name='model_versions')
+    op.drop_index('idx_ab_test_experiments_results_gin', table_name='ab_test_experiments')
+    op.drop_index('idx_prediction_logs_predictions_gin', table_name='prediction_logs')
+    op.drop_index('idx_retraining_runs_metrics_gin', table_name='retraining_runs')
+    
+    # ========================================================================
+    # STEP 6: Drop Primary GIN Indexes
+    # ========================================================================
+    print("Dropping primary GIN indexes...")
+    
+    # Resources table indexes
+    op.drop_index('idx_resources_subject_gin', table_name='resources')
+    op.drop_index('idx_resources_relation_gin', table_name='resources')
+    op.drop_index('idx_resources_embedding_gin', table_name='resources')
+    
+    # Other table indexes
+    op.drop_index('idx_classification_codes_keywords_gin', table_name='classification_codes')
+    op.drop_index('idx_graph_embeddings_embedding_gin', table_name='graph_embeddings')
+    op.drop_index('idx_discovery_hypotheses_supporting_gin', table_name='discovery_hypotheses')
+    
+    # ========================================================================
+    # STEP 7: Convert JSONB back to JSON
+    # ========================================================================
+    print("Converting JSONB back to JSON...")
+    
+    # Resources table
+    op.execute(text('ALTER TABLE resources ALTER COLUMN subject TYPE JSON USING subject::text::json'))
+    op.execute(text('ALTER TABLE resources ALTER COLUMN relation TYPE JSON USING relation::text::json'))
+    op.execute(text('ALTER TABLE resources ALTER COLUMN embedding TYPE JSON USING embedding::text::json'))
+    
+    # Classification and authority tables
+    op.execute(text('ALTER TABLE classification_codes ALTER COLUMN keywords TYPE JSON USING keywords::text::json'))
+    op.execute(text('ALTER TABLE authority_subjects ALTER COLUMN variants TYPE JSON USING variants::text::json'))
+    op.execute(text('ALTER TABLE authority_creators ALTER COLUMN variants TYPE JSON USING variants::text::json'))
+    op.execute(text('ALTER TABLE authority_publishers ALTER COLUMN variants TYPE JSON USING variants::text::json'))
+    
+    # Collection and taxonomy tables
+    op.execute(text('ALTER TABLE collections ALTER COLUMN embedding TYPE JSON USING embedding::text::json'))
+    op.execute(text('ALTER TABLE taxonomy_nodes ALTER COLUMN keywords TYPE JSON USING keywords::text::json'))
+    
+    # Annotation table
+    op.execute(text('ALTER TABLE annotations ALTER COLUMN embedding TYPE JSON USING embedding::text::json'))
+    op.execute(text('ALTER TABLE annotations ALTER COLUMN tags TYPE TEXT USING tags::text'))
+    op.execute(text('ALTER TABLE annotations ALTER COLUMN collection_ids TYPE TEXT USING collection_ids::text'))
+    
+    # Graph intelligence tables
+    op.execute(text('ALTER TABLE graph_edges ALTER COLUMN edge_metadata TYPE TEXT USING edge_metadata::text'))
+    op.execute(text('ALTER TABLE graph_embeddings ALTER COLUMN embedding TYPE JSON USING embedding::text::json'))
+    op.execute(text('ALTER TABLE graph_embeddings ALTER COLUMN structural_embedding TYPE JSON USING structural_embedding::text::json'))
+    op.execute(text('ALTER TABLE graph_embeddings ALTER COLUMN fusion_embedding TYPE JSON USING fusion_embedding::text::json'))
+    op.execute(text('ALTER TABLE discovery_hypotheses ALTER COLUMN supporting_resources TYPE TEXT USING supporting_resources::text'))
+    
+    # User profile tables
+    op.execute(text('ALTER TABLE user_profiles ALTER COLUMN research_domains TYPE TEXT USING research_domains::text'))
+    op.execute(text('ALTER TABLE user_profiles ALTER COLUMN preferred_taxonomy_ids TYPE TEXT USING preferred_taxonomy_ids::text'))
+    op.execute(text('ALTER TABLE user_profiles ALTER COLUMN preferred_authors TYPE TEXT USING preferred_authors::text'))
+    op.execute(text('ALTER TABLE user_profiles ALTER COLUMN preferred_sources TYPE TEXT USING preferred_sources::text'))
+    op.execute(text('ALTER TABLE user_profiles ALTER COLUMN excluded_sources TYPE TEXT USING excluded_sources::text'))
+    
+    # ML model tables
+    op.execute(text('ALTER TABLE model_versions ALTER COLUMN metadata TYPE JSON USING metadata::text::json'))
+    op.execute(text('ALTER TABLE model_versions ALTER COLUMN metrics TYPE JSON USING metrics::text::json'))
+    op.execute(text('ALTER TABLE ab_test_experiments ALTER COLUMN results TYPE JSON USING results::text::json'))
+    op.execute(text('ALTER TABLE prediction_logs ALTER COLUMN predictions TYPE JSON USING predictions::text::json'))
+    op.execute(text('ALTER TABLE retraining_runs ALTER COLUMN metrics TYPE JSON USING metrics::text::json'))
+    
+    # Note: We don't drop extensions as they may be used by other databases
+    # If you want to drop them, uncomment the following lines:
+    # op.execute(text('DROP EXTENSION IF EXISTS pg_trgm'))
+    # op.execute(text('DROP EXTENSION IF EXISTS "uuid-ossp"'))
+    
+    print("PostgreSQL compatibility migration reverted successfully!")

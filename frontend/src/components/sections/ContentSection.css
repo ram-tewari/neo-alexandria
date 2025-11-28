@@ -1,0 +1,61 @@
+/**
+ * ContentSection Styles
+ * Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
+ */
+
+.content-section {
+  padding: var(--spacing-3xl) var(--spacing-xl);
+  margin: var(--spacing-2xl) 0;
+}
+
+.content-section__header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.content-section__title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  line-height: 1.2;
+}
+
+.content-section__subtitle {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.content-section__body {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Theme-specific styling */
+[data-theme="light"] .content-section {
+  background: transparent;
+}
+
+[data-theme="dark"] .content-section {
+  background: transparent;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .content-section {
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    margin: var(--spacing-xl) 0;
+  }
+
+  .content-section__header {
+    margin-bottom: var(--spacing-2xl);
+  }
+}
+
+/* Performance optimizations */
+.content-section {
+  contain: layout style paint;
+}

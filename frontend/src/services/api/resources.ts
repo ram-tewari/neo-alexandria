@@ -1,112 +1,112 @@
-/**
- * Resources API
- * 
- * API endpoints for resource management
- * Matches backend format (no /api prefix, offset-based pagination)
- */
+import { apiClient, PaginatedResponse } from './client';
+import { Resource, UploadStatus, ResourceFilters } from '@/types/resource';
 
-import { apiClient } from './client';
-import type { APIListResponse } from '@/types/api';
-import type {
-  Resource,
-  ResourceCreate,
-  ResourceUpdate,
-  ResourceListParams,
-  ReadStatus,
-} from '@/types/resource';
+export const resourcesApi = {
+  // Get paginated resources
+  getResources: async (
+    page: number = 1,
+    pageSize: number = 20,
+    filters?: ResourceFilters
+  ): Promise<PaginatedResponse<Resource>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+    });
 
-interface BackendResourceListResponse {
-  items: Resource[];
-  total: number;
-}
+    if (filters?.type?.length) {
+      params.append('type', filters.type.join(','));
+    }
+    if (filters?.qualityMin !== undefined) {
+      params.append('quality_min', filters.qualityMin.toString());
+    }
+    if (filters?.qualityMax !== undefined) {
+      params.append('quality_max', filters.qualityMax.toString());
+    }
+    if (filters?.classification?.length) {
+      params.append('classification', filters.classification.join(','));
+    }
+    if (filters?.tags?.length) {
+      params.append('tags', filters.tags.join(','));
+    }
+    if (filters?.searchQuery) {
+      params.append('q', filters.searchQuery);
+    }
 
-export const resourcesAPI = {
-  /**
-   * List resources with pagination and filters
-   * Backend uses offset-based pagination and returns {items, total}
-   */
-  async list(params?: ResourceListParams): Promise<APIListResponse<Resource>> {
-    const { page = 1, limit = 20, sort_by, sort_order, ...filters } = params || {};
-    
-    // Convert page to offset
-    const offset = (page - 1) * limit;
-    
-    // Convert sort_order to sort_dir
-    const sort_dir = sort_order === 'asc' ? 'asc' : 'desc';
-    
-    const backendParams = {
-      offset,
-      limit,
-      sort_by: sort_by || 'created_at',
-      sort_dir,
-      ...filters,
-    };
-    
-    const response = await apiClient.get<BackendResourceListResponse>('/resources', backendParams);
-    
-    // Convert backend format to frontend format
-    const pages = Math.ceil(response.total / limit);
-    
-    return {
-      data: response.items,
-      meta: {
-        page,
-        limit,
-        total: response.total,
-        pages,
-      },
-    };
+    const response = await apiClient.get<PaginatedResponse<Resource>>(
+      `/resources?${params.toString()}`
+    );
+    return response.data;
   },
 
-  /**
-   * Get a single resource by ID
-   */
-  async get(id: string): Promise<Resource> {
-    return apiClient.get<Resource>(`/resources/${id}`);
+  // Get single resource by ID
+  getResource: async (id: string): Promise<Resource> => {
+    const response = await apiClient.get<Resource>(`/resources/${id}`);
+    return response.data;
   },
 
-  /**
-   * Create a new resource (async ingestion)
-   * Returns 202 with {id, status: "pending"}
-   */
-  async create(data: ResourceCreate): Promise<{ id: string; status: string }> {
-    return apiClient.post<{ id: string; status: string }>('/resources', data);
+  // Upload file
+  uploadFile: async (file: File): Promise<{ uploadId: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<{ uploadId: string }>(
+      '/resources/upload',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
   },
 
-  /**
-   * Update an existing resource
-   */
-  async update(id: string, data: ResourceUpdate): Promise<Resource> {
-    return apiClient.put<Resource>(`/resources/${id}`, data);
+  // Upload from URL
+  uploadUrl: async (url: string): Promise<{ uploadId: string }> => {
+    const response = await apiClient.post<{ uploadId: string }>(
+      '/resources/upload-url',
+      { url }
+    );
+    return response.data;
   },
 
-  /**
-   * Delete a resource
-   */
-  async delete(id: string): Promise<void> {
-    return apiClient.delete<void>(`/resources/${id}`);
+  // Get upload status
+  getUploadStatus: async (uploadId: string): Promise<UploadStatus> => {
+    const response = await apiClient.get<UploadStatus>(
+      `/resources/upload/${uploadId}/status`
+    );
+    return response.data;
   },
 
-  /**
-   * Update resource read status
-   * Uses PUT since backend doesn't have PATCH endpoint
-   */
-  async updateStatus(id: string, status: ReadStatus): Promise<Resource> {
-    return apiClient.put<Resource>(`/resources/${id}`, { read_status: status });
+  // Update resource
+  updateResource: async (
+    id: string,
+    updates: Partial<Resource>
+  ): Promise<Resource> => {
+    const response = await apiClient.patch<Resource>(
+      `/resources/${id}`,
+      updates
+    );
+    return response.data;
   },
 
-  /**
-   * Archive a resource (sets read_status to 'archived')
-   * Uses PUT since backend doesn't have dedicated archive endpoint
-   */
-  async archive(id: string): Promise<Resource> {
-    return apiClient.put<Resource>(`/resources/${id}`, { read_status: 'archived' });
+  // Delete resource
+  deleteResource: async (id: string): Promise<void> => {
+    await apiClient.delete(`/resources/${id}`);
   },
 
-  /**
-   * Get resource ingestion status
-   */
-  async getStatus(id: string): Promise<{ ingestion_status: string; ingestion_error?: string }> {
-    return apiClient.get(`/resources/${id}/status`);
+  // Batch delete resources
+  batchDeleteResources: async (ids: string[]): Promise<void> => {
+    await apiClient.post('/resources/batch-delete', { ids });
+  },
+
+  // Get filter options (for faceted filtering)
+  getFilterOptions: async (): Promise<{
+    types: { value: string; count: number }[];
+    classifications: { value: string; count: number }[];
+    tags: { value: string; count: number }[];
+  }> => {
+    const response = await apiClient.get('/resources/filter-options');
+    return response.data;
   },
 };

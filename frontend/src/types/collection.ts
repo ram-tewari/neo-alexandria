@@ -1,51 +1,38 @@
-/**
- * Collection Types
- * 
- * Type definitions for collections matching backend schema
- */
-
-import type { ResourceSummary } from './resource';
-
 export interface Collection {
   id: string;
   name: string;
-  description: string | null;
-  owner_id: string;
-  visibility: 'private' | 'shared' | 'public';
-  parent_id: string | null;
-  resource_count: number;
-  created_at: string;
-  updated_at: string;
+  description: string;
+  type: 'manual' | 'smart';
+  parentId?: string;
+  thumbnail?: string;
+  resourceIds: string[];
+  resourceCount: number;
+  rules?: CollectionRule[];
+  sharing: 'private' | 'shared' | 'public';
+  statistics: CollectionStatistics;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface CollectionDetail extends Collection {
-  resources: ResourceSummary[];
-  subcollections: Collection[];
+export interface CollectionRule {
+  id: string;
+  field: 'quality' | 'classification' | 'author' | 'date' | 'tag';
+  operator: '>' | '<' | '=' | 'contains' | 'in';
+  value: any;
+  logic: 'AND' | 'OR';
 }
 
-export interface CollectionCreate {
+export interface CollectionStatistics {
+  totalResources: number;
+  averageQuality: number;
+  topClassifications: { name: string; count: number }[];
+  recentActivity: Date;
+}
+
+export interface CollectionTemplate {
+  id: string;
   name: string;
-  description?: string;
-  visibility?: 'private' | 'shared' | 'public';
-  parent_id?: string;
-}
-
-export interface CollectionUpdate {
-  name?: string;
-  description?: string;
-  visibility?: 'private' | 'shared' | 'public';
-  parent_id?: string;
-}
-
-export interface CollectionNode extends Collection {
-  children: CollectionNode[];
-  isExpanded: boolean;
-  depth: number;
-}
-
-export interface CollectionListParams {
-  page?: number;
-  limit?: number;
-  owner_id?: string;
-  visibility?: 'private' | 'shared' | 'public';
+  description: string;
+  icon: React.ReactNode;
+  defaultRules?: CollectionRule[];
 }

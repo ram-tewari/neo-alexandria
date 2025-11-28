@@ -1,16 +1,10 @@
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../../contexts/ThemeContext';
 import './ModeToggle.css';
 
 export function ModeToggle() {
-  const { theme, setTheme, actualTheme } = useTheme();
-
-  const themes = [
-    { value: 'light' as const, label: 'Light', icon: Sun },
-    { value: 'dark' as const, label: 'Dark', icon: Moon },
-    { value: 'system' as const, label: 'System', icon: Monitor },
-  ];
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="mode-toggle">
@@ -18,16 +12,11 @@ export function ModeToggle() {
         className="mode-toggle-button"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => {
-          // Cycle through themes
-          const currentIndex = themes.findIndex(t => t.value === theme);
-          const nextIndex = (currentIndex + 1) % themes.length;
-          setTheme(themes[nextIndex].value);
-        }}
-        aria-label="Toggle theme"
+        onClick={toggleTheme}
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       >
         <AnimatePresence mode="wait">
-          {actualTheme === 'light' ? (
+          {theme === 'light' ? (
             <motion.div
               key="sun"
               initial={{ rotate: -90, opacity: 0 }}
@@ -50,28 +39,6 @@ export function ModeToggle() {
           )}
         </AnimatePresence>
       </motion.button>
-
-      <div className="mode-toggle-dropdown">
-        {themes.map(({ value, label, icon: Icon }) => (
-          <motion.button
-            key={value}
-            className={`mode-toggle-option ${theme === value ? 'active' : ''}`}
-            onClick={() => setTheme(value)}
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Icon size={16} />
-            <span>{label}</span>
-            {theme === value && (
-              <motion.div
-                className="mode-toggle-indicator"
-                layoutId="active-theme"
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              />
-            )}
-          </motion.button>
-        ))}
-      </div>
     </div>
   );
 }

@@ -1,0 +1,289 @@
+/**
+ * Dual Theme System - Olive Green (Light) & Red (Dark)
+ * Modern animated website with distinct theme identities
+ */
+
+:root {
+  /* ===== Animation Durations ===== */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  
+  /* ===== Easing Functions ===== */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* ===== Border Radius ===== */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 9999px;
+  
+  /* ===== Typography Scale ===== */
+  --font-size-h1: 2.5rem;
+  --font-size-h2: 2rem;
+  --font-size-h3: 1.5rem;
+  --font-size-h4: 1.25rem;
+  --font-size-base: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.75rem;
+  
+  /* ===== Font Weights ===== */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* ===== Spacing Scale ===== */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  --spacing-3xl: 3rem;
+}
+
+/* ===== Light Mode Theme (Olive Green & Marble) ===== */
+:root,
+[data-theme="light"] {
+  /* Primary Olive Green Palette - Enhanced for visibility */
+  --color-olive-darkest: #171a0e;
+  --color-olive-dark: #292e18;
+  --color-olive-deep: #3e4822;
+  --color-olive-medium: #4a5528;
+  --color-olive-base: #536022;
+  --color-olive-accent: #5d6e2a;
+  --color-olive-sage: #6d8035;
+  --color-olive-bright: #7d9144;
+  --color-olive-light: #92a950;
+  --color-olive-pale: #a8c070;
+  
+  /* Neutral Cream & Beige Tones with Green Tint */
+  --color-cream-light: #f4f5e8;
+  --color-cream-base: #f0f2e5;
+  --color-cream-green: #eef3dc;
+  --color-beige-light: #e5e8c8;
+  --color-beige-base: #dcd9af;
+  --color-beige-medium: #d1cd93;
+  --color-beige-dark: #ccbc98;
+  
+  /* Background Colors - More green presence */
+  --background: #fafbf5;
+  --background-secondary: var(--color-cream-green);
+  --background-tertiary: var(--color-beige-light);
+  --background-overlay: rgba(109, 128, 53, 0.03);
+  --background-texture: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+');
+  
+  /* Text Colors */
+  --text-primary: var(--color-olive-darkest);
+  --text-secondary: var(--color-olive-dark);
+  --text-tertiary: var(--color-olive-deep);
+  --text-disabled: #999999;
+  
+  /* Accent Colors (Olive Green) - Enhanced */
+  --accent-primary: var(--color-olive-sage);
+  --accent-hover: var(--color-olive-bright);
+  --accent-active: var(--color-olive-medium);
+  --accent-bright: var(--color-olive-light);
+  --accent-light: var(--color-olive-pale);
+  
+  /* Button States */
+  --button-default: var(--color-olive-sage);
+  --button-hover: var(--color-olive-bright);
+  --button-active: var(--color-olive-medium);
+  
+  /* Borders - With green tint */
+  --border-subtle: rgba(109, 128, 53, 0.15);
+  --border-medium: rgba(109, 128, 53, 0.25);
+  --border-strong: rgba(109, 128, 53, 0.4);
+  --border-accent: var(--color-olive-sage);
+  
+  /* Surfaces - With subtle green tint */
+  --surface-base: var(--color-cream-green);
+  --surface-raised: #fafbf5;
+  --surface-overlay: var(--color-beige-light);
+  --surface-card: var(--color-cream-base);
+  
+  /* Shadows - With green tint */
+  --shadow-sm: 0 1px 2px rgba(109, 128, 53, 0.08);
+  --shadow-md: 0 2px 8px rgba(109, 128, 53, 0.12);
+  --shadow-lg: 0 4px 16px rgba(109, 128, 53, 0.15);
+  --shadow-xl: 0 8px 32px rgba(109, 128, 53, 0.2);
+  
+  /* Animation Colors */
+  --animation-color-primary: var(--color-olive-bright);
+  --animation-color-secondary: var(--color-olive-light);
+  --animation-glow: rgba(125, 145, 68, 0.35);
+  
+  /* Sidebar Specific - Off-white with green highlights */
+  --sidebar-background: #fefefe;
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-accent: var(--color-olive-sage);
+  --sidebar-hover: rgba(109, 128, 53, 0.08);
+  --sidebar-active: rgba(109, 128, 53, 0.12);
+  --sidebar-border: rgba(109, 128, 53, 0.15);
+  --sidebar-backdrop: rgba(109, 128, 53, 0.02);
+  
+  /* Header Specific */
+  --header-background: rgba(254, 254, 254, 0.95);
+  --header-border: var(--border-subtle);
+  
+  /* Footer Specific */
+  --footer-background: var(--color-cream-light);
+  --footer-foreground: var(--text-secondary);
+}
+
+/* ===== Dark Mode Theme (Red & Charcoal Grain) ===== */
+[data-theme="dark"] {
+  /* Primary Red Palette */
+  --color-red-darkest: #8B0000;
+  --color-red-deep: #A52A2A;
+  --color-red-crimson: #C41E3A;
+  --color-red-base: #DC143C;
+  --color-red-bright: #E63946;
+  --color-red-medium: #E57373;
+  --color-red-rose: #EF9A9A;
+  --color-red-light: #FFCDD2;
+  
+  /* Background Colors */
+  --background: #0a0a0a;
+  --background-secondary: #1a1a1a;
+  --background-tertiary: #2a2a2a;
+  --background-texture: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZmlsdGVyIGlkPSJncmFpbiI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuOSIgbnVtT2N0YXZlcz0iNCIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNncmFpbikiIG9wYWNpdHk9IjAuMDgiLz48L3N2Zz4=');
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --text-disabled: #666666;
+  
+  /* Accent Colors (Red) */
+  --accent-primary: var(--color-red-base);
+  --accent-hover: var(--color-red-bright);
+  --accent-active: var(--color-red-crimson);
+  --accent-bright: var(--color-red-medium);
+  --accent-light: var(--color-red-rose);
+  
+  /* Button States */
+  --button-default: var(--color-red-base);
+  --button-hover: var(--color-red-bright);
+  --button-active: var(--color-red-crimson);
+  
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --border-accent: var(--color-red-base);
+  
+  /* Surfaces */
+  --surface-base: #1a1a1a;
+  --surface-raised: #2a2a2a;
+  --surface-overlay: #3a3a3a;
+  --surface-card: #1f1f1f;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.6);
+  
+  /* Animation Colors */
+  --animation-color-primary: var(--color-red-bright);
+  --animation-color-secondary: var(--color-red-medium);
+  --animation-glow: rgba(220, 20, 60, 0.4);
+  
+  /* Glow Effects */
+  --glow-red-sm: 0 0 10px rgba(220, 20, 60, 0.3);
+  --glow-red-md: 0 0 20px rgba(220, 20, 60, 0.4);
+  --glow-red-lg: 0 0 30px rgba(220, 20, 60, 0.5);
+  
+  /* Sidebar Specific */
+  --sidebar-background: #0a0a0a;
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-accent: var(--color-red-base);
+  --sidebar-hover: rgba(220, 20, 60, 0.12);
+  --sidebar-border: var(--border-subtle);
+  
+  /* Header Specific */
+  --header-background: rgba(10, 10, 10, 0.95);
+  --header-border: var(--border-subtle);
+  
+  /* Footer Specific */
+  --footer-background: #1a1a1a;
+  --footer-foreground: var(--text-secondary);
+}
+
+/* ===== Reduced Motion Support ===== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== Base Styles with Theme Support ===== */
+body {
+  background-color: var(--background);
+  background-image: var(--background-texture);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  transition: background-color var(--duration-normal) var(--ease-in-out),
+              color var(--duration-normal) var(--ease-in-out);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--background-overlay);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== Smooth Theme Transitions ===== */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-in-out);
+}
+
+/* Exclude transform and opacity from automatic transitions */
+*:not([class*="animate"]) {
+  transition-property: background-color, border-color, color, fill, stroke;
+}
+
+/* ===== Hardware Acceleration Hints ===== */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+.gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ===== Animation Performance Optimizations ===== */
+.animate-fade-in,
+.animate-slide-up,
+.animate-slide-down,
+.animate-scale {
+  contain: layout style paint;
+}

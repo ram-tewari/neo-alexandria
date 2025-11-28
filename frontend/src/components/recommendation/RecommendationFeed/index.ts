@@ -1,0 +1,1 @@
+export { RecommendationFeed } from './RecommendationFeed';

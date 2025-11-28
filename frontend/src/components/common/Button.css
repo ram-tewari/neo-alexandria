@@ -1,109 +1,88 @@
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  transition: all var(--transition-base);
-  cursor: pointer;
+/**
+ * Button Styles
+ * Theme-aware interactive buttons
+ */
+
+.button {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  border: 1px solid transparent;
-  font-size: var(--font-size-sm);
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.01em;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-in-out);
+  white-space: nowrap;
 }
 
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: var(--font-size-xs);
+.button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
-.ripple {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--purple-vibrant), var(--purple-deep));
-  color: var(--white);
-  border: 2px solid var(--purple-bright);
-  box-shadow: 0 4px 15px var(--accent-glow);
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, var(--white), var(--purple-bright));
-  color: var(--purple-deep);
-  border-color: var(--white);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px var(--accent-glow), 0 0 40px var(--accent-glow);
-  animation: purpleBounce 0.6s ease;
-}
-
-.btn-primary:hover::before {
-  left: 100%;
-}
-
-.btn-primary:active {
-  transform: translateY(-1px) scale(1);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 2px solid var(--border-purple);
-  position: relative;
-}
-
-.btn-secondary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--purple-deep), var(--purple-vibrant));
-  opacity: 0;
-  transition: opacity 0.3s;
-  border-radius: var(--radius-sm);
-}
-
-.btn-secondary:hover {
-  color: var(--white);
-  border-color: var(--purple-vibrant);
-  box-shadow: 0 4px 20px var(--accent-glow);
-  transform: translateY(-2px);
-}
-
-.btn-secondary:hover::before {
-  opacity: 1;
-}
-
-.btn-secondary > * {
-  position: relative;
-  z-index: 1;
-}
-
-.btn:disabled {
-  opacity: 0.4;
+.button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn:disabled:hover {
-  transform: none;
-  background: var(--black);
-  color: var(--white);
+/* Variants */
+.button--primary {
+  background: var(--button-default);
+  color: var(--text-primary);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: var(--button-hover);
+}
+
+.button--primary:active:not(:disabled) {
+  background: var(--button-active);
+}
+
+.button--secondary {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--surface-overlay);
+  border-color: var(--accent-primary);
+}
+
+.button--outline {
+  background: transparent;
+  color: var(--accent-primary);
+  border: 2px solid var(--accent-primary);
+}
+
+.button--outline:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: var(--background);
+}
+
+/* Sizes */
+.button--sm {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.button--md {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-base);
+}
+
+.button--lg {
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--font-size-h4);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
 }

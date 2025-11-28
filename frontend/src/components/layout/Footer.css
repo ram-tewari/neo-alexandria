@@ -1,0 +1,43 @@
+/**
+ * Footer Styles - Minimal single line
+ */
+
+.footer {
+  background-color: var(--footer-background);
+  color: var(--footer-foreground);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin-top: auto;
+  border-top: 1px solid var(--border-subtle);
+  transition: background-color var(--duration-normal) var(--ease-in-out),
+              color var(--duration-normal) var(--ease-in-out),
+              border-color var(--duration-normal) var(--ease-in-out);
+}
+
+.footer__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hide navigation links */
+.footer__nav {
+  display: none;
+}
+
+/* Copyright - Single line */
+.footer__copyright {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+}

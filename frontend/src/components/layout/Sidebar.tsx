@@ -1,143 +1,171 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+/**
+ * Sidebar Component
+ * Collapsible side navigation with sorting controls
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8
+ */
+
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigationStore } from '../../store/navigationStore';
-import { useUIStore } from '../../store';
-import { useIsMobile } from '../../hooks/useMediaQuery';
-import { sidebarItemVariants } from '../../animations/variants';
-import { Icon } from '../common/Icon';
-import { icons } from '../../config/icons';
-import type { SidebarItem } from '../../types';
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 import './Sidebar.css';
 
-const mainItems: SidebarItem[] = [
-  { iconName: 'dashboard', label: 'Dashboard', path: '/' },
-  { iconName: 'library', label: 'Library', path: '/library' },
-  { iconName: 'graph', label: 'Knowledge Graph', path: '/graph' },
-];
+export interface SidebarItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+  badge?: number;
+}
 
-const collections: SidebarItem[] = [
-  { iconName: 'favorites', label: 'Favorites', path: '/favorites' },
-  { iconName: 'recent', label: 'Recent', path: '/recent' },
-  { iconName: 'readLater', label: 'Read Later', path: '/read-later' },
-];
+export interface SortOption {
+  id: string;
+  label: string;
+  direction: 'asc' | 'desc';
+}
 
-export const Sidebar = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { sidebarOpen, toggleSidebar } = useNavigationStore();
-  const { openCommandPalette } = useUIStore();
-  const isMobile = useIsMobile();
+export interface SidebarProps {
+  items: SidebarItem[];
+  defaultCollapsed?: boolean;
+  sortOptions?: SortOption[];
+  onSort?: (option: SortOption) => void;
+}
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    if (isMobile) {
-      toggleSidebar();
-    }
+export function Sidebar({
+  items,
+  defaultCollapsed = false,
+  sortOptions = [],
+  onSort,
+}: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [activeSort, setActiveSort] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const { theme } = useTheme();
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
   };
 
-  const handleSearchClick = () => {
-    openCommandPalette();
-    if (isMobile) {
-      toggleSidebar();
-    }
+  const handleSort = (option: SortOption) => {
+    setActiveSort(option.id);
+    onSort?.(option);
   };
+
+  // Keyboard shortcut: Ctrl+X
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'x') {
+        e.preventDefault();
+        toggleCollapse();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCollapsed]);
 
   return (
-    <>
-      {isMobile && sidebarOpen && (
-        <div className="sidebar-overlay" onClick={toggleSidebar} aria-hidden="true"></div>
-      )}
-      <aside className={`sidebar ${isMobile && sidebarOpen ? 'open' : ''}`} aria-label="Sidebar navigation">
-        <div className="sidebar-glass">
-        {/* Search Button */}
-        <div className="sidebar-search">
-          <motion.button
-            className="sidebar-search-button"
-            onClick={handleSearchClick}
-            variants={sidebarItemVariants}
-            initial="rest"
-            whileHover="hover"
-            aria-label="Open search"
+    <motion.aside
+      className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : ''}`}
+      initial={false}
+      animate={{
+        width: isCollapsed ? '80px' : '240px',
+      }}
+      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+    >
+      {/* Collapse Arrow Toggle */}
+      <button
+        onClick={toggleCollapse}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className="sidebar__toggle-arrow"
+        aria-label={isCollapsed ? 'Expand sidebar (Ctrl+X)' : 'Collapse sidebar (Ctrl+X)'}
+        aria-expanded={!isCollapsed}
+        type="button"
+      >
+        <motion.div
+          animate={{ rotate: isCollapsed ? 180 : 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+        </motion.div>
+        
+        {/* Tooltip */}
+        {showTooltip && (
+          <motion.div
+            className="sidebar__tooltip"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
           >
-            <motion.div 
-              className="sidebar-item-glow"
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            />
-            <Icon icon={icons.search} size={20} />
-            <span>Search</span>
-            <kbd className="sidebar-search-kbd">⌘K</kbd>
-          </motion.button>
-        </div>
+            <kbd className="sidebar__kbd">Ctrl</kbd>
+            <span>+</span>
+            <kbd className="sidebar__kbd">X</kbd>
+          </motion.div>
+        )}
+      </button>
 
-        <div className="sidebar-section">
-          <div className="sidebar-title">Main</div>
-          {mainItems.map((item) => {
-            const IconComponent = icons[item.iconName];
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <motion.a
-                key={item.path}
-                href="#"
-                className={`sidebar-item ${isActive ? 'active' : ''}`}
-                aria-current={isActive ? 'page' : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (item.path) handleNavigation(item.path);
-                }}
-                variants={sidebarItemVariants}
-                initial="rest"
-                whileHover="hover"
-              >
-                <motion.div 
-                  className="sidebar-item-glow"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-                <Icon icon={IconComponent} size={20} />
-                <span>{item.label}</span>
-              </motion.a>
-            );
-          })}
-        </div>
+      {/* Navigation Items */}
+      <nav className="sidebar__nav">
+        <ul className="sidebar__nav-list">
+          {items.map((item) => (
+            <li key={item.id} className="sidebar__nav-item">
+              <a href={item.href} className="sidebar__nav-link">
+                <span className="sidebar__nav-icon">{item.icon}</span>
+                {!isCollapsed && (
+                  <motion.span
+                    className="sidebar__nav-label"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+                {!isCollapsed && item.badge !== undefined && (
+                  <span className="sidebar__nav-badge">{item.badge}</span>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-        <div className="sidebar-section">
-          <div className="sidebar-title">Collections</div>
-          {collections.map((item) => {
-            const IconComponent = icons[item.iconName];
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <motion.a
-                key={item.path}
-                href="#"
-                className={`sidebar-item ${isActive ? 'active' : ''}`}
-                aria-current={isActive ? 'page' : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (item.path) handleNavigation(item.path);
-                }}
-                variants={sidebarItemVariants}
-                initial="rest"
-                whileHover="hover"
+      {/* Sort Controls */}
+      {sortOptions.length > 0 && !isCollapsed && (
+        <div className="sidebar__sort">
+          <h3 className="sidebar__sort-title">Sort</h3>
+          <div className="sidebar__sort-options">
+            {sortOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSort(option)}
+                className={`sidebar__sort-btn ${
+                  activeSort === option.id ? 'sidebar__sort-btn--active' : ''
+                }`}
+                aria-label={`Sort by ${option.label} ${option.direction === 'asc' ? 'ascending' : 'descending'}`}
+                type="button"
               >
-                <motion.div 
-                  className="sidebar-item-glow"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-                <Icon icon={IconComponent} size={20} />
-                <span>{item.label}</span>
-              </motion.a>
-            );
-          })}
+                <span>{option.label}</span>
+                <motion.div
+                  animate={{
+                    rotate: option.direction === 'desc' ? 180 : 0,
+                  }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  {option.direction === 'asc' ? (
+                    <ArrowUp size={16} aria-hidden="true" />
+                  ) : (
+                    <ArrowDown size={16} aria-hidden="true" />
+                  )}
+                </motion.div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    </aside>
-    </>
+      )}
+    </motion.aside>
   );
-};
+}

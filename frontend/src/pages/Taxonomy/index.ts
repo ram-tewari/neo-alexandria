@@ -1,0 +1,1 @@
+export { Taxonomy } from './Taxonomy';

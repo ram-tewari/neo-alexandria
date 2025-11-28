@@ -1,15 +1,5 @@
 import { IconName } from '../config/icons';
 
-export interface Resource {
-  title: string;
-  description: string;
-  author: string;
-  readTime: number;
-  rating: number;
-  tags: string[];
-  type: 'article' | 'video' | 'book' | 'paper';
-}
-
 export interface NavLink {
   path: string;
   label: string;
@@ -22,26 +12,4 @@ export interface SidebarItem {
   badge?: number | string;
   onClick?: () => void;
   children?: SidebarItem[];
-}
-
-export interface SidebarSection {
-  id: string;
-  label: string;
-  items: SidebarItem[];
-  collapsible?: boolean;
-  defaultOpen?: boolean;
-}
-
-export interface StatData {
-  iconName: IconName;
-  value: number;
-  label: string;
-  color: 'blue' | 'cyan' | 'purple' | 'teal';
-}
-
-export interface Activity {
-  iconName: IconName;
-  color: string;
-  text: string;
-  time: string;
 }

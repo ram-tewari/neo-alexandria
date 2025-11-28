@@ -1,0 +1,1 @@
+export { DiscoveryPanel } from './DiscoveryPanel';

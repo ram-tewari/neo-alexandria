@@ -1,50 +1,70 @@
-import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { MainLayout } from './components/layout/MainLayout';
-import { FAB } from './components/layout/FAB';
-import { LoadingSpinner } from './components/common/LoadingSpinner';
-import { CommandPalette } from './components/common/CommandPalette';
-import { KeyboardShortcutIndicator } from './components/ui/KeyboardShortcutIndicator';
-import { ThemeProvider } from './components/theme/ThemeProvider';
-import { useCommandPalette } from './hooks/useCommandPalette';
+import { Home } from './pages/Home';
+import { Library } from './pages/Library';
+import { Search } from './pages/Search';
+import { Recommendations } from './pages/Recommendations';
+import { Annotations } from './pages/Annotations';
+import { Graph } from './pages/Graph';
+import { Quality } from './pages/Quality';
+import { Taxonomy } from './pages/Taxonomy';
+import { Monitoring } from './pages/Monitoring';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ToastContainer } from './components/common/Toast';
+import { CommandPalette } from './components/layout/CommandPalette';
+import { useCommandPalette } from './hooks/useKeyboard';
+import { useCommandStore } from './store/commandStore';
 import './styles/globals.css';
+import './styles/dual-theme.css';
 
-// Lazy load page components
-const Dashboard = lazy(() => import('./components/pages/Dashboard').then(module => ({ default: module.Dashboard })));
-const Library = lazy(() => import('./components/pages/Library').then(module => ({ default: module.Library })));
-const KnowledgeGraph = lazy(() => import('./components/pages/KnowledgeGraph').then(module => ({ default: module.KnowledgeGraph })));
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
-function App() {
-  // Initialize command palette keyboard shortcut
-  useCommandPalette();
+function AppContent() {
+  const { togglePalette } = useCommandStore();
+  useCommandPalette(togglePalette);
 
   return (
-    <ThemeProvider>
+    <>
       <BrowserRouter>
-        <Suspense fallback={
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            minHeight: '100vh',
-            background: 'var(--primary-black)'
-          }}>
-            <LoadingSpinner size="lg" />
-          </div>
-        }>
-          <Routes>
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="library" element={<Library />} />
-              <Route path="graph" element={<KnowledgeGraph />} />
-            </Route>
-          </Routes>
-          <FAB />
-          <CommandPalette />
-          <KeyboardShortcutIndicator shortcut="Ctrl+B" maxUses={3} />
-        </Suspense>
+        <Routes>
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Home />} />
+            <Route path="library" element={<Library />} />
+            <Route path="search" element={<Search />} />
+            <Route path="recommendations" element={<Recommendations />} />
+            <Route path="annotations" element={<Annotations />} />
+            <Route path="graph" element={<Graph />} />
+            <Route path="quality" element={<Quality />} />
+            <Route path="taxonomy" element={<Taxonomy />} />
+            <Route path="monitoring" element={<Monitoring />} />
+          </Route>
+        </Routes>
       </BrowserRouter>
-    </ThemeProvider>
+      <CommandPalette />
+      <ToastContainer />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

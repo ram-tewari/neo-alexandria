@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useScrollPosition } from '../../hooks/useScrollPosition';
-import { useSidebar } from '../ui/sidebar';
+import { useNavigationStore } from '../../store/navigationStore';
 import { ModeToggle } from '../theme/ModeToggle';
 import { Icon } from '../common/Icon';
 import { icons } from '../../config/icons';
@@ -17,11 +16,10 @@ const navLinks: NavLink[] = [
 export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const scrolled = useScrollPosition();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useNavigationStore();
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
+    <nav className="navbar" aria-label="Main navigation">
       <div className="navbar-glass">
         <div className="nav-content">
           <motion.button 
@@ -67,21 +65,6 @@ export const Navbar = () => {
 
           <div className="nav-actions">
             <ModeToggle />
-            <motion.button 
-              className="notification-btn" 
-              aria-label="Notifications"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Icon icon={icons.notification} size={20} />
-              <span className="notification-badge">3</span>
-            </motion.button>
-            <motion.div 
-              className="user-avatar"
-              whileHover={{ scale: 1.1 }}
-            >
-              <img src="https://i.pravatar.cc/100?img=12" alt="User" />
-            </motion.div>
           </div>
         </div>
       </div>

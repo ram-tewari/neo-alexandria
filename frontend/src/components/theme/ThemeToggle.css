@@ -1,0 +1,92 @@
+/**
+ * ThemeToggle Styles
+ * Theme-aware styling with smooth transitions
+ */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-in-out);
+  color: var(--text-primary);
+}
+
+.theme-toggle:hover {
+  background: var(--surface-base);
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Size variants */
+.theme-toggle--sm {
+  padding: var(--spacing-xs);
+}
+
+.theme-toggle--md {
+  padding: var(--spacing-sm);
+}
+
+.theme-toggle--lg {
+  padding: var(--spacing-md);
+}
+
+/* Icon wrapper */
+.theme-toggle__icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icons */
+.theme-toggle__icon {
+  color: var(--accent-primary);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.theme-toggle__icon--sun {
+  color: var(--accent-primary);
+}
+
+.theme-toggle__icon--moon {
+  color: var(--accent-primary);
+}
+
+.theme-toggle:hover .theme-toggle__icon {
+  color: var(--accent-hover);
+}
+
+/* Label */
+.theme-toggle__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle {
+    transition: none;
+  }
+  
+  .theme-toggle:hover {
+    transform: none;
+  }
+  
+  .theme-toggle:active {
+    transform: none;
+  }
+}

@@ -1,0 +1,1 @@
+export { TaxonomyTree } from './TaxonomyTree';

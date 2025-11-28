@@ -1,32 +1,68 @@
-/**
- * Search Types
- * 
- * Type definitions for search functionality
- */
+import { Resource } from './resource';
 
-import type { Resource } from './resource';
-import type { ReadStatus } from './api';
-
-export interface SearchFilters {
-  quality_min?: number;
-  quality_max?: number;
-  date_from?: string;
-  date_to?: string;
-  types?: string[];
-  tags?: string[];
-  read_status?: ReadStatus[];
+export interface SearchQuery {
+  text: string;
+  filters: SearchFilter[];
+  weights: SearchWeights;
+  method: 'fts5' | 'vector' | 'hybrid';
+  booleanOperators?: BooleanExpression[];
 }
 
-export interface SearchFacets {
-  types: { value: string; count: number }[];
-  tags: { value: string; count: number }[];
-  quality_ranges: { range: string; count: number }[];
+export interface SearchFilter {
+  field: string;
+  operator: string;
+  value: any;
 }
 
-export interface SearchResults {
-  resources: Resource[];
-  total: number;
-  page: number;
-  limit: number;
-  facets: SearchFacets;
+export interface SearchWeights {
+  keyword: number;
+  semantic: number;
+  sparse: number;
 }
+
+export interface BooleanExpression {
+  operator: 'AND' | 'OR' | 'NOT';
+  terms: string[];
+}
+
+export interface SearchResult {
+  resource: Resource;
+  score: number;
+  explanation: RelevanceExplanation;
+  highlights: Highlight[];
+}
+
+export interface RelevanceExplanation {
+  keywordScore: number;
+  semanticScore: number;
+  sparseScore: number;
+  factors: string[];
+}
+
+export interface Highlight {
+  field: 'title' | 'abstract' | 'content';
+  text: string;
+  start: number;
+  end: number;
+}
+
+export interface SearchSuggestion {
+  text: string;
+  type: 'resource' | 'collection' | 'tag' | 'author';
+  highlight: [number, number][];
+}
+
+export interface QuickFilter {
+  id: string;
+  label: string;
+  filter: SearchFilter;
+}
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  query: SearchQuery;
+  createdAt: Date;
+}
+
+export type SortOption = 'recent' | 'title' | 'quality' | 'relevance';

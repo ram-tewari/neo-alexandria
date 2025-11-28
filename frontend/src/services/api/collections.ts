@@ -1,147 +1,70 @@
-/**
- * Collections API
- * 
- * API endpoints for collection management
- * Matches backend format (no /api prefix, requires user_id)
- */
-
 import { apiClient } from './client';
-import type { APIListResponse } from '@/types/api';
-import type {
-  Collection,
-  CollectionDetail,
-  CollectionCreate,
-  CollectionUpdate,
-  CollectionListParams,
-} from '@/types/collection';
+import { Collection, CollectionRule } from '@/types/collection';
 
-interface RecommendationItem {
-  id: string;
-  title: string;
-  type: 'resource' | 'collection';
-  relevance_score: number;
-  description?: string;
-  quality_score?: number;
-}
-
-interface CollectionRecommendations {
-  collection_id: string;
-  resource_recommendations: RecommendationItem[];
-  collection_recommendations: RecommendationItem[];
-}
-
-interface BackendCollectionListResponse {
-  items: Collection[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-// TODO: Replace with actual user authentication
-const DEFAULT_USER_ID = 'default-user';
-
-export const collectionsAPI = {
-  /**
-   * List all collections
-   * Backend uses page-based pagination and returns {items, total, page, limit}
-   */
-  async list(params?: CollectionListParams): Promise<APIListResponse<Collection>> {
-    const { page = 1, limit = 50, ...filters } = params || {};
-    
-    const backendParams = {
-      page,
-      limit,
-      user_id: DEFAULT_USER_ID,
-      ...filters,
-    };
-    
-    const response = await apiClient.get<BackendCollectionListResponse>('/collections', backendParams);
-    
-    // Convert backend format to frontend format
-    const pages = Math.ceil(response.total / limit);
-    
-    return {
-      data: response.items,
-      meta: {
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        pages,
-      },
-    };
+export const collectionsApi = {
+  // Get all collections
+  getCollections: async (): Promise<Collection[]> => {
+    const response = await apiClient.get<Collection[]>('/collections');
+    return response.data;
   },
 
-  /**
-   * Get a single collection with resources and subcollections
-   */
-  async get(id: string): Promise<CollectionDetail> {
-    return apiClient.get<CollectionDetail>(`/collections/${id}`, {
-      user_id: DEFAULT_USER_ID,
-    });
+  // Get single collection
+  getCollection: async (id: string): Promise<Collection> => {
+    const response = await apiClient.get<Collection>(`/collections/${id}`);
+    return response.data;
   },
 
-  /**
-   * Create a new collection
-   */
-  async create(data: CollectionCreate): Promise<Collection> {
-    return apiClient.post<Collection>('/collections', data, {
-      user_id: DEFAULT_USER_ID,
-    });
+  // Create collection
+  createCollection: async (
+    data: Partial<Collection>
+  ): Promise<Collection> => {
+    const response = await apiClient.post<Collection>('/collections', data);
+    return response.data;
   },
 
-  /**
-   * Update an existing collection
-   */
-  async update(id: string, data: CollectionUpdate): Promise<Collection> {
-    return apiClient.put<Collection>(`/collections/${id}`, data, {
-      user_id: DEFAULT_USER_ID,
-    });
-  },
-
-  /**
-   * Delete a collection
-   */
-  async delete(id: string): Promise<void> {
-    return apiClient.delete<void>(`/collections/${id}`, {
-      user_id: DEFAULT_USER_ID,
-    });
-  },
-
-  /**
-   * Add resources to a collection
-   */
-  async addResources(id: string, resourceIds: string[]): Promise<void> {
-    return apiClient.post<void>(
-      `/collections/${id}/resources`,
-      { resource_ids: resourceIds },
-      { user_id: DEFAULT_USER_ID }
+  // Update collection
+  updateCollection: async (
+    id: string,
+    updates: Partial<Collection>
+  ): Promise<Collection> => {
+    const response = await apiClient.patch<Collection>(
+      `/collections/${id}`,
+      updates
     );
+    return response.data;
   },
 
-  /**
-   * Remove resources from a collection
-   */
-  async removeResources(id: string, resourceIds: string[]): Promise<void> {
-    // Backend expects body in DELETE request
-    const response = await fetch(`${apiClient['baseURL']}/collections/${id}/resources?user_id=${DEFAULT_USER_ID}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ resource_ids: resourceIds }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to remove resources');
-    }
+  // Delete collection
+  deleteCollection: async (id: string): Promise<void> => {
+    await apiClient.delete(`/collections/${id}`);
   },
 
-  /**
-   * Get recommendations for a collection
-   */
-  async getRecommendations(id: string): Promise<CollectionRecommendations> {
-    return apiClient.get<CollectionRecommendations>(`/collections/${id}/recommendations`, {
-      user_id: DEFAULT_USER_ID,
+  // Add resources to collection
+  addResources: async (
+    collectionId: string,
+    resourceIds: string[]
+  ): Promise<void> => {
+    await apiClient.post(`/collections/${collectionId}/resources`, {
+      resourceIds,
     });
+  },
+
+  // Remove resources from collection
+  removeResources: async (
+    collectionId: string,
+    resourceIds: string[]
+  ): Promise<void> => {
+    await apiClient.delete(`/collections/${collectionId}/resources`, {
+      data: { resourceIds },
+    });
+  },
+
+  // Evaluate smart collection rules
+  evaluateRules: async (rules: CollectionRule[]): Promise<number> => {
+    const response = await apiClient.post<{ count: number }>(
+      '/collections/evaluate-rules',
+      { rules }
+    );
+    return response.data.count;
   },
 };

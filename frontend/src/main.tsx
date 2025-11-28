@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { initPerformanceMonitoring } from './utils/performance';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Initialize performance monitoring
 initPerformanceMonitoring();

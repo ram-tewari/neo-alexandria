@@ -8,7 +8,7 @@ validation and business logic for recommendation scoring and ranking.
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-from backend.app.domain import (
+from ..domain import (
     ValueObject,
     validate_non_empty,
     validate_range,

@@ -27,8 +27,8 @@ import numpy as np
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from backend.app.database.models import Collection, CollectionResource, Resource
-from backend.app.schemas.collection import CollectionUpdate
+from ..database.models import Collection, CollectionResource, Resource
+from ..schemas.collection import CollectionUpdate
 
 
 class CollectionService:

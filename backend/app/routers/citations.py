@@ -13,9 +13,9 @@ from typing import List
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.services.citation_service import CitationService
-from backend.app.schemas.citation import (
+from ..database.base import get_sync_db
+from ..services.citation_service import CitationService
+from ..schemas.citation import (
     CitationWithResource,
     ResourceCitationsResponse,
     CitationGraphResponse,
@@ -76,7 +76,7 @@ async def get_resource_citations(
         
         # Add target resource info if available
         if citation.target_resource_id:
-            from backend.app.database.models import Resource
+            from ..database.models import Resource
             from sqlalchemy import select
             
             result = db.execute(
@@ -150,7 +150,7 @@ async def get_citation_network(
         
         # Filter by importance if specified
         if min_importance > 0.0:
-            from backend.app.database.models import Citation
+            from ..database.models import Citation
             from sqlalchemy import select
             
             # Get citations with sufficient importance
@@ -179,7 +179,7 @@ async def get_citation_network(
     
     else:
         # Return global overview (limited)
-        from backend.app.database.models import Citation
+        from ..database.models import Citation
         from sqlalchemy import select
         
         query = select(Citation).filter(Citation.target_resource_id.isnot(None))
@@ -199,7 +199,7 @@ async def get_citation_network(
         for citation in citations:
             # Add source node
             if str(citation.source_resource_id) not in nodes_dict:
-                from backend.app.database.models import Resource
+                from ..database.models import Resource
                 
                 resource_result = db.execute(
                     select(Resource).filter(Resource.id == citation.source_resource_id)
@@ -215,7 +215,7 @@ async def get_citation_network(
             
             # Add target node
             if str(citation.target_resource_id) not in nodes_dict:
-                from backend.app.database.models import Resource
+                from ..database.models import Resource
                 
                 resource_result = db.execute(
                     select(Resource).filter(Resource.id == citation.target_resource_id)
@@ -265,7 +265,7 @@ async def trigger_citation_extraction(
     service = CitationService(db)
     
     # Verify resource exists
-    from backend.app.database.models import Resource
+    from ..database.models import Resource
     from sqlalchemy import select
     
     try:

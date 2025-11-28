@@ -26,9 +26,9 @@ except ImportError:  # pragma: no cover
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from backend.app.config.settings import get_settings
-from backend.app.database import models as db_models
-from backend.app.schemas.graph import (
+from ..config.settings import get_settings
+from ..database import models as db_models
+from ..schemas.graph import (
     GraphEdge,
     GraphEdgeDetails,
     GraphNode,
@@ -901,7 +901,7 @@ class GraphService:
         G = nx.MultiGraph()
         
         # Add all resources as nodes
-        from backend.app.database.models import Resource, Citation, GraphEdge
+        from ..database.models import Resource, Citation, GraphEdge
         resources = self.db.query(Resource).all()
         
         for resource in resources:

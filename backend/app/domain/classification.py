@@ -8,7 +8,7 @@ validation and business logic.
 
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
-from backend.app.domain import ValueObject, validate_range, validate_positive
+from ..domain import ValueObject, validate_range, validate_positive
 
 
 @dataclass

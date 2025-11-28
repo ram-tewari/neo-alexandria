@@ -44,9 +44,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.recommendation import RecommendationResponse, RecommendedResource
-from backend.app.services.recommendation_service import generate_recommendations
+from ..database.base import get_sync_db
+from ..schemas.recommendation import RecommendationResponse, RecommendedResource
+from ..services.recommendation_service import generate_recommendations
 
 
 router = APIRouter(prefix="", tags=["recommendations"])

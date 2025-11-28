@@ -29,8 +29,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.app.database.base import get_sync_db  # noqa: E402
-from backend.app.schemas.search import (  # noqa: E402
+from ..database.base import get_sync_db  # noqa: E402
+from ..schemas.search import (  # noqa: E402
     SearchQuery, 
     SearchResults,
     ThreeWayHybridResults,
@@ -43,8 +43,8 @@ from backend.app.schemas.search import (  # noqa: E402
     BatchSparseEmbeddingRequest,
     BatchSparseEmbeddingResponse
 )
-from backend.app.schemas.resource import ResourceRead  # noqa: E402
-from backend.app.services.search_service import AdvancedSearchService  # noqa: E402
+from ..schemas.resource import ResourceRead  # noqa: E402
+from ..services.search_service import AdvancedSearchService  # noqa: E402
 
 
 router = APIRouter(prefix="", tags=["search"])
@@ -215,8 +215,8 @@ def compare_search_methods_endpoint(
     # 3. Sparse Only
     try:
         start = time.time()
-        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-        from backend.app.database.models import Resource
+        from ..services.sparse_embedding_service import SparseEmbeddingService
+        from ..database.models import Resource
         
         sparse_service = SparseEmbeddingService(db)
         
@@ -359,7 +359,7 @@ def evaluate_search_endpoint(
     Optionally compares against a baseline (two-way hybrid) to measure improvement.
     """
     try:
-        from backend.app.services.search_metrics_service import SearchMetricsService
+        from ..services.search_metrics_service import SearchMetricsService
         
         # Execute three-way hybrid search
         search_query = SearchQuery(text=payload.query, limit=100, offset=0)
@@ -477,8 +477,8 @@ def batch_generate_sparse_embeddings_endpoint(
     Returns a job ID and estimated duration for tracking progress.
     """
     try:
-        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-        from backend.app.database.models import Resource
+        from ..services.sparse_embedding_service import SparseEmbeddingService
+        from ..database.models import Resource
         import uuid
         
         # Initialize service

@@ -44,23 +44,27 @@
 }
 
 .logo-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
 .logo-icon svg {
   color: var(--primary-foreground);
+  width: 20px;
+  height: 20px;
 }
 
 .nav-logo:hover .logo-icon {
-  background: var(--accent-bright);
-  transform: scale(1.05);
+  background: var(--accent-hover);
+  transform: scale(1.08);
+  box-shadow: var(--shadow-md);
 }
 
 .logo-text {
@@ -94,9 +98,10 @@
   bottom: 0;
   left: 0;
   width: 0;
-  height: 1px;
-  background: var(--primary);
+  height: 2px;
+  background: var(--accent-primary);
   transition: width var(--transition-base);
+  border-radius: var(--radius-full);
 }
 
 .nav-link:hover,

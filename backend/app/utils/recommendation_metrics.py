@@ -19,7 +19,7 @@ import numpy as np
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.app.database.models import RecommendationFeedback, UserInteraction
+from ..database.models import RecommendationFeedback, UserInteraction
 
 logger = logging.getLogger(__name__)
 

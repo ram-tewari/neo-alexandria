@@ -21,9 +21,9 @@ import logging
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from backend.app.services.ai_core import AICore, create_composite_text
-from backend.app.cache.redis_cache import cache
-from backend.app.database import models as db_models
+from ..services.ai_core import AICore, create_composite_text
+from ..cache.redis_cache import cache
+from ..database import models as db_models
 
 logger = logging.getLogger(__name__)
 

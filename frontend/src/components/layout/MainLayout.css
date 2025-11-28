@@ -1,20 +1,37 @@
 .app {
   min-height: 100vh;
   background: var(--background);
+  position: relative;
+}
+
+.app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--background-texture);
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 0;
 }
 
 .app-container {
   display: flex;
-  padding-top: 60px;
+  padding-top: 64px;
+  position: relative;
+  z-index: 1;
 }
 
 .main-content {
   flex: 1;
-  margin-left: 200px;
+  margin-left: 240px;
   padding: 2rem;
-  transition: margin-left var(--transition-base);
-  background: var(--background);
-  min-height: calc(100vh - 60px);
+  transition: margin-left var(--duration-normal) var(--ease-in-out);
+  background: transparent;
+  min-height: calc(100vh - 64px);
+}
+
+.main-content.sidebar-open {
+  margin-left: 240px;
 }
 
 .page-placeholder {

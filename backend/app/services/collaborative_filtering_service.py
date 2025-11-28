@@ -26,7 +26,7 @@ import torch.nn as nn
 import torch.optim as optim
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import UserInteraction
+from ..database.models import UserInteraction
 
 logger = logging.getLogger(__name__)
 

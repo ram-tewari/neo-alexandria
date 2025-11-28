@@ -178,7 +178,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             type="checkbox"
             checked={isSelected}
             onChange={handleSelectClick}
-            onClick={handleSelectClick}
+            onClick={(e) => e.stopPropagation()}
             className="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 bg-white"
             aria-label={`Select ${resource.title}`}
           />

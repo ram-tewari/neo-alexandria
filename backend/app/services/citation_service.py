@@ -29,10 +29,10 @@ from urllib.parse import urlparse, urlunparse
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
-from backend.app.database.models import Citation, Resource
-from backend.app.database.base import Base
-from backend.app.events.event_system import event_emitter, EventPriority
-from backend.app.events.event_types import SystemEvent
+from ..database.models import Citation, Resource
+from ..database.base import Base
+from ..events.event_system import event_emitter, EventPriority
+from ..events.event_types import SystemEvent
 
 
 class CitationService:

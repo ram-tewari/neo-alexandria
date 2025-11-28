@@ -23,8 +23,8 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import SessionLocal
-from backend.app.services.quality_service import QualityService
+from ..database.base import SessionLocal
+from ..services.quality_service import QualityService
 
 logger = logging.getLogger(__name__)
 

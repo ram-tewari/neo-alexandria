@@ -19,13 +19,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.graph import KnowledgeGraph
-from backend.app.services.graph_service import (
+from ..database.base import get_sync_db
+from ..schemas.graph import KnowledgeGraph
+from ..services.graph_service import (
     find_hybrid_neighbors,
     generate_global_overview,
 )
-from backend.app.config.settings import get_settings
+from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/graph", tags=["graph"])

@@ -29,8 +29,8 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.taxonomy import (
+from ..database.base import get_sync_db
+from ..schemas.taxonomy import (
     TaxonomyNodeCreate,
     TaxonomyNodeUpdate,
     TaxonomyNodeResponse,
@@ -41,7 +41,7 @@ from backend.app.schemas.taxonomy import (
     ClassifierTrainingResponse,
     UncertainSamplesResponse,
 )
-from backend.app.services.taxonomy_service import TaxonomyService
+from ..services.taxonomy_service import TaxonomyService
 
 
 router = APIRouter(prefix="/taxonomy", tags=["taxonomy"])
@@ -551,7 +551,7 @@ async def classify_resource(
             )
         
         # Verify resource exists
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         resource = db.query(Resource).filter(Resource.id == resource_uuid).first()
         if not resource:
             raise HTTPException(
@@ -560,7 +560,7 @@ async def classify_resource(
             )
         
         # Import classification service
-        from backend.app.services.classification_service import ClassificationService
+        from ..services.classification_service import ClassificationService
         
         # Create background task for classification
         # Note: In a production system, this would use Celery or similar
@@ -639,8 +639,8 @@ def get_uncertain_samples(
     """
     try:
         # Import ML classification service
-        from backend.app.services.ml_classification_service import MLClassificationService
-        from backend.app.database.models import Resource, ResourceTaxonomy, TaxonomyNode
+        from ..services.ml_classification_service import MLClassificationService
+        from ..database.models import Resource, ResourceTaxonomy, TaxonomyNode
         
         # Initialize ML classifier
         ml_service = MLClassificationService(
@@ -768,7 +768,7 @@ def submit_classification_feedback(
                 )
         
         # Verify resource exists
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         resource = db.query(Resource).filter(Resource.id == resource_uuid).first()
         if not resource:
             raise HTTPException(
@@ -777,7 +777,7 @@ def submit_classification_feedback(
             )
         
         # Import ML classification service
-        from backend.app.services.ml_classification_service import MLClassificationService
+        from ..services.ml_classification_service import MLClassificationService
         
         # Initialize ML classifier
         ml_service = MLClassificationService(
@@ -800,7 +800,7 @@ def submit_classification_feedback(
             )
         
         # Check if retraining is recommended
-        from backend.app.database.models import ResourceTaxonomy
+        from ..database.models import ResourceTaxonomy
         manual_count = db.query(ResourceTaxonomy).filter(
             not ResourceTaxonomy.is_predicted,
             ResourceTaxonomy.predicted_by == "manual"
@@ -886,7 +886,7 @@ async def train_classifier(
             )
         
         # Validate taxonomy IDs exist
-        from backend.app.database.models import TaxonomyNode
+        from ..database.models import TaxonomyNode
         all_taxonomy_ids = set()
         for example in payload.labeled_data:
             all_taxonomy_ids.update(example.taxonomy_ids)
@@ -907,7 +907,7 @@ async def train_classifier(
                 )
         
         # Import ML classification service
-        from backend.app.services.ml_classification_service import MLClassificationService
+        from ..services.ml_classification_service import MLClassificationService
         
         # Prepare training data
         labeled_data = [

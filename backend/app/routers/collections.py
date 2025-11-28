@@ -27,8 +27,8 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.collection import (
+from ..database.base import get_sync_db
+from ..schemas.collection import (
     CollectionCreate,
     CollectionUpdate,
     CollectionRead,
@@ -38,7 +38,7 @@ from backend.app.schemas.collection import (
     CollectionRecommendationsResponse,
     ResourceSummary
 )
-from backend.app.services.collection_service import CollectionService
+from ..services.collection_service import CollectionService
 
 
 router = APIRouter(prefix="/collections", tags=["collections"])
@@ -126,7 +126,7 @@ async def list_collections(
         )
         
         # Add resource counts
-        from backend.app.database.models import CollectionResource
+        from ..database.models import CollectionResource
         for collection in collections:
             resource_count = service.db.query(CollectionResource).filter(
                 CollectionResource.collection_id == collection.id
@@ -250,7 +250,7 @@ async def update_collection(
         )
         
         # Add resource count
-        from backend.app.database.models import CollectionResource
+        from ..database.models import CollectionResource
         resource_count = service.db.query(CollectionResource).filter(
             CollectionResource.collection_id == collection.id
         ).count()

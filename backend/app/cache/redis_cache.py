@@ -22,7 +22,7 @@ import logging
 from typing import Any, Optional
 import redis
 
-from backend.app.config.settings import get_settings
+from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

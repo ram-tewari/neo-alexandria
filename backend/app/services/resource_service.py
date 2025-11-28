@@ -11,26 +11,26 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func, or_, asc, desc, String, cast, select
 
-from backend.app.database import models as db_models
-from backend.app.database.base import Base, SessionLocal
-from backend.app.utils import content_extractor as ce
-from backend.app.utils.text_processor import clean_text, readability_scores
-from backend.app.services.dependencies import (
+from ..database import models as db_models
+from ..database.base import Base, SessionLocal
+from ..utils import content_extractor as ce
+from ..utils.text_processor import clean_text, readability_scores
+from .dependencies import (
     get_classification_service,
     get_quality_analyzer,
     get_authority_control,
 )
-from backend.app.schemas.query import PageParams, SortParams, ResourceFilters
-from backend.app.schemas.resource import ResourceUpdate
-from backend.app.services.ai_core import AICore
-from backend.app.monitoring import (
+from ..schemas.query import PageParams, SortParams, ResourceFilters
+from ..schemas.resource import ResourceUpdate
+from ..services.ai_core import AICore
+from ..monitoring import (
     track_ingestion_success,
     track_ingestion_failure,
     increment_active_ingestions,
     decrement_active_ingestions,
 )
-from backend.app.events.event_system import event_emitter, EventPriority
-from backend.app.events.event_types import SystemEvent
+from ..events.event_system import event_emitter, EventPriority
+from ..events.event_types import SystemEvent
 
 
 ARCHIVE_ROOT = Path("storage/archive")
@@ -242,7 +242,7 @@ def _generate_embeddings(
     """
     # Generate dense embedding
     try:
-        from backend.app.services.ai_core import create_composite_text
+        from ..services.ai_core import create_composite_text
         temp_resource = type('obj', (object,), {
             'title': title,
             'description': description,
@@ -259,7 +259,7 @@ def _generate_embeddings(
     
     # Generate sparse embedding
     try:
-        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+        from ..services.sparse_embedding_service import SparseEmbeddingService
         sparse_service = SparseEmbeddingService(session, model_name="BAAI/bge-m3")
         
         text_parts = []
@@ -305,7 +305,7 @@ def _perform_ml_classification(session: Session, resource_id) -> None:
         resource_id: Resource ID
     """
     try:
-        from backend.app.services.classification_service import ClassificationService
+        from ..services.classification_service import ClassificationService
         
         classification_service = ClassificationService(
             db=session,
@@ -333,7 +333,7 @@ def _compute_quality_scores(session: Session, resource_id) -> None:
         resource_id: Resource ID
     """
     try:
-        from backend.app.services.quality_service import QualityService
+        from ..services.quality_service import QualityService
         
         quality_service = QualityService(db=session)
         quality_result = quality_service.compute_quality(resource_id)
@@ -358,7 +358,7 @@ def _evaluate_summarization(session: Session, resource_id, summary: str) -> None
         return
     
     try:
-        from backend.app.services.summarization_evaluator import SummarizationEvaluator
+        from ..services.summarization_evaluator import SummarizationEvaluator
         
         summarization_evaluator = SummarizationEvaluator(db=session)
         summary_result = summarization_evaluator.evaluate_summary(
@@ -384,7 +384,7 @@ def _extract_citations(session: Session, resource_id: str, content_type: str) ->
     try:
         content_type_lower = content_type.lower()
         if any(ct in content_type_lower for ct in ["html", "pdf", "markdown"]):
-            from backend.app.services.citation_service import CitationService
+            from ..services.citation_service import CitationService
             citation_service = CitationService(session)
             citation_service.extract_citations(resource_id)
             citation_service.resolve_internal_citations()
@@ -849,7 +849,7 @@ def _regenerate_embeddings(db: Session, resource: db_models.Resource) -> None:
     """
     # Regenerate dense embedding
     try:
-        from backend.app.services.ai_core import create_composite_text, generate_embedding
+        from ..services.ai_core import create_composite_text, generate_embedding
         composite_text = create_composite_text(resource)
         if composite_text.strip():
             embedding = generate_embedding(composite_text)
@@ -861,7 +861,7 @@ def _regenerate_embeddings(db: Session, resource: db_models.Resource) -> None:
     
     # Regenerate sparse embedding
     try:
-        from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+        from ..services.sparse_embedding_service import SparseEmbeddingService
         sparse_service = SparseEmbeddingService(db, model_name="BAAI/bge-m3")
         
         text_parts = []
@@ -907,7 +907,7 @@ def _recompute_quality(db: Session, resource_id) -> None:
         resource_id: Resource ID
     """
     try:
-        from backend.app.services.quality_service import QualityService
+        from ..services.quality_service import QualityService
         
         quality_service = QualityService(db=db)
         quality_result = quality_service.compute_quality(resource_id)
@@ -1026,7 +1026,7 @@ def _delete_resource_annotations(db: Session, resource_id) -> None:
         resource_id: Resource ID
     """
     try:
-        from backend.app.database.models import Annotation
+        from ..database.models import Annotation
         
         # Convert resource_id to UUID if needed
         if isinstance(resource_id, str):

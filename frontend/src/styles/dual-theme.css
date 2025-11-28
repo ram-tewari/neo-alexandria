@@ -94,6 +94,23 @@
   --button-hover: var(--color-olive-bright);
   --button-active: var(--color-olive-medium);
   
+  /* Primary Colors */
+  --primary: var(--color-olive-sage);
+  --primary-foreground: #ffffff;
+  --primary-600: var(--color-olive-sage);
+  --primary-700: var(--color-olive-medium);
+  
+  /* Additional UI Variables */
+  --foreground: var(--text-primary);
+  --ring: var(--accent-primary);
+  --popover: var(--surface-raised);
+  --surface-accent: rgba(109, 128, 53, 0.1);
+  --text-accent: var(--color-olive-dark);
+  --accent-subtle: rgba(109, 128, 53, 0.15);
+  --accent-glow: rgba(109, 128, 53, 0.2);
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
+  
   /* Borders - With green tint */
   --border-subtle: rgba(109, 128, 53, 0.15);
   --border-medium: rgba(109, 128, 53, 0.25);
@@ -170,6 +187,23 @@
   --button-default: var(--color-red-base);
   --button-hover: var(--color-red-bright);
   --button-active: var(--color-red-crimson);
+  
+  /* Primary Colors */
+  --primary: var(--color-red-base);
+  --primary-foreground: #ffffff;
+  --primary-600: var(--color-red-base);
+  --primary-700: var(--color-red-crimson);
+  
+  /* Additional UI Variables */
+  --foreground: var(--text-primary);
+  --ring: var(--accent-primary);
+  --popover: var(--surface-raised);
+  --surface-accent: rgba(220, 20, 60, 0.1);
+  --text-accent: var(--color-red-bright);
+  --accent-subtle: rgba(220, 20, 60, 0.15);
+  --accent-glow: rgba(220, 20, 60, 0.3);
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
   
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.06);

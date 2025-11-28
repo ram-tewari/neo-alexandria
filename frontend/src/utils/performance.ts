@@ -1,10 +1,10 @@
 // Performance monitoring utilities
-import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
+import { onCLS, onFCP, onLCP, onTTFB, onFID, type Metric } from 'web-vitals';
 
 export interface PerformanceMetrics {
   fcp?: number;
   lcp?: number;
-  inp?: number;
+  fid?: number;
   cls?: number;
   ttfb?: number;
 }
@@ -13,7 +13,7 @@ export interface PerformanceMetrics {
 export const PERFORMANCE_BUDGETS = {
   FCP: 1800, // First Contentful Paint
   LCP: 2500, // Largest Contentful Paint
-  INP: 200, // Interaction to Next Paint (replaces FID)
+  FID: 100, // First Input Delay
   CLS: 0.1, // Cumulative Layout Shift
   TTFB: 600, // Time to First Byte
 };
@@ -43,7 +43,7 @@ export function initPerformanceMonitoring() {
   // Monitor Core Web Vitals
   onCLS(sendToAnalytics);
   onFCP(sendToAnalytics);
-  onINP(sendToAnalytics);
+  onFID(sendToAnalytics);
   onLCP(sendToAnalytics);
   onTTFB(sendToAnalytics);
 }
@@ -61,8 +61,8 @@ export function checkPerformanceBudgets(): { passed: boolean; violations: string
   if (metrics.lcp && metrics.lcp > PERFORMANCE_BUDGETS.LCP) {
     violations.push(`LCP: ${metrics.lcp}ms > ${PERFORMANCE_BUDGETS.LCP}ms`);
   }
-  if (metrics.inp && metrics.inp > PERFORMANCE_BUDGETS.INP) {
-    violations.push(`INP: ${metrics.inp}ms > ${PERFORMANCE_BUDGETS.INP}ms`);
+  if (metrics.fid && metrics.fid > PERFORMANCE_BUDGETS.FID) {
+    violations.push(`FID: ${metrics.fid}ms > ${PERFORMANCE_BUDGETS.FID}ms`);
   }
   if (metrics.cls && metrics.cls > PERFORMANCE_BUDGETS.CLS) {
     violations.push(`CLS: ${metrics.cls} > ${PERFORMANCE_BUDGETS.CLS}`);

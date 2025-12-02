@@ -1,0 +1,91 @@
+.semantic-result-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-left: 4px solid;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    transition: all 200ms ease-out;
+}
+
+.semantic-result-card:hover {
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.semantic-result-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.semantic-result-similarity {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.semantic-result-content {
+    margin-bottom: 12px;
+}
+
+.semantic-result-highlight {
+    padding: 12px;
+    background: var(--surface-base);
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+.semantic-result-note {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.semantic-result-related {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-medium);
+}
+
+.semantic-result-related-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.semantic-result-related-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.semantic-result-related-item {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    background: var(--surface-base);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 200ms ease-out;
+}
+
+.semantic-result-related-item:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}

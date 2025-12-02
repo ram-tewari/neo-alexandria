@@ -1,0 +1,66 @@
+.annotation-clusters-view {
+    background: var(--surface-base);
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.annotation-clusters-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.annotation-clusters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.annotation-cluster-card {
+    padding: 16px;
+    background: var(--surface-elevated);
+    border: 2px solid var(--border-medium);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 200ms ease-out;
+}
+
+.annotation-cluster-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.annotation-cluster-card.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.annotation-cluster-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.annotation-cluster-keywords {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 8px;
+}
+
+.annotation-cluster-count {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.7;
+}
+
+.annotation-clusters-legend {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-medium);
+    font-size: 12px;
+    color: var(--text-tertiary);
+}

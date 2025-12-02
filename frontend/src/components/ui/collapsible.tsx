@@ -126,7 +126,7 @@ export const CollapsibleContent = React.forwardRef<HTMLDivElement, CollapsibleCo
             className={className}
             data-state={open ? 'open' : 'closed'}
             style={{ overflow: 'hidden' }}
-            {...props}
+            {...(props as any)}
           >
             {children}
           </motion.div>

@@ -10,6 +10,9 @@ This comprehensive developer guide provides detailed documentation for developer
 - [Project Structure](#project-structure)
 - [Development Setup](#development-setup)
 - [Code Architecture](#code-architecture)
+- [Phase 13.5: Modular Architecture](#phase-135-modular-architecture)
+- [Phase 12.5: Event-Driven Architecture](#phase-125-event-driven-architecture)
+- [Phase 12: Domain-Driven Design](#phase-12-domain-driven-design)
 - [Testing Framework](#testing-framework)
 - [ML Benchmarking](#ml-benchmarking)
 - [ML Model Training](#ml-model-training)
@@ -6356,6 +6359,403 @@ def my_task(resource_id):
     except Exception:
         pass  # Silently fails, no retry
 ```
+
+---
+
+## Phase 13.5: Modular Architecture
+
+### Overview
+
+Phase 13.5 transforms Neo Alexandria from a layered architecture to a modular vertical slice architecture. This change improves modularity, reduces coupling, and enables independent development of features.
+
+### Architecture Transition
+
+#### From Layered to Modular
+
+**Before (Layered Architecture):**
+```
+app/
+├── routers/           # All API endpoints
+├── services/          # All business logic
+├── schemas/           # All Pydantic models
+└── database/models.py # All SQLAlchemy models
+```
+
+**After (Modular Architecture):**
+```
+app/
+├── shared/            # Shared kernel
+│   ├── database.py
+│   ├── event_bus.py
+│   └── base_model.py
+└── modules/           # Self-contained modules
+    ├── collections/
+    │   ├── router.py
+    │   ├── service.py
+    │   ├── schema.py
+    │   ├── model.py
+    │   └── handlers.py
+    ├── resources/
+    └── search/
+```
+
+### Module Structure
+
+Each module follows a consistent structure:
+
+```python
+# app/modules/my_module/__init__.py
+"""My Module - Public Interface"""
+
+__version__ = "1.0.0"
+__domain__ = "my_module"
+
+# Lazy imports to avoid circular dependencies
+def __getattr__(name):
+    if name == "my_module_router":
+        from .router import router
+        return router
+    elif name == "MyModuleService":
+        from .service import MyModuleService
+        return MyModuleService
+    elif name == "register_handlers":
+        from .handlers import register_handlers
+        return register_handlers
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+__all__ = [
+    "my_module_router",
+    "MyModuleService",
+    "register_handlers",
+]
+```
+
+### Event-Driven Communication
+
+Modules communicate through events instead of direct service calls:
+
+#### Emitting Events
+
+```python
+# app/modules/resources/service.py
+from app.shared.event_bus import event_bus
+
+def delete_resource(db: Session, resource_id: str):
+    # Delete resource
+    db.delete(resource)
+    db.commit()
+    
+    # Emit event (no direct dependency on other modules)
+    event_bus.emit("resource.deleted", {
+        "resource_id": str(resource_id),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+```
+
+#### Subscribing to Events
+
+```python
+# app/modules/collections/handlers.py
+from app.shared.event_bus import event_bus
+from .service import CollectionService
+
+def handle_resource_deleted(payload: Dict[str, Any]):
+    """Handle resource deletion by updating affected collections."""
+    resource_id = payload.get("resource_id")
+    
+    from app.shared.database import SessionLocal
+    db = SessionLocal()
+    
+    try:
+        service = CollectionService(db)
+        collections = service.find_collections_with_resource(resource_id)
+        
+        for collection in collections:
+            service.recompute_embedding(collection.id)
+    finally:
+        db.close()
+
+def register_handlers():
+    """Register all event handlers for Collections module."""
+    event_bus.subscribe("resource.deleted", handle_resource_deleted)
+```
+
+### Module Registration
+
+Modules are registered dynamically during application startup:
+
+```python
+# app/__init__.py
+def register_all_modules(app: FastAPI) -> None:
+    """Register all modular vertical slices with the application."""
+    
+    modules = [
+        ("collections", "backend.app.modules.collections", "collections_router"),
+        ("resources", "backend.app.modules.resources", "resources_router"),
+        ("search", "backend.app.modules.search", "search_router"),
+    ]
+    
+    for module_name, module_path, router_name in modules:
+        try:
+            # Dynamically import the module
+            import importlib
+            module = importlib.import_module(module_path)
+            
+            # Register the router
+            if hasattr(module, router_name):
+                router = getattr(module, router_name)
+                app.include_router(router)
+                logger.info(f"✓ Registered router for module: {module_name}")
+            
+            # Register event handlers
+            if hasattr(module, "register_handlers"):
+                register_handlers_func = getattr(module, "register_handlers")
+                register_handlers_func()
+                logger.info(f"✓ Registered event handlers for module: {module_name}")
+        
+        except Exception as e:
+            logger.error(f"✗ Failed to register module {module_name}: {e}")
+```
+
+### Creating New Modules
+
+#### Step 1: Create Module Structure
+
+```bash
+mkdir -p app/modules/my_module
+cd app/modules/my_module
+touch __init__.py router.py service.py schema.py model.py handlers.py README.md
+mkdir tests
+```
+
+#### Step 2: Define Schemas
+
+```python
+# schema.py
+from pydantic import BaseModel
+
+class MyModuleCreate(BaseModel):
+    name: str
+    description: str | None = None
+
+class MyModuleRead(MyModuleCreate):
+    id: str
+    
+    model_config = {"from_attributes": True}
+```
+
+#### Step 3: Implement Service
+
+```python
+# service.py
+from sqlalchemy.orm import Session
+from .model import MyModule
+from .schema import MyModuleCreate
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def create(self, data: MyModuleCreate) -> MyModule:
+        item = MyModule(**data.model_dump())
+        self.db.add(item)
+        self.db.commit()
+        self.db.refresh(item)
+        return item
+```
+
+#### Step 4: Create Router
+
+```python
+# router.py
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.shared.database import get_db
+from .service import MyModuleService
+from .schema import MyModuleCreate, MyModuleRead
+
+router = APIRouter(prefix="/my-module", tags=["my-module"])
+
+@router.post("", response_model=MyModuleRead)
+async def create_item(
+    payload: MyModuleCreate,
+    db: Session = Depends(get_db)
+):
+    service = MyModuleService(db)
+    return service.create(payload)
+```
+
+#### Step 5: Add Event Handlers
+
+```python
+# handlers.py
+from app.shared.event_bus import event_bus
+
+def handle_external_event(payload):
+    # Handle event
+    pass
+
+def register_handlers():
+    event_bus.subscribe("external.event", handle_external_event)
+```
+
+#### Step 6: Create Public Interface
+
+```python
+# __init__.py
+"""My Module - Public Interface"""
+
+__version__ = "1.0.0"
+__domain__ = "my_module"
+
+from .router import router as my_module_router
+from .service import MyModuleService
+from .schema import MyModuleCreate, MyModuleRead
+from .handlers import register_handlers
+
+__all__ = [
+    "my_module_router",
+    "MyModuleService",
+    "MyModuleCreate",
+    "MyModuleRead",
+    "register_handlers",
+]
+```
+
+### Module Isolation
+
+#### Dependency Rules
+
+- ✓ Modules MAY depend on Shared Kernel
+- ✓ Modules MAY emit events to Event Bus
+- ✓ Modules MAY subscribe to events from Event Bus
+- ✗ Modules MUST NOT import from other modules
+- ✗ Modules MUST NOT call other module services directly
+
+#### Validation
+
+Use the isolation checker to validate module boundaries:
+
+```bash
+python backend/scripts/check_module_isolation.py
+```
+
+Output:
+```
+Checking module isolation...
+
+✓ No direct imports between modules detected
+✓ No circular dependencies detected
+✓ All modules use shared kernel correctly
+
+Module dependency graph:
+  collections → shared
+  resources → shared
+  search → shared
+```
+
+### Event Bus Monitoring
+
+Monitor event bus metrics through the monitoring endpoint:
+
+```bash
+curl http://localhost:8000/monitoring/events
+```
+
+Response:
+```json
+{
+  "events_emitted": 1523,
+  "events_delivered": 4569,
+  "handler_errors": 3,
+  "event_types": {
+    "resource.deleted": 234,
+    "resource.updated": 1289
+  },
+  "latency_ms": {
+    "p50": 0.8,
+    "p95": 2.3,
+    "p99": 5.1
+  }
+}
+```
+
+### Best Practices
+
+#### Event Handler Design
+
+```python
+# DO: Create fresh database session in handler
+def handle_event(payload):
+    from app.shared.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        service = MyService(db)
+        service.process(payload)
+    except Exception as e:
+        logger.error(f"Error processing event: {e}")
+    finally:
+        db.close()
+
+# DON'T: Reuse database sessions
+def handle_event(payload):
+    # Assumes db exists in scope - error prone!
+    service = MyService(db)
+    service.process(payload)
+```
+
+#### Error Isolation
+
+```python
+# DO: Catch exceptions in handlers
+def handle_event(payload):
+    try:
+        # Process event
+        pass
+    except Exception as e:
+        logger.error(f"Handler error: {e}", exc_info=True)
+        # Don't re-raise - let other handlers continue
+
+# DON'T: Let exceptions propagate
+def handle_event(payload):
+    # Process event
+    # If this raises, other handlers won't run!
+    pass
+```
+
+#### Idempotency
+
+```python
+# DO: Make handlers idempotent
+def handle_resource_deleted(payload):
+    resource_id = payload.get("resource_id")
+    
+    # Check if already processed
+    if not resource_exists(resource_id):
+        logger.info(f"Resource {resource_id} already deleted")
+        return
+    
+    # Process deletion
+    delete_resource(resource_id)
+
+# DON'T: Assume events are delivered once
+def handle_resource_deleted(payload):
+    # This will fail if event is delivered twice
+    delete_resource(payload["resource_id"])
+```
+
+### Migration Guide
+
+For detailed migration instructions, see [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md).
+
+Key migration steps:
+1. Extract shared kernel (database, event_bus, base_model)
+2. Create module structure
+3. Move code from layered structure to modules
+4. Replace direct service calls with event emissions
+5. Register modules in application
+6. Validate module isolation
 
 ---
 

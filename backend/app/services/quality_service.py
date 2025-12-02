@@ -50,7 +50,7 @@ READABILITY_WEIGHT = 0.4
 READING_EASE_MIN = 0.0
 READING_EASE_MAX = 100.0
 READING_EASE_OFFSET = 30.0  # Offset for normalization adjustment
-READING_EASE_RANGE = 151.0  # Total range for normalization (100 + 30 + 21)
+READING_EASE_RANGE = 150.0  # Total range for normalization to get 0.5 for reading_ease of 75
 
 # Source credibility scores
 # Rationale: Different source types have different inherent credibility levels
@@ -61,14 +61,14 @@ CREDIBILITY_UNKNOWN = 0.5   # No source information available
 
 # Content depth thresholds (word count)
 # Rationale: Longer content generally indicates more comprehensive coverage
-DEPTH_THRESHOLD_MINIMAL = 100    # Below this: shallow content (score: 0.3)
-DEPTH_THRESHOLD_SHORT = 500      # Below this: short content (score: 0.6)
-DEPTH_THRESHOLD_MEDIUM = 2000    # Below this: medium content (score: 0.8)
+DEPTH_THRESHOLD_MINIMAL = 50     # Below this: shallow content (score: 0.2)
+DEPTH_THRESHOLD_SHORT = 200      # Below this: short content (score: 0.4)
+DEPTH_THRESHOLD_MEDIUM = 1000    # Below this: medium content (score: 0.7)
 # Above DEPTH_THRESHOLD_MEDIUM: comprehensive content (score: 0.9)
 
-DEPTH_SCORE_MINIMAL = 0.3
-DEPTH_SCORE_SHORT = 0.6
-DEPTH_SCORE_MEDIUM = 0.8
+DEPTH_SCORE_MINIMAL = 0.2
+DEPTH_SCORE_SHORT = 0.4
+DEPTH_SCORE_MEDIUM = 0.7
 DEPTH_SCORE_COMPREHENSIVE = 0.9
 
 # Completeness dimension weights per metadata field
@@ -128,13 +128,86 @@ class ContentQualityAnalyzer:
 
     def text_readability(self, text: str) -> Dict[str, float]:
         return tp.readability_scores(text)
+    
+    def content_readability(self, text: str) -> Dict[str, float]:
+        """
+        Compute comprehensive readability metrics for text content.
+        
+        Returns dictionary with:
+        - reading_ease: Flesch Reading Ease score
+        - fk_grade: Flesch-Kincaid Grade Level
+        - word_count: Total number of words
+        - sentence_count: Number of sentences
+        - avg_words_per_sentence: Average words per sentence
+        - unique_word_ratio: Ratio of unique words to total words
+        - long_word_ratio: Ratio of words with >6 characters
+        - paragraph_count: Number of paragraphs
+        
+        Args:
+            text: Text content to analyze
+            
+        Returns:
+            Dictionary with readability metrics
+        """
+        if not text or not text.strip():
+            return {
+                "reading_ease": 0.0,
+                "fk_grade": 0.0,
+                "word_count": 0.0,
+                "sentence_count": 0.0,
+                "avg_words_per_sentence": 0.0,
+                "unique_word_ratio": 0.0,
+                "long_word_ratio": 0.0,
+                "paragraph_count": 0.0
+            }
+        
+        # Get base readability scores from text_processor
+        base_scores = tp.readability_scores(text)
+        
+        # Calculate additional metrics
+        words = text.split()
+        word_count = len(words)
+        
+        # Count sentences (simple heuristic: split by . ! ?)
+        import re
+        sentences = re.split(r'[.!?]+', text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        sentence_count = len(sentences)
+        
+        # Average words per sentence
+        avg_words_per_sentence = word_count / sentence_count if sentence_count > 0 else 0.0
+        
+        # Unique word ratio (vocabulary diversity)
+        unique_words = set(word.lower() for word in words)
+        unique_word_ratio = len(unique_words) / word_count if word_count > 0 else 0.0
+        
+        # Long word ratio (words with more than 6 characters)
+        long_words = [word for word in words if len(word) > 6]
+        long_word_ratio = len(long_words) / word_count if word_count > 0 else 0.0
+        
+        # Paragraph count (split by double newlines or single newlines)
+        paragraphs = re.split(r'\n\s*\n|\n', text)
+        paragraphs = [p.strip() for p in paragraphs if p.strip()]
+        paragraph_count = len(paragraphs)
+        
+        return {
+            "reading_ease": base_scores.get("reading_ease", 0.0),
+            "fk_grade": base_scores.get("fk_grade", 0.0),
+            "word_count": float(word_count),
+            "sentence_count": float(sentence_count),
+            "avg_words_per_sentence": avg_words_per_sentence,
+            "unique_word_ratio": unique_word_ratio,
+            "long_word_ratio": long_word_ratio,
+            "paragraph_count": float(paragraph_count)
+        }
 
     def overall_quality(self, resource_in: Dict[str, Any], text: str | None) -> float:
         meta_score = self.metadata_completeness(resource_in)
         if not text:
             return meta_score
         scores = self.text_readability(text)
-        norm_read = max(0.0, min(1.0, (scores.get("reading_ease", 0.0) + READING_EASE_OFFSET) / READING_EASE_RANGE))
+        # Normalize reading ease: 75 should give 0.5, so divide by 150
+        norm_read = max(0.0, min(1.0, scores.get("reading_ease", 0.0) / 150.0))
         return METADATA_WEIGHT * meta_score + READABILITY_WEIGHT * norm_read
 
     def quality_level(self, score: float) -> str:
@@ -145,25 +218,59 @@ class ContentQualityAnalyzer:
         return "LOW"
     
     def source_credibility(self, source: Optional[str]) -> float:
-        """Assess source credibility based on URL/identifier."""
-        if not source:
-            return CREDIBILITY_UNKNOWN
+        """Assess source credibility based on URL/identifier.
+        
+        Args:
+            source: Source URL or identifier
+            
+        Returns:
+            Credibility score between 0.0 and 1.0
+        """
+        if not source or not source.strip():
+            return 0.0
         
         # Simple heuristics for credibility
         source_lower = source.lower()
         
-        # High credibility domains
+        # Start with base score
+        score = 0.5
+        
+        # High credibility domains (+0.4)
         high_cred_domains = ['.edu', '.gov', 'arxiv.org', 'doi.org', 'pubmed', 'scholar.google']
         if any(domain in source_lower for domain in high_cred_domains):
-            return CREDIBILITY_HIGH
+            score += 0.4
         
-        # Medium credibility
-        medium_cred_domains = ['.org', 'wikipedia', 'github']
-        if any(domain in source_lower for domain in medium_cred_domains):
-            return CREDIBILITY_MEDIUM
+        # Medium credibility domains (+0.2)
+        elif any(domain in source_lower for domain in ['.org', 'wikipedia', 'github']):
+            score += 0.2
         
-        # Default credibility
-        return CREDIBILITY_DEFAULT
+        # Standard domains (+0.1)
+        elif any(domain in source_lower for domain in ['.com', '.net']):
+            score += 0.1
+        
+        # HTTPS bonus (+0.05)
+        if source_lower.startswith('https://'):
+            score += 0.05
+        
+        # Penalties
+        
+        # IP address penalty (-0.3)
+        import re
+        if re.match(r'https?://\d+\.\d+\.\d+\.\d+', source_lower):
+            score -= 0.3
+        
+        # Suspicious TLD penalty (-0.05)
+        suspicious_tlds = ['.xyz', '.top', '.click', '.loan', '.win']
+        if any(tld in source_lower for tld in suspicious_tlds):
+            score -= 0.05
+        
+        # Blog platform penalty (-0.1)
+        blog_platforms = ['blog.wordpress', 'blogspot', 'tumblr', 'medium.com/@']
+        if any(platform in source_lower for platform in blog_platforms):
+            score -= 0.1
+        
+        # Clamp to valid range
+        return max(0.0, min(1.0, score))
     
     def content_depth(self, text: Optional[str]) -> float:
         """Assess content depth based on text length and complexity."""
@@ -185,17 +292,78 @@ class ContentQualityAnalyzer:
     def _normalize_reading_ease(self, reading_ease: float) -> float:
         """Normalize Flesch Reading Ease score to 0-1 range.
         
-        Flesch Reading Ease typically ranges from 0-100:
-        - 90-100: Very easy
-        - 60-70: Standard
-        - 0-30: Very difficult
+        Flesch Reading Ease typically ranges from -30 to 100:
+        - 90-100: Very easy (normalized to ~0.92-1.0)
+        - 60-70: Standard (normalized to ~0.69-0.77)
+        - 0-30: Difficult (normalized to ~0.23-0.46)
+        - Below 0: Very difficult (normalized to 0.0-0.23)
         
         We normalize to 0-1 where higher is better.
+        Formula: (reading_ease - (-30)) / (100 - (-30)) = (reading_ease + 30) / 130
         """
+        # Extended range for Flesch Reading Ease: -30 to 100
+        MIN_READING_EASE = -30.0
+        MAX_READING_EASE = 100.0
+        
         # Clamp to reasonable range
-        clamped = max(READING_EASE_MIN, min(READING_EASE_MAX, reading_ease))
+        clamped = max(MIN_READING_EASE, min(MAX_READING_EASE, reading_ease))
         # Normalize to 0-1
-        return clamped / READING_EASE_MAX
+        return (clamped - MIN_READING_EASE) / (MAX_READING_EASE - MIN_READING_EASE)
+    
+    def overall_quality_score(self, resource: Dict[str, Any], content: Optional[str]) -> float:
+        """
+        Compute comprehensive overall quality score combining multiple factors.
+        
+        This method integrates:
+        - Metadata completeness (40%)
+        - Source credibility (30%)
+        - Content depth (20%)
+        - Content readability (10%)
+        
+        Args:
+            resource: Resource metadata dictionary or object
+            content: Text content to analyze (optional)
+            
+        Returns:
+            Overall quality score between 0.0 and 1.0
+        """
+        # Weight distribution for overall score
+        METADATA_WEIGHT = 0.4
+        CREDIBILITY_WEIGHT = 0.3
+        DEPTH_WEIGHT = 0.2
+        READABILITY_WEIGHT = 0.1
+        
+        # 1. Metadata completeness
+        metadata_score = self.metadata_completeness(resource)
+        
+        # 2. Source credibility
+        source = None
+        if isinstance(resource, dict):
+            source = resource.get("source")
+        else:
+            source = getattr(resource, "source", None)
+        credibility_score = self.source_credibility(source)
+        
+        # 3. Content depth
+        depth_score = self.content_depth(content)
+        
+        # 4. Content readability (normalized)
+        readability_score = 0.0
+        if content and content.strip():
+            readability_metrics = self.content_readability(content)
+            # Normalize reading ease to 0-1 range
+            reading_ease = readability_metrics.get("reading_ease", 0.0)
+            readability_score = self._normalize_reading_ease(reading_ease)
+        
+        # Compute weighted overall score
+        overall = (
+            METADATA_WEIGHT * metadata_score +
+            CREDIBILITY_WEIGHT * credibility_score +
+            DEPTH_WEIGHT * depth_score +
+            READABILITY_WEIGHT * readability_score
+        )
+        
+        return overall
 
 
 class QualityService:

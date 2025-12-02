@@ -763,3 +763,82 @@ def cleanup_expired_cache_task():
     except Exception as e:
         logger.error(f"Error in cache cleanup: {e}", exc_info=True)
         raise
+
+
+@celery_app.task(
+    bind=True,
+    base=DatabaseTask,
+    max_retries=3,
+    default_retry_delay=60,
+    name="app.tasks.celery_tasks.update_collection_embeddings_task"
+)
+def update_collection_embeddings_task(self, resource_id: str, db=None) -> Dict[str, Any]:
+    """
+    Update collection embeddings after a resource is deleted.
+    
+    This task finds all collections that contained the deleted resource and
+    recomputes their embeddings. Collection embeddings are the average of
+    member resource embeddings, so they need to be updated when membership changes.
+    
+    Args:
+        resource_id: UUID of the deleted resource
+        db: Database session (automatically provided by DatabaseTask)
+        
+    Returns:
+        Dict with status and number of collections updated
+        
+    Raises:
+        Exception: If collection embedding update fails (will retry)
+    """
+    import uuid
+    from ..services.collection_service import CollectionService
+    from ..database.models import Collection, CollectionResource
+    
+    try:
+        logger.info(f"Updating collection embeddings for deleted resource {resource_id}")
+        
+        # Convert resource_id to UUID
+        try:
+            resource_uuid = uuid.UUID(resource_id)
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid resource_id format: {resource_id}")
+            return {"status": "error", "message": f"Invalid UUID: {e}"}
+        
+        # Find all collections that contained this resource
+        # Note: The resource is already deleted, but we can find collections
+        # that need updating by checking for any that might have had it
+        collection_service = CollectionService(db)
+        
+        # Get all collections (we'll recompute all since we can't query deleted resource)
+        # In a production system, you might want to track this relationship before deletion
+        collections = db.query(Collection).all()
+        
+        updated_count = 0
+        for collection in collections:
+            try:
+                # Recompute embedding for each collection
+                collection_service.compute_collection_embedding(collection.id)
+                updated_count += 1
+                logger.debug(f"Updated embedding for collection {collection.id}")
+            except Exception as e:
+                logger.warning(f"Failed to update collection {collection.id}: {e}")
+                # Continue with other collections
+        
+        logger.info(
+            f"Updated {updated_count} collection embeddings after resource {resource_id} deletion"
+        )
+        
+        return {
+            "status": "success",
+            "resource_id": resource_id,
+            "collections_updated": updated_count
+        }
+        
+    except Exception as e:
+        logger.error(
+            f"Error updating collection embeddings for resource {resource_id}: {e}",
+            exc_info=True
+        )
+        
+        # Retry with exponential backoff
+        raise self.retry(exc=e, countdown=2 ** self.request.retries * 60)

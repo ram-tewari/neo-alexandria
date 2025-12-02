@@ -30,10 +30,10 @@ class TestEndToEndQualityAssessment:
         # Create resource
         resource = Resource(
             title="Complete Research Article",
-            url="https://arxiv.org/abs/2024.12345",
+            source="https://arxiv.org/abs/2024.12345",
             content="Comprehensive research article about machine learning quality assessment.",
             summary="Research on ML quality assessment",
-            resource_type="article",
+            type="article",
             authors="Dr. Jane Smith, Dr. John Doe",
             publication_year=2024,
             doi="10.1234/ml.quality.2024",
@@ -71,9 +71,9 @@ class TestEndToEndQualityAssessment:
         # Create resource
         resource = Resource(
             title="Cited Research",
-            url="https://example.com/cited",
+            source="https://example.com/cited",
             content="Research with citations",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -109,9 +109,9 @@ class TestEndToEndQualityAssessment:
         # Create resource with scholarly metadata
         resource = Resource(
             title="Scholarly Article",
-            url="https://example.com/scholarly",
+            source="https://example.com/scholarly",
             content="Scholarly research article",
-            resource_type="article",
+            type="article",
             doi="10.1234/scholarly.2024",
             pmid="12345678",
             arxiv_id="2024.12345",
@@ -146,9 +146,9 @@ class TestEndToEndQualityAssessment:
         # Create resource
         resource = Resource(
             title="ML Research",
-            url="https://example.com/ml",
+            source="https://example.com/ml",
             content="Machine learning research",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -179,11 +179,11 @@ class TestSummarizationEvaluationWorkflow:
         # Create resource with summary
         resource = Resource(
             title="Research Article",
-            url="https://example.com/research",
+            source="https://example.com/research",
             content="This is a comprehensive research article about machine learning quality "
                     "assessment techniques and methodologies for production systems.",
             summary="Article about ML quality assessment in production.",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -223,9 +223,9 @@ class TestOutlierDetectionWorkflow:
         for i in range(15):
             resource = Resource(
                 title=f"Normal Resource {i}",
-                url=f"https://example.com/normal{i}",
+                source=f"https://example.com/normal{i}",
                 content=f"Normal content {i}",
-                resource_type="article",
+                type="article",
                 quality_accuracy=0.7 + (i % 3) * 0.05,
                 quality_completeness=0.68 + (i % 4) * 0.06,
                 quality_consistency=0.72 + (i % 2) * 0.04,
@@ -239,9 +239,9 @@ class TestOutlierDetectionWorkflow:
         for i in range(3):
             resource = Resource(
                 title=f"Outlier Resource {i}",
-                url=f"https://example.com/outlier{i}",
+                source=f"https://example.com/outlier{i}",
                 content=f"Outlier content {i}",
-                resource_type="article",
+                type="article",
                 quality_accuracy=0.15,
                 quality_completeness=0.2,
                 quality_consistency=0.18,
@@ -285,9 +285,9 @@ class TestQualityDegradationWorkflow:
         # Create resource with old quality score
         resource = Resource(
             title="Aging Resource",
-            url="https://example.com/aging",
+            source="https://example.com/aging",
             content="Content that may degrade",
-            resource_type="article",
+            type="article",
             quality_overall=0.85,
             quality_accuracy=0.85,
             quality_completeness=0.85,
@@ -320,10 +320,10 @@ class TestCrossPhaseIntegration:
         # 1. Create resource with full metadata
         resource = Resource(
             title="Complete Lifecycle Resource",
-            url="https://arxiv.org/abs/2024.complete",
+            source="https://arxiv.org/abs/2024.complete",
             content="Comprehensive research article with full metadata and citations.",
             summary="Complete research with metadata",
-            resource_type="article",
+            type="article",
             authors="Dr. Complete",
             publication_year=2024,
             doi="10.1234/complete.2024",

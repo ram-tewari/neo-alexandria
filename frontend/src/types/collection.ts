@@ -28,6 +28,7 @@ export interface CollectionCreate {
   description?: string;
   visibility?: 'private' | 'shared' | 'public';
   parent_id?: string;
+  smart_definition?: SmartCollectionDefinition;
 }
 
 export interface CollectionUpdate {
@@ -48,4 +49,26 @@ export interface CollectionListParams {
   limit?: number;
   owner_id?: string;
   visibility?: 'private' | 'shared' | 'public';
+}
+
+export interface CollectionStats {
+  resourceCount: number;
+  avgQuality: number;
+  lastUpdated: string;
+  topTags: string[];
+}
+
+export type SmartCollectionRuleOperator = 'equals' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte' | 'in';
+export type SmartCollectionRuleField = 'quality' | 'classification' | 'tags' | 'created_at' | 'author';
+
+export interface SmartCollectionRule {
+  id: string;
+  field: SmartCollectionRuleField;
+  operator: SmartCollectionRuleOperator;
+  value: string | number | string[];
+}
+
+export interface SmartCollectionDefinition {
+  rules: SmartCollectionRule[];
+  matchType: 'all' | 'any';
 }

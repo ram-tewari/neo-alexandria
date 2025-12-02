@@ -9,6 +9,7 @@ import { MiniKnowledgeGraph } from '../common/MiniKnowledgeGraph';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { GradientOrbs } from '../background/GradientOrbs';
 import { DeepPurpleOrbs } from '../background/DeepPurpleOrbs';
+import { RecommendationsSection } from '../features/recommendations/dashboard/RecommendationsSection';
 import { pageVariants, staggerContainer, staggerItem } from '../../animations/variants';
 import { useResourceStore } from '@/store';
 import type { StatData } from '../../types';
@@ -22,10 +23,10 @@ const stats: StatData[] = [
 ];
 
 export const Dashboard = () => {
-  const { 
-    resources, 
-    isLoading, 
-    error, 
+  const {
+    resources,
+    isLoading,
+    error,
     viewMode,
     pagination,
     fetchResources,
@@ -86,10 +87,10 @@ export const Dashboard = () => {
     >
       <GradientOrbs />
       <DeepPurpleOrbs />
-      
+
       <div className="container">
         <div className="page-header">
-          <motion.h1 
+          <motion.h1
             className="page-title welcome-text"
             animate={{
               backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -105,76 +106,100 @@ export const Dashboard = () => {
           <p className="page-subtitle">Here's what's happening in your knowledge space today.</p>
         </div>
 
-      <div style={{ marginBottom: '2.5rem' }}>
-        <SearchInput placeholder="Search resources, tags, or topics..." />
-      </div>
-
-      <motion.div
-        className="stats-grid"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        {updatedStats.map((stat, index) => (
-          <motion.div key={index} variants={staggerItem}>
-            <StatCard {...stat} />
-          </motion.div>
-        ))}
-      </motion.div>
-
-      <div style={{ marginBottom: '3rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>
-            Recent Resources
-          </h2>
-          <Button variant="secondary" size="sm" onClick={handleRefresh}>
-            Refresh
-          </Button>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <SearchInput placeholder="Search resources, tags, or topics..." />
         </div>
 
-        {error && (
-          <div style={{ 
-            padding: '1rem', 
-            background: 'rgba(239, 68, 68, 0.1)', 
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--destructive)',
-            marginBottom: '1rem'
-          }}>
-            Error loading resources: {error}
-          </div>
-        )}
+        <motion.div
+          className="stats-grid"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          {updatedStats.map((stat, index) => (
+            <motion.div key={index} variants={staggerItem}>
+              <StatCard {...stat} />
+            </motion.div>
+          ))}
+        </motion.div>
 
-        {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <LoadingSpinner size="lg" />
+        {/* Recommendations Feed */}
+        <div className="recommendations-feed" style={{ marginTop: '3rem' }}>
+          <RecommendationsSection
+            title="Fresh Finds"
+            subtitle="New arrivals that match your interests"
+            category="fresh_finds"
+            gradient="linear-gradient(90deg, #FF0080 0%, #7928CA 100%)"
+          />
+
+          <RecommendationsSection
+            title="Similar to Recent"
+            subtitle="Because you read 'The Future of AI'"
+            category="similar_to_recent"
+            gradient="linear-gradient(90deg, #007CF0 0%, #00DFD8 100%)"
+          />
+
+          <RecommendationsSection
+            title="Hidden Gems"
+            subtitle="Highly rated but less discovered"
+            category="hidden_gems"
+            gradient="linear-gradient(90deg, #FF4D4D 0%, #F9CB28 100%)"
+          />
+        </div>
+
+        <div style={{ marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary-white)' }}>
+              Recent Resources
+            </h2>
+            <Button variant="secondary" size="sm" onClick={handleRefresh}>
+              Refresh
+            </Button>
           </div>
-        ) : resources.length > 0 ? (
-          <Carousel speed={20} pauseOnHover={true}>
-            {resources.slice(0, 10).map((resource, index) => (
-              <div key={resource.id} style={{ width: '380px' }}>
-                <ResourceCard 
-                  resource={resource}
-                  viewMode={viewMode}
-                  delay={index * 0.1}
-                  onRead={handleRead}
-                  onArchive={handleArchive}
-                  onAnnotate={handleAnnotate}
-                  onShare={handleShare}
-                />
-              </div>
-            ))}
-          </Carousel>
-        ) : (
-          <div style={{ 
-            padding: '3rem', 
-            textAlign: 'center',
-            color: 'var(--text-secondary)'
-          }}>
-            <p>No resources found. Start by adding some resources to your library!</p>
-          </div>
-        )}
-      </div>
+
+          {error && (
+            <div style={{
+              padding: '1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--destructive)',
+              marginBottom: '1rem'
+            }}>
+              Error loading resources: {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : resources.length > 0 ? (
+            <Carousel speed={20} pauseOnHover={true}>
+              {resources.slice(0, 10).map((resource, index) => (
+                <div key={resource.id} style={{ width: '380px' }}>
+                  <ResourceCard
+                    resource={resource}
+                    viewMode={viewMode}
+                    delay={index * 0.1}
+                    onRead={handleRead}
+                    onArchive={handleArchive}
+                    onAnnotate={handleAnnotate}
+                    onShare={handleShare}
+                  />
+                </div>
+              ))}
+            </Carousel>
+          ) : (
+            <div style={{
+              padding: '3rem',
+              textAlign: 'center',
+              color: 'var(--text-secondary)'
+            }}>
+              <p>No resources found. Start by adding some resources to your library!</p>
+            </div>
+          )}
+        </div>
 
         <div className="activity-section">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>

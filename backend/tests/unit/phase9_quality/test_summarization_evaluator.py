@@ -26,12 +26,12 @@ def resource_with_summary(db_session: Session):
     """Create resource with summary for testing."""
     resource = Resource(
         title="Machine Learning Quality Assessment",
-        url="https://example.com/ml-quality",
+        source="https://example.com/ml-quality",
         content="This is a comprehensive article about machine learning quality assessment techniques. "
                 "It covers various metrics, evaluation methods, and best practices for ensuring "
                 "high-quality machine learning models in production environments.",
         summary="Article about ML quality assessment covering metrics and best practices.",
-        resource_type="article"
+        type="article"
     )
     db_session.add(resource)
     db_session.commit()
@@ -319,9 +319,9 @@ class TestEvaluateSummary:
         """Test evaluate_summary raises error when no summary exists."""
         resource = Resource(
             title="No Summary",
-            url="https://example.com/no-summary",
+            source="https://example.com/no-summary",
             content="Content without summary",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()

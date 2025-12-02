@@ -17,8 +17,8 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime
 from uuid import uuid4
 
-from app.events.event_system import event_emitter, EventPriority
-from app.events.event_types import SystemEvent
+from backend.app.events import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
 from app.services.resource_service import (
     create_pending_resource,
     update_resource,
@@ -265,8 +265,7 @@ class TestUserInteractionEvents:
         # Create user
         user = User(
             username="testuser",
-            email="test@example.com",
-            hashed_password="hashed"
+            email="test@example.com"
         )
         db_session.add(user)
         
@@ -306,8 +305,7 @@ class TestUserInteractionEvents:
         # Arrange
         user = User(
             username="testuser",
-            email="test@example.com",
-            hashed_password="hashed"
+            email="test@example.com"
         )
         db_session.add(user)
         
@@ -442,7 +440,7 @@ class TestEventDataCompleteness:
     def test_user_interaction_event_has_required_fields(self, db_session):
         """Test that user.interaction_tracked event has all required fields."""
         # Arrange
-        user = User(username="test", email="test@example.com", hashed_password="hash")
+        user = User(username="test", email="test@example.com")
         db_session.add(user)
         resource = create_pending_resource(db_session, {"url": "https://example.com/test.pdf"})
         db_session.commit()
@@ -483,7 +481,7 @@ class TestEventPriorities:
     def test_user_interaction_has_low_priority(self, db_session):
         """Test that user.interaction_tracked event has LOW priority."""
         # Arrange
-        user = User(username="test", email="test@example.com", hashed_password="hash")
+        user = User(username="test", email="test@example.com")
         db_session.add(user)
         resource = create_pending_resource(db_session, {"url": "https://example.com/test.pdf"})
         db_session.commit()

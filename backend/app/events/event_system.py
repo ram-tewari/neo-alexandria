@@ -218,6 +218,40 @@ class EventEmitter:
         """Clear event history for testing purposes."""
         self._event_history.clear()
         logger.debug("Cleared event history")
+    
+    def get_subscribers(self, event_name: Optional[str] = None) -> Dict[str, List[Callable]]:
+        """Get subscribers for testing/debugging.
+        
+        Args:
+            event_name: Specific event to get subscribers for, or None for all
+            
+        Returns:
+            Dictionary mapping event names to lists of handler functions
+        """
+        if event_name:
+            return {event_name: [h["handler"] for h in self._listeners.get(event_name, [])]}
+        
+        # Return all subscribers
+        return {
+            event: [h["handler"] for h in handlers]
+            for event, handlers in self._listeners.items()
+        }
+    
+    def clear_subscribers(self, event_name: Optional[str] = None) -> None:
+        """Clear subscribers (alias for clear_listeners for API consistency).
+        
+        Args:
+            event_name: Specific event to clear, or None to clear all
+        """
+        self.clear_listeners(event_name)
+    
+    def get_history(self) -> List[Event]:
+        """Get event history (returns Event objects for testing).
+        
+        Returns:
+            List of Event objects from history
+        """
+        return list(self._event_history)
 
 
 # Global singleton instance

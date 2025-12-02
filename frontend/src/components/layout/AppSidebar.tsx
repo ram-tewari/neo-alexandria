@@ -44,6 +44,12 @@ export function AppSidebar() {
 
   const renderSidebarItem = (item: SidebarItem) => {
     const IconComponent = icons[item.iconName];
+
+    if (!IconComponent) {
+      console.error(`Icon not found for name: ${item.iconName}`);
+      return null;
+    }
+
     const isActive = item.path ? location.pathname === item.path : false;
 
     return (
@@ -138,7 +144,7 @@ export function AppSidebar() {
           </motion.button>
         </div>
         <SidebarSeparator style={{ margin: '0.75rem 0' }} />
-        
+
         {sidebarSections.map((section, index) => (
           <div key={section.id}>
             {renderSection(section, index)}

@@ -7,7 +7,7 @@ validation and business logic for recommendation scoring and ranking.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from backend.app.domain import (
     ValueObject,
     validate_non_empty,
@@ -463,3 +463,7 @@ class Recommendation(ValueObject):
             reason=data.get('reason'),
             metadata=data.get('metadata')
         )
+
+
+# Type alias for backward compatibility
+RecommendationResult = Recommendation

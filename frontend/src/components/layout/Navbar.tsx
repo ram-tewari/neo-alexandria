@@ -11,6 +11,7 @@ import './Navbar.css';
 const navLinks: NavLink[] = [
   { path: '/', label: 'Dashboard' },
   { path: '/library', label: 'Library' },
+  { path: '/collections', label: 'Collections' },
   { path: '/graph', label: 'Knowledge Graph' },
 ];
 
@@ -24,7 +25,7 @@ export const Navbar = () => {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
       <div className="navbar-glass">
         <div className="nav-content">
-          <motion.button 
+          <motion.button
             className="mobile-menu-toggle"
             onClick={toggleSidebar}
             aria-label="Toggle menu"
@@ -34,8 +35,8 @@ export const Navbar = () => {
             <Icon icon={icons.menu} size={20} />
           </motion.button>
 
-          <motion.div 
-            className="nav-logo" 
+          <motion.div
+            className="nav-logo"
             onClick={() => navigate('/')}
             whileHover={{ scale: 1.02 }}
             style={{ cursor: 'pointer' }}
@@ -67,8 +68,8 @@ export const Navbar = () => {
 
           <div className="nav-actions">
             <ModeToggle />
-            <motion.button 
-              className="notification-btn" 
+            <motion.button
+              className="notification-btn"
               aria-label="Notifications"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -76,7 +77,7 @@ export const Navbar = () => {
               <Icon icon={icons.notification} size={20} />
               <span className="notification-badge">3</span>
             </motion.button>
-            <motion.div 
+            <motion.div
               className="user-avatar"
               whileHover={{ scale: 1.1 }}
             >

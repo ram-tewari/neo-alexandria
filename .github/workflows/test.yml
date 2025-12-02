@@ -7,8 +7,47 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  module-isolation:
+    name: Module Isolation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Check module isolation
+        run: |
+          cd backend
+          echo "::group::Module Isolation Check"
+          python scripts/check_module_isolation.py --verbose
+          echo "::endgroup::"
+        continue-on-error: false
+      
+      - name: Generate isolation report
+        if: failure()
+        run: |
+          cd backend
+          echo '## ❌ Module Isolation Check Failed' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo 'Modules must communicate through events, not direct imports.' >> $GITHUB_STEP_SUMMARY
+          echo 'Allowed imports: `app.shared.*` (shared kernel only)' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo 'Run `python backend/scripts/check_module_isolation.py --verbose --graph` locally for details.' >> $GITHUB_STEP_SUMMARY
+      
+      - name: Report success
+        if: success()
+        run: |
+          echo '## ✅ Module Isolation Check Passed' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo 'All modules are properly isolated and follow vertical slice architecture rules.' >> $GITHUB_STEP_SUMMARY
+
   test:
     runs-on: ubuntu-latest
+    needs: module-isolation
     strategy:
       matrix:
         python-version: ['3.10', '3.11']
@@ -102,6 +141,7 @@ jobs:
 
   test-full-suite:
     runs-on: ubuntu-latest
+    needs: module-isolation
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:

@@ -1,0 +1,78 @@
+.annotations-tab {
+  min-height: 400px;
+}
+
+.annotations-tab .placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12) var(--spacing-4);
+  text-align: center;
+}
+
+.annotations-tab .placeholder-icon {
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-6);
+}
+
+.annotations-tab .placeholder-content h3 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.annotations-tab .placeholder-content p {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-6);
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.annotations-tab .placeholder-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+  width: 100%;
+  max-width: 400px;
+}
+
+.annotations-tab .placeholder-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.annotations-tab .placeholder-feature svg {
+  flex-shrink: 0;
+  color: var(--accent-purple);
+  opacity: 0.6;
+}
+
+.annotations-tab .placeholder-status {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--accent-purple);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--surface-accent);
+  border-radius: var(--radius-full);
+}
+
+@media (max-width: 768px) {
+  .annotations-tab .placeholder-content {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .annotations-tab .placeholder-features {
+    max-width: 100%;
+  }
+}

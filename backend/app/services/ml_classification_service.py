@@ -27,7 +27,12 @@ from typing import List, Dict, Any, Optional, Tuple
 import logging
 
 from sqlalchemy.orm import Session
-from backend.app.domain.classification import ClassificationResult, ClassificationPrediction
+from backend.app.domain.classification import (
+    ClassificationResult, 
+    ClassificationPrediction,
+    TrainingExample,
+    TrainingResult
+)
 
 # ML imports will be lazy-loaded
 # import torch
@@ -1745,3 +1750,347 @@ class MLClassificationService:
             logger.error(f"Error updating human feedback: {e}")
             self.db.rollback()
             return False
+
+
+
+class ClassificationTrainer:
+    """
+    Handles training of classification models.
+    
+    This class provides methods for training transformer-based classification models,
+    including standard supervised training, semi-supervised learning with pseudo-labeling,
+    and checkpoint management.
+    
+    The trainer is designed to work with the MLClassificationService and provides
+    a clean separation between training operations and inference operations.
+    """
+    
+    def __init__(self, model_dir: str = "models/classification"):
+        """
+        Initialize the classification trainer.
+        
+        Args:
+            model_dir: Directory for saving model checkpoints (default: "models/classification")
+        
+        Requirements: 8.1
+        """
+        self.model_dir = Path(model_dir)
+        self.model_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"ClassificationTrainer initialized with model_dir={self.model_dir}")
+    
+    def train(
+        self,
+        training_data: List['TrainingExample'],
+        model_name: str = "default",
+        epochs: int = DEFAULT_EPOCHS,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        learning_rate: float = DEFAULT_LEARNING_RATE,
+        validation_split: float = VALIDATION_SPLIT_RATIO
+    ) -> 'TrainingResult':
+        """
+        Train classification model on labeled data.
+        
+        This method performs supervised training on labeled examples, saves the
+        trained model checkpoint, and returns training metrics.
+        
+        Args:
+            training_data: List of TrainingExample objects with text and labels
+            model_name: Name for the trained model (default: "default")
+            epochs: Number of training epochs (default: 3)
+            batch_size: Training batch size (default: 16)
+            learning_rate: Learning rate for optimizer (default: 2e-5)
+            validation_split: Fraction of data to use for validation (default: 0.2)
+        
+        Returns:
+            TrainingResult containing metrics and checkpoint path
+        
+        Raises:
+            ValueError: If training_data is empty or invalid
+            ImportError: If required ML libraries not installed
+        
+        Algorithm:
+        1. Validate training data
+        2. Convert TrainingExample objects to (text, labels) format
+        3. Initialize MLClassificationService
+        4. Call fine_tune() method
+        5. Package results into TrainingResult domain object
+        6. Return TrainingResult
+        
+        Requirements: 8.1, 8.4
+        """
+        import time
+        from backend.app.domain.classification import TrainingResult
+        
+        logger.info(f"Starting training with {len(training_data)} examples")
+        logger.info(f"Model: {model_name}, Epochs: {epochs}, Batch size: {batch_size}")
+        
+        # Validate training data
+        if not training_data:
+            raise ValueError("training_data cannot be empty")
+        
+        # Validate all training examples
+        for example in training_data:
+            example.validate()
+        
+        # Convert TrainingExample objects to (text, [labels]) format
+        # Expected by MLClassificationService.fine_tune()
+        labeled_data = []
+        for example in training_data:
+            # Handle both single label and comma-separated labels
+            if ',' in example.label:
+                labels = [label.strip() for label in example.label.split(',')]
+            else:
+                labels = [example.label]
+            
+            labeled_data.append((example.text, labels))
+        
+        logger.info(f"Converted {len(labeled_data)} training examples")
+        
+        # Initialize service (we need a db session, but for training we can use None)
+        # The service will handle model initialization
+        from sqlalchemy.orm import Session
+        db = Session()  # Create a temporary session
+        
+        try:
+            # Create service instance
+            service = MLClassificationService(
+                db=db,
+                model_name=DEFAULT_MODEL_NAME,
+                model_version=model_name
+            )
+            
+            # Track training time
+            start_time = time.time()
+            
+            # Perform training
+            metrics = service.fine_tune(
+                labeled_data=labeled_data,
+                unlabeled_data=None,
+                epochs=epochs,
+                batch_size=batch_size,
+                learning_rate=learning_rate
+            )
+            
+            training_time = time.time() - start_time
+            
+            # Get checkpoint path
+            checkpoint_path = str(service.checkpoint_dir)
+            
+            # Create TrainingResult domain object
+            result = TrainingResult(
+                model_name=model_name,
+                final_loss=metrics.get('loss', 0.0),
+                checkpoint_path=checkpoint_path,
+                metrics=metrics,
+                num_epochs=epochs,
+                training_time_seconds=training_time
+            )
+            
+            logger.info(f"Training complete in {training_time:.2f}s")
+            logger.info(f"Final metrics: {metrics}")
+            logger.info(f"Checkpoint saved to: {checkpoint_path}")
+            
+            return result
+            
+        finally:
+            db.close()
+    
+    def train_semi_supervised(
+        self,
+        labeled_data: List['TrainingExample'],
+        unlabeled_data: List[str],
+        confidence_threshold: float = SEMI_SUPERVISED_CONFIDENCE_THRESHOLD,
+        model_name: str = "semi_supervised",
+        epochs: int = DEFAULT_EPOCHS,
+        batch_size: int = DEFAULT_BATCH_SIZE
+    ) -> 'TrainingResult':
+        """
+        Train using semi-supervised learning with pseudo-labeling.
+        
+        This method first trains on labeled data, then generates pseudo-labels
+        for unlabeled data using high-confidence predictions, and finally
+        retrains on the combined dataset.
+        
+        Args:
+            labeled_data: List of TrainingExample objects with labels
+            unlabeled_data: List of unlabeled text strings
+            confidence_threshold: Minimum confidence for pseudo-labels (default: 0.9)
+            model_name: Name for the trained model (default: "semi_supervised")
+            epochs: Number of training epochs (default: 3)
+            batch_size: Training batch size (default: 16)
+        
+        Returns:
+            TrainingResult containing metrics and checkpoint path
+        
+        Raises:
+            ValueError: If labeled_data is empty or invalid
+        
+        Algorithm:
+        1. Validate labeled data
+        2. Convert TrainingExample objects to (text, labels) format
+        3. Initialize MLClassificationService
+        4. Call fine_tune() with both labeled and unlabeled data
+        5. Service will handle pseudo-labeling internally
+        6. Package results into TrainingResult domain object
+        7. Return TrainingResult
+        
+        Requirements: 8.2, 8.4
+        """
+        import time
+        from backend.app.domain.classification import TrainingResult
+        
+        logger.info(f"Starting semi-supervised training")
+        logger.info(f"Labeled: {len(labeled_data)}, Unlabeled: {len(unlabeled_data)}")
+        logger.info(f"Confidence threshold: {confidence_threshold}")
+        
+        # Validate labeled data
+        if not labeled_data:
+            raise ValueError("labeled_data cannot be empty")
+        
+        # Validate all training examples
+        for example in labeled_data:
+            example.validate()
+        
+        # Convert TrainingExample objects to (text, [labels]) format
+        labeled_tuples = []
+        for example in labeled_data:
+            # Handle both single label and comma-separated labels
+            if ',' in example.label:
+                labels = [label.strip() for label in example.label.split(',')]
+            else:
+                labels = [example.label]
+            
+            labeled_tuples.append((example.text, labels))
+        
+        logger.info(f"Converted {len(labeled_tuples)} labeled examples")
+        
+        # Initialize service
+        from sqlalchemy.orm import Session
+        db = Session()
+        
+        try:
+            # Create service instance
+            service = MLClassificationService(
+                db=db,
+                model_name=DEFAULT_MODEL_NAME,
+                model_version=model_name
+            )
+            
+            # Track training time
+            start_time = time.time()
+            
+            # Perform semi-supervised training
+            # The service will handle pseudo-labeling internally
+            metrics = service.fine_tune(
+                labeled_data=labeled_tuples,
+                unlabeled_data=unlabeled_data,
+                epochs=epochs,
+                batch_size=batch_size,
+                learning_rate=DEFAULT_LEARNING_RATE
+            )
+            
+            training_time = time.time() - start_time
+            
+            # Get checkpoint path
+            checkpoint_path = str(service.checkpoint_dir)
+            
+            # Create TrainingResult domain object
+            result = TrainingResult(
+                model_name=model_name,
+                final_loss=metrics.get('loss', 0.0),
+                checkpoint_path=checkpoint_path,
+                metrics=metrics,
+                num_epochs=epochs,
+                training_time_seconds=training_time
+            )
+            
+            logger.info(f"Semi-supervised training complete in {training_time:.2f}s")
+            logger.info(f"Final metrics: {metrics}")
+            logger.info(f"Checkpoint saved to: {checkpoint_path}")
+            
+            return result
+            
+        finally:
+            db.close()
+    
+    def load_checkpoint(self, checkpoint_path: str) -> 'MLClassificationService':
+        """
+        Load model from checkpoint.
+        
+        This method loads a previously trained model from a checkpoint directory.
+        It handles both absolute and relative paths, and searches in multiple
+        possible locations.
+        
+        Args:
+            checkpoint_path: Path to checkpoint directory (absolute or relative)
+        
+        Returns:
+            MLClassificationService instance with loaded model
+        
+        Raises:
+            FileNotFoundError: If checkpoint not found
+            Exception: If model loading fails
+        
+        Algorithm:
+        1. Convert checkpoint_path to Path object
+        2. Check if path exists as absolute path
+        3. If not, try relative to model_dir
+        4. If not, try relative to project root
+        5. If found, create MLClassificationService with that checkpoint
+        6. Return service instance
+        
+        Requirements: 8.3, 8.4
+        """
+        logger.info(f"Loading checkpoint from: {checkpoint_path}")
+        
+        # Convert to Path object
+        path = Path(checkpoint_path)
+        
+        # Try multiple possible locations
+        possible_paths = [
+            path,  # Absolute path or relative to current directory
+            self.model_dir / checkpoint_path,  # Relative to model_dir
+            Path("models") / "classification" / checkpoint_path,  # Relative to project root
+            Path("backend") / "models" / "classification" / checkpoint_path,  # Relative to backend
+        ]
+        
+        # Find the first existing path with model files
+        checkpoint_dir = None
+        for possible_path in possible_paths:
+            if possible_path.exists() and (possible_path / "config.json").exists():
+                checkpoint_dir = possible_path
+                logger.info(f"Found checkpoint at: {checkpoint_dir}")
+                break
+        
+        if checkpoint_dir is None:
+            error_msg = f"Checkpoint not found: {checkpoint_path}. Tried locations: {possible_paths}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        
+        # Extract model version from checkpoint path
+        # Assume format: models/classification/arxiv_v1.0.0
+        model_version = checkpoint_dir.name
+        if model_version.startswith("arxiv_"):
+            model_version = model_version[6:]  # Remove "arxiv_" prefix
+        
+        # Create service instance with loaded model
+        from sqlalchemy.orm import Session
+        db = Session()
+        
+        try:
+            service = MLClassificationService(
+                db=db,
+                model_name=DEFAULT_MODEL_NAME,
+                version=model_version
+            )
+            
+            # Force model loading
+            service._load_model()
+            
+            logger.info(f"Successfully loaded model from checkpoint: {checkpoint_dir}")
+            return service
+            
+        except Exception as e:
+            db.close()
+            logger.error(f"Failed to load checkpoint: {e}")
+            raise Exception(f"Model loading failed: {e}") from e

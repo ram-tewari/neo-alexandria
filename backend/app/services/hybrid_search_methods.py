@@ -28,7 +28,7 @@ from sqlalchemy import func, or_, asc, desc
 from sqlalchemy.orm import Session
 
 from backend.app.database.models import Resource
-from backend.app.schemas.search import SearchQuery, Facets
+from backend.app.modules.search.schema import SearchQuery, Facets
 from backend.app.services.ai_core import generate_embedding
 
 # Import numpy with fallback for vector operations

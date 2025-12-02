@@ -313,3 +313,231 @@ def cleanup_test_data(db: Session, *model_id_pairs):
     except Exception:
         db.rollback()
         raise
+
+
+# ============================================================================
+# Database Migration and Setup Utilities
+# ============================================================================
+
+def run_migrations(engine, alembic_ini_path: str = None):
+    """
+    Run Alembic migrations to create database schema.
+    
+    This function executes all Alembic migrations up to the latest version,
+    ensuring the test database schema matches the production schema exactly.
+    
+    Args:
+        engine: SQLAlchemy engine
+        alembic_ini_path: Path to alembic.ini file (optional, auto-detected if None)
+        
+    Example:
+        from sqlalchemy import create_engine
+        engine = create_engine("sqlite:///:memory:")
+        run_migrations(engine)
+    """
+    from alembic import command
+    from alembic.config import Config
+    from pathlib import Path
+    
+    # Auto-detect alembic.ini path if not provided
+    if alembic_ini_path is None:
+        backend_dir = Path(__file__).parent.parent
+        alembic_ini_path = backend_dir / "alembic.ini"
+    
+    if not Path(alembic_ini_path).exists():
+        raise FileNotFoundError(f"Alembic config not found at {alembic_ini_path}")
+    
+    # Configure Alembic
+    alembic_cfg = Config(str(alembic_ini_path))
+    alembic_cfg.set_main_option("sqlalchemy.url", str(engine.url))
+    
+    # Run migrations using the existing connection
+    with engine.begin() as connection:
+        alembic_cfg.attributes['connection'] = connection
+        command.upgrade(alembic_cfg, "head")
+
+
+def verify_tables_exist(engine, required_tables: List[str] = None) -> Dict[str, bool]:
+    """
+    Verify that required database tables exist.
+    
+    This function checks if all required tables have been created by migrations.
+    Useful for debugging migration issues in tests.
+    
+    Args:
+        engine: SQLAlchemy engine
+        required_tables: List of table names to check (optional, checks all core tables if None)
+        
+    Returns:
+        Dictionary mapping table names to existence status (True/False)
+        
+    Example:
+        from sqlalchemy import create_engine
+        engine = create_engine("sqlite:///:memory:")
+        run_migrations(engine)
+        status = verify_tables_exist(engine)
+        assert all(status.values()), f"Missing tables: {[k for k, v in status.items() if not v]}"
+    """
+    import sqlalchemy as sa
+    
+    # Default list of core tables
+    if required_tables is None:
+        required_tables = [
+            'resources',
+            'users',
+            'collections',
+            'collection_resources',
+            'taxonomy_nodes',
+            'resource_taxonomy',
+            'user_profiles',
+            'user_interactions',
+            'annotations',
+            'citations',
+            'authority_subjects',
+            'authority_creators',
+            'authority_publishers',
+            'classification_codes',
+        ]
+    
+    inspector = sa.inspect(engine)
+    existing_tables = inspector.get_table_names()
+    
+    return {table: table in existing_tables for table in required_tables}
+
+
+def get_migration_version(engine) -> str:
+    """
+    Get the current Alembic migration version of the database.
+    
+    Args:
+        engine: SQLAlchemy engine
+        
+    Returns:
+        Current migration version (revision ID) or None if no migrations applied
+        
+    Example:
+        version = get_migration_version(engine)
+        print(f"Database is at migration version: {version}")
+    """
+    from alembic.migration import MigrationContext
+    
+    with engine.connect() as connection:
+        context = MigrationContext.configure(connection)
+        current_rev = context.get_current_revision()
+        return current_rev
+
+
+def reset_database(engine):
+    """
+    Reset the database by dropping all tables and re-running migrations.
+    
+    WARNING: This will delete all data in the database!
+    Only use this in test environments.
+    
+    Args:
+        engine: SQLAlchemy engine
+        
+    Example:
+        reset_database(engine)
+        # Database is now empty with fresh schema
+    """
+    from backend.app.database.base import Base
+    
+    # Drop all tables
+    Base.metadata.drop_all(engine)
+    
+    # Re-run migrations
+    run_migrations(engine)
+
+
+def create_test_database_with_migrations(db_url: str = "sqlite:///:memory:"):
+    """
+    Create a complete test database with migrations applied.
+    
+    This is a convenience function that creates an engine, runs migrations,
+    and returns both the engine and a session factory.
+    
+    Args:
+        db_url: Database URL (defaults to in-memory SQLite)
+        
+    Returns:
+        Tuple of (engine, SessionLocal factory)
+        
+    Example:
+        engine, SessionLocal = create_test_database_with_migrations()
+        db = SessionLocal()
+        # Use db for testing
+        db.close()
+        engine.dispose()
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    
+    # Create engine
+    engine = create_engine(
+        db_url,
+        echo=False,
+        connect_args={"check_same_thread": False} if "sqlite" in db_url else {}
+    )
+    
+    # Run migrations
+    run_migrations(engine)
+    
+    # Create session factory
+    SessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        expire_on_commit=False
+    )
+    
+    return engine, SessionLocal
+
+
+def verify_resource_model_fields(engine) -> Dict[str, List[str]]:
+    """
+    Verify that the Resource model has the correct Dublin Core field names.
+    
+    This function checks that the resources table has the correct field names
+    (source, type, identifier) rather than legacy names (url, resource_type, resource_id).
+    
+    Args:
+        engine: SQLAlchemy engine
+        
+    Returns:
+        Dictionary with 'correct_fields' and 'missing_fields' lists
+        
+    Example:
+        result = verify_resource_model_fields(engine)
+        assert not result['missing_fields'], f"Missing fields: {result['missing_fields']}"
+    """
+    import sqlalchemy as sa
+    
+    inspector = sa.inspect(engine)
+    
+    if 'resources' not in inspector.get_table_names():
+        return {
+            'correct_fields': [],
+            'missing_fields': ['resources table does not exist']
+        }
+    
+    columns = [col['name'] for col in inspector.get_columns('resources')]
+    
+    # Check for correct Dublin Core field names
+    required_fields = ['source', 'type', 'identifier']
+    legacy_fields = ['url', 'resource_type', 'resource_id']
+    
+    correct_fields = [field for field in required_fields if field in columns]
+    missing_fields = [field for field in required_fields if field not in columns]
+    
+    # Check if legacy fields are present (they shouldn't be)
+    legacy_present = [field for field in legacy_fields if field in columns]
+    
+    if legacy_present:
+        missing_fields.append(f"Legacy fields present: {legacy_present}")
+    
+    return {
+        'correct_fields': correct_fields,
+        'missing_fields': missing_fields,
+        'all_columns': columns
+    }

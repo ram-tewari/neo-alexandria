@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.app.database.base import get_db
+from backend.app.shared.database import get_db
 from backend.app.database import models as db_models
 from backend.app.schemas import scholarly as schemas
 

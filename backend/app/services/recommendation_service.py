@@ -404,3 +404,97 @@ def _to_numpy_vector(data: Any) -> List[float]:
         pass
     
     return []
+
+
+def _compute_gini_coefficient(values: List[float]) -> float:
+    """
+    Compute Gini coefficient for diversity measurement.
+    
+    The Gini coefficient measures inequality in a distribution.
+    A value of 0 indicates perfect equality, while 1 indicates
+    maximum inequality. Used to measure diversity in recommendations.
+    
+    Args:
+        values: List of numeric values
+        
+    Returns:
+        Gini coefficient between 0.0 and 1.0
+    """
+    import numpy as np
+    
+    if not values or len(values) == 0:
+        return 0.0
+    
+    # Convert to numpy array
+    sorted_values = np.sort(np.array(values))
+    n = len(sorted_values)
+    
+    # Handle edge cases
+    if n == 1:
+        return 0.0
+    
+    # Calculate cumulative sum
+    cumsum = np.cumsum(sorted_values)
+    total = cumsum[-1]
+    
+    # Handle zero total
+    if total == 0.0:
+        return 0.0
+    
+    # Compute Gini coefficient
+    # Formula: (2 * sum(i * x_i)) / (n * sum(x_i)) - (n + 1) / n
+    gini = (2.0 * np.sum((np.arange(1, n + 1) * sorted_values))) / (n * total) - (n + 1) / n
+    
+    # Clamp to [0, 1] to handle numerical errors
+    return float(np.clip(gini, 0.0, 1.0))
+
+
+def apply_novelty_boost(
+    recommendations: List[Dict[str, Any]],
+    boost_weight: float = 0.3
+) -> List[Dict[str, Any]]:
+    """
+    Apply novelty boost to recommendations.
+    
+    Adjusts recommendation scores to favor novel/diverse items
+    by blending the original relevance score with a novelty score.
+    
+    Args:
+        recommendations: List of recommendation dictionaries
+        boost_weight: Weight for novelty boost (0.0-1.0)
+            0.0 = no novelty boost (pure relevance)
+            1.0 = pure novelty (ignore relevance)
+            
+    Returns:
+        List of recommendations with adjusted scores
+    """
+    if not recommendations or boost_weight <= 0.0:
+        return recommendations
+    
+    # Clamp boost_weight to valid range
+    boost_weight = max(0.0, min(1.0, boost_weight))
+    
+    # Calculate novelty scores based on position and diversity
+    for i, rec in enumerate(recommendations):
+        # Simple novelty: items further down the list get higher novelty
+        # (assumes original list is sorted by relevance)
+        position_novelty = i / max(1, len(recommendations) - 1) if len(recommendations) > 1 else 0.0
+        
+        # Get original score
+        original_score = rec.get('score', 0.5)
+        
+        # Blend relevance and novelty
+        adjusted_score = (
+            original_score * (1.0 - boost_weight) +
+            position_novelty * boost_weight
+        )
+        
+        # Update the recommendation
+        rec['score'] = adjusted_score
+        rec['novelty_score'] = position_novelty
+        rec['original_score'] = original_score
+    
+    # Re-sort by adjusted score
+    recommendations.sort(key=lambda x: x.get('score', 0.0), reverse=True)
+    
+    return recommendations

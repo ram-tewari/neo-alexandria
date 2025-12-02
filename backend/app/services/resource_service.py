@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import func, or_, asc, desc, String, cast, select
 
 from backend.app.database import models as db_models
-from backend.app.database.base import Base, SessionLocal
+from backend.app.shared.database import Base, SessionLocal
 from backend.app.utils import content_extractor as ce
 from backend.app.utils.text_processor import clean_text, readability_scores
 from backend.app.services.dependencies import (
@@ -20,17 +20,17 @@ from backend.app.services.dependencies import (
     get_quality_analyzer,
     get_authority_control,
 )
-from backend.app.schemas.query import PageParams, SortParams, ResourceFilters
-from backend.app.schemas.resource import ResourceUpdate
-from backend.app.services.ai_core import AICore
-from backend.app.monitoring import (
+from ..schemas.query import PageParams, SortParams, ResourceFilters
+from ..modules.resources.schema import ResourceUpdate
+from ..services.ai_core import AICore
+from ..monitoring import (
     track_ingestion_success,
     track_ingestion_failure,
     increment_active_ingestions,
     decrement_active_ingestions,
 )
-from backend.app.events.event_system import event_emitter, EventPriority
-from backend.app.events.event_types import SystemEvent
+from ..shared.event_bus import event_bus, EventPriority
+from ..events.event_types import SystemEvent
 
 
 ARCHIVE_ROOT = Path("storage/archive")
@@ -122,8 +122,8 @@ def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.R
     
     # Emit resource.created event
     try:
-        event_emitter.emit(
-            SystemEvent.RESOURCE_CREATED,
+        event_bus.emit(
+            SystemEvent.RESOURCE_CREATED.value,
             {
                 "resource_id": str(resource.id),
                 "title": resource.title,
@@ -219,6 +219,7 @@ def _generate_ai_content(ai_core: AICore, text_clean: str) -> Tuple[str, List[st
     summary = ai_core.generate_summary(text_clean)
     tags_raw = ai_core.generate_tags(text_clean)
     return summary, tags_raw
+
 
 
 def _generate_embeddings(
@@ -393,6 +394,7 @@ def _extract_citations(session: Session, resource_id: str, content_type: str) ->
         logger.warning(f"Citation extraction failed for resource {resource_id}: {e}")
 
 
+
 def process_ingestion(
     resource_id: str,
     archive_root: Path | str | None = None,
@@ -417,8 +419,8 @@ def process_ingestion(
     logger.info(f"Starting ingestion for resource {resource_id}")
     
     # Emit ingestion.started event
-    event_emitter.emit(
-        SystemEvent.INGESTION_STARTED,
+    event_bus.emit(
+        SystemEvent.INGESTION_STARTED.value,
         {
             "resource_id": resource_id,
             "started_at": start_time.isoformat()
@@ -568,8 +570,8 @@ def process_ingestion(
         logger.info(f"Ingestion completed successfully for resource {resource_id}")
         
         # Emit ingestion.completed event
-        event_emitter.emit(
-            SystemEvent.INGESTION_COMPLETED,
+        event_bus.emit(
+            SystemEvent.INGESTION_COMPLETED.value,
             {
                 "resource_id": resource_id,
                 "duration_seconds": duration_seconds,
@@ -587,8 +589,8 @@ def process_ingestion(
         duration_seconds = (end_time - start_time).total_seconds()
         
         # Emit ingestion.failed event
-        event_emitter.emit(
-            SystemEvent.INGESTION_FAILED,
+        event_bus.emit(
+            SystemEvent.INGESTION_FAILED.value,
             {
                 "resource_id": resource_id,
                 "error": str(exc),
@@ -764,6 +766,7 @@ def list_resources(
     result = db.execute(query)
     items = result.scalars().all()
     return items, total
+
 
 
 def _apply_resource_updates(
@@ -974,8 +977,8 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     logger.info(f"Successfully updated resource {resource_id}")
     
     # Emit resource.updated event
-    event_emitter.emit(
-        SystemEvent.RESOURCE_UPDATED,
+    event_bus.emit(
+        SystemEvent.RESOURCE_UPDATED.value,
         {
             "resource_id": str(resource.id),
             "changed_fields": changed_fields
@@ -985,8 +988,8 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     
     # Emit specific change events
     if content_changed:
-        event_emitter.emit(
-            SystemEvent.RESOURCE_CONTENT_CHANGED,
+        event_bus.emit(
+            SystemEvent.RESOURCE_CONTENT_CHANGED.value,
             {
                 "resource_id": str(resource.id),
                 "changed_fields": changed_fields
@@ -1001,8 +1004,8 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     metadata_changed = any(field in metadata_fields for field in changed_fields)
     
     if metadata_changed and not content_changed:
-        event_emitter.emit(
-            SystemEvent.RESOURCE_METADATA_CHANGED,
+        event_bus.emit(
+            SystemEvent.RESOURCE_METADATA_CHANGED.value,
             {
                 "resource_id": str(resource.id),
                 "changed_fields": changed_fields
@@ -1087,8 +1090,8 @@ def delete_resource(db: Session, resource_id) -> None:
     logger.info(f"Successfully deleted resource {resource_id}")
     
     # Emit resource.deleted event
-    event_emitter.emit(
-        SystemEvent.RESOURCE_DELETED,
+    event_bus.emit(
+        SystemEvent.RESOURCE_DELETED.value,
         resource_info,
         priority=EventPriority.HIGH
     )

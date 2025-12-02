@@ -1,0 +1,143 @@
+.quality-tab {
+  min-height: 400px;
+  padding: 2rem 0;
+}
+
+/* Chart Container */
+.quality-chart-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+/* Loading State */
+.quality-tab-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.quality-chart-skeleton {
+  border-radius: 50%;
+}
+
+.quality-dimensions-skeleton {
+  width: 100%;
+  max-width: 800px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Error State */
+.quality-tab-error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+/* Empty State */
+.quality-tab-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+/* Dimension Breakdown */
+.quality-dimensions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.quality-dimension-card {
+  padding: 1.5rem;
+}
+
+.quality-dimension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.quality-dimension-name {
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--color-text-primary);
+}
+
+.quality-dimension-score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.quality-dimension-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quality-dimension-bar {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 4px;
+}
+
+/* Outlier Warning */
+.quality-outlier-warning {
+  padding: 1.5rem;
+  background-color: var(--color-warning-bg, #fef3c7);
+  border-color: var(--color-warning-border, #fbbf24);
+}
+
+.quality-outlier-content {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.quality-outlier-icon {
+  flex-shrink: 0;
+  color: var(--color-warning, #f59e0b);
+  margin-top: 0.125rem;
+}
+
+.quality-outlier-text {
+  flex: 1;
+}
+
+.quality-outlier-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-warning-text, #92400e);
+}
+
+.quality-outlier-description {
+  font-size: 0.875rem;
+  margin: 0;
+  color: var(--color-warning-text, #92400e);
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .quality-dimensions {
+    grid-template-columns: 1fr;
+  }
+  
+  .quality-chart-container {
+    margin-bottom: 2rem;
+  }
+  
+  .quality-tab {
+    padding: 1rem 0;
+  }
+}

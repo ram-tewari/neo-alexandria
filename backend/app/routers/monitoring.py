@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.app.database.base import get_db, get_pool_status
+from backend.app.shared.database import get_db, get_pool_status
 from backend.app.database.models import (
     UserInteraction,
     RecommendationFeedback,
@@ -28,7 +28,7 @@ from backend.app.database.models import (
 )
 from backend.app.utils.performance_monitoring import metrics as perf_metrics
 from backend.app.ml_monitoring.health_check import check_classification_model_health
-from backend.app.events.event_system import event_emitter
+from backend.app.shared.event_bus import event_bus
 from backend.app.cache.redis_cache import cache
 
 logger = logging.getLogger(__name__)
@@ -517,6 +517,48 @@ async def get_db_pool_status() -> Dict[str, Any]:
         }
 
 
+@router.get("/events")
+async def get_event_bus_metrics() -> Dict[str, Any]:
+    """
+    Get comprehensive event bus metrics for monitoring.
+    
+    Returns detailed metrics about event bus performance including:
+    - Total events emitted and delivered
+    - Handler error counts
+    - Event type breakdown
+    - Handler latency percentiles (p50, p95, p99)
+    
+    These metrics are essential for monitoring inter-module communication
+    health and identifying performance bottlenecks in event-driven flows.
+    
+    Returns:
+        Dictionary with event bus metrics including:
+        - events_emitted: Total events emitted
+        - events_delivered: Total successful handler executions
+        - handler_errors: Total handler failures
+        - event_types: Breakdown of events by type
+        - handler_latency_p50: 50th percentile latency (ms)
+        - handler_latency_p95: 95th percentile latency (ms)
+        - handler_latency_p99: 99th percentile latency (ms)
+    """
+    try:
+        metrics = event_bus.get_metrics()
+        
+        return {
+            "status": "ok",
+            "timestamp": datetime.utcnow().isoformat(),
+            "metrics": metrics
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting event bus metrics: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+
 @router.get("/events/history")
 async def get_event_history(
     limit: int = Query(default=100, ge=1, le=1000, description="Maximum number of events to return")
@@ -537,7 +579,7 @@ async def get_event_history(
         - timestamp: When the query was executed
     """
     try:
-        events = event_emitter.get_event_history(limit=limit)
+        events = event_bus.get_event_history(limit=limit)
         
         return {
             "status": "ok",

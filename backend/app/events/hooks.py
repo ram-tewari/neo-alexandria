@@ -28,8 +28,28 @@ Design Patterns:
 
 import logging
 
-from .event_system import Event, event_emitter
+from ..shared.event_bus import event_bus, EventPriority
 from .event_types import SystemEvent
+from dataclasses import dataclass
+from typing import Dict, Any
+from datetime import datetime, timezone
+
+
+@dataclass
+class Event:
+    """Compatibility wrapper for old Event class."""
+    name: str
+    data: Dict[str, Any]
+    timestamp: datetime = None
+    priority: EventPriority = EventPriority.NORMAL
+    correlation_id: str = None
+    
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now(timezone.utc)
+        if self.correlation_id is None:
+            import uuid
+            self.correlation_id = str(uuid.uuid4())
 
 logger = logging.getLogger(__name__)
 
@@ -438,6 +458,53 @@ def on_author_extracted_normalize_names(event: Event) -> None:
 
 
 # ============================================================================
+# Hook 5.9: Collection Embedding Update on Resource Deletion
+# ============================================================================
+
+def on_resource_deleted_update_collections(event: Event) -> None:
+    """
+    Hook: Update collection embeddings when a resource is deleted.
+    
+    Triggered by: resource.deleted event
+    Priority: MEDIUM (5)
+    Delay: 5 seconds (debounce)
+    
+    This hook ensures that collection embeddings are recomputed when a member
+    resource is deleted. The 5-second delay allows multiple deletions to be
+    batched if needed.
+    
+    Args:
+        event: Event object containing resource_id in data
+    """
+    resource_id = event.data.get("resource_id")
+    
+    if not resource_id:
+        logger.warning("resource_deleted event missing resource_id")
+        return
+    
+    try:
+        from ..tasks.celery_tasks import update_collection_embeddings_task
+        
+        # Queue collection embedding update with MEDIUM priority and 5s delay
+        update_collection_embeddings_task.apply_async(
+            args=[resource_id],
+            priority=5,  # MEDIUM priority
+            countdown=5  # 5-second debounce delay
+        )
+        
+        logger.info(
+            f"Queued collection embedding updates for deleted resource {resource_id} "
+            f"(priority=5, countdown=5s)"
+        )
+        
+    except Exception as e:
+        logger.error(
+            f"Error queuing collection embedding update for {resource_id}: {e}",
+            exc_info=True
+        )
+
+
+# ============================================================================
 # Hook Registration
 # ============================================================================
 
@@ -458,6 +525,7 @@ def register_all_hooks() -> None:
     6. Recommendation profile refresh (user interactions)
     7. Classification suggestion (resource creation)
     8. Author normalization (author extraction)
+    9. Collection embedding update (resource deletion)
     """
     hooks = [
         (SystemEvent.RESOURCE_CONTENT_CHANGED, on_content_changed_regenerate_embedding),
@@ -468,9 +536,18 @@ def register_all_hooks() -> None:
         (SystemEvent.USER_INTERACTION_TRACKED, on_user_interaction_refresh_profile),
         (SystemEvent.RESOURCE_CREATED, on_resource_created_suggest_classification),
         (SystemEvent.AUTHORS_EXTRACTED, on_author_extracted_normalize_names),
+        (SystemEvent.RESOURCE_DELETED, on_resource_deleted_update_collections),
     ]
     
+    # Create wrapper to convert dict payload to Event object for backward compatibility
+    def create_handler_wrapper(handler, event_name):
+        def wrapper(payload: Dict[str, Any]) -> None:
+            event = Event(name=event_name.value, data=payload)
+            handler(event)
+        return wrapper
+    
     for event_name, handler in hooks:
-        event_emitter.on(event_name, handler)
+        wrapped_handler = create_handler_wrapper(handler, event_name)
+        event_bus.subscribe(event_name.value, wrapped_handler)
     
     logger.info(f"Registered {len(hooks)} event hooks for automatic data consistency")

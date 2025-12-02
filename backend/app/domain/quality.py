@@ -7,7 +7,7 @@ validation and business logic for multi-dimensional quality scoring.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from backend.app.domain import ValueObject, validate_range
 
 
@@ -21,6 +21,90 @@ RELEVANCE_WEIGHT = 0.15
 # Quality thresholds
 HIGH_QUALITY_THRESHOLD = 0.7
 MEDIUM_QUALITY_THRESHOLD = 0.5
+
+
+@dataclass
+class ReadabilityScore(ValueObject):
+    """
+    Readability metrics value object.
+    
+    Represents comprehensive readability assessment including Flesch Reading Ease,
+    Flesch-Kincaid Grade Level, and additional text complexity metrics.
+    
+    Attributes:
+        flesch_reading_ease: Flesch Reading Ease score (0-100, higher is easier)
+        gunning_fog_index: Gunning Fog Index (years of education needed)
+        grade_level: Estimated grade level required to understand the text
+        word_count: Total number of words in the text
+        sentence_count: Total number of sentences
+        avg_words_per_sentence: Average words per sentence
+        unique_word_ratio: Ratio of unique words to total words (vocabulary diversity)
+        long_word_ratio: Ratio of long words (>6 characters) to total words
+        paragraph_count: Number of paragraphs in the text
+    """
+    flesch_reading_ease: float
+    gunning_fog_index: float
+    grade_level: int
+    word_count: float = 0.0
+    sentence_count: float = 0.0
+    avg_words_per_sentence: float = 0.0
+    unique_word_ratio: float = 0.0
+    long_word_ratio: float = 0.0
+    paragraph_count: float = 0.0
+    
+    def validate(self) -> None:
+        """
+        Validate readability metrics.
+        
+        Raises:
+            ValueError: If any metric is outside valid range
+        """
+        # Flesch Reading Ease can be negative for very difficult text
+        # but typically ranges from 0-100
+        if self.flesch_reading_ease < -50 or self.flesch_reading_ease > 150:
+            raise ValueError(f"flesch_reading_ease {self.flesch_reading_ease} outside reasonable range")
+        
+        # Gunning Fog typically ranges from 6-17
+        if self.gunning_fog_index < 0 or self.gunning_fog_index > 30:
+            raise ValueError(f"gunning_fog_index {self.gunning_fog_index} outside reasonable range")
+        
+        # Grade level should be non-negative
+        if self.grade_level < 0:
+            raise ValueError(f"grade_level {self.grade_level} must be non-negative")
+        
+        # Counts should be non-negative
+        if self.word_count < 0:
+            raise ValueError(f"word_count {self.word_count} must be non-negative")
+        if self.sentence_count < 0:
+            raise ValueError(f"sentence_count {self.sentence_count} must be non-negative")
+        if self.avg_words_per_sentence < 0:
+            raise ValueError(f"avg_words_per_sentence {self.avg_words_per_sentence} must be non-negative")
+        
+        # Ratios should be between 0 and 1
+        validate_range(self.unique_word_ratio, 0.0, 1.0, "unique_word_ratio")
+        validate_range(self.long_word_ratio, 0.0, 1.0, "long_word_ratio")
+        
+        if self.paragraph_count < 0:
+            raise ValueError(f"paragraph_count {self.paragraph_count} must be non-negative")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert readability score to dictionary.
+        
+        Returns:
+            Dictionary representation with all metrics
+        """
+        return {
+            'reading_ease': self.flesch_reading_ease,
+            'fk_grade': self.gunning_fog_index,
+            'grade_level': self.grade_level,
+            'word_count': self.word_count,
+            'sentence_count': self.sentence_count,
+            'avg_words_per_sentence': self.avg_words_per_sentence,
+            'unique_word_ratio': self.unique_word_ratio,
+            'long_word_ratio': self.long_word_ratio,
+            'paragraph_count': self.paragraph_count
+        }
 
 
 @dataclass

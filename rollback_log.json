@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2025-11-23T16:21:23.532549",
+    "from_version": "v1.1.0",
+    "to_version": "v1.0.0",
+    "reason": "Test rollback",
+    "success": true
+  }
+]

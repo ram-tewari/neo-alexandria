@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.database.models import User, UserProfile, UserInteraction, Resource
 from backend.app.utils.performance_monitoring import timing_decorator, metrics
-from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.shared.event_bus import event_bus, EventPriority
 from backend.app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
@@ -353,8 +353,8 @@ class UserProfileService:
             self.db.refresh(interaction)
             
             # Emit user.interaction_tracked event
-            event_emitter.emit(
-                SystemEvent.USER_INTERACTION_TRACKED,
+            event_bus.emit(
+                SystemEvent.USER_INTERACTION_TRACKED.value,
                 {
                     "user_id": str(user_id),
                     "resource_id": str(resource_id),

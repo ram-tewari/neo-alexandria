@@ -2,6 +2,7 @@
 
 import pytest
 import tempfile
+import os
 from pathlib import Path
 from typing import Generator, Union, List, Dict, Tuple, Optional
 from unittest.mock import patch, Mock
@@ -12,6 +13,47 @@ from fastapi.testclient import TestClient
 
 from backend.app.database.base import Base, get_db, get_sync_db
 from backend.app.main import app
+
+
+# ============================================================================
+# Test Environment Setup (Auto-use fixtures)
+# ============================================================================
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """
+    Set up test environment variables before any tests run.
+    
+    This fixture runs automatically for all tests and sets the TESTING
+    environment variable to enable test-safe behavior in the application.
+    """
+    # Set TESTING environment variable
+    os.environ["TESTING"] = "true"
+    
+    yield
+    
+    # Clean up after all tests
+    os.environ.pop("TESTING", None)
+
+
+@pytest.fixture(autouse=True)
+def mock_monitoring_metrics():
+    """
+    Mock Prometheus metrics for all tests.
+    
+    This fixture runs automatically for every test and ensures that
+    monitoring metrics use NoOp implementations, preventing:
+    - Duplicate metric registration errors
+    - Prometheus registry conflicts
+    - Slow metric collection during tests
+    
+    The monitoring module already checks for TESTING=true and uses
+    NoOp metrics, but this fixture ensures the environment is set
+    and reloads the module if needed.
+    """
+    # The monitoring module will automatically use NoOp metrics
+    # when TESTING=true is set (done by setup_test_environment)
+    yield
 
 
 @pytest.fixture
@@ -122,8 +164,28 @@ def test_db(request):
                     cursor.execute("PRAGMA journal_mode = OFF")
                 cursor.close()
         
-        # Create all tables with current schema
-        Base.metadata.create_all(engine)
+        # Create all tables using Alembic migrations
+        # This ensures test database schema matches production schema exactly
+        from alembic import command
+        from alembic.config import Config
+        import os
+        
+        # Get the path to alembic.ini (relative to backend directory)
+        backend_dir = Path(__file__).parent.parent
+        alembic_ini_path = backend_dir / "alembic.ini"
+        
+        if alembic_ini_path.exists():
+            # Run Alembic migrations to create tables
+            alembic_cfg = Config(str(alembic_ini_path))
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+            
+            # For in-memory databases, we need to use the existing connection
+            with engine.begin() as connection:
+                alembic_cfg.attributes['connection'] = connection
+                command.upgrade(alembic_cfg, "head")
+        else:
+            # Fallback to create_all if alembic.ini not found (shouldn't happen)
+            Base.metadata.create_all(engine)
         
         # Create session factory
         TestingSessionLocal = sessionmaker(

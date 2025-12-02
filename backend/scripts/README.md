@@ -1,6 +1,69 @@
-# ML Model Training Scripts
+# Scripts Directory
 
-This directory contains scripts for training machine learning models used in Neo Alexandria.
+This directory contains utility scripts for Neo Alexandria, including ML model training, database management, and architecture validation.
+
+## Architecture Validation
+
+### check_module_isolation.py
+
+Validates that modules follow the vertical slice architecture rules:
+- Modules can only import from the shared kernel (`app.shared`)
+- Modules cannot directly import from other modules
+- No circular dependencies exist
+- Cross-module communication must use events
+
+**Usage:**
+```bash
+# Basic check
+python scripts/check_module_isolation.py
+
+# Verbose output with detailed import analysis
+python scripts/check_module_isolation.py --verbose
+
+# Show dependency graph
+python scripts/check_module_isolation.py --graph
+
+# All options
+python scripts/check_module_isolation.py --verbose --graph
+```
+
+**Exit Codes:**
+- `0` - All checks passed, modules are properly isolated
+- `1` - Violations found (direct imports or circular dependencies)
+
+**Example Output:**
+```
+Checking module isolation in: /path/to/backend/app
+
+======================================================================
+MODULE ISOLATION CHECK REPORT
+======================================================================
+
+✅ NO DIRECT IMPORT VIOLATIONS
+
+✅ NO CIRCULAR DEPENDENCIES
+
+======================================================================
+SUMMARY
+======================================================================
+Direct import violations: 0
+Circular dependencies: 0
+
+✅ ALL CHECKS PASSED - Modules are properly isolated!
+```
+
+**Integration:**
+- Runs automatically in CI/CD via GitHub Actions
+- Can be added to pre-commit hooks for local validation
+- Fails the build if violations are detected
+
+**Architecture Rules:**
+1. ✅ Allowed: `from app.shared.database import get_db`
+2. ✅ Allowed: `from app.modules.collections.service import CollectionService` (within collections module)
+3. ❌ Forbidden: `from app.modules.resources.service import ResourceService` (from collections module)
+4. ✅ Required: Use event bus for cross-module communication
+
+## ML Model Training Scripts
 
 ## Available Scripts
 

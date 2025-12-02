@@ -8,7 +8,8 @@ import asyncio
 import pytest
 from datetime import datetime
 
-from app.events import Event, EventPriority, EventEmitter, SystemEvent
+from backend.app.events import EventPriority, EventEmitter, SystemEvent
+from backend.app.events.hooks import Event
 
 
 @pytest.fixture

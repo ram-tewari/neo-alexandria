@@ -1,0 +1,100 @@
+.annotation-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.annotation-highlight {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 200ms ease-out;
+    border-radius: 2px;
+    animation: highlightFadeIn 200ms ease-out;
+}
+
+@keyframes highlightFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Highlight colors with semi-transparency */
+.annotation-highlight.color-yellow {
+    background-color: rgba(254, 240, 138, 0.4);
+}
+
+.annotation-highlight.color-green {
+    background-color: rgba(134, 239, 172, 0.4);
+}
+
+.annotation-highlight.color-blue {
+    background-color: rgba(147, 197, 253, 0.4);
+}
+
+.annotation-highlight.color-pink {
+    background-color: rgba(249, 168, 212, 0.4);
+}
+
+.annotation-highlight.color-orange {
+    background-color: rgba(253, 186, 116, 0.4);
+}
+
+/* Hover state - increase opacity and show icon */
+.annotation-highlight:hover {
+    opacity: 0.8;
+}
+
+.annotation-highlight.color-yellow:hover {
+    background-color: rgba(254, 240, 138, 0.6);
+}
+
+.annotation-highlight.color-green:hover {
+    background-color: rgba(134, 239, 172, 0.6);
+}
+
+.annotation-highlight.color-blue:hover {
+    background-color: rgba(147, 197, 253, 0.6);
+}
+
+.annotation-highlight.color-pink:hover {
+    background-color: rgba(249, 168, 212, 0.6);
+}
+
+.annotation-highlight.color-orange:hover {
+    background-color: rgba(253, 186, 116, 0.6);
+}
+
+.annotation-icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--surface-elevated);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+    pointer-events: none;
+}
+
+.annotation-highlight:hover .annotation-icon {
+    opacity: 1;
+}
+
+.annotation-icon svg {
+    width: 10px;
+    height: 10px;
+    color: var(--text-primary);
+}

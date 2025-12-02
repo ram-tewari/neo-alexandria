@@ -18,9 +18,9 @@ def base_resource(db_session: Session):
     """Create a base resource for testing."""
     resource = Resource(
         title="Test Resource",
-        url="https://example.com/test",
+        source="https://example.com/test",
         content="Test content for quality assessment",
-        resource_type="article"
+        type="article"
     )
     db_session.add(resource)
     db_session.commit()

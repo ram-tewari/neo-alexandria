@@ -1,0 +1,101 @@
+.resource-tabs {
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-list {
+  display: flex;
+  gap: var(--spacing-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tab-list::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: var(--text-primary);
+  background: var(--accent-subtle);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.tab-button.active {
+  color: var(--accent-purple);
+  border-bottom-color: var(--accent-purple);
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.tab-label {
+  line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tab-button {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-xs);
+  }
+
+  .tab-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Stack tabs vertically on very small screens */
+  @media (max-width: 480px) {
+    .tab-list {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .tab-button {
+      justify-content: flex-start;
+      width: 100%;
+      border-bottom: none;
+      border-left: 2px solid transparent;
+      padding: var(--spacing-3) var(--spacing-4);
+    }
+
+    .tab-button.active {
+      border-bottom-color: transparent;
+      border-left-color: var(--accent-purple);
+      background: var(--surface-accent);
+    }
+
+    .resource-tabs {
+      border-bottom: none;
+      border-right: 1px solid var(--border-color);
+    }
+  }
+}

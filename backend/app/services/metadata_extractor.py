@@ -20,7 +20,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from backend.app.database import models as db_models
-from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.shared.event_bus import event_bus, EventPriority
 from backend.app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
@@ -165,8 +165,8 @@ class MetadataExtractor:
             authors: List of extracted author dictionaries
         """
         if authors:
-            event_emitter.emit(
-                SystemEvent.AUTHORS_EXTRACTED,
+            event_bus.emit(
+                SystemEvent.AUTHORS_EXTRACTED.value,
                 {
                     "resource_id": resource_id,
                     "authors": authors,

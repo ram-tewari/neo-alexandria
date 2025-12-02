@@ -5,63 +5,214 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fe045d10-03e6-420a-86db-4e31c3636651" name="Changes" comment="Phase 8">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/test.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PROJECT_CLEANUP_COMPLETE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TEST_FIXES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/add_test_resources.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/CLASSIFICATION_MOCK_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/command-palette/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/command-palette/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/command-palette/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/frontend-backend-integration/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/frontend-backend-integration/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/frontend-backend-integration/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/ml-model-training/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/ml-model-training/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/ml-model-training/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/modular-sidebar-system/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/modular-sidebar-system/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/modular-sidebar-system/tasks-reorganized.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/modular-sidebar-system/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-enhancements/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-enhancements/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-enhancements/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-rebuild/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-rebuild/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/neo-alexandria-frontend-rebuild/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-5-code-standardization/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-5-code-standardization/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-5-code-standardization/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-advanced-graph-intelligence/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-advanced-graph-intelligence/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase10-advanced-graph-intelligence/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-5-ml-benchmarking/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-5-ml-benchmarking/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-5-ml-benchmarking/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-hybrid-recommendation-engine/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-hybrid-recommendation-engine/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase11-hybrid-recommendation-engine/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-5-event-driven-architecture/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-5-event-driven-architecture/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-5-event-driven-architecture/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-6-test-suite-fixes/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-6-test-suite-fixes/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-6-test-suite-fixes/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-fowler-refactoring/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-fowler-refactoring/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase12-fowler-refactoring/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase13-postgresql-migration/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase13-postgresql-migration/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase13-postgresql-migration/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-5-annotation-system/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-5-annotation-system/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-5-annotation-system/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-collection-management/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-collection-management/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase7-collection-management/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-5-ml-classification/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-5-ml-classification/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-5-ml-classification/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-three-way-hybrid-search/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-three-way-hybrid-search/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase8-three-way-hybrid-search/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase9-quality-assessment/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase9-quality-assessment/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/phase9-quality-assessment/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/production-ml-training/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/production-ml-training/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/production-ml-training/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/purple-theme-visual-enhancement/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/purple-theme-visual-enhancement/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/purple-theme-visual-enhancement/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/sidebar-redesign/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/sidebar-redesign/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/sidebar-redesign/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-critical-fixes/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-critical-fixes/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-critical-fixes/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-fixes-phase2/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-fixes-phase2/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-fixes/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-stabilization/design.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-stabilization/requirements.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.kiro/specs/test-suite-stabilization/tasks.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend.db" beforeDir="false" afterPath="$PROJECT_DIR$/backend.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/database/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/database/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/domain/classification.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/domain/classification.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/domain/quality.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/domain/quality.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/domain/recommendation.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/domain/recommendation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/events/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/events/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/events/event_system.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/events/event_system.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/events/hooks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/events/hooks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/monitoring.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/monitoring.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/collections.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/monitoring.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/monitoring.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/resources.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/scholarly.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/routers/scholarly.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/routers/search.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/collection.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/schemas/collection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/resource.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/schemas/resource.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/search.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/schemas/search.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/citation_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/citation_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/collection_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/collection_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/hybrid_recommendation_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/hybrid_recommendation_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/hybrid_search_methods.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/hybrid_search_methods.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/metadata_extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/metadata_extractor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/ml_classification_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/ml_classification_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/quality_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/quality_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/recommendation_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/recommendation_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/resource_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/resource_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/search_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/search_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/user_profile_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/services/user_profile_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/tasks/celery_tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/tasks/celery_tasks.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/docs/ARCHITECTURE_DIAGRAM.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/ARCHITECTURE_DIAGRAM.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements-core.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements-minimal.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/requirements-simple.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/rollback_log.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/scripts/analyze_test_failures.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_failure_analysis.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_failure_analysis.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_failure_pattern_matrix.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_failures.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/test_quality_output.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/ASSERTION_MISMATCH_FIXES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/ATTRIBUTE_ERROR_FIXES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/DATABASE_FIXTURES_OPTIMIZATION_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/DATABASE_OPTIMIZATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/DOMAIN_TESTS_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/FIXTURE_REFACTORING_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/FIXTURE_UPDATES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/INTEGRATION_FIXTURES_UPDATE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/ML_MODEL_OPTIMIZATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/ML_MODEL_OPTIMIZATION_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/PARALLEL_EXECUTION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/PARALLEL_EXECUTION_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/RECOMMENDATION_MOCK_FIXES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/SEARCH_MOCK_FIXES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/TYPE_ERROR_FIXES.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/UUID_FIXES_SUMMARY.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/run_recommendation_tests.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/test_assertion_helpers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/test_domain_dict_access.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/test_domain_object_attributes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/test_fixture_factories.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/tests/test_mock_utilities.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/docs/DEVELOPER_GUIDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/scripts/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/backend/scripts/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/conftest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/conftest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/db_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/db_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/phase11_recommendations/conftest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/phase11_recommendations/conftest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/phase3_search/conftest.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/phase3_search/conftest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/phase8_classification/test_classification_endpoints.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/phase8_classification/test_classification_endpoints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/phase9_quality/test_quality_api_endpoints.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/phase9_quality/test_quality_api_endpoints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/phase9_quality/test_quality_workflows_integration.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/phase9_quality/test_quality_workflows_integration.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/test_event_hooks.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/test_event_hooks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/integration/test_service_events.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/integration/test_service_events.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/performance/phase9_quality/test_quality_performance.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/performance/phase9_quality/test_quality_performance.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_quality_degradation_unit.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_quality_degradation_unit.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_quality_dimensions.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_quality_dimensions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_summarization_evaluator.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/unit/phase9_quality/test_summarization_evaluator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/unit/test_event_system.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/unit/test_event_system.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.bin/nanoid" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.bin/nanoid" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/_metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/_metadata.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/framer-motion.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/lucide-react.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-dom_client.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react-router-dom.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-dev-runtime.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/react_jsx-runtime.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/zustand.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/.vite/deps/zustand.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/LICENSE" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/at-rule.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/at-rule.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/comment.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/comment.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/container.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/container.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/css-syntax-error.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/css-syntax-error.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/css-syntax-error.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/css-syntax-error.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/declaration.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/declaration.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/declaration.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/declaration.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/document.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/document.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/document.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/document.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/fromJSON.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/fromJSON.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/fromJSON.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/fromJSON.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/input.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/input.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/lazy-result.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/lazy-result.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/lazy-result.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/lazy-result.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/list.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/list.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/map-generator.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/map-generator.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/no-work-result.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/no-work-result.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/node.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/node.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parse.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parse.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parse.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parse.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parser.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/parser.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.d.mts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.d.mts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/postcss.mjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/previous-map.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/previous-map.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/previous-map.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/previous-map.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/processor.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/processor.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/processor.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/processor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/result.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/result.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/result.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/result.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/root.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/root.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/root.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/root.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/rule.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/rule.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/rule.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/rule.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringifier.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringifier.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringifier.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringifier.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringify.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringify.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringify.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/stringify.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/symbols.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/symbols.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/terminal-highlight.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/terminal-highlight.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warn-once.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warn-once.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warning.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warning.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warning.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/lib/warning.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/node_modules/postcss/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/node_modules/postcss/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/cards/ResourceCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/cards/ResourceCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/Button.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/Button.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/common/CommandPalette.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/common/CommandPalette.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/layout/AppSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/layout/AppSidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/layout/MainLayout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/layout/MainLayout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/layout/Navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/layout/Navbar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/pages/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/pages/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/pages/Library.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/pages/Library.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/theme/ThemeProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/theme/ThemeProvider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/ui/collapsible.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/ui/collapsible.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/ui/sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/ui/sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/config/icons.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/config/icons.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/config/sidebarConfig.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/config/sidebarConfig.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/animations.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/animations.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/variables.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/variables.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/types/collection.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/types/collection.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/types/resource.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/types/resource.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,6 +280,8 @@
       <workItem from="1762397701972" duration="1305000" />
       <workItem from="1762640851216" duration="10275000" />
       <workItem from="1763589743385" duration="2904000" />
+      <workItem from="1764182716414" duration="1274000" />
+      <workItem from="1764185049102" duration="3873000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />

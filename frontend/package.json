@@ -12,15 +12,21 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.10",
+    "@tanstack/react-query-devtools": "^5.91.0",
     "browserslist": "^4.28.0",
     "framer-motion": "^10.16.5",
+    "fuse.js": "^7.1.0",
     "lucide-react": "^0.553.0",
+    "nanoid": "^5.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-pdf": "^10.2.0",
     "react-router-dom": "^6.20.0",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
@@ -28,7 +34,10 @@
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^1.0.4",
+    "autoprefixer": "^10.4.22",
     "jsdom": "^23.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
     "vitest": "^1.0.4"

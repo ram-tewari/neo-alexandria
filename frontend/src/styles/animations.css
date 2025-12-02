@@ -71,3 +71,17 @@
     opacity: 1;
   }
 }
+
+/* Skeleton Pulse - 1.5s duration for loading states */
+@keyframes pulse-skeleton {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-skeleton {
+  animation: pulse-skeleton 1.5s ease-in-out infinite;
+}

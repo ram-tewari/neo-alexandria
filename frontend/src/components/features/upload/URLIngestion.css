@@ -1,0 +1,121 @@
+/**
+ * URLIngestion Component Styles
+ */
+
+.url-ingestion {
+  width: 100%;
+}
+
+.url-ingestion__form {
+  margin-bottom: var(--spacing-4);
+}
+
+.url-ingestion__input-group {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+}
+
+.url-ingestion__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.url-ingestion__submit {
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.url-ingestion__error {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error-dark);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.url-ingestion__hint {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.url-ingestion__hint::before {
+  content: 'ℹ️';
+  font-size: var(--font-size-base);
+}
+
+.url-ingestion__help {
+  padding: var(--spacing-4);
+  background-color: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.url-ingestion__help-text {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.url-ingestion__help-list {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  list-style-type: disc;
+}
+
+.url-ingestion__help-list li {
+  margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.url-ingestion__help-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .url-ingestion__input-group {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .url-ingestion__submit {
+    width: 100%;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .url-ingestion__error {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: rgb(252, 165, 165);
+  }
+
+  .url-ingestion__hint {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: rgb(147, 197, 253);
+  }
+}
+
+/* Focus states for accessibility */
+.url-ingestion__input:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

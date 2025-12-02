@@ -234,9 +234,9 @@ class TestMonitorQualityDegradation:
         # Create only recent resources
         resource = Resource(
             title="Recent Resource",
-            url="https://example.com/recent",
+            source="https://example.com/recent",
             content="Recent content",
-            resource_type="article",
+            type="article",
             quality_overall=0.8,
             quality_last_computed=datetime.now() - timedelta(days=5)
         )

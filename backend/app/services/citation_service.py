@@ -30,8 +30,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from backend.app.database.models import Citation, Resource
-from backend.app.database.base import Base
-from backend.app.events.event_system import event_emitter, EventPriority
+from backend.app.shared.base_model import Base
+from backend.app.shared.event_bus import event_bus, EventPriority
 from backend.app.events.event_types import SystemEvent
 
 
@@ -141,8 +141,8 @@ class CitationService:
             
             # Emit citations.extracted event after successful commit
             if citations:
-                event_emitter.emit(
-                    SystemEvent.CITATIONS_EXTRACTED,
+                event_bus.emit(
+                    SystemEvent.CITATIONS_EXTRACTED.value,
                     {
                         "resource_id": resource_id,
                         "citations": [c["target_url"] for c in citations],

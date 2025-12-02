@@ -20,23 +20,22 @@ The application includes the following feature modules:
 
 import logging
 from contextlib import asynccontextmanager
+from typing import List, Tuple, Optional, Callable
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database.base import Base, sync_engine, get_pool_usage_warning
+from .shared.database import Base, sync_engine, get_pool_usage_warning, init_database
+from .config.settings import get_settings
 # Ensure models are imported so Base.metadata is populated for create_all
 from .database import models  # noqa: F401
-from .routers.resources import router as resources_router
 from .routers.curation import router as curation_router
-from .routers.search import router as search_router
 from .routers.classification import router as classification_router
 from .routers.authority import router as authority_router
 from .routers.graph import router as graph_router
 from .routers.recommendation import router as recommendation_router
 from .routers.recommendations import router as recommendations_router
 from .routers.citations import router as citations_router
-from .routers.collections import router as collections_router
 from .routers.annotations import router as annotations_router
 from .routers.taxonomy import router as taxonomy_router
 from .routers.quality import router as quality_router
@@ -45,6 +44,76 @@ from .routers.monitoring import router as monitoring_router
 from .monitoring import setup_monitoring
 
 logger = logging.getLogger(__name__)
+
+
+def register_all_modules(app: FastAPI) -> None:
+    """
+    Register all modular vertical slices with the application.
+    
+    This function dynamically loads and registers:
+    1. Module routers (API endpoints)
+    2. Module event handlers (for cross-module communication)
+    
+    Modules are loaded with error handling to ensure application startup
+    continues even if individual modules fail to load.
+    
+    Args:
+        app: FastAPI application instance
+    """
+    logger.info("Starting module registration...")
+    
+    # Define modules to register: (module_name, import_path, router_name)
+    modules: List[Tuple[str, str, str]] = [
+        ("collections", "backend.app.modules.collections", "collections_router"),
+        ("resources", "backend.app.modules.resources", "resources_router"),
+        ("search", "backend.app.modules.search", "search_router"),
+    ]
+    
+    registered_count = 0
+    failed_count = 0
+    
+    for module_name, module_path, router_name in modules:
+        try:
+            logger.debug(f"Loading module: {module_name}")
+            
+            # Dynamically import the module
+            import importlib
+            module = importlib.import_module(module_path)
+            
+            # Register the router if it exists
+            if hasattr(module, router_name):
+                router = getattr(module, router_name)
+                app.include_router(router)
+                logger.info(f"✓ Registered router for module: {module_name}")
+            else:
+                logger.warning(f"Module {module_name} does not expose {router_name}")
+            
+            # Register event handlers if the module has them
+            if hasattr(module, "register_handlers"):
+                register_handlers_func: Callable[[], None] = getattr(module, "register_handlers")
+                register_handlers_func()
+                logger.info(f"✓ Registered event handlers for module: {module_name}")
+            else:
+                logger.debug(f"Module {module_name} has no event handlers to register")
+            
+            registered_count += 1
+            
+        except Exception as e:
+            failed_count += 1
+            logger.error(
+                f"✗ Failed to register module {module_name}: {e}",
+                exc_info=True,
+                extra={
+                    "module_name": module_name,
+                    "module_path": module_path,
+                    "error_type": type(e).__name__
+                }
+            )
+            # Continue with other modules even if one fails
+    
+    logger.info(
+        f"Module registration complete: {registered_count} succeeded, {failed_count} failed"
+    )
 
 
 @asynccontextmanager
@@ -102,6 +171,10 @@ def create_app() -> FastAPI:
     Returns:
         FastAPI: Configured application instance ready for deployment
     """
+    # Initialize database using shared kernel
+    settings = get_settings()
+    init_database(settings.DATABASE_URL, settings.ENV)
+    
     app = FastAPI(
         title="Neo Alexandria 2.0",
         version="0.4.0",
@@ -146,16 +219,20 @@ def create_app() -> FastAPI:
         Base.metadata.create_all(bind=sync_engine)
     except Exception:
         pass
-    app.include_router(resources_router)
+    
+    # Register modular vertical slices (Collections, Resources, Search)
+    # This must happen before processing requests to ensure event handlers are registered
+    logger.info("Registering modular vertical slices...")
+    register_all_modules(app)
+    
+    # Register remaining layered routers (to be migrated in future phases)
     app.include_router(curation_router)
-    app.include_router(search_router)
     app.include_router(authority_router)
     app.include_router(classification_router)
     app.include_router(graph_router)
     app.include_router(recommendation_router)
     app.include_router(recommendations_router)
     app.include_router(citations_router)
-    app.include_router(collections_router)
     app.include_router(annotations_router)
     app.include_router(taxonomy_router)
     app.include_router(quality_router)
@@ -164,6 +241,8 @@ def create_app() -> FastAPI:
     
     # Set up performance monitoring
     setup_monitoring(app)
+    
+    logger.info("Application initialization complete")
     
     return app
 

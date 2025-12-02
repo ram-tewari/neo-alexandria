@@ -16,16 +16,18 @@ interface ResourceCardProps {
   onArchive?: (id: string) => void;
   onAnnotate?: (id: string) => void;
   onShare?: (id: string) => void;
+  compact?: boolean;
 }
 
-export const ResourceCard = memo(({ 
-  resource, 
+export const ResourceCard = memo(({
+  resource,
   viewMode,
   delay = 0,
   onRead,
   onArchive,
   onAnnotate,
-  onShare
+  onShare,
+  compact = false
 }: ResourceCardProps) => {
   const [showActions, setShowActions] = useState(false);
 
@@ -72,7 +74,7 @@ export const ResourceCard = memo(({
   if (viewMode === 'list') {
     return (
       <motion.div
-        className="resource-card resource-card--list"
+        className={`resource-card resource-card--list ${compact ? 'resource-card--compact' : ''}`}
         variants={cardHoverVariants}
         initial="rest"
         whileHover="hover"
@@ -83,7 +85,7 @@ export const ResourceCard = memo(({
           <div className="resource-card__type-icon" style={{ background: getTypeColor() }}>
             <Icon icon={typeIcon} size={20} />
           </div>
-          
+
           <div className="resource-card__main">
             <div className="resource-card__header">
               <h3 className="resource-card__title">{resource.title}</h3>
@@ -94,7 +96,7 @@ export const ResourceCard = memo(({
               )}
             </div>
             <p className="resource-card__description">{resource.description || 'No description available'}</p>
-            
+
             <div className="resource-card__tags">
               {resource.subject.slice(0, 3).map((tag, i) => (
                 <Tag key={i} label={tag} variant={i % 3 === 0 ? 'blue' : i % 3 === 1 ? 'cyan' : 'purple'} />
@@ -104,7 +106,7 @@ export const ResourceCard = memo(({
               )}
             </div>
           </div>
-          
+
           <div className="resource-card__meta">
             <div className="resource-card__quality" style={{ color: getQualityColor(resource.quality_score) }}>
               <Icon icon={icons.star} size={16} />
@@ -180,10 +182,10 @@ export const ResourceCard = memo(({
           </div>
         )}
       </div>
-      
+
       <h3 className="resource-title">{resource.title}</h3>
       <p className="resource-description">{resource.description || 'No description available'}</p>
-      
+
       <div className="resource-tags">
         {resource.subject.slice(0, 3).map((tag, i) => (
           <Tag key={i} label={tag} variant={i % 3 === 0 ? 'blue' : i % 3 === 1 ? 'cyan' : 'purple'} />
@@ -192,7 +194,7 @@ export const ResourceCard = memo(({
           <span className="resource-more-tags">+{resource.subject.length - 3}</span>
         )}
       </div>
-      
+
       <div className="resource-meta">
         {resource.creator && (
           <div className="resource-author">

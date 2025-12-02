@@ -262,7 +262,7 @@ export const SidebarGroupLabel = React.forwardRef<
 >(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? React.Fragment : 'div';
   const divProps = asChild ? {} : { ref, className: `sidebar-group-label ${className || ''}`, ...props };
-  
+
   return asChild ? <>{props.children}</> : <Comp {...divProps} />;
 });
 SidebarGroupLabel.displayName = 'SidebarGroupLabel';
@@ -282,7 +282,7 @@ export const SidebarGroupAction = React.forwardRef<HTMLButtonElement, React.Comp
         className={`sidebar-group-action ${className || ''}`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        {...props}
+        {...(props as any)}
       />
     );
   }
@@ -455,7 +455,7 @@ export const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentPr
         initial={{ opacity: 0 }}
         whileHover={{ opacity: 0.5, width: '6px' }}
         transition={{ duration: 0.2 }}
-        {...props}
+        {...(props as any)}
       >
         <span className="sr-only">Expand sidebar</span>
       </motion.button>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../common/Button';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -9,6 +9,7 @@ import { ListView } from '../views/ListView';
 import { HeadlinesView } from '../views/HeadlinesView';
 import { MasonryView } from '../views/MasonryView';
 import { GradientOrbs } from '../background/GradientOrbs';
+import { CreateResourceModal } from '../features/library/CreateResourceModal';
 import { pageVariants } from '../../animations/variants';
 import { useResourceStore } from '@/store';
 import './Library.css';
@@ -29,6 +30,8 @@ export const Library = () => {
     archiveResource,
     setPage,
   } = useResourceStore();
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     fetchResources();
@@ -92,21 +95,21 @@ export const Library = () => {
 
   return (
     <motion.div
-      className="container library-container"
+      className="container library-container pt-24 pb-12 px-6"
       variants={pageVariants}
       initial="initial"
       animate="animate"
       exit="exit"
     >
       <GradientOrbs />
-      
+
       <div className="page-header" style={{ position: 'relative', zIndex: 1 }}>
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <motion.h1 
+          <motion.h1
             className="page-title"
             style={{
               background: 'linear-gradient(135deg, var(--white) 0%, var(--purple-bright) 50%, var(--purple-vibrant) 100%)',
@@ -126,7 +129,7 @@ export const Library = () => {
           >
             Library
           </motion.h1>
-          <motion.p 
+          <motion.p
             className="page-subtitle"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -142,7 +145,13 @@ export const Library = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Button variant="primary" iconName="add">Add Resource</Button>
+          <Button
+            variant="primary"
+            iconName="add"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Add Resource
+          </Button>
         </motion.div>
       </div>
 
@@ -154,7 +163,7 @@ export const Library = () => {
           onFiltersChange={handleFiltersChange}
           onClearFilters={clearFilters}
         />
-        
+
         <div className="library-toolbar">
           <div className="library-info">
             {pagination.total > 0 && (
@@ -201,7 +210,7 @@ export const Library = () => {
                 >
                   ‹
                 </button>
-                
+
                 {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
                   let pageNum;
                   if (pagination.pages <= 5) {
@@ -213,7 +222,7 @@ export const Library = () => {
                   } else {
                     pageNum = pagination.page - 2 + i;
                   }
-                  
+
                   return (
                     <button
                       key={pageNum}
@@ -224,7 +233,7 @@ export const Library = () => {
                     </button>
                   );
                 })}
-                
+
                 {pagination.pages > 5 && pagination.page < pagination.pages - 2 && (
                   <>
                     <span className="pagination-dots">...</span>
@@ -236,7 +245,7 @@ export const Library = () => {
                     </button>
                   </>
                 )}
-                
+
                 <button
                   className="pagination-btn"
                   disabled={pagination.page === pagination.pages}
@@ -263,6 +272,11 @@ export const Library = () => {
           )}
         </div>
       )}
+
+      <CreateResourceModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </motion.div>
   );
 };

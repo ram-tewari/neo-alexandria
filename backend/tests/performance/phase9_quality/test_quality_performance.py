@@ -28,10 +28,10 @@ def create_test_resources(db_session: Session):
         for i in range(count):
             resource = Resource(
                 title=f"Performance Test Resource {i}",
-                url=f"https://example.com/perf{i}",
+                source=f"https://example.com/perf{i}",
                 content=f"Performance test content {i} " * 50,
                 summary=f"Summary {i}",
-                resource_type="article",
+                type="article",
                 authors=f"Author {i}",
                 publication_year=2024,
                 tags=f"test,performance,{i}"
@@ -55,9 +55,9 @@ class TestQualityComputationLatency:
         # Create resource
         resource = Resource(
             title="Latency Test",
-            url="https://example.com/latency",
+            source="https://example.com/latency",
             content="Content for latency testing",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -204,10 +204,10 @@ class TestSummarizationEvaluationLatency:
         """Test summary evaluation without G-Eval completes quickly."""
         resource = Resource(
             title="Summary Eval Test",
-            url="https://example.com/summary-eval",
+            source="https://example.com/summary-eval",
             content="Content for summary evaluation testing " * 50,
             summary="Brief summary for evaluation",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -228,10 +228,10 @@ class TestSummarizationEvaluationLatency:
         """Test summary evaluation with G-Eval (requires API key)."""
         resource = Resource(
             title="G-Eval Test",
-            url="https://example.com/g-eval",
+            source="https://example.com/g-eval",
             content="Content for G-Eval testing",
             summary="Summary for G-Eval",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()

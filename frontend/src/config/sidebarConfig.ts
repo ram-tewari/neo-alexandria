@@ -28,6 +28,7 @@ export const sidebarSections: SidebarSection[] = [
     collapsible: true,
     defaultOpen: true,
     items: [
+      { iconName: 'library', label: 'All Collections', path: '/collections' },
       { iconName: 'favorites', label: 'Favorites', path: '/favorites' },
       { iconName: 'recent', label: 'Recent', path: '/recent' },
       { iconName: 'readLater', label: 'Read Later', path: '/read-later' },

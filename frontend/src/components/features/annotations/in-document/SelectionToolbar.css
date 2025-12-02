@@ -1,0 +1,72 @@
+.selection-toolbar {
+    position: fixed;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: fadeSlideIn 200ms ease-out;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.selection-toolbar-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 200ms ease-out;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.selection-toolbar-button:hover {
+    background: var(--surface-hover);
+}
+
+.selection-toolbar-button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.selection-toolbar-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.selection-toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-medium);
+    margin: 0 4px;
+}
+
+/* Disabled state */
+.selection-toolbar-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.selection-toolbar-button:disabled:hover {
+    background: transparent;
+}

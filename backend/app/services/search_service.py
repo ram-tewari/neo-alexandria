@@ -39,8 +39,8 @@ from sqlalchemy import text, func, or_, asc, desc, String, cast
 from sqlalchemy.orm import Session
 
 from backend.app.database.models import Resource
-from backend.app.schemas.search import Facets, FacetBucket, SearchFilters
-from backend.app.schemas.search import SearchQuery as SearchQuerySchema
+from backend.app.modules.search.schema import Facets, FacetBucket, SearchFilters
+from backend.app.modules.search.schema import SearchQuery as SearchQuerySchema
 from backend.app.domain.search import SearchQuery as DomainSearchQuery
 from backend.app.config.settings import get_settings
 from backend.app.services.ai_core import generate_embedding

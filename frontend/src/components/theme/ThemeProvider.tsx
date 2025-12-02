@@ -11,6 +11,7 @@ interface ThemeProviderProps {
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
   actualTheme: 'light' | 'dark';
 }
 
@@ -76,9 +77,15 @@ export function ThemeProvider({
     setTheme(newTheme);
   };
 
+  const toggleTheme = () => {
+    const newTheme = actualTheme === 'light' ? 'dark' : 'light';
+    handleSetTheme(newTheme);
+  };
+
   const value: ThemeContextValue = {
     theme,
     setTheme: handleSetTheme,
+    toggleTheme,
     actualTheme,
   };
 

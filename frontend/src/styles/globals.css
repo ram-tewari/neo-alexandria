@@ -2,6 +2,10 @@
 @import './animations.css';
 @import './purple-animations.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * {
   margin: 0;
   padding: 0;
@@ -70,8 +74,25 @@ svg {
   color: currentColor;
 }
 
+/* Transition base class for smooth theme switching */
+.transition-base {
+  transition: background-color 200ms ease-out,
+    color 200ms ease-out,
+    border-color 200ms ease-out,
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+
+/* Apply smooth transitions to all elements for theme changes */
+* {
+  transition: background-color 200ms ease-out,
+    color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {

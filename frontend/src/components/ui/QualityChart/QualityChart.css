@@ -1,0 +1,41 @@
+.quality-chart {
+  position: relative;
+  display: inline-block;
+}
+
+.quality-chart-svg {
+  display: block;
+}
+
+.quality-chart-background {
+  stroke: var(--color-border);
+}
+
+.quality-chart-progress {
+  stroke: var(--color-primary);
+}
+
+.quality-chart-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.quality-chart-score {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text-primary);
+}
+
+.quality-chart-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}

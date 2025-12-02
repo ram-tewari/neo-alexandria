@@ -1,0 +1,12 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check-module-isolation
+        name: Check Module Isolation
+        entry: python backend/scripts/check_module_isolation.py
+        language: system
+        pass_filenames: false
+        files: ^backend/app/modules/.*\.py$
+        description: Validates that modules follow vertical slice architecture rules
+        always_run: true
+        stages: [commit, push]

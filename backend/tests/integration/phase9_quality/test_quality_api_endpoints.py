@@ -14,9 +14,9 @@ def test_resource(db_session: Session):
     """Create test resource with quality scores."""
     resource = Resource(
         title="Test Resource",
-        url="https://example.com/test",
+        source="https://example.com/test",
         content="Test content for API testing",
-        resource_type="article",
+        type="article",
         quality_accuracy=0.75,
         quality_completeness=0.70,
         quality_consistency=0.80,
@@ -37,9 +37,9 @@ def outlier_resource(db_session: Session):
     """Create outlier resource for testing."""
     resource = Resource(
         title="Outlier Resource",
-        url="https://example.com/outlier",
+        source="https://example.com/outlier",
         content="Outlier content",
-        resource_type="article",
+        type="article",
         quality_accuracy=0.15,
         quality_completeness=0.20,
         quality_consistency=0.18,
@@ -86,9 +86,9 @@ class TestQualityDetailsEndpoint:
         """Test quality details for resource without quality scores."""
         resource = Resource(
             title="No Quality",
-            url="https://example.com/no-quality",
+            source="https://example.com/no-quality",
             content="No quality computed",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -115,9 +115,9 @@ class TestQualityRecalculateEndpoint:
         """Test recalculating quality for multiple resources."""
         resource2 = Resource(
             title="Test 2",
-            url="https://example.com/test2",
+            source="https://example.com/test2",
             content="Test content 2",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource2)
         db_session.commit()
@@ -247,9 +247,9 @@ class TestDegradationEndpoint:
         # Create resource with old quality
         resource = Resource(
             title="Old Quality",
-            url="https://example.com/old",
+            source="https://example.com/old",
             content="Old content",
-            resource_type="article",
+            type="article",
             quality_overall=0.9,
             quality_last_computed=datetime.now() - timedelta(days=35)
         )
@@ -285,10 +285,10 @@ class TestSummaryEvaluationEndpoint:
         """Test successful summary evaluation."""
         resource = Resource(
             title="With Summary",
-            url="https://example.com/summary",
+            source="https://example.com/summary",
             content="Content for summary evaluation",
             summary="Brief summary",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()
@@ -301,10 +301,10 @@ class TestSummaryEvaluationEndpoint:
         """Test summary evaluation with G-Eval enabled."""
         resource = Resource(
             title="With Summary",
-            url="https://example.com/summary",
+            source="https://example.com/summary",
             content="Content",
             summary="Summary",
-            resource_type="article"
+            type="article"
         )
         db_session.add(resource)
         db_session.commit()

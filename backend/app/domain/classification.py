@@ -6,7 +6,7 @@ replacing primitive obsession with rich value objects that encapsulate
 validation and business logic.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from backend.app.domain import ValueObject, validate_range, validate_positive
 
@@ -406,4 +406,159 @@ class ClassificationResult(ValueObject):
             model_version=data['model_version'],
             inference_time_ms=data['inference_time_ms'],
             resource_id=data.get('resource_id')
+        )
+
+
+
+@dataclass
+class TrainingExample(ValueObject):
+    """
+    Single training example for classification model.
+    
+    Represents a labeled text example used for training or evaluation.
+    
+    Attributes:
+        text: Input text to classify
+        label: Taxonomy node ID label (for single-label) or list of labels (for multi-label)
+        confidence: Confidence score for the label (default: 1.0 for human labels)
+    """
+    text: str
+    label: str  # Can be single label or comma-separated labels for multi-label
+    confidence: float = 1.0
+    
+    def validate(self) -> None:
+        """
+        Validate training example attributes.
+        
+        Raises:
+            ValueError: If text is empty, label is empty, or confidence is not in [0.0, 1.0]
+        """
+        if not self.text or not self.text.strip():
+            raise ValueError("text cannot be empty")
+        
+        if not self.label or not self.label.strip():
+            raise ValueError("label cannot be empty")
+        
+        validate_range(self.confidence, 0.0, 1.0, "confidence")
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert training example to dictionary.
+        
+        Returns:
+            Dictionary representation with all attributes
+        """
+        return {
+            'text': self.text,
+            'label': self.label,
+            'confidence': self.confidence
+        }
+
+
+@dataclass
+class TrainingResult(ValueObject):
+    """
+    Result of a model training operation.
+    
+    Contains metrics and metadata about the training process.
+    
+    Attributes:
+        model_name: Name/identifier of the trained model
+        final_loss: Final training loss value
+        checkpoint_path: Path to saved model checkpoint
+        metrics: Dictionary of evaluation metrics (f1, precision, recall, etc.)
+        num_epochs: Number of training epochs completed
+        training_time_seconds: Total training time in seconds
+    """
+    model_name: str
+    final_loss: float
+    checkpoint_path: str
+    metrics: Dict[str, float] = field(default_factory=dict)
+    num_epochs: int = 0
+    training_time_seconds: float = 0.0
+    
+    def validate(self) -> None:
+        """
+        Validate training result attributes.
+        
+        Raises:
+            ValueError: If model_name is empty, final_loss is negative,
+                       checkpoint_path is empty, or num_epochs is negative
+        """
+        if not self.model_name or not self.model_name.strip():
+            raise ValueError("model_name cannot be empty")
+        
+        if self.final_loss < 0:
+            raise ValueError(f"final_loss must be non-negative, got {self.final_loss}")
+        
+        if not self.checkpoint_path or not self.checkpoint_path.strip():
+            raise ValueError("checkpoint_path cannot be empty")
+        
+        if self.num_epochs < 0:
+            raise ValueError(f"num_epochs must be non-negative, got {self.num_epochs}")
+        
+        if self.training_time_seconds < 0:
+            raise ValueError(
+                f"training_time_seconds must be non-negative, got {self.training_time_seconds}"
+            )
+    
+    def get_metric(self, metric_name: str, default: float = 0.0) -> float:
+        """
+        Get a specific metric value.
+        
+        Args:
+            metric_name: Name of the metric (e.g., 'f1', 'precision', 'recall')
+            default: Default value if metric not found
+            
+        Returns:
+            Metric value or default
+        """
+        return self.metrics.get(metric_name, default)
+    
+    def has_metric(self, metric_name: str) -> bool:
+        """
+        Check if a metric exists in the results.
+        
+        Args:
+            metric_name: Name of the metric to check
+            
+        Returns:
+            True if metric exists
+        """
+        return metric_name in self.metrics
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert training result to dictionary.
+        
+        Returns:
+            Dictionary representation with all attributes
+        """
+        return {
+            'model_name': self.model_name,
+            'final_loss': self.final_loss,
+            'checkpoint_path': self.checkpoint_path,
+            'metrics': self.metrics,
+            'num_epochs': self.num_epochs,
+            'training_time_seconds': self.training_time_seconds
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'TrainingResult':
+        """
+        Create training result from dictionary.
+        
+        Args:
+            data: Dictionary with training result data
+            
+        Returns:
+            New TrainingResult instance
+        """
+        return cls(
+            model_name=data['model_name'],
+            final_loss=data['final_loss'],
+            checkpoint_path=data['checkpoint_path'],
+            metrics=data.get('metrics', {}),
+            num_epochs=data.get('num_epochs', 0),
+            training_time_seconds=data.get('training_time_seconds', 0.0)
         )

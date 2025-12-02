@@ -80,4 +80,9 @@ export interface ResourceSummary {
   title: string;
   quality_score: number;
   classification_code: string | null;
+  type?: string | null;
+  subject?: string[];
+  creator?: string | null;
+  read_status?: ReadStatus;
+  description?: string | null;
 }

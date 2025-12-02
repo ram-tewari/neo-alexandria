@@ -9,7 +9,12 @@ from uuid import uuid4
 from unittest.mock import Mock
 
 from backend.app.domain.search import SearchResult
-from backend.app.services.search_service import SearchService
+# Import from new module location
+try:
+    from backend.app.modules.search import SearchService
+except ImportError:
+    # Fallback to old location for backward compatibility
+    from backend.app.services.search_service import SearchService
 
 
 @pytest.fixture

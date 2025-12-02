@@ -770,6 +770,17 @@ class HybridRecommendationService:
             for rank, candidate in enumerate(final_recommendations, 1):
                 resource = candidate['resource']
                 
+                # Parse subject if it's a string (JSON)
+                subject = []
+                if resource.subject:
+                    if isinstance(resource.subject, list):
+                        subject = resource.subject
+                    elif isinstance(resource.subject, str):
+                        try:
+                            subject = json.loads(resource.subject)
+                        except:
+                            subject = [resource.subject]
+
                 recommendations.append({
                     'resource_id': str(resource.id),
                     'title': resource.title,

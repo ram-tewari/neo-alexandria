@@ -51,7 +51,13 @@ import {
   Palette,
   HelpCircle,
   MessageSquare,
-  Info
+  Info,
+  Calendar,
+  Save,
+  History,
+  Command,
+  ArrowUp,
+  File
 } from 'lucide-react';
 
 export const icons = {
@@ -64,7 +70,7 @@ export const icons = {
   activity: Activity,
   workspaces: Folder,
   discover: Compass,
-  
+
   // Tools
   notes: StickyNote,
   tasks: CheckSquare,
@@ -72,7 +78,7 @@ export const icons = {
   tags: Tag,
   import: Download,
   export: Upload,
-  
+
   // Collections
   favorites: Heart,
   recent: Clock,
@@ -81,13 +87,13 @@ export const icons = {
   playlists: FolderHeart,
   archived: Archive,
   shared: Users,
-  
+
   // Insights
   statistics: BarChart2,
   trends: TrendingUp,
   recommendations: Lightbulb,
   breakdown: PieChart,
-  
+
   // System
   settings: Settings,
   profile: User,
@@ -95,7 +101,7 @@ export const icons = {
   help: HelpCircle,
   feedback: MessageSquare,
   about: Info,
-  
+
   // Actions
   notification: Bell,
   add: Plus,
@@ -112,27 +118,37 @@ export const icons = {
   edit: Edit,
   share: Share2,
   archive: Archive,
-  
+
   // View modes
   grid: Grid,
   list: List,
   columns: Columns,
   masonry: LayoutGrid,
-  
+
   // Content types
   star: Star,
   article: FileText,
   video: Video,
   book: BookOpen,
   paper: GraduationCap,
-  
+
   // Stats
   chart: BarChart3,
   trending: TrendingUp,
-  
+
   // User
   user: User,
   brain: Brain,
+
+  // Missing icons added for Phase 2
+  calendar: Calendar,
+  save: Save,
+  plus: Plus,
+  document: FileText, // Alias to FileText
+  history: History,
+  command: Command,
+  arrowUp: ArrowUp,
+  file: File,
 } as const;
 
 export type IconName = keyof typeof icons;

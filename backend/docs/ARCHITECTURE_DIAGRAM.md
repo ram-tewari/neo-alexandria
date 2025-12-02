@@ -3340,6 +3340,296 @@ This supplementary document includes:
 
 ---
 
+## Phase 13.5: Vertical Slice Architecture
+
+### Modular Architecture Overview
+
+Phase 13.5 introduces a vertical slice architecture, transitioning from a layered monolith to independent, self-contained modules. Each module encapsulates all layers (router, service, schema, model, handlers) for a specific domain.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  PHASE 13.5: VERTICAL SLICE ARCHITECTURE                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                        SHARED KERNEL                              │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │  │
+│  │  │  Database   │  │  Event Bus  │  │ Base Models │               │  │
+│  │  │  (engine,   │  │  (pub/sub)  │  │  (mixins)   │               │  │
+│  │  │  session)   │  │             │  │             │               │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘               │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│           │                    │                    │                   │
+│           │                    │                    │                   │
+│  ┌────────▼────────────────────▼────────────────────▼────────────────┐  │
+│  │                        MODULE LAYER                               │  │
+│  │                                                                   │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │  │
+│  │  │ Collections  │  │  Resources   │  │    Search    │            │  │
+│  │  │   Module     │  │   Module     │  │   Module     │            │  │
+│  │  ├──────────────┤  ├──────────────┤  ├──────────────┤            │  │
+│  │  │ • router.py  │  │ • router.py  │  │ • router.py  │            │  │
+│  │  │ • service.py │  │ • service.py │  │ • service.py │            │  │
+│  │  │ • schema.py  │  │ • schema.py  │  │ • schema.py  │            │  │
+│  │  │ • model.py   │  │ • model.py   │  │ • model.py   │            │  │
+│  │  │ • handlers.py│  │ • handlers.py│  │ • handlers.py│            │  │
+│  │  │ • __init__.py│  │ • __init__.py│  │ • __init__.py│            │  │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘            │  │
+│  │         │                  │                  │                   │  │
+│  │         └──────────────────┼──────────────────┘                   │  │
+│  │                            │                                      │  │
+│  └────────────────────────────┼──────────────────────────────────────┘  │
+│                               │                                         │
+│                               ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    APPLICATION ENTRY POINT                      │    │
+│  │                         (main.py)                               │    │
+│  │                                                                 │    │
+│  │  • Register all modules dynamically                             │    │
+│  │  • Register event handlers on startup                           │    │
+│  │  • Maintain backward compatibility                              │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Event-Driven Communication
+
+Modules communicate through events rather than direct service calls, eliminating circular dependencies and enabling loose coupling.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    EVENT-DRIVEN MODULE COMMUNICATION                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                    Resources Module                              │   │
+│  │                                                                  │   │
+│  │  delete_resource(resource_id)                                    │   │
+│  │       │                                                          │   │
+│  │       ├─ Delete from database                                    │   │
+│  │       │                                                          │   │
+│  │       └─ Emit event: "resource.deleted"                          │   │
+│  │            payload: { resource_id: "abc-123" }                   │   │
+│  └──────────────────────────┬───────────────────────────────────────┘   │
+│                             │                                           │
+│                             │ Event Bus                                 │
+│                             │ (in-memory pub/sub)                       │
+│                             │                                           │
+│       ┌─────────────────────┼─────────────────────┐                     │
+│       │                     │                     │                     │
+│       ▼                     ▼                     ▼                     │
+│  ┌─────────┐          ┌─────────┐          ┌─────────┐                 │
+│  │Handler 1│          │Handler 2│          │Handler 3│                 │
+│  │(Colls)  │          │(Search) │          │(Other)  │                 │
+│  └────┬────┘          └────┬────┘          └────┬────┘                 │
+│       │                    │                    │                       │
+│       ▼                    ▼                    ▼                       │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                    Collections Module                            │   │
+│  │                                                                  │   │
+│  │  handle_resource_deleted(payload)                                │   │
+│  │       │                                                          │   │
+│  │       ├─ Find collections with resource                          │   │
+│  │       │                                                          │   │
+│  │       ├─ Remove resource from collections                        │   │
+│  │       │                                                          │   │
+│  │       └─ Recompute collection embeddings                         │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  Benefits:                                                              │
+│  • No direct imports between modules                                    │
+│  • No circular dependencies                                             │
+│  • Easy to add new event handlers                                       │
+│  • Error isolation (one handler failure doesn't affect others)          │
+│  • Comprehensive event metrics and monitoring                           │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Module Structure
+
+Each module follows a consistent structure with clear boundaries and public interfaces:
+
+```
+app/modules/{module_name}/
+├── __init__.py          # Public interface (exports router, service, schemas)
+├── router.py            # FastAPI endpoints
+├── service.py           # Business logic
+├── schema.py            # Pydantic models
+├── model.py             # SQLAlchemy models (optional, during migration)
+├── handlers.py          # Event handlers
+├── README.md            # Module documentation
+└── tests/               # Module-specific tests
+    ├── test_service.py
+    ├── test_router.py
+    └── test_handlers.py
+```
+
+### Module Dependencies
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        MODULE DEPENDENCY GRAPH                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│                      ┌─────────────────┐                                │
+│                      │  Shared Kernel  │                                │
+│                      │  • database     │                                │
+│                      │  • event_bus    │                                │
+│                      │  • base_model   │                                │
+│                      └────────┬────────┘                                │
+│                               │                                         │
+│                               │ (allowed dependency)                    │
+│                               │                                         │
+│       ┌───────────────────────┼───────────────────────┐                 │
+│       │                       │                       │                 │
+│       ▼                       ▼                       ▼                 │
+│  ┌─────────┐            ┌─────────┐            ┌─────────┐             │
+│  │Collections│          │Resources│            │ Search  │             │
+│  │  Module  │          │ Module  │            │ Module  │             │
+│  └─────────┘            └─────────┘            └─────────┘             │
+│       │                       │                       │                 │
+│       │                       │                       │                 │
+│       └───────────────────────┼───────────────────────┘                 │
+│                               │                                         │
+│                               │ (NO direct imports)                     │
+│                               │ (communicate via events)                │
+│                               │                                         │
+│                               ▼                                         │
+│                      ┌─────────────────┐                                │
+│                      │    Event Bus    │                                │
+│                      │  (pub/sub only) │                                │
+│                      └─────────────────┘                                │
+│                                                                         │
+│  Dependency Rules:                                                      │
+│  ✓ Modules MAY depend on Shared Kernel                                  │
+│  ✓ Modules MAY emit events to Event Bus                                 │
+│  ✓ Modules MAY subscribe to events from Event Bus                       │
+│  ✗ Modules MUST NOT import from other modules                           │
+│  ✗ Modules MUST NOT call other module services directly                 │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Event Bus Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          EVENT BUS INTERNALS                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                        EventBus Class                            │   │
+│  │                                                                  │   │
+│  │  Attributes:                                                     │   │
+│  │    • _handlers: Dict[str, List[Callable]]                        │   │
+│  │    • _metrics: EventMetrics                                      │   │
+│  │    • _logger: Logger                                             │   │
+│  │                                                                  │   │
+│  │  Methods:                                                        │   │
+│  │    • subscribe(event_type, handler, priority)                    │   │
+│  │    • emit(event_type, payload, priority)                         │   │
+│  │    • get_metrics() → EventMetrics                                │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  Event Flow:                                                            │
+│                                                                         │
+│  1. Module emits event                                                  │
+│     event_bus.emit("resource.deleted", {"resource_id": "123"})          │
+│                                                                         │
+│  2. Event Bus looks up handlers                                         │
+│     handlers = _handlers.get("resource.deleted", [])                    │
+│                                                                         │
+│  3. Execute handlers in priority order                                  │
+│     for handler in sorted(handlers, key=priority):                      │
+│         try:                                                            │
+│             handler(payload)                                            │
+│         except Exception as e:                                          │
+│             log_error(e)  # Error isolation                             │
+│             continue      # Don't stop other handlers                   │
+│                                                                         │
+│  4. Track metrics                                                       │
+│     • events_emitted++                                                  │
+│     • events_delivered += len(handlers)                                 │
+│     • handler_errors++ (if any failures)                                │
+│     • latency_ms (p50, p95, p99)                                        │
+│                                                                         │
+│  Monitoring Endpoint: GET /monitoring/events                            │
+│  {                                                                      │
+│    "events_emitted": 1523,                                              │
+│    "events_delivered": 4569,                                            │
+│    "handler_errors": 3,                                                 │
+│    "event_types": {                                                     │
+│      "resource.deleted": 234,                                           │
+│      "resource.updated": 1289                                           │
+│    },                                                                   │
+│    "latency_ms": {                                                      │
+│      "p50": 0.8,                                                        │
+│      "p95": 2.3,                                                        │
+│      "p99": 5.1                                                         │
+│    }                                                                    │
+│  }                                                                      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Migration Strategy
+
+The transition from layered to modular architecture follows a phased approach:
+
+```
+Phase 1: Shared Kernel Setup
+  ✓ Extract database, event_bus, base_model to app/shared/
+  ✓ Update all imports to use shared kernel
+
+Phase 2: Extract First Module (Collections)
+  ✓ Create app/modules/collections/ structure
+  ✓ Move router, service, schema to module
+  ✓ Create event handlers for cross-module communication
+  ✓ Keep models in database/models.py temporarily
+
+Phase 3: Extract Second Module (Resources)
+  ✓ Create app/modules/resources/ structure
+  ✓ Move router, service, schema to module
+  ✓ Replace direct service calls with event emissions
+  ✓ Verify event-driven flow works
+
+Phase 4: Extract Third Module (Search)
+  ✓ Create app/modules/search/ structure
+  ✓ Consolidate multiple search services into unified module
+  ✓ Move router, schema to module
+  ✓ Maintain backward compatibility
+
+Phase 5: Update Application Entry Point
+  ✓ Implement dynamic module registration
+  ✓ Register event handlers on startup
+  ✓ Maintain API backward compatibility
+
+Phase 6: Cleanup and Documentation
+  ✓ Remove deprecated layered structure files
+  ✓ Update architecture documentation
+  ✓ Create migration guide
+  ✓ Add module-specific documentation
+
+Future Phases:
+  • Extract remaining modules (Authority, Classification, etc.)
+  • Move models from database/models.py to module model.py
+  • Complete transition to vertical slices
+```
+
+### Benefits of Vertical Slice Architecture
+
+1. **Independent Development**: Teams can work on modules independently
+2. **Clear Boundaries**: Each module has well-defined responsibilities
+3. **Easier Testing**: Modules can be tested in isolation
+4. **Reduced Coupling**: Event-driven communication eliminates direct dependencies
+5. **Better Scalability**: Modules can be extracted into microservices if needed
+6. **Improved Maintainability**: Changes are localized to specific modules
+7. **Flexible Deployment**: Modules can be deployed independently (future)
+
+---
+
 ## Architecture Evolution Summary
 
 Neo Alexandria 2.0 has evolved through 12+ phases, each building upon the previous foundation:
@@ -3352,7 +3642,8 @@ Neo Alexandria 2.0 has evolved through 12+ phases, each building upon the previo
 **Phase 10**: Graph-based recommendations  
 **Phase 11**: Domain-driven design refactoring  
 **Phase 12**: Fowler refactoring framework  
-**Phase 12.5**: Event-driven architecture with Celery
+**Phase 12.5**: Event-driven architecture with Celery  
+**Phase 13.5**: Vertical slice architecture with modular design
 
 ### Current System Features
 

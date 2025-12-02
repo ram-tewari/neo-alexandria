@@ -330,6 +330,44 @@ class CollectionService:
         
         return added_count
     
+    def add_resources(
+        self,
+        collection_id: uuid.UUID,
+        resource_ids: List[uuid.UUID],
+        user_id: str
+    ) -> Collection:
+        """
+        Add resources to a collection (alias for add_resources_to_collection).
+        
+        This method provides backward compatibility with tests that use the
+        add_resources naming convention. It returns the updated Collection
+        instead of just the count.
+        
+        Args:
+            collection_id: Collection UUID
+            resource_ids: List of resource UUIDs to add
+            user_id: User ID for access control (same as owner_id)
+            
+        Returns:
+            Updated Collection instance with resources loaded
+            
+        Raises:
+            ValueError: If collection not found or access denied
+        """
+        # Call the main method
+        self.add_resources_to_collection(
+            collection_id=collection_id,
+            resource_ids=resource_ids,
+            owner_id=user_id
+        )
+        
+        # Return the collection with resources loaded
+        return self.get_collection(
+            collection_id=collection_id,
+            owner_id=user_id,
+            include_resources=True
+        )
+    
     def remove_resources_from_collection(
         self,
         collection_id: uuid.UUID,
@@ -587,3 +625,28 @@ class CollectionService:
         similarities.sort(key=lambda x: x["similarity_score"], reverse=True)
         
         return similarities[:limit]
+    
+    def find_collections_with_resource(
+        self,
+        resource_id: uuid.UUID
+    ) -> List[Collection]:
+        """
+        Find all collections that contain a specific resource.
+        
+        This method is used by event handlers to identify collections
+        that need to be updated when a resource is modified or deleted.
+        
+        Args:
+            resource_id: Resource UUID
+            
+        Returns:
+            List of Collection instances containing the resource
+        """
+        collections = self.db.query(Collection).join(
+            CollectionResource,
+            Collection.id == CollectionResource.collection_id
+        ).filter(
+            CollectionResource.resource_id == resource_id
+        ).all()
+        
+        return collections

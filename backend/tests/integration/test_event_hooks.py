@@ -15,9 +15,10 @@ import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 
-from app.events.event_system import event_emitter, Event, EventPriority
-from app.events.event_types import SystemEvent
-from app.events.hooks import (
+from backend.app.events import event_emitter, EventPriority
+from backend.app.events.event_types import SystemEvent
+from backend.app.events.hooks import (
+    Event,
     on_content_changed_regenerate_embedding,
     on_metadata_changed_recompute_quality,
     on_resource_updated_sync_search_index,

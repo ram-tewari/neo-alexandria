@@ -1,0 +1,132 @@
+.annotation-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-left: 4px solid;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 200ms ease-out;
+}
+
+.annotation-card:hover {
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.annotation-card.color-yellow {
+    border-left-color: #fef08a;
+}
+
+.annotation-card.color-green {
+    border-left-color: #86efac;
+}
+
+.annotation-card.color-blue {
+    border-left-color: #93c5fd;
+}
+
+.annotation-card.color-pink {
+    border-left-color: #f9a8d4;
+}
+
+.annotation-card.color-orange {
+    border-left-color: #fdba74;
+}
+
+.annotation-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.annotation-card-source {
+    flex: 1;
+}
+
+.annotation-card-resource {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.annotation-card-resource:hover {
+    color: var(--primary);
+}
+
+.annotation-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.annotation-card-highlight {
+    padding: 12px;
+    background: var(--surface-base);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+.annotation-card-note {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.annotation-card-note p {
+    margin: 0 0 8px 0;
+}
+
+.annotation-card-note p:last-child {
+    margin-bottom: 0;
+}
+
+.annotation-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.annotation-card-tag {
+    padding: 4px 10px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.annotation-card-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+}
+
+.annotation-card-empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    opacity: 0.3;
+}
+
+.annotation-card-empty-text {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.annotation-card-empty-hint {
+    font-size: 14px;
+    color: var(--text-tertiary);
+}

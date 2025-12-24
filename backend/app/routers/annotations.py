@@ -15,9 +15,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.services.annotation_service import AnnotationService
-from backend.app.schemas.annotation import (
+from ..database.base import get_sync_db
+from ..services.annotation_service import AnnotationService
+from ..schemas.annotation import (
     AnnotationCreate,
     AnnotationUpdate,
     AnnotationResponse,

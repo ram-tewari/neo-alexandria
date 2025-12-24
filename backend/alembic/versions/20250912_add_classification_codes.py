@@ -70,11 +70,11 @@ def upgrade() -> None:
         )
         # Fallback for SQLite which supports JSON natively via Python binding
         if op.get_bind().dialect.name != 'postgresql':
+            import json
             op.execute(
                 sa.text(
                     "UPDATE classification_codes SET keywords=:kw WHERE code=:code"
-                ),
-                {"kw": sa.bindparam("kw", value=keywords), "code": code},
+                ).bindparams(kw=json.dumps(keywords), code=code)
             )
 
 

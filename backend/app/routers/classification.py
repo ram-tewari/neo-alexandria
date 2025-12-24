@@ -19,8 +19,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.services.classification_service import PersonalClassification
+from ..database.base import get_sync_db
+from ..services.classification_service import PersonalClassification
 
 
 router = APIRouter(prefix="/classification", tags=["classification"])

@@ -25,23 +25,23 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 # Import existing services (delayed import for AdvancedSearchService to avoid circular dependency)
-from backend.app.services.hybrid_search_methods import (
+from ...services.hybrid_search_methods import (
     fallback_search,
     pure_vector_search,
     fusion_search,
     cosine_similarity,
     normalize_scores
 )
-from backend.app.services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
-from backend.app.services.reranking_service import RerankingService
-from backend.app.services.sparse_embedding_service import SparseEmbeddingService
+from ...services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
+from ...services.reranking_service import RerankingService
+from ...services.sparse_embedding_service import SparseEmbeddingService
 
 logger = logging.getLogger(__name__)
 
 
 def _get_advanced_search_service():
     """Lazy import to avoid circular dependency."""
-    from backend.app.services.search_service import AdvancedSearchService
+    from ...services.search_service import AdvancedSearchService
     return AdvancedSearchService
 
 
@@ -241,7 +241,7 @@ class VectorSearchStrategy:
     ) -> List[Tuple[str, float]]:
         """Execute dense vector search and return (resource_id, score) tuples."""
         # Use pure_vector_search from hybrid_search_methods
-        from backend.app.modules.search.schema import SearchQuery
+        from ...modules.search.schema import SearchQuery
         AdvancedSearchService = _get_advanced_search_service()
         search_query = SearchQuery(text=query, limit=limit, offset=0)
         items, _, _, _ = pure_vector_search(self.db, search_query, AdvancedSearchService)
@@ -269,7 +269,7 @@ class HybridSearchStrategy:
         Returns:
             Tuple of (resources, metadata)
         """
-        from backend.app.schemas.search import SearchQuery
+        from ...schemas.search import SearchQuery
         search_query = SearchQuery(text=query, limit=limit, offset=0)
         
         AdvancedSearchService = _get_advanced_search_service()

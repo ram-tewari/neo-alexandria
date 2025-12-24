@@ -18,18 +18,26 @@ depends_on = None
 
 def upgrade() -> None:
     """Create retraining_runs table for automated retraining pipeline."""
+    # Determine database type
+    bind = op.get_bind()
+    is_postgresql = bind.dialect.name == 'postgresql'
+    
+    # Use appropriate types based on database
+    uuid_type = postgresql.UUID(as_uuid=True) if is_postgresql else sa.String(36)
+    json_type = postgresql.JSONB(astext_type=sa.Text()) if is_postgresql else sa.JSON()
+    
     op.create_table(
         'retraining_runs',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('id', uuid_type, primary_key=True),
         sa.Column('trigger_type', sa.String(50), nullable=False),
         sa.Column('dataset_size', sa.Integer(), nullable=False),
         sa.Column('new_data_count', sa.Integer(), nullable=False),
-        sa.Column('model_version_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column('model_version_id', uuid_type, nullable=True),
         sa.Column('status', sa.String(20), nullable=False),
         sa.Column('started_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('training_time_seconds', sa.Integer(), nullable=True),
-        sa.Column('metrics', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metrics', json_type, nullable=True),
         sa.Column('error_message', sa.Text(), nullable=True),
         sa.ForeignKeyConstraint(['model_version_id'], ['model_versions.id'], ondelete='SET NULL'),
     )

@@ -6,6 +6,11 @@ This directory contains Kiro IDE configuration and specifications.
 
 ```
 .kiro/
+├── steering/           # Project steering documentation
+│   ├── product.md      # Product vision and goals
+│   ├── tech.md         # Tech stack and constraints
+│   └── structure.md    # Repository map and truth sources
+│
 ├── specs/              # Feature specifications
 │   ├── backend/        # Backend (Python/FastAPI) specs (21)
 │   ├── frontend/       # Frontend (React/TypeScript) specs (6)
@@ -16,6 +21,24 @@ This directory contains Kiro IDE configuration and specifications.
 │
 └── README.md           # This file
 ```
+
+## Steering Documentation
+
+Project-level context and guidelines for AI agents and developers.
+
+### Quick Reference
+
+| Need | Read |
+|------|------|
+| What is this project? | `steering/product.md` |
+| What tech do we use? | `steering/tech.md` |
+| Where is X located? | `steering/structure.md` |
+
+### Steering Files
+
+- **`product.md`** - Product vision, users, goals, and non-goals
+- **`tech.md`** - Tech stack, constraints, and common commands
+- **`structure.md`** - Repository map and documentation hierarchy
 
 ## Specifications
 
@@ -35,21 +58,7 @@ A spec is a structured way to plan and implement features:
 
 ### Working with Specs
 
-```bash
-# View all specs
-ls .kiro/specs/backend/
-ls .kiro/specs/frontend/
-
-# Read documentation
-cat .kiro/specs/README.md
-cat .kiro/specs/backend/README.md
-cat .kiro/specs/frontend/README.md
-
-# Execute tasks
-# 1. Open tasks.md in Kiro IDE
-# 2. Click "Start task" next to any task
-# 3. Follow Kiro's guidance
-```
+See [Specs README](specs/README.md) for detailed guidance.
 
 ## Settings
 
@@ -72,8 +81,10 @@ Example:
 
 ## Related Documentation
 
-- [Specs Overview](.kiro/specs/README.md)
-- [Backend Specs](.kiro/specs/backend/README.md)
-- [Frontend Specs](.kiro/specs/frontend/README.md)
+- [Agent Context Rules](../AGENTS.md) - Token hygiene and routing
+- [Steering: Product](steering/product.md) - Product vision and goals
+- [Steering: Tech](steering/tech.md) - Tech stack and constraints
+- [Steering: Structure](steering/structure.md) - Repository map
+- [Specs Overview](specs/README.md) - Feature specifications
 - [Backend Developer Guide](../backend/docs/DEVELOPER_GUIDE.md)
 - [Frontend README](../frontend/README.md)

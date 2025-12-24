@@ -22,9 +22,9 @@ import time
 
 logger = logging.getLogger(__name__)
 
-from backend.app.shared.database import get_sync_db
-from backend.app.shared.event_bus import event_bus
-from backend.app.modules.search.schema import (
+from ...shared.database import get_sync_db
+from ...shared.event_bus import event_bus
+from .schema import (
     SearchQuery, 
     SearchResults,
     ThreeWayHybridResults,
@@ -37,10 +37,10 @@ from backend.app.modules.search.schema import (
     BatchSparseEmbeddingRequest,
     BatchSparseEmbeddingResponse
 )
-from backend.app.schemas.resource import ResourceRead
-from backend.app.services.search_service import AdvancedSearchService
-from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-from backend.app.database.models import Resource
+from ...schemas.resource import ResourceRead
+from ...services.search_service import AdvancedSearchService
+from ...services.sparse_embedding_service import SparseEmbeddingService
+from ...database.models import Resource
 
 
 router = APIRouter(prefix="", tags=["search"])
@@ -341,7 +341,7 @@ def evaluate_search_endpoint(
     Optionally compares against a baseline (two-way hybrid) to measure improvement.
     """
     try:
-        from backend.app.services.search_metrics_service import SearchMetricsService
+        from ...services.search_metrics_service import SearchMetricsService
         
         search_query = SearchQuery(text=payload.query, limit=100, offset=0)
         resources, _, _, _, _ = AdvancedSearchService.search_three_way_hybrid(
@@ -530,7 +530,7 @@ async def health_check(db: Session = Depends(get_sync_db)) -> Dict[str, Any]:
         
         # Check search service availability
         try:
-            from backend.app.services.search_service import AdvancedSearchService
+            from ...services.search_service import AdvancedSearchService
             search_available = True
             search_message = "Search service available"
         except Exception as e:

@@ -15,7 +15,7 @@ from typing import List
 from sqlalchemy import String, Text, DateTime, ForeignKey, Index, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.shared.base_model import Base, GUID
+from ...shared.base_model import Base, GUID
 
 
 class CollectionResource(Base):

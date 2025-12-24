@@ -1,5 +1,20 @@
 # Neo Alexandria 2.0 API Reference
 
+> ⚠️ **DEPRECATED**: This file has been split into modular documentation.
+> See `backend/docs/index.md` for the new structure.
+> 
+> **New locations:**
+> - API Overview: `backend/docs/api/overview.md`
+> - Resources API: `backend/docs/api/resources.md`
+> - Search API: `backend/docs/api/search.md`
+> - Collections API: `backend/docs/api/collections.md`
+> - Annotations API: `backend/docs/api/annotations.md`
+> - Taxonomy API: `backend/docs/api/taxonomy.md`
+> - Graph API: `backend/docs/api/graph.md`
+> - Recommendations API: `backend/docs/api/recommendations.md`
+> - Quality API: `backend/docs/api/quality.md`
+> - Monitoring API: `backend/docs/api/monitoring.md`
+
 ## Overview
 
 The Neo Alexandria 2.0 API provides comprehensive endpoints for knowledge management, content processing, search, and discovery. This reference documentation covers all available endpoints, request/response formats, authentication, and error handling.

@@ -12,8 +12,8 @@ import logging
 from typing import Dict, Any
 import uuid
 
-from backend.app.shared.event_bus import event_bus
-from backend.app.shared.database import get_sync_db
+from ...shared.event_bus import event_bus
+from ...shared.database import get_sync_db
 from .service import CollectionService
 
 logger = logging.getLogger(__name__)

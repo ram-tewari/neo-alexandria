@@ -28,9 +28,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.database.base import get_sync_db
-from backend.app.database import models as db_models
-from backend.app.schemas.discovery import (
+from ..database.base import get_sync_db
+from ..database import models as db_models
+from ..schemas.discovery import (
     OpenDiscoveryResponse,
     OpenDiscoveryHypothesis,
     ClosedDiscoveryRequest,
@@ -43,8 +43,8 @@ from backend.app.schemas.discovery import (
     HypothesisValidation,
     ResourceSummary,
 )
-from backend.app.services.lbd_service import LBDService
-from backend.app.services.graph_service import GraphService
+from ..services.lbd_service import LBDService
+from ..services.graph_service import GraphService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/discovery", tags=["discovery"])

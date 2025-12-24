@@ -8,7 +8,7 @@ validation and business logic for multi-dimensional quality scoring.
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-from backend.app.domain import ValueObject, validate_range
+from . import ValueObject, validate_range
 
 
 # Quality dimension weights for overall score calculation

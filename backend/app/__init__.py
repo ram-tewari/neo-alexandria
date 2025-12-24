@@ -64,9 +64,9 @@ def register_all_modules(app: FastAPI) -> None:
     
     # Define modules to register: (module_name, import_path, router_name)
     modules: List[Tuple[str, str, str]] = [
-        ("collections", "backend.app.modules.collections", "collections_router"),
-        ("resources", "backend.app.modules.resources", "resources_router"),
-        ("search", "backend.app.modules.search", "search_router"),
+        ("collections", "app.modules.collections", "collections_router"),
+        ("resources", "app.modules.resources", "resources_router"),
+        ("search", "app.modules.search", "search_router"),
     ]
     
     registered_count = 0
@@ -172,8 +172,11 @@ def create_app() -> FastAPI:
         FastAPI: Configured application instance ready for deployment
     """
     # Initialize database using shared kernel
-    settings = get_settings()
-    init_database(settings.DATABASE_URL, settings.ENV)
+    # Skip database initialization during tests - test fixtures handle it
+    import os
+    if os.getenv("TESTING") != "true":
+        settings = get_settings()
+        init_database(settings.DATABASE_URL, settings.ENV)
     
     app = FastAPI(
         title="Neo Alexandria 2.0",

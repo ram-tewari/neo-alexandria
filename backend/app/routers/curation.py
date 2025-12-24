@@ -25,11 +25,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.app.config.settings import get_settings, Settings
-from backend.app.database.base import get_sync_db
-from backend.app.schemas.resource import ResourceRead
-from backend.app.schemas.query import ReviewQueueParams, BatchUpdateRequest, BatchUpdateResult
-from backend.app.services.curation_service import CurationInterface
+from ..config.settings import get_settings, Settings
+from ..database.base import get_sync_db
+from ..schemas.resource import ResourceRead
+from ..schemas.query import ReviewQueueParams, BatchUpdateRequest, BatchUpdateResult
+from ..services.curation_service import CurationInterface
 
 
 router = APIRouter(prefix="/curation", tags=["curation"])

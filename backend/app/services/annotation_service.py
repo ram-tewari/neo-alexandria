@@ -31,8 +31,8 @@ from pathlib import Path
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, or_, and_
 
-from backend.app.database.models import Annotation, Resource
-from backend.app.services.ai_core import EmbeddingGenerator
+from ..database.models import Annotation, Resource
+from ..services.ai_core import EmbeddingGenerator
 
 # Constants
 DEFAULT_CONTEXT_LENGTH = 50

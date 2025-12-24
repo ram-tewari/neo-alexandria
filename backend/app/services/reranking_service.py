@@ -34,7 +34,7 @@ from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import Resource
+from ..database.models import Resource
 
 # Lazy import sentence_transformers and torch to avoid heavy imports at module load
 try:

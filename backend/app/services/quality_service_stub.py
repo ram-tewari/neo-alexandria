@@ -18,7 +18,7 @@ class QualityService:
     
     def compute_quality(self, resource_id: str, weights: Optional[Dict[str, float]] = None) -> Dict[str, float]:
         """Compute quality scores for a resource."""
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         # Default weights
         if weights is None:
@@ -94,7 +94,7 @@ class QualityService:
     
     def monitor_quality_degradation(self, time_window_days: int = 30) -> List[Dict[str, Any]]:
         """Monitor quality degradation over time."""
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_window_days)
         
@@ -135,7 +135,7 @@ class QualityService:
     
     def detect_quality_outliers(self, batch_size: int = 1000) -> int:
         """Detect quality outliers using Isolation Forest."""
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         # Get resources with quality scores
         resources = self.db.query(Resource).filter(

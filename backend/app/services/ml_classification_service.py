@@ -27,7 +27,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import logging
 
 from sqlalchemy.orm import Session
-from backend.app.domain.classification import (
+from ..domain.classification import (
     ClassificationResult, 
     ClassificationPrediction,
     TrainingExample,
@@ -130,7 +130,7 @@ class MLClassificationService:
         self.label_to_id: Dict[str, int] = {}  # {"node_id_1": 0, "node_id_2": 1, ...}
         
         # Initialize prediction monitor for tracking predictions
-        from backend.app.ml_monitoring.prediction_monitor import PredictionMonitor
+        from ..ml_monitoring.prediction_monitor import PredictionMonitor
         self.monitor = PredictionMonitor()
         logger.info("PredictionMonitor initialized")
         
@@ -1499,7 +1499,7 @@ class MLClassificationService:
         
         # Import required libraries
         import numpy as np
-        from backend.app.database.models import Resource, ResourceTaxonomy
+        from ..database.models import Resource, ResourceTaxonomy
         
         # Step 1: Query resources (prioritize predicted classifications)
         query = self.db.query(Resource)
@@ -1668,7 +1668,7 @@ class MLClassificationService:
         logger.info(f"Updating resource {resource_id} with human feedback")
         logger.info(f"Correct taxonomy IDs: {correct_taxonomy_ids}")
         
-        from backend.app.database.models import Resource, ResourceTaxonomy, TaxonomyNode
+        from ..database.models import Resource, ResourceTaxonomy, TaxonomyNode
         
         try:
             # Step 1: Validate resource exists
@@ -1819,7 +1819,7 @@ class ClassificationTrainer:
         Requirements: 8.1, 8.4
         """
         import time
-        from backend.app.domain.classification import TrainingResult
+        from ..domain.classification import TrainingResult
         
         logger.info(f"Starting training with {len(training_data)} examples")
         logger.info(f"Model: {model_name}, Epochs: {epochs}, Batch size: {batch_size}")
@@ -1937,7 +1937,7 @@ class ClassificationTrainer:
         Requirements: 8.2, 8.4
         """
         import time
-        from backend.app.domain.classification import TrainingResult
+        from ..domain.classification import TrainingResult
         
         logger.info(f"Starting semi-supervised training")
         logger.info(f"Labeled: {len(labeled_data)}, Unlabeled: {len(unlabeled_data)}")

@@ -10,9 +10,9 @@ from datetime import datetime, timezone, timedelta
 import json
 import logging
 
-from backend.app.utils import text_processor as tp
-from backend.app.domain.quality import QualityScore
-from backend.app.cache.redis_cache import cache
+from ..utils import text_processor as tp
+from ..domain.quality import QualityScore
+from ..cache.redis_cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -430,7 +430,7 @@ class QualityService:
         Raises:
             ValueError: If resource not found or weights are invalid
         """
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         # Default weights
         if weights is None:
@@ -640,7 +640,7 @@ class QualityService:
         Returns:
             List of dictionaries with degradation information for each degraded resource
         """
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=time_window_days)
         
@@ -691,7 +691,7 @@ class QualityService:
         Raises:
             ValueError: If fewer than 10 resources with quality scores exist
         """
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         from sklearn.ensemble import IsolationForest
         import numpy as np
         

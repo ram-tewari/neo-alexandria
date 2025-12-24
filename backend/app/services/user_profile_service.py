@@ -20,10 +20,10 @@ import numpy as np
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import User, UserProfile, UserInteraction, Resource
-from backend.app.utils.performance_monitoring import timing_decorator, metrics
-from backend.app.shared.event_bus import event_bus, EventPriority
-from backend.app.events.event_types import SystemEvent
+from ..database.models import User, UserProfile, UserInteraction, Resource
+from ..utils.performance_monitoring import timing_decorator, metrics
+from ..shared.event_bus import event_bus, EventPriority
+from ..events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 

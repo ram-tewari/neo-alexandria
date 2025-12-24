@@ -76,23 +76,38 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Use settings for database URL
-    settings = get_settings()
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    # Check if connection is provided (e.g., from tests)
+    connection = config.attributes.get('connection', None)
     
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    if connection is None:
+        # Use settings for database URL
+        settings = get_settings()
+        configuration = config.get_section(config.config_ini_section, {})
+        configuration["sqlalchemy.url"] = settings.DATABASE_URL
+        
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
-    with connectable.connect() as connection:
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata,
+                version_table_pk=False,
+                # Use longer varchar for version_num to support descriptive migration names
+                version_table_schema=None,
+            )
+
+            with context.begin_transaction():
+                context.run_migrations()
+    else:
+        # Use provided connection (from tests)
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             version_table_pk=False,
-            # Use longer varchar for version_num to support descriptive migration names
             version_table_schema=None,
         )
 

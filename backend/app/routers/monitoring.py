@@ -20,16 +20,16 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.app.shared.database import get_db, get_pool_status
-from backend.app.database.models import (
+from ..shared.database import get_db, get_pool_status
+from ..database.models import (
     UserInteraction,
     RecommendationFeedback,
     UserProfile
 )
-from backend.app.utils.performance_monitoring import metrics as perf_metrics
-from backend.app.ml_monitoring.health_check import check_classification_model_health
-from backend.app.shared.event_bus import event_bus
-from backend.app.cache.redis_cache import cache
+from ..utils.performance_monitoring import metrics as perf_metrics
+from ..ml_monitoring.health_check import check_classification_model_health
+from ..shared.event_bus import event_bus
+from ..cache.redis_cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +349,7 @@ async def ml_model_health_check() -> Dict[str, Any]:
     """
     try:
         # Import classification service
-        from backend.app.services.ml_classification_service import MLClassificationService
+        from ..services.ml_classification_service import MLClassificationService
         
         # Initialize service (will load model if available)
         try:
@@ -658,7 +658,7 @@ async def get_worker_status() -> Dict[str, Any]:
         - worker_count: Number of active workers
     """
     try:
-        from backend.app.tasks.celery_app import celery_app
+        from ..tasks.celery_app import celery_app
         
         # Get Celery inspector
         inspect = celery_app.control.inspect()

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 import logging
 
-from backend.app.services.recommendation_strategies import (
+from ..services.recommendation_strategies import (
     RecommendationStrategyFactory
 )
 
@@ -80,7 +80,7 @@ def generate_recommendations_with_graph_fusion(
         List of recommendation dictionaries
     """
     try:
-        from backend.app.services.recommendation_strategies import (
+        from ..services.recommendation_strategies import (
             CollaborativeFilteringStrategy,
             ContentBasedStrategy,
             GraphBasedStrategy,
@@ -202,8 +202,8 @@ def generate_user_profile_vector(db: Session, user_id: str) -> List[float]:
         User profile vector (768-dimensional)
     """
     try:
-        from backend.app.services.recommendation_strategies import ContentBasedStrategy
-        from backend.app.database.models import UserInteraction
+        from ..services.recommendation_strategies import ContentBasedStrategy
+        from ..database.models import UserInteraction
         
         # Get user interactions
         interactions = db.query(UserInteraction).filter(
@@ -276,7 +276,7 @@ def get_top_subjects(db: Session, limit: int = 10) -> List[str]:
         List of top subject strings sorted by frequency
     """
     try:
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         # Query resources and extract subjects
         resources = db.query(Resource).filter(

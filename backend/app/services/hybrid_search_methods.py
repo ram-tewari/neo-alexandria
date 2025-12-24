@@ -27,9 +27,9 @@ from typing import List, Dict, Tuple
 from sqlalchemy import func, or_, asc, desc
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import Resource
-from backend.app.modules.search.schema import SearchQuery, Facets
-from backend.app.services.ai_core import generate_embedding
+from ..database.models import Resource
+from ..modules.search.schema import SearchQuery, Facets
+from ..services.ai_core import generate_embedding
 
 # Import numpy with fallback for vector operations
 try:
@@ -46,7 +46,7 @@ def fallback_search(db: Session, query: SearchQuery, advanced_search_service) ->
     
     try:
         # Import here to avoid circular imports
-        from backend.app.services.search_service import _detect_fts5, _fts_index_ready, _apply_structured_filters, _compute_facets
+        from ..services.search_service import _detect_fts5, _fts_index_ready, _apply_structured_filters, _compute_facets
         
         use_fts = bool(query.text) and _detect_fts5(db) and _fts_index_ready(db)
         base = db.query(Resource)
@@ -99,7 +99,7 @@ def fallback_search(db: Session, query: SearchQuery, advanced_search_service) ->
 
 def pure_vector_search(db: Session, query: SearchQuery, advanced_search_service) -> Tuple[List[Resource], int, Facets, Dict[str, str]]:
     """Pure semantic vector search."""
-    from backend.app.services.search_service import _apply_structured_filters, _compute_facets
+    from ..services.search_service import _apply_structured_filters, _compute_facets
     
     # Generate query embedding
     query_embedding = generate_embedding(query.text)
@@ -114,7 +114,7 @@ def pure_vector_search(db: Session, query: SearchQuery, advanced_search_service)
     # Get all candidates for similarity calculation
     candidates = filtered_query.all()
     if not candidates:
-        from backend.app.schemas.search import Facets
+        from ..schemas.search import Facets
         empty_facets = Facets()
         return [], 0, empty_facets, {}
     
@@ -155,7 +155,7 @@ def pure_vector_search(db: Session, query: SearchQuery, advanced_search_service)
 
 def fusion_search(db: Session, query: SearchQuery, hybrid_weight: float, advanced_search_service) -> Tuple[List[Resource], int, Facets, Dict[str, str]]:
     """Hybrid search combining FTS and vector similarity with weighted fusion."""
-    from backend.app.services.search_service import _detect_fts5, _fts_index_ready, _apply_structured_filters, _compute_facets
+    from ..services.search_service import _detect_fts5, _fts_index_ready, _apply_structured_filters, _compute_facets
     
     # Get FTS results
     fts_results = {}
@@ -202,7 +202,7 @@ def fusion_search(db: Session, query: SearchQuery, hybrid_weight: float, advance
     # Combine results
     all_resource_ids = set(fts_results.keys()) | set(vector_results.keys())
     if not all_resource_ids:
-        from backend.app.schemas.search import Facets
+        from ..schemas.search import Facets
         empty_facets = Facets()
         return [], 0, empty_facets, {}
     

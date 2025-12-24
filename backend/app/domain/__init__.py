@@ -5,7 +5,7 @@ This package contains domain objects that encapsulate business logic
 and replace primitive obsession throughout the codebase.
 """
 
-from backend.app.domain.base import (
+from .base import (
     BaseDomainObject,
     ValueObject,
     DomainEntity,
@@ -15,22 +15,22 @@ from backend.app.domain.base import (
     validate_non_negative,
 )
 
-from backend.app.domain.classification import (
+from .classification import (
     ClassificationPrediction,
     ClassificationResult,
 )
 
-from backend.app.domain.search import (
+from .search import (
     SearchQuery,
     SearchResult,
     SearchResults,
 )
 
-from backend.app.domain.quality import (
+from .quality import (
     QualityScore,
 )
 
-from backend.app.domain.recommendation import (
+from .recommendation import (
     Recommendation,
     RecommendationScore,
 )

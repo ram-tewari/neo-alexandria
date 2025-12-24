@@ -26,7 +26,7 @@ from typing import List, Optional
 from sqlalchemy import func, cast, String
 from sqlalchemy.orm import Session
 
-from backend.app.database import models as db_models
+from ..database import models as db_models
 
 
 class AuthorityControl:

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Generator, Union, List, Dict, Tuple, Optional
 from unittest.mock import patch, Mock
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
@@ -174,6 +174,15 @@ def test_db(request):
         backend_dir = Path(__file__).parent.parent
         alembic_ini_path = backend_dir / "alembic.ini"
         
+        # For PostgreSQL, drop all tables first to ensure clean state
+        if db_type == "postgresql":
+            # Drop and recreate the public schema to ensure clean state
+            with engine.begin() as connection:
+                connection.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+                connection.execute(text("CREATE SCHEMA public"))
+                connection.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
+                connection.execute(text("GRANT ALL ON SCHEMA public TO postgres"))
+        
         if alembic_ini_path.exists():
             # Run Alembic migrations to create tables
             alembic_cfg = Config(str(alembic_ini_path))
@@ -215,6 +224,18 @@ def test_db(request):
         yield TestingSessionLocal
         
         app.dependency_overrides.clear()
+        
+        # For PostgreSQL, drop all tables after test to ensure clean state
+        if db_type == "postgresql":
+            try:
+                with engine.begin() as connection:
+                    connection.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+                    connection.execute(text("CREATE SCHEMA public"))
+                    connection.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
+                    connection.execute(text("GRANT ALL ON SCHEMA public TO postgres"))
+            except Exception as e:
+                # Log but don't fail on cleanup errors
+                print(f"Warning: Failed to clean up PostgreSQL schema: {e}")
         
         # Close all connections
         engine.dispose()

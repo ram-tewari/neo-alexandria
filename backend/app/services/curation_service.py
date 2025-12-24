@@ -29,18 +29,18 @@ from datetime import datetime, timezone
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
-from backend.app.config.settings import Settings
-from backend.app.database.models import Resource
-from backend.app.schemas.query import ReviewQueueParams, BatchUpdateResult
-from backend.app.schemas.resource import ResourceUpdate
-from backend.app.services.quality_service import ContentQualityAnalyzer
+from ..config.settings import Settings
+from ..database.models import Resource
+from ..schemas.query import ReviewQueueParams, BatchUpdateResult
+from ..schemas.resource import ResourceUpdate
+from ..services.quality_service import ContentQualityAnalyzer
 
 
 class CurationInterface:
     @staticmethod
     def review_queue(db: Session, params: ReviewQueueParams, settings: Settings) -> Tuple[List[Resource], int]:
         # Ensure tables exist
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=db.get_bind())
         except Exception:
@@ -76,7 +76,7 @@ class CurationInterface:
     @staticmethod
     def quality_analysis(db: Session, resource_id: uuid.UUID) -> Dict[str, Any]:
         # Ensure tables exist
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=db.get_bind())
         except Exception:
@@ -154,7 +154,7 @@ class CurationInterface:
     @staticmethod
     def bulk_quality_check(db: Session, resource_ids: List[uuid.UUID]) -> BatchUpdateResult:
         # Ensure tables exist
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=db.get_bind())
         except Exception:
@@ -182,7 +182,7 @@ class CurationInterface:
     @staticmethod
     def batch_update(db: Session, resource_ids: List[uuid.UUID], updates: ResourceUpdate) -> BatchUpdateResult:
         # Ensure tables exist
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=db.get_bind())
         except Exception:

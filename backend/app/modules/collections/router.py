@@ -29,8 +29,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
-from backend.app.shared.database import get_sync_db
-from backend.app.shared.event_bus import event_bus
+from ...shared.database import get_sync_db
+from ...shared.event_bus import event_bus
 from .schema import (
     CollectionCreate,
     CollectionUpdate,

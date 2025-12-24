@@ -11,9 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backend.app.shared.database import get_db
-from backend.app.database import models as db_models
-from backend.app.schemas import scholarly as schemas
+from ..shared.database import get_db
+from ..database import models as db_models
+from ..schemas import scholarly as schemas
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ async def get_equations(
         
         # Convert to MathML if requested
         if format == "mathml":
-            from backend.app.utils.equation_parser import EquationParser
+            from ..utils.equation_parser import EquationParser
             parser = EquationParser()
             for eq in equations:
                 mathml = parser.latex_to_mathml(eq.latex)

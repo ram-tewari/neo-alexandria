@@ -38,14 +38,14 @@ from typing import List, Dict, Any, Tuple
 from sqlalchemy import text, func, or_, asc, desc, String, cast
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import Resource
-from backend.app.modules.search.schema import Facets, FacetBucket, SearchFilters
-from backend.app.modules.search.schema import SearchQuery as SearchQuerySchema
-from backend.app.domain.search import SearchQuery as DomainSearchQuery
-from backend.app.config.settings import get_settings
-from backend.app.services.ai_core import generate_embedding
-from backend.app.cache.redis_cache import cache
-from backend.app.database.base import get_database_type
+from ..database.models import Resource
+from ..modules.search.schema import Facets, FacetBucket, SearchFilters
+from ..modules.search.schema import SearchQuery as SearchQuerySchema
+from ..domain.search import SearchQuery as DomainSearchQuery
+from ..config.settings import get_settings
+from ..services.ai_core import generate_embedding
+from ..cache.redis_cache import cache
+from ..database.base import get_database_type
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ class SQLiteFTS5Strategy(FullTextSearchStrategy):
             return [], 0, {}, {}
         
         # Parse query into FTS5 MATCH syntax
-        from backend.app.services.search_service import AdvancedSearchService
+        from ..services.search_service import AdvancedSearchService
         parsed_query = AdvancedSearchService.parse_search_query(query)
         
         # Execute FTS5 search
@@ -281,9 +281,9 @@ class PostgreSQLFullTextStrategy(FullTextSearchStrategy):
 
 # Import Phase 8 services for three-way hybrid search
 try:
-    from backend.app.services.sparse_embedding_service import SparseEmbeddingService
-    from backend.app.services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
-    from backend.app.services.reranking_service import RerankingService
+    from ..services.sparse_embedding_service import SparseEmbeddingService
+    from ..services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
+    from ..services.reranking_service import RerankingService
 except ImportError:  # pragma: no cover
     SparseEmbeddingService = None
     ReciprocalRankFusionService = None
@@ -527,7 +527,7 @@ class HybridSearchQuery:
     
     def _ensure_tables_exist(self) -> None:
         """Ensure database tables exist."""
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=self.db.get_bind())
         except Exception:
@@ -1263,7 +1263,7 @@ class AdvancedSearchService:
         logger.debug(f"Cache miss for search query: {query.text}")
         
         # Ensure tables exist
-        from backend.app.database.base import Base
+        from ..database.base import Base
         try:
             Base.metadata.create_all(bind=db.get_bind())
         except Exception:
@@ -1710,7 +1710,7 @@ class AdvancedSearchService:
         Returns:
             Tuple of (resources, total_count, facets, snippets)
         """
-        from backend.app.services.hybrid_search_methods import (
+        from ..services.hybrid_search_methods import (
             fallback_search, pure_vector_search, fusion_search
         )
         
@@ -1795,7 +1795,7 @@ class AdvancedSearchService:
         
         # Search user's annotations
         try:
-            from backend.app.services.annotation_service import AnnotationService
+            from ..services.annotation_service import AnnotationService
             
             annotation_service = AnnotationService(db)
             annotations = annotation_service.search_annotations_fulltext(
@@ -2013,7 +2013,7 @@ class AdvancedSearchService:
             - metadata: Dict with latency_ms, method_contributions, weights_used
         """
         # Convert schema SearchQuery to domain SearchQuery if needed
-        from backend.app.domain.search import SearchQuery as DomainSearchQuery
+        from ..domain.search import SearchQuery as DomainSearchQuery
         
         if not isinstance(query, DomainSearchQuery):
             # It's a schema SearchQuery, convert it

@@ -5,7 +5,7 @@ This compatibility shim re-exports from the new location to maintain backward co
 during the migration to modular architecture.
 
 Please update your imports to:
-    from backend.app.modules.resources import (
+    from ..modules.resources import (
         ResourceBase,
         ResourceCreate,
         ResourceUpdate,
@@ -25,7 +25,7 @@ warnings.warn(
 )
 
 # Re-export from new location
-from backend.app.modules.resources import (
+from ..modules.resources import (
     ResourceBase,
     ResourceCreate,
     ResourceUpdate,

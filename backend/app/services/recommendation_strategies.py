@@ -13,7 +13,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 import logging
 
-from backend.app.domain.recommendation import Recommendation, RecommendationScore
+from ..domain.recommendation import Recommendation, RecommendationScore
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ class CollaborativeFilteringStrategy(RecommendationStrategy):
         
         try:
             # Import NCF service (lazy import to avoid circular dependencies)
-            from backend.app.services.ncf_service import NCFService
+            from ..services.ncf_service import NCFService
             
             ncf_service = NCFService(self.db)
             
@@ -250,7 +250,7 @@ class ContentBasedStrategy(RecommendationStrategy):
         )
         
         try:
-            from backend.app.database.models import Resource, UserInteraction
+            from ..database.models import Resource, UserInteraction
             
             # Get user's interaction history
             interactions = self.db.query(UserInteraction).filter(
@@ -340,7 +340,7 @@ class ContentBasedStrategy(RecommendationStrategy):
             User profile vector or None if no valid embeddings
         """
         import numpy as np
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         embeddings = []
         weights = []
@@ -472,7 +472,7 @@ class GraphBasedStrategy(RecommendationStrategy):
         )
         
         try:
-            from backend.app.database.models import UserInteraction
+            from ..database.models import UserInteraction
             
             # Get user's interaction history
             interactions = self.db.query(UserInteraction).filter(
@@ -549,7 +549,7 @@ class GraphBasedStrategy(RecommendationStrategy):
         Returns:
             Dictionary mapping resource_id to graph score
         """
-        from backend.app.database.models import Citation
+        from ..database.models import Citation
         
         neighbors = {}
         

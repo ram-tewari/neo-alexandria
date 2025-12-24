@@ -1,0 +1,1444 @@
+# Vertical Slice Modules & Service Architecture
+
+Module architecture, service layer, and class hierarchies for Neo Alexandria 2.0.
+
+## Modular Architecture Overview (Phase 13.5)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    NEO ALEXANDRIA 2.0 - MODULAR ARCHITECTURE            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                      FastAPI Application                         │   │
+│  │                         (main.py)                                │   │
+│  └────────────────────────────┬─────────────────────────────────────┘   │
+│                               │                                         │
+│                               │ registers routers & handlers            │
+│                               │                                         │
+│       ┌───────────────────────┼───────────────────────┐                 │
+│       │                       │                       │                 │
+│       ▼                       ▼                       ▼                 │
+│  ┌──────────┐          ┌──────────┐          ┌──────────┐              │
+│  │Resources │          │Collections│         │  Search  │              │
+│  │  Module  │          │  Module  │          │  Module  │              │
+│  └────┬─────┘          └────┬─────┘          └────┬─────┘              │
+│       │                     │                     │                     │
+│       │                     │                     │                     │
+│       │    ┌────────────────┴────────────────┐    │                     │
+│       │    │                                 │    │                     │
+│       │    ▼                                 ▼    │                     │
+│       │  ┌─────────────────────────────────────┐  │                     │
+│       │  │       Shared Kernel                 │  │                     │
+│       │  │  ┌──────────┐  ┌──────────────┐     │  │                     │
+│       └─►│  │ Database │  │  Event Bus   │     │◄─┘                     │
+│          │  │ (Base,   │  │ (Pub/Sub)    │     │                        │
+│          │  │Session)  │  │              │     │                        │
+│          │  └──────────┘  └──────────────┘     │                        │
+│          │  ┌──────────────────────────────┐   │                        │
+│          │  │      Base Model (GUID)       │   │                        │
+│          │  └──────────────────────────────┘   │                        │
+│          └─────────────────────────────────────┘                        │
+│                                                                         │
+│  Event-Driven Communication:                                            │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  Resources ──[resource.created]──► Collections                   │   │
+│  │  Resources ──[resource.updated]──► Collections                   │   │
+│  │  Resources ──[resource.deleted]──► Collections                   │   │
+│  │  Collections ─[collection.updated]─► Resources (placeholder)     │   │
+│  │  Search ──────[search.executed]────► Analytics (future)          │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Vertical Slice Module Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    VERTICAL SLICE MODULE PATTERN                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Each module (Resources, Collections, Search) follows this structure:   │
+│                                                                         │
+│  app/modules/{module_name}/                                             │
+│  │                                                                      │
+│  ├── __init__.py          # Public interface & exports                  │
+│  │   • router                                                          │
+│  │   • service functions                                               │
+│  │   • schemas                                                         │
+│  │   • models                                                          │
+│  │   • module metadata (__version__, __domain__)                       │
+│  │                                                                      │
+│  ├── router.py            # FastAPI endpoints                          │
+│  │   • HTTP request/response handling                                  │
+│  │   • Input validation                                                │
+│  │   • Calls service layer                                             │
+│  │                                                                      │
+│  ├── service.py           # Business logic                             │
+│  │   • Core domain operations                                          │
+│  │   • Orchestration                                                   │
+│  │   • Event emission                                                  │
+│  │                                                                      │
+│  ├── schema.py            # Pydantic models                            │
+│  │   • Request/response validation                                     │
+│  │   • Data serialization                                              │
+│  │                                                                      │
+│  ├── model.py             # SQLAlchemy models                          │
+│  │   • Database entities                                               │
+│  │   • String-based relationships (avoid circular imports)             │
+│  │                                                                      │
+│  ├── handlers.py          # Event handlers                             │
+│  │   • Subscribe to events from other modules                          │
+│  │   • React to system events                                          │
+│  │                                                                      │
+│  ├── README.md            # Module documentation                       │
+│  │                                                                      │
+│  └── tests/               # Module-specific tests                      │
+│      └── __init__.py                                                   │
+│                                                                         │
+│  Benefits:                                                              │
+│  • High cohesion - related code stays together                         │
+│  • Low coupling - modules communicate via events                       │
+│  • Independent deployment - modules can be extracted to microservices  │
+│  • Clear boundaries - explicit public interfaces                       │
+│  • Easy testing - isolated module tests                                │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Current Modules
+
+### Resources Module
+
+**Domain:** Content management and ingestion
+
+**Responsibilities:**
+- Resource CRUD operations
+- URL ingestion and content extraction
+- AI-powered summarization and tagging
+- Quality score computation
+- Classification assignment
+
+**Events Published:**
+- `resource.created`
+- `resource.updated`
+- `resource.deleted`
+- `resource.classified`
+
+**Location:** `app/modules/resources/`
+
+### Collections Module
+
+**Domain:** Resource organization and curation
+
+**Responsibilities:**
+- Collection CRUD operations
+- Hierarchical organization (parent-child)
+- Resource membership management
+- Aggregate embedding computation
+- Collection-based recommendations
+
+**Events Published:**
+- `collection.created`
+- `collection.updated`
+- `collection.deleted`
+- `collection.resource_added`
+- `collection.resource_removed`
+
+**Events Subscribed:**
+- `resource.deleted` → Remove from collections
+
+**Location:** `app/modules/collections/`
+
+### Search Module
+
+**Domain:** Discovery and retrieval
+
+**Responsibilities:**
+- Hybrid search (keyword + semantic)
+- Three-way search with RRF fusion
+- Faceted search results
+- Search quality evaluation
+
+**Events Published:**
+- `search.executed`
+
+**Events Subscribed:**
+- `resource.created` → Update search index
+- `resource.updated` → Update search index
+- `resource.deleted` → Remove from index
+
+**Location:** `app/modules/search/`
+
+---
+
+## Module Communication
+
+Modules communicate through the event bus, not direct imports:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                    MODULE COMMUNICATION                              │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ❌ WRONG: Direct Import                                             │
+│  ─────────────────────────                                           │
+│  from app.modules.resources.service import get_resource              │
+│                                                                      │
+│  ✅ CORRECT: Event-Based Communication                               │
+│  ─────────────────────────────────────                               │
+│  event_bus.publish(Event(type="resource.deleted", payload={...}))    │
+│                                                                      │
+│  ✅ CORRECT: Shared Kernel                                           │
+│  ─────────────────────────                                           │
+│  from app.shared.database import get_db                              │
+│  from app.shared.event_bus import event_bus                          │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Shared Kernel
+
+Common infrastructure shared by all modules:
+
+```
+app/shared/
+├── __init__.py
+├── database.py      # Database session, engine
+├── event_bus.py     # Event publishing/subscribing
+└── base_model.py    # Base SQLAlchemy model with GUID
+```
+
+### Database Access
+
+```python
+from app.shared.database import get_db, SessionLocal
+
+# In router
+@router.get("/resources")
+def list_resources(db: Session = Depends(get_db)):
+    return service.list_resources(db)
+```
+
+### Event Bus
+
+```python
+from app.shared.event_bus import event_bus, Event
+
+# Publishing
+event_bus.publish(Event(
+    type="resource.created",
+    payload={"resource_id": str(resource.id)}
+))
+
+# Subscribing
+event_bus.subscribe("resource.deleted", handle_resource_deleted)
+```
+
+### Base Model
+
+```python
+from app.shared.base_model import BaseModel
+
+class Resource(BaseModel):
+    __tablename__ = "resources"
+    # Inherits: id (UUID), created_at, updated_at
+    title = Column(String, nullable=False)
+```
+
+---
+
+## Service Layer Architecture
+
+The service layer implements business logic and orchestrates domain objects, database operations, and external services.
+
+### ML Classification Service
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    MLClassificationService                         │
+├────────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                        │
+│  • db: Session                                                     │
+│  • model_name: str = "distilbert-base-uncased"                     │
+│  • model: Optional[AutoModelForSequenceClassification]             │
+│  • tokenizer: Optional[AutoTokenizer]                              │
+│  • id_to_label: Dict[int, str]                                     │
+│  • label_to_id: Dict[str, int]                                     │
+│  • monitor: PredictionMonitor                                      │
+│  • checkpoint_dir: Path                                            │
+│  • device: torch.device                                            │
+├────────────────────────────────────────────────────────────────────┤
+│ Constants:                                                         │
+│  • DEFAULT_MODEL_NAME = "distilbert-base-uncased"                  │
+│  • MAX_TOKEN_LENGTH = 512                                          │
+│  • DEFAULT_EPOCHS = 3                                              │
+│  • DEFAULT_BATCH_SIZE = 16                                         │
+│  • DEFAULT_LEARNING_RATE = 2e-5                                    │
+│  • BINARY_PREDICTION_THRESHOLD = 0.5                               │
+│  • HIGH_CONFIDENCE_THRESHOLD = 0.8                                 │
+│  • DEFAULT_TOP_K = 5                                               │
+├────────────────────────────────────────────────────────────────────┤
+│ Public Methods:                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ Training & Fine-tuning                                       │  │ 
+│  │  • fine_tune(labeled_data, ...) → Dict[str, float]           │  │
+│  │  • semi_supervised_learning(...) → Dict[str, float]          │  │
+│  └──────────────────────────────────────────────────────────────┘  │ 
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ Inference                                                    │  │
+│  │  • predict(text, top_k) → ClassificationResult               │  │
+│  │  • predict_batch(texts, top_k) → List[ClassificationResult]  │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ Active Learning                                              │  │
+│  │  • active_learning_uncertainty_sampling(...)                 │  │
+│  │  • get_model_metrics(window_minutes) → Dict                  │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+├────────────────────────────────────────────────────────────────────┤
+│ Private Methods (20+ helper methods):                              │
+│  • _load_model(), _import_ml_libraries()                           │
+│  • _tokenize_texts(), _create_datasets()                           │
+│  • _compute_metrics(), _calculate_classification_metrics()         │
+│  • _build_label_mapping(), _convert_to_multihot_encoding()         │
+│  • _split_train_validation(), _initialize_model_for_training()     │
+│  • _configure_trainer(), _train_model()                            │
+│  • _perform_semi_supervised_learning()                             │
+│  • _save_model_and_artifacts(), _extract_metrics()                 │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### Quality Service
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                 ContentQualityAnalyzer                         │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • REQUIRED_KEYS: List[str] = ["title", "description",         │
+│    "subject", "creator", "language", "type", "identifier"]     │
+├────────────────────────────────────────────────────────────────┤
+│ Constants:                                                     │
+│  • METADATA_WEIGHT = 0.6                                       │
+│  • READABILITY_WEIGHT = 0.4                                    │
+│  • READING_EASE_MIN = 0.0                                      │
+│  • READING_EASE_MAX = 100.0                                    │
+│  • CREDIBILITY_HIGH = 0.9                                      │
+│  • CREDIBILITY_MEDIUM = 0.7                                    │
+│  • CREDIBILITY_DEFAULT = 0.6                                   │
+│  • DEPTH_THRESHOLD_MINIMAL = 100                               │
+│  • DEPTH_THRESHOLD_SHORT = 500                                 │
+│  • DEPTH_THRESHOLD_MEDIUM = 2000                               │
+├────────────────────────────────────────────────────────────────┤
+│ Methods:                                                       │
+│  • metadata_completeness(resource) → float                     │
+│  • text_readability(text) → Dict[str, float]                   │
+│  • overall_quality(resource, text) → float                     │
+│  • quality_level(score) → str                                  │
+│  • source_credibility(source) → float                          │
+│  • content_depth(text) → float                                 │
+└────────────────────────────────────────────────────────────────┘
+                            │
+                            │ used by
+                            ▼
+┌────────────────────────────────────────────────────────────────┐
+│                      QualityService                            │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • db: Session                                                 │
+│  • quality_version: str = "v2.0"                               │
+├────────────────────────────────────────────────────────────────┤
+│ Constants:                                                     │
+│  • HIGH_QUALITY_THRESHOLD = 0.8                                │
+│  • MEDIUM_QUALITY_THRESHOLD = 0.5                              │
+│  • DEFAULT_QUALITY_WEIGHTS = {...}                             │
+│  • COMPLETENESS_FIELD_WEIGHT = 0.2                             │
+│  • DEGRADATION_THRESHOLD = 0.2                                 │
+│  • OUTLIER_MIN_RESOURCES = 10                                  │
+│  • OUTLIER_CONTAMINATION = 0.1                                 │
+│  • OUTLIER_THRESHOLD_LOW = 0.3                                 │
+├────────────────────────────────────────────────────────────────┤
+│ Public Methods:                                                │
+│  • compute_quality(resource_id, weights) → QualityScore        │
+│  • monitor_quality_degradation(days) → List[Dict]              │
+│  • detect_quality_outliers(batch_size) → int                   │
+├────────────────────────────────────────────────────────────────┤
+│ Private Methods:                                               │
+│  • _compute_accuracy_dimension(resource) → float               │
+│  • _compute_completeness_dimension(resource) → float           │
+│  • _compute_consistency_dimension(resource) → float            │
+│  • _compute_timeliness_dimension(resource) → float             │
+│  • _compute_relevance_dimension(resource) → float              │
+│  • _update_resource_quality_fields(resource, ...) → None       │
+│  • _identify_outlier_reasons(resource) → List[str]             │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Recommendation Service (Strategy Pattern)
+
+```
+                    ┌──────────────────────────────┐
+                    │  RecommendationStrategy      │
+                    │  (Abstract Base Class)       │
+                    ├──────────────────────────────┤
+                    │ + generate(user_id, limit)   │
+                    │   → List[Recommendation]     │
+                    └──────────────┬───────────────┘
+                                   │
+                                   │ implements
+              ┌────────────────────┼────────────────────┬────────────────┐
+              │                    │                    │                │
+    ┌─────────▼──────────┐  ┌──────▼────────┐    ┌──────▼────────┐   ┌───▼──────┐
+    │ Collaborative      │  │  Content      │    │   Graph       │   │  Hybrid  │
+    │ FilteringStrategy  │  │  BasedStrategy│    │BasedStrategy  │   │ Strategy │
+    ├────────────────────┤  ├───────────────┤    ├───────────────┤   ├──────────┤
+    │• db: Session       │  │• db: Session  │    │• db: Session  │   │• strats  │
+    ├────────────────────┤  ├───────────────┤    ├───────────────┤   │• weights │
+    │+ generate()        │  │+ generate()   │    │+ generate()   │   ├──────────┤
+    │- _build_matrix()   │  │- _build_prof()│    │- _traverse()  │   │+ generate│
+    │- _find_similar()   │  │- _compute_sim │    │- _score_path()│   │- _merge()│
+    └────────────────────┘  └───────────────┘    └───────────────┘   └──────────┘
+```
+
+```
+RecommendationService
+├── Public Functions:
+│   ├── get_graph_based_recommendations(db, resource_id, limit=10)
+│   ├── generate_recommendations_with_graph_fusion(db, resource_id, ...)
+│   ├── generate_recommendations(db, resource_id, limit, strategy, user_id)
+│   ├── generate_user_profile_vector(db, user_id) → List[float]
+│   ├── recommend_based_on_annotations(db, user_id, limit) → List[Dict]
+│   └── get_top_subjects(db, limit=10) → List[str]
+├── Private Functions:
+│   ├── _cosine_similarity(vec1, vec2) → float
+│   ├── _convert_subjects_to_vector(subjects) → List[float]
+│   └── _to_numpy_vector(data) → List[float]
+
+RecommendationStrategyFactory
+├── Methods:
+│   └── create(strategy_type: str, db: Session) → RecommendationStrategy
+```
+
+### Search Service
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                   AdvancedSearchService                        │
+├────────────────────────────────────────────────────────────────┤
+│ Public Methods:                                                │
+│  • hybrid_search(db, query, weight) → (resources, total, ...)  │
+│  • fts_search(db, query, filters, ...) → (resources, ...)      │
+│  • vector_search(db, query_text, ...) → (resources, ...)       │
+│  • parse_search_query(query: str) → str                        │
+│  • generate_snippets(text, query, max_len) → str               │
+│                                                                │
+│ Private Methods:                                               │
+│  • _analyze_query(query) → Dict[str, Any]                      │
+│  • _search_sparse(db, query_text, limit) → List[Tuple]         │
+│  • _fetch_resources_ordered(db, ids, filters) → List[Res]      │
+│  • _compute_facets(db, query) → Facets                         │
+└────────────────────────────────────────────────────────────────┘
+                            │
+                            │ uses
+                            ▼
+┌────────────────────────────────────────────────────────────────┐
+│                     HybridSearchQuery                          │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • db: Session                                                 │
+│  • query: DomainSearchQuery                                    │
+│  • enable_reranking: bool                                      │
+│  • adaptive_weighting: bool                                    │
+│  • _diagnostics: Dict[str, Any]                                │
+├────────────────────────────────────────────────────────────────┤
+│ Public Methods:                                                │
+│  • execute() → Tuple[List[Resource], int, Facets, ...]         │
+│  • get_diagnostic_info() → Dict[str, Any]                      │
+├────────────────────────────────────────────────────────────────┤
+│ Private Methods:                                               │
+│  • _convert_to_schema_filters() → SearchFilters | None         │
+│  • _ensure_tables_exist() → None                               │
+│  • _check_services_available() → bool                          │
+│  • _fallback_to_two_way_hybrid(start_time) → Tuple[...]        │
+│  • _analyze_query() → Dict[str, Any]                           │
+│  • _execute_retrieval_phase() → RetrievalCandidates            │
+│  • _execute_fusion_phase(candidates) → FusedCandidates         │
+│  • _execute_reranking_phase(fused) → List[Tuple[str, float]]   │
+│  • _search_fts5() → List[Tuple[str, float]]                    │
+│  • _search_dense() → List[Tuple[str, float]]                   │
+│  • _search_sparse() → List[Tuple[str, float]]                  │
+│  • _compute_weights() → List[float]                            │
+│  • _compute_method_contributions(...) → Dict[str, int]         │
+│  • _fetch_paginated_resources(fused) → List[Resource]          │
+│  • _compute_facets(fused) → Facets                             │
+│  • _generate_snippets(resources) → Dict[str, str]              │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Search Pipeline Data Structures
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                   RetrievalCandidates                          │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • fts5_results: List[Tuple[str, float]]                       │
+│  • dense_results: List[Tuple[str, float]]                      │
+│  • sparse_results: List[Tuple[str, float]]                     │
+│  • retrieval_time_ms: float                                    │
+│  • method_times_ms: Dict[str, float]                           │
+├────────────────────────────────────────────────────────────────┤
+│ Methods:                                                       │
+│  • get_all_candidate_ids() → set[str]                          │
+│  • get_method_counts() → Dict[str, int]                        │
+└────────────────────────────────────────────────────────────────┘
+                            │
+                            │ feeds into
+                            ▼
+┌────────────────────────────────────────────────────────────────┐
+│                     FusedCandidates                            │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • fused_results: List[Tuple[str, float]]                      │
+│  • weights_used: List[float]                                   │
+│  • fusion_time_ms: float                                       │
+│  • method_contributions: Dict[str, int]                        │
+├────────────────────────────────────────────────────────────────┤
+│ Methods:                                                       │
+│  • get_top_k(k: int) → List[Tuple[str, float]]                 │
+│  • get_candidate_ids() → List[str]                             │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Domain Layer Architecture (Phase 11)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│            DOMAIN-DRIVEN DESIGN (DDD) REFACTORING                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│                   ┌──────────────────────────┐                          │
+│                   │  BaseDomainObject (ABC)  │                          │
+│                   ├──────────────────────────┤                          │
+│                   │ + to_dict()              │                          │
+│                   │ + from_dict()            │                          │
+│                   │ + to_json()              │                          │
+│                   │ + from_json()            │                          │
+│                   │ + validate() [abstract]  │                          │
+│                   │ + __eq__()               │                          │
+│                   │ + __repr__()             │                          │
+│                   └────────┬─────────────────┘                          │
+│                            │                                            │
+│              ┌─────────────┴──────────────┐                             │
+│              │                            │                             │
+│    ┌─────────▼──────────┐      ┌──────────▼──────────┐                  │
+│    │   ValueObject      │      │   DomainEntity      │                  │
+│    │   (dataclass)      │      │                     │                  │
+│    ├────────────────────┤      ├─────────────────────┤                  │
+│    │ Immutable          │      │ • entity_id: str    │                  │
+│    │ Defined by values  │      │ Identity-based      │                  │
+│    │ No identity        │      │ Mutable             │                  │
+│    └─────────┬──────────┘      └─────────────────────┘                  │
+│              │                                                          │
+│              │ subclasses                                               │
+│              │                                                          │
+│    ┌─────────┼─────────┬─────────────┬─────────────┬─────────────┐      │
+│    │         │         │             │             │             │      │
+│    ▼         ▼         ▼             ▼             ▼             ▼      │
+│ ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│ │Class-│ │Class-│ │ Quality  │ │Recommend-│ │ Search   │ │ Search   │   │
+│ │ifica-│ │ifica-│ │  Score   │ │  ation   │ │  Query   │ │ Result   │   │
+│ │tion  │ │tion  │ │          │ │  Score   │ │          │ │          │   │
+│ │Predic│ │Result│ │          │ │          │ │          │ │          │   │
+│ │tion  │ │      │ │          │ │          │ │          │ │          │   │
+│ └──────┘ └──────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Domain Objects
+
+
+#### Classification Domain
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│         ClassificationPrediction (ValueObject)               │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • taxonomy_id: str                                          │
+│  • confidence: float (0.0-1.0)                               │
+│  • rank: int (1-based)                                       │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • is_high_confidence(threshold=0.8) → bool                  │
+│  • is_low_confidence(threshold=0.5) → bool                   │
+│  • is_medium_confidence(low, high) → bool                    │ 
+└──────────────────────────────────────────────────────────────┘
+                             │
+                             │ contains multiple
+                             ▼
+┌──────────────────────────────────────────────────────────────┐
+│         ClassificationResult (ValueObject)                   │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • predictions: List[ClassificationPrediction]               │
+│  • model_version: str                                        │
+│  • inference_time_ms: float                                  │
+│  • resource_id: Optional[str]                                │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • get_high_confidence(threshold) → List[Prediction]         │
+│  • get_top_k(k) → List[Prediction]                           │
+│  • get_best_prediction() → Prediction                        │
+│  • count_by_confidence_level() → Dict[str, int]              │
+│  • to_dict() → Dict[str, Any]                                │
+│  • from_dict(data) → ClassificationResult                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Quality Domain
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              QualityScore (ValueObject)                      │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes (5 Dimensions):                                   │
+│  • accuracy: float (0.0-1.0)        Weight: 0.30             │
+│  • completeness: float (0.0-1.0)    Weight: 0.25             │
+│  • consistency: float (0.0-1.0)     Weight: 0.20             │
+│  • timeliness: float (0.0-1.0)      Weight: 0.15             │
+│  • relevance: float (0.0-1.0)       Weight: 0.15             │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • overall_score() → float                                   │
+│  • is_high_quality(threshold=0.7) → bool                     │
+│  • is_low_quality(threshold=0.5) → bool                      │
+│  • get_quality_level() → str ("high"/"medium"/"low")         │
+│  • get_weakest_dimension() → str                             │
+│  • get_strongest_dimension() → str                           │
+│  • get_dimension_scores() → Dict[str, float]                 │
+│  • has_dimension_below_threshold(t) → bool                   │
+│  • count_dimensions_below_threshold(t) → int                 │
+│  • to_dict() → Dict[str, Any]                                │
+│  • from_dict(data) → QualityScore                            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Recommendation Domain
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│         RecommendationScore (ValueObject)                    │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • score: float (0.0-1.0)                                    │
+│  • confidence: float (0.0-1.0)                               │
+│  • rank: int (1-based)                                       │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • is_high_confidence(threshold=0.8) → bool                  │
+│  • is_high_score(threshold=0.7) → bool                       │
+│  • is_top_ranked(top_k=5) → bool                             │
+│  • combined_quality() → float                                │
+└──────────────────────────────────────────────────────────────┘
+                             │
+                             │ embedded in
+                             ▼
+┌──────────────────────────────────────────────────────────────┐
+│              Recommendation (ValueObject)                    │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • resource_id: str                                          │
+│  • user_id: str                                              │
+│  • recommendation_score: RecommendationScore                 │
+│  • strategy: str = "unknown"                                 │
+│  • reason: Optional[str]                                     │
+│  • metadata: Optional[Dict[str, Any]]                        │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • get_score() → float                                       │
+│  • get_confidence() → float                                  │
+│  • get_rank() → int                                          │
+│  • is_high_quality(score_t, conf_t) → bool                   │
+│  • is_top_recommendation(top_k=5) → bool                     │
+│  • get_metadata_value(key, default) → Any                    │
+│  • __lt__, __le__, __gt__, __ge__ (for sorting)              │
+│  • to_dict() → Dict[str, Any]                                │
+│  • from_dict(data) → Recommendation                          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+#### Search Domain
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              SearchQuery (ValueObject)                       │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • query_text: str                                           │
+│  • limit: int = 20                                           │
+│  • enable_reranking: bool = True                             │
+│  • adaptive_weights: bool = True                             │
+│  • search_method: str = "hybrid"                             │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • is_short_query(threshold=3) → bool                        │
+│  • is_long_query(threshold=10) → bool                        │
+│  • is_medium_query(short, long) → bool                       │
+│  • get_word_count() → int                                    │
+│  • is_single_word() → bool                                   │
+│  • get_query_length() → int                                  │
+└──────────────────────────────────────────────────────────────┘
+                             │
+                             │ produces
+                             ▼
+┌──────────────────────────────────────────────────────────────┐
+│              SearchResults (ValueObject)                     │
+├──────────────────────────────────────────────────────────────┤
+│ Attributes:                                                  │
+│  • results: List[SearchResult]                               │
+│  • query: SearchQuery                                        │
+│  • total_results: int                                        │
+│  • search_time_ms: float                                     │
+│  • reranked: bool = False                                    │
+├──────────────────────────────────────────────────────────────┤
+│ Methods:                                                     │
+│  • validate()                                                │
+│  • get_top_k(k) → List[SearchResult]                         │
+│  • get_by_score_threshold(t) → List[SearchResult]            │
+│  • is_empty() → bool                                         │
+│  • has_results() → bool                                      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Refactoring Framework Architecture (Phase 12)
+
+The refactoring framework implements Fowler's refactoring patterns with automated code smell detection and validation.
+
+### Refactoring Models
+
+```
+SmellType (Enum)
+├── Values:
+│   ├── DUPLICATED_CODE
+│   ├── LONG_FUNCTION
+│   ├── LARGE_CLASS
+│   ├── GLOBAL_DATA
+│   ├── FEATURE_ENVY
+│   ├── DATA_CLUMPS
+│   ├── PRIMITIVE_OBSESSION
+│   ├── REPEATED_SWITCHES
+│   ├── DATA_CLASS
+│   └── LONG_PARAMETER_LIST
+
+Severity (Enum)
+├── Values:
+│   ├── HIGH (blocks production)
+│   ├── MEDIUM (technical debt)
+│   └── LOW (minor improvement)
+
+RefactoringTechnique (Enum)
+├── Values:
+│   ├── EXTRACT_FUNCTION
+│   ├── EXTRACT_CLASS
+│   ├── REPLACE_PRIMITIVE_WITH_OBJECT
+│   ├── COMBINE_FUNCTIONS_INTO_CLASS
+│   ├── SEPARATE_QUERY_FROM_MODIFIER
+│   ├── ENCAPSULATE_COLLECTION
+│   ├── SPLIT_PHASE
+│   ├── REPLACE_CONDITIONAL_WITH_POLYMORPHISM
+│   ├── MOVE_FUNCTION
+│   └── INLINE_FUNCTION
+```
+
+### Refactoring Data Classes
+
+```
+Location (dataclass)
+├── Attributes:
+│   ├── file_path: Path
+│   ├── start_line: int
+│   ├── end_line: int
+│   ├── function_name: Optional[str]
+│   └── class_name: Optional[str]
+
+CodeSmell (dataclass)
+├── Attributes:
+│   ├── smell_type: SmellType
+│   ├── severity: Severity
+│   ├── location: Location
+│   ├── description: str
+│   ├── suggested_technique: RefactoringTechnique
+│   └── metrics: Dict[str, Any]
+
+SmellReport (dataclass)
+├── Attributes:
+│   ├── file_path: Path
+│   ├── smells: List[CodeSmell]
+│   ├── total_lines: int
+│   ├── complexity_score: float
+│   └── timestamp: str
+├── Methods:
+│   ├── high_priority_smells() → List[CodeSmell]
+│   ├── smells_by_type(smell_type) → List[CodeSmell]
+│   └── summary() → str
+
+RefactoringResult (dataclass)
+├── Attributes:
+│   ├── success: bool
+│   ├── original_code: str
+│   ├── refactored_code: str
+│   ├── technique_applied: RefactoringTechnique
+│   ├── changes_made: List[str]
+│   └── test_results: Optional[TestResults]
+
+TestResults (dataclass)
+├── Attributes:
+│   ├── total_tests: int
+│   ├── passed: int
+│   ├── failed: int
+│   ├── errors: List[str]
+│   ├── coverage_percentage: float
+│   └── execution_time_seconds: float
+├── Methods:
+│   ├── all_passed() → bool
+│   ├── coverage_acceptable(threshold=0.85) → bool
+│   └── summary() → str
+```
+
+### Refactoring Detector
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    CodeSmellDetector                           │
+├────────────────────────────────────────────────────────────────┤
+│ Attributes:                                                    │
+│  • function_checker: FunctionLengthChecker                     │
+│  • class_checker: ClassSizeChecker                             │
+│  • type_hint_checker: TypeHintCoverageChecker                  │
+│  • duplication_detector: CodeDuplicationDetector               │
+├────────────────────────────────────────────────────────────────┤
+│ Public Methods:                                                │
+│  • analyze_file(file_path: Path) → SmellReport                 │
+│  • analyze_directory(dir_path: Path) → List[SmellReport]       │
+│  • prioritize_smells(reports) → PrioritizedSmells              │
+│  • generate_summary_report(reports) → str                      │
+├────────────────────────────────────────────────────────────────┤
+│ Private Methods:                                               │
+│  • _detect_feature_envy(file_path) → List[CodeSmell]           │
+│  • _detect_long_parameter_lists(file_path) → List[CodeSmell]   │
+│  • _count_lines(file_path) → int                               │
+│  • _calculate_complexity(file_path) → float                    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Refactoring Validators
+
+```
+FunctionLengthChecker
+├── Constants: MAX_FUNCTION_LINES = 50
+├── Methods:
+│   ├── check_file(file_path: Path) → List[CodeSmell]
+│   ├── _extract_functions(tree, source) → List[FunctionInfo]
+│   └── _create_smell(file_path, func) → CodeSmell
+
+ClassSizeChecker
+├── Constants: MAX_CLASS_LINES = 200, MAX_METHODS = 10
+├── Methods:
+│   ├── check_file(file_path: Path) → List[CodeSmell]
+│   ├── _extract_classes(tree, source) → List[ClassInfo]
+│   └── _create_smell(file_path, cls) → CodeSmell
+
+TypeHintCoverageChecker
+├── Constants: MIN_TYPE_HINT_COVERAGE = 1.0
+├── Methods:
+│   ├── check_file(file_path: Path) → Tuple[float, List[CodeSmell]]
+│   └── _has_complete_type_hints(node) → bool
+
+CodeDuplicationDetector
+├── Constants: DUPLICATION_SIMILARITY_THRESHOLD = 0.8
+├── Methods:
+│   ├── check_files(file_paths: List[Path]) → List[CodeSmell]
+│   ├── _extract_function_bodies(tree, source) → List[Tuple]
+│   └── _calculate_similarity(body1, body2) → float
+```
+
+---
+
+## Router Layer Architecture
+
+The router layer provides FastAPI endpoints for all services, implementing REST API patterns.
+
+### Main Routers
+
+```
+Classification Router (/api/classification)
+├── Endpoints:
+│   ├── POST /classify
+│   │   ├── Input: ClassifyRequest (text, top_k)
+│   │   └── Output: ClassificationResult
+│   ├── POST /fine-tune
+│   │   ├── Input: FineTuneRequest (labeled_data, epochs, batch_size)
+│   │   └── Output: TrainingMetrics
+│   └── GET /metrics
+│       └── Output: ModelMetrics
+
+Quality Router (/api/quality)
+├── Endpoints:
+│   ├── POST /compute/{resource_id}
+│   │   ├── Input: Optional[QualityWeights]
+│   │   └── Output: QualityScore
+│   ├── GET /monitor/degradation
+│   │   ├── Query: time_window_days
+│   │   └── Output: List[DegradationReport]
+│   └── POST /detect/outliers
+│       ├── Query: batch_size
+│       └── Output: OutlierDetectionResult
+
+Recommendation Router (/api/recommendations)
+├── Endpoints:
+│   ├── GET /user/{user_id}
+│   │   ├── Query: limit, strategy
+│   │   └── Output: List[Recommendation]
+│   ├── GET /resource/{resource_id}
+│   │   ├── Query: limit
+│   │   └── Output: List[Recommendation]
+│   └── GET /graph/{resource_id}
+│       ├── Query: limit, graph_weight
+│       └── Output: List[Recommendation]
+
+Search Router (/api/search)
+├── Endpoints:
+│   ├── POST /hybrid
+│   │   ├── Input: HybridSearchRequest
+│   │   └── Output: SearchResults with facets
+│   ├── GET /fts
+│   │   ├── Query: q, filters, limit, offset
+│   │   └── Output: SearchResults
+│   └── GET /vector
+│       ├── Query: q, limit, offset
+│       └── Output: SearchResults
+```
+
+---
+
+## Creating a New Module
+
+1. Create module directory:
+```bash
+mkdir -p app/modules/new_module
+```
+
+2. Create module files:
+```python
+# __init__.py
+from .router import router
+from .service import create_item, get_item
+from .schema import ItemCreate, ItemResponse
+from .model import Item
+
+__version__ = "1.0.0"
+__domain__ = "new_module"
+```
+
+3. Register router in main.py:
+```python
+from app.modules.new_module import router as new_module_router
+app.include_router(new_module_router, prefix="/new-module", tags=["new-module"])
+```
+
+4. Register event handlers:
+```python
+# In handlers.py
+from app.shared.event_bus import event_bus
+
+def register_handlers():
+    event_bus.subscribe("some.event", handle_some_event)
+
+# Call in __init__.py or main.py
+register_handlers()
+```
+
+---
+
+## Module Isolation Rules
+
+1. **No cross-module imports** - Use events or shared kernel
+2. **String-based relationships** - Avoid circular imports in models
+3. **Independent testing** - Each module has its own tests
+4. **Clear public interface** - Export only what's needed in `__init__.py`
+5. **Self-contained migrations** - Module-specific schema changes
+
+---
+
+## Legacy Services Migration Status
+
+Services being migrated to modules:
+
+| Service | Target Module | Status |
+|---------|---------------|--------|
+| `resource_service.py` | Resources | ✅ Complete |
+| `collection_service.py` | Collections | ✅ Complete |
+| `search_service.py` | Search | ✅ Complete |
+| `taxonomy_service.py` | Taxonomy | 🔄 Planned |
+| `annotation_service.py` | Annotations | 🔄 Planned |
+| `quality_service.py` | Quality | 🔄 Planned |
+| `graph_service.py` | Graph | 🔄 Planned |
+| `recommendation_service.py` | Recommendations | 🔄 Planned |
+
+---
+
+## Schema Layer Architecture
+
+The schema layer defines Pydantic models for API request/response validation.
+
+```
+SearchQuery (Pydantic)
+├── Attributes:
+│   ├── text: str
+│   ├── limit: int = 20
+│   ├── offset: int = 0
+│   ├── hybrid_weight: float = 0.5
+│   ├── filters: Optional[SearchFilters]
+│   └── sort_by: Optional[str]
+
+SearchFilters (Pydantic)
+├── Attributes:
+│   ├── classification_code: Optional[List[str]]
+│   ├── type: Optional[List[str]]
+│   ├── language: Optional[List[str]]
+│   ├── year_min: Optional[int]
+│   └── year_max: Optional[int]
+
+ResourceCreate (Pydantic)
+├── Attributes:
+│   ├── title: str
+│   ├── description: Optional[str]
+│   ├── creator: Optional[str]
+│   ├── subject: Optional[List[str]]
+│   ├── type: str
+│   ├── language: str
+│   └── identifier: str
+
+ResourceUpdate (Pydantic)
+├── Attributes:
+│   ├── title: Optional[str]
+│   ├── description: Optional[str]
+│   ├── creator: Optional[str]
+│   ├── subject: Optional[List[str]]
+│   └── classification_code: Optional[str]
+
+ClassifyRequest (Pydantic)
+├── Attributes:
+│   ├── text: str
+│   └── top_k: int = 5
+
+AnnotationCreate (Pydantic)
+├── Attributes:
+│   ├── resource_id: UUID
+│   ├── content: str
+│   ├── annotation_type: str
+│   ├── start_position: Optional[int]
+│   ├── end_position: Optional[int]
+│   └── tags: Optional[List[str]]
+
+RecommendationRequest (Pydantic)
+├── Attributes:
+│   ├── user_id: str
+│   ├── limit: int = 10
+│   └── strategy: str = "hybrid"
+```
+
+---
+
+## Configuration Layer Architecture
+
+The configuration layer manages application settings and environment variables.
+
+```
+Settings (Pydantic BaseSettings)
+├── Attributes:
+│   ├── DATABASE_URL: str
+│   ├── SECRET_KEY: str
+│   ├── API_VERSION: str = "v2.0"
+│   ├── DEBUG: bool = False
+│   ├── LOG_LEVEL: str = "INFO"
+│   ├── CORS_ORIGINS: List[str]
+│   ├── MAX_UPLOAD_SIZE: int
+│   ├── EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+│   ├── CLASSIFICATION_MODEL: str = "distilbert-base-uncased"
+│   ├── ENABLE_GPU: bool = True
+│   ├── CACHE_TTL: int = 3600
+│   └── RATE_LIMIT: int = 100
+├── Methods:
+│   ├── get_database_url() → str
+│   ├── is_production() → bool
+│   └── validate_settings() → None
+
+get_settings()
+├── Returns: Settings (singleton)
+└── Usage: settings = get_settings()
+```
+
+---
+
+## Utility Layer Architecture
+
+The utility layer provides helper functions and shared utilities across the application.
+
+### Text Processing Utilities
+
+```
+text_processor module
+├── Functions:
+│   ├── readability_scores(text: str) -> Dict[str, float]
+│   │   ├── Returns: flesch_reading_ease, flesch_kincaid_grade, etc.
+│   │   └── Uses: textstat library
+│   ├── extract_keywords(text: str, top_k: int) -> List[str]
+│   │   ├── Returns: List of top keywords
+│   │   └── Uses: TF-IDF or RAKE
+│   ├── clean_text(text: str) -> str
+│   │   ├── Removes: HTML tags, special characters
+│   │   └── Returns: Cleaned text
+│   ├── tokenize(text: str) -> List[str]
+│   │   └── Returns: List of tokens
+│   └── normalize_text(text: str) -> str
+│       ├── Lowercases, removes punctuation
+│       └── Returns: Normalized text
+
+content_extractor module
+├── Functions:
+│   ├── extract_from_pdf(file_path: Path) -> str
+│   │   └── Uses: PyPDF2 or pdfplumber
+│   ├── extract_from_html(html: str) -> str
+│   │   └── Uses: BeautifulSoup
+│   ├── extract_metadata(file_path: Path) -> Dict[str, Any]
+│   │   └── Returns: Title, author, date, etc.
+│   └── extract_citations(text: str) -> List[str]
+│       └── Returns: List of citation strings
+```
+
+### Performance Monitoring Utilities
+
+```
+performance_monitoring module
+├── Classes:
+│   └── PerformanceMonitor
+│       ├── Attributes:
+│       │   ├── metrics: Dict[str, List[float]]
+│       │   └── start_times: Dict[str, float]
+│       ├── Methods:
+│       │   ├── start_timer(name: str) -> None
+│       │   ├── stop_timer(name: str) -> float
+│       │   ├── record_metric(name: str, value: float) -> None
+│       │   ├── get_average(name: str) -> float
+│       │   ├── get_percentile(name: str, percentile: float) -> float
+│       │   └── get_summary() -> Dict[str, Any]
+│
+├── Decorators:
+│   ├── @time_function
+│   │   └── Measures function execution time
+│   └── @log_performance
+│       └── Logs performance metrics
+
+recommendation_metrics module
+├── Functions:
+│   ├── precision_at_k(predictions, ground_truth, k) -> float
+│   ├── recall_at_k(predictions, ground_truth, k) -> float
+│   ├── ndcg_at_k(predictions, ground_truth, k) -> float
+│   ├── mean_average_precision(predictions, ground_truth) -> float
+│   └── hit_rate_at_k(predictions, ground_truth, k) -> float
+```
+
+---
+
+## ML Monitoring Architecture
+
+The ML monitoring layer provides observability for machine learning models and predictions.
+
+```
+PredictionMonitor
+├── Attributes:
+│   ├── predictions: List[Dict[str, Any]]
+│   ├── metrics: Dict[str, float]
+│   └── alert_thresholds: Dict[str, float]
+├── Methods:
+│   ├── __init__()
+│   ├── log_prediction(model_name, input_data, prediction, confidence, latency_ms) -> None
+│   ├── get_metrics(window_minutes: int) -> Dict[str, Any]
+│   ├── get_prediction_distribution() -> Dict[str, int]
+│   ├── get_average_confidence() -> float
+│   ├── get_average_latency() -> float
+│   ├── check_drift(baseline_distribution) -> bool
+│   └── export_metrics() -> Dict[str, Any]
+
+AlertManager
+├── Attributes:
+│   ├── alerts: List[Alert]
+│   └── notification_channels: List[NotificationChannel]
+├── Methods:
+│   ├── __init__()
+│   ├── create_alert(alert_type, severity, message, metadata) -> Alert
+│   ├── check_thresholds(metrics: Dict[str, float]) -> List[Alert]
+│   ├── send_notification(alert: Alert) -> None
+│   └── get_active_alerts() -> List[Alert]
+
+HealthCheck
+├── Methods:
+│   ├── check_model_health(model_name: str) -> Dict[str, Any]
+│   ├── check_database_health() -> Dict[str, Any]
+│   ├── check_service_health(service_name: str) -> Dict[str, Any]
+│   └── get_system_health() -> Dict[str, Any]
+
+JSONLogging
+├── Functions:
+│   ├── setup_json_logging(log_level: str) -> None
+│   ├── log_structured(level, message, **kwargs) -> None
+│   └── get_logger(name: str) -> logging.Logger
+```
+
+---
+
+## Complete System Flow Diagrams
+
+### Classification Flow
+
+```
+User Request
+    ↓
+FastAPI Router (POST /api/classification/classify)
+    ↓
+MLClassificationService.predict(text, top_k)
+    ↓
+    ├─→ _load_model() [if not loaded]
+    │   ├─→ _import_ml_libraries()
+    │   ├─→ _load_tokenizer()
+    │   ├─→ _determine_checkpoint_path()
+    │   ├─→ _load_model_from_checkpoint()
+    │   └─→ _move_model_to_device()
+    │
+    ├─→ Tokenize input text
+    ├─→ Model inference (forward pass)
+    ├─→ Apply sigmoid activation
+    ├─→ Sort by confidence
+    ├─→ Take top_k predictions
+    │
+    └─→ Create ClassificationResult domain object
+        ├─→ ClassificationPrediction objects
+        └─→ Validate all predictions
+    ↓
+PredictionMonitor.log_prediction()
+    ↓
+Return ClassificationResult
+    ↓
+Convert to JSON response
+    ↓
+User receives predictions
+```
+
+### Quality Assessment Flow
+
+```
+User Request
+    ↓
+FastAPI Router (POST /api/quality/compute/{resource_id})
+    ↓
+QualityService.compute_quality(resource_id, weights)
+    ↓
+    ├─→ Validate weights
+    ├─→ Query Resource from database
+    │
+    ├─→ _compute_accuracy_dimension(resource)
+    ├─→ _compute_completeness_dimension(resource)
+    ├─→ _compute_consistency_dimension(resource)
+    ├─→ _compute_timeliness_dimension(resource)
+    └─→ _compute_relevance_dimension(resource)
+    ↓
+Create QualityScore domain object
+    ├─→ Validate all dimensions (0.0-1.0)
+    └─→ Calculate overall_score()
+    ↓
+_update_resource_quality_fields(resource, ...)
+    ↓
+Database commit
+    ↓
+Return QualityScore
+    ↓
+Convert to JSON response
+    ↓
+User receives quality assessment
+```
+
+### Recommendation Flow (Strategy Pattern)
+
+```
+User Request
+    ↓
+FastAPI Router (GET /api/recommendations/user/{user_id})
+    ↓
+generate_recommendations(db, resource_id, limit, strategy, user_id)
+    ↓
+RecommendationStrategyFactory.create(strategy_type, db)
+    ↓
+    ├─→ strategy="collaborative" → CollaborativeFilteringStrategy
+    ├─→ strategy="content" → ContentBasedStrategy
+    ├─→ strategy="graph" → GraphBasedStrategy
+    └─→ strategy="hybrid" → HybridStrategy
+    ↓
+Strategy.generate(user_id, limit)
+    ↓
+    [CollaborativeFilteringStrategy]
+    ├─→ _build_user_item_matrix()
+    ├─→ Compute user similarities
+    ├─→ Generate predictions
+    └─→ Create Recommendation objects
+    
+    [ContentBasedStrategy]
+    ├─→ Query UserInteraction
+    ├─→ _build_user_profile(interactions)
+    ├─→ Query Resources with embeddings
+    ├─→ _compute_similarity(profile, embedding)
+    └─→ Create Recommendation objects
+    
+    [GraphBasedStrategy]
+    ├─→ _traverse_citation_network(resource_id, depth)
+    ├─→ Score by citation distance
+    └─→ Create Recommendation objects
+    
+    [HybridStrategy]
+    ├─→ Execute all sub-strategies
+    ├─→ _merge_recommendations(results, weights)
+    └─→ Create Recommendation objects
+    ↓
+Return List[Recommendation]
+    ↓
+Convert to List[Dict] for API compatibility
+    ↓
+User receives recommendations
+```
+
+### Search Flow (Three-Way Hybrid)
+
+```
+User Request
+    ↓
+FastAPI Router (POST /api/search/three-way)
+    ↓
+HybridSearchQuery(db, query, enable_reranking, adaptive_weights)
+    ↓
+execute()
+    ↓
+    ├─→ _ensure_tables_exist()
+    ├─→ _check_services_available()
+    ├─→ _analyze_query() → query characteristics
+    │
+    ├─→ PHASE 1: _execute_retrieval_phase()
+    │   ├─→ _search_fts5() → FTS5 keyword results
+    │   ├─→ _search_dense() → Dense vector results
+    │   └─→ _search_sparse() → Sparse vector results
+    │   └─→ Return RetrievalCandidates
+    │
+    ├─→ PHASE 2: _execute_fusion_phase(candidates)
+    │   ├─→ _compute_weights() → adaptive RRF weights
+    │   ├─→ ReciprocalRankFusionService.fuse_results()
+    │   ├─→ _compute_method_contributions()
+    │   └─→ Return FusedCandidates
+    │
+    ├─→ PHASE 3: _execute_reranking_phase(fused)
+    │   ├─→ RerankingService.rerank() [if enabled]
+    │   └─→ Return final ranked results
+    │
+    ├─→ _fetch_paginated_resources(results)
+    ├─→ _compute_facets(results)
+    └─→ _generate_snippets(resources)
+    ↓
+Return (resources, total, facets, snippets, metadata)
+    ↓
+Convert to JSON response
+    ↓
+User receives search results
+```
+
+### Refactoring Detection Flow
+
+```
+Developer runs CLI
+    ↓
+refactoring.cli.detect_smells(directory_path)
+    ↓
+CodeSmellDetector()
+    ├─→ Initialize validators:
+    │   ├─→ FunctionLengthChecker()
+    │   ├─→ ClassSizeChecker()
+    │   ├─→ TypeHintCoverageChecker()
+    │   └─→ CodeDuplicationDetector()
+    ↓
+analyze_directory(dir_path)
+    ↓
+    For each Python file:
+    ├─→ analyze_file(file_path)
+    │   ├─→ FunctionLengthChecker.check_file()
+    │   │   ├─→ Parse AST
+    │   │   ├─→ _extract_functions()
+    │   │   ├─→ _analyze_function()
+    │   │   └─→ _create_smell() if violation
+    │   │
+    │   ├─→ ClassSizeChecker.check_file()
+    │   │   ├─→ Parse AST
+    │   │   ├─→ _extract_classes()
+    │   │   ├─→ _analyze_class()
+    │   │   └─→ _create_smell() if violation
+    │   │
+    │   ├─→ TypeHintCoverageChecker.check_file()
+    │   │   ├─→ Parse AST
+    │   │   ├─→ _has_complete_type_hints()
+    │   │   └─→ _create_smell() if missing
+    │   │
+    │   ├─→ _detect_feature_envy()
+    │   ├─→ _detect_long_parameter_lists()
+    │   ├─→ _count_lines()
+    │   └─→ _calculate_complexity()
+    │   ↓
+    │   Return SmellReport
+    │
+    └─→ CodeDuplicationDetector.check_files(all_files)
+        ├─→ _extract_function_bodies()
+        ├─→ Compare all pairs
+        ├─→ _calculate_similarity()
+        └─→ _create_smell() if duplicate
+    ↓
+prioritize_smells(reports)
+    ├─→ Sort by severity (HIGH, MEDIUM, LOW)
+    └─→ Return PrioritizedSmells
+    ↓
+generate_summary_report(reports)
+    ↓
+Display results to developer
+```
+
+---
+
+## Related Documentation
+
+- [Architecture Overview](overview.md) - System design
+- [Event System](event-system.md) - Event-driven communication
+- [Database](database.md) - Schema and models
+- [Design Decisions](decisions.md) - ADRs

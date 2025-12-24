@@ -17,9 +17,9 @@ __version__ = "1.0.0"
 __domain__ = "search"
 
 # Import public interface
-from backend.app.modules.search.router import router as search_router
-from backend.app.modules.search.service import SearchService
-from backend.app.modules.search.schema import (
+from ...modules.search.router import router as search_router
+from ...modules.search.service import SearchService
+from ...modules.search.schema import (
     SearchQuery,
     SearchResults,
     SearchFilters,
@@ -35,7 +35,7 @@ from backend.app.modules.search.schema import (
     BatchSparseEmbeddingRequest,
     BatchSparseEmbeddingResponse
 )
-from backend.app.modules.search.handlers import register_handlers
+from ...modules.search.handlers import register_handlers
 
 # Public exports
 __all__ = [

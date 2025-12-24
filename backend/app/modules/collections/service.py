@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session, joinedload
 
 # NOTE: During migration phase, import from old database.models to avoid conflicts
 # from .model import Collection, CollectionResource
-from backend.app.database.models import Collection, CollectionResource
+from ...database.models import Collection, CollectionResource
 from .schema import CollectionUpdate
 
 
@@ -305,7 +305,7 @@ class CollectionService:
             return 0
         
         # Verify resources exist (import Resource from database.models)
-        from backend.app.database.models import Resource
+        from ...database.models import Resource
         existing_resources = self.db.query(Resource.id).filter(
             Resource.id.in_(new_resource_ids)
         ).all()
@@ -446,7 +446,7 @@ class CollectionService:
             raise ValueError("Collection not found or access denied")
         
         # Import Resource from database.models
-        from backend.app.database.models import Resource
+        from ...database.models import Resource
         
         # Build query
         query = self.db.query(Resource).join(
@@ -498,7 +498,7 @@ class CollectionService:
             Computed embedding vector or None if no resources have embeddings
         """
         # Import Resource from database.models
-        from backend.app.database.models import Resource
+        from ...database.models import Resource
         
         # Get all resources in collection with embeddings
         resources = self.db.query(Resource).join(
@@ -599,7 +599,7 @@ class CollectionService:
             }
         
         # Import Resource from database.models
-        from backend.app.database.models import Resource
+        from ...database.models import Resource
         
         # Get all resources with embeddings
         query = self.db.query(Resource).filter(

@@ -526,7 +526,7 @@ Provide only the numeric rating (1-5):"""
         - Without G-Eval: <2 seconds
         - With G-Eval: <10 seconds (OpenAI API latency)
         """
-        from backend.app.database.models import Resource
+        from ..database.models import Resource
         
         # Fetch resource
         resource = self.db.query(Resource).filter(Resource.id == resource_id).first()

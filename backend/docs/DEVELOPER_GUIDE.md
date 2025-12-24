@@ -1,5 +1,15 @@
 # Neo Alexandria 2.0 Developer Guide
 
+> ⚠️ **DEPRECATED**: This file has been split into modular documentation.
+> See `backend/docs/index.md` for the new structure.
+> 
+> **New locations:**
+> - Setup Guide: `backend/docs/guides/setup.md`
+> - Development Workflows: `backend/docs/guides/workflows.md`
+> - Testing Guide: `backend/docs/guides/testing.md`
+> - Deployment Guide: `backend/docs/guides/deployment.md`
+> - Troubleshooting: `backend/docs/guides/troubleshooting.md`
+
 ## Overview
 
 This comprehensive developer guide provides detailed documentation for developers working with Neo Alexandria 2.0. It covers the system architecture, code structure, development setup, testing procedures, and deployment strategies for the complete knowledge management platform through Phase 5.5.

@@ -29,8 +29,8 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from backend.app.database.models import TaxonomyNode, ResourceTaxonomy, Resource
-from backend.app.database.base import Base
+from ..database.models import TaxonomyNode, ResourceTaxonomy, Resource
+from ..database.base import Base
 
 
 class TaxonomyService:

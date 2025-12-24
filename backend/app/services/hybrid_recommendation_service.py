@@ -30,12 +30,12 @@ import numpy as np
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
-from backend.app.database.models import Resource, UserProfile, UserInteraction
-from backend.app.services.collaborative_filtering_service import CollaborativeFilteringService
-from backend.app.services.graph_service import GraphService
-from backend.app.services.user_profile_service import UserProfileService
-from backend.app.utils.performance_monitoring import timing_decorator, metrics
-from backend.app.utils.recommendation_metrics import compute_gini_coefficient
+from ..database.models import Resource, UserProfile, UserInteraction
+from ..services.collaborative_filtering_service import CollaborativeFilteringService
+from ..services.graph_service import GraphService
+from ..services.user_profile_service import UserProfileService
+from ..utils.performance_monitoring import timing_decorator, metrics
+from ..utils.recommendation_metrics import compute_gini_coefficient
 
 logger = logging.getLogger(__name__)
 

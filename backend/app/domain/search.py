@@ -7,13 +7,14 @@ validation and business logic.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
-from backend.app.domain import (
+from typing import List, Dict, Any, Optional
+from . import (
     ValueObject,
     validate_positive,
     validate_non_empty,
     validate_non_negative,
 )
+
 
 
 @dataclass
@@ -88,6 +89,7 @@ class SearchQuery(ValueObject):
         """
         word_count = len(self.query_text.split())
         return word_count > threshold
+
     
     def is_medium_query(
         self,
@@ -136,6 +138,22 @@ class SearchQuery(ValueObject):
             Number of characters in query_text
         """
         return len(self.query_text)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert search query to dictionary for API compatibility.
+        
+        Returns:
+            Dictionary representation with all attributes
+        """
+        return {
+            'query_text': self.query_text,
+            'limit': self.limit,
+            'enable_reranking': self.enable_reranking,
+            'adaptive_weights': self.adaptive_weights,
+            'search_method': self.search_method
+        }
+
 
 
 @dataclass
@@ -235,6 +253,36 @@ class SearchResult(ValueObject):
         """
         return key in self.metadata
     
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get attribute value by key (dict-like interface for backward compatibility).
+        
+        Args:
+            key: Attribute name
+            default: Default value if key not found
+            
+        Returns:
+            Attribute value or default value
+        """
+        return getattr(self, key, default)
+    
+    def __getitem__(self, key: str) -> Any:
+        """
+        Get attribute value by key (dict-like interface).
+        
+        Args:
+            key: Attribute name
+            
+        Returns:
+            Attribute value
+            
+        Raises:
+            KeyError: If key is not a valid attribute
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(f"'{key}' is not a valid search result attribute")
+    
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert search result to dictionary for API compatibility.
@@ -250,6 +298,7 @@ class SearchResult(ValueObject):
             'search_method': self.search_method,
             'metadata': self.metadata
         }
+
 
 
 @dataclass
@@ -358,6 +407,7 @@ class SearchResults(ValueObject):
         if not self.results:
             return 0.0
         return sum(r.score for r in self.results) / len(self.results)
+
     
     def get_score_distribution(
         self,
@@ -383,6 +433,36 @@ class SearchResults(ValueObject):
             'medium': medium_count,
             'high': high_count
         }
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get attribute value by key (dict-like interface for backward compatibility).
+        
+        Args:
+            key: Attribute name
+            default: Default value if key not found
+            
+        Returns:
+            Attribute value or default value
+        """
+        return getattr(self, key, default)
+    
+    def __getitem__(self, key: str) -> Any:
+        """
+        Get attribute value by key (dict-like interface).
+        
+        Args:
+            key: Attribute name
+            
+        Returns:
+            Attribute value
+            
+        Raises:
+            KeyError: If key is not a valid attribute
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(f"'{key}' is not a valid search results attribute")
     
     def to_dict(self) -> Dict[str, Any]:
         """

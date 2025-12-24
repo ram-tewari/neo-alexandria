@@ -19,9 +19,9 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from backend.app.database import models as db_models
-from backend.app.shared.event_bus import event_bus, EventPriority
-from backend.app.events.event_types import SystemEvent
+from ..database import models as db_models
+from ..shared.event_bus import event_bus, EventPriority
+from ..events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 

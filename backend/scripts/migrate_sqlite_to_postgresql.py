@@ -31,10 +31,9 @@ import argparse
 import sys
 import logging
 from datetime import datetime
-from typing import Dict, List, Any, Tuple
-from collections import defaultdict
+from typing import Dict, List, Any
 
-from sqlalchemy import create_engine, inspect, MetaData, Table, select, func, text
+from sqlalchemy import create_engine, inspect, MetaData, select, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -140,7 +139,7 @@ class DatabaseMigrator:
         self.source_session = None
         self.target_session = None
         
-        logger.info(f"Initialized DatabaseMigrator")
+        logger.info("Initialized DatabaseMigrator")
         logger.info(f"Source: {source_url}")
         logger.info(f"Target: {target_url}")
         logger.info(f"Batch size: {batch_size}")

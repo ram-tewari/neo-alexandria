@@ -48,7 +48,7 @@ def test_app_creation():
     try:
         from app import create_app
         app = create_app()
-        print(f"✓ Application created successfully")
+        print("✓ Application created successfully")
         print(f"  Title: {app.title}")
         print(f"  Version: {app.version}")
         return app, None
@@ -203,7 +203,7 @@ def verify_critical_endpoints(app):
         print(f"\n⚠️  WARNING: {len(missing)} critical endpoints are missing!")
         return False
     else:
-        print(f"\n✓ All critical endpoints are registered!")
+        print("\n✓ All critical endpoints are registered!")
         return True
 
 
@@ -224,7 +224,7 @@ def main():
         return 1
     
     # Test 3: List all endpoints
-    endpoints_by_module = list_all_endpoints(app)
+    list_all_endpoints(app)
     
     # Test 4: Verify critical endpoints
     all_critical_present = verify_critical_endpoints(app)

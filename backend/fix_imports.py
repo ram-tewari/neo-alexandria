@@ -3,7 +3,6 @@
 Script to fix all backend.app. imports to relative imports.
 """
 
-import os
 import re
 from pathlib import Path
 

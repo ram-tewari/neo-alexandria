@@ -2,7 +2,7 @@
 
 Event-driven communication, Celery task queue, and Redis caching for Neo Alexandria 2.0.
 
-> **Last Updated**: Phase 12.5 - Event-Driven Architecture
+> **Last Updated**: Phase 14 - Complete Vertical Slice Refactor
 
 ## Table of Contents
 

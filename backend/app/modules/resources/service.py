@@ -22,7 +22,7 @@ from ...services.dependencies import (
 )
 from ...schemas.query import PageParams, SortParams, ResourceFilters
 from .schema import ResourceUpdate
-from ...services.ai_core import AICore
+from ...shared.ai_core import AICore
 from ...monitoring import (
     track_ingestion_success,
     track_ingestion_failure,
@@ -243,7 +243,7 @@ def _generate_embeddings(
     """
     # Generate dense embedding
     try:
-        from ...services.ai_core import create_composite_text
+        from ...shared.embeddings import create_composite_text
         temp_resource = type('obj', (object,), {
             'title': title,
             'description': description,
@@ -852,10 +852,11 @@ def _regenerate_embeddings(db: Session, resource: db_models.Resource) -> None:
     """
     # Regenerate dense embedding
     try:
-        from ...services.ai_core import create_composite_text, generate_embedding
+        from ...shared.embeddings import create_composite_text, EmbeddingGenerator
         composite_text = create_composite_text(resource)
         if composite_text.strip():
-            embedding = generate_embedding(composite_text)
+            embedding_gen = EmbeddingGenerator()
+            embedding = embedding_gen.generate_embedding(composite_text)
             if embedding:
                 resource.embedding = embedding
                 logger.info(f"Regenerated dense embedding for resource {resource.id}")

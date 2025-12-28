@@ -4,7 +4,7 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
-from typing import Generator, Union, List, Dict, Tuple, Optional
+from typing import Generator, Union, List, Dict, Tuple
 from unittest.mock import patch, Mock
 
 from sqlalchemy import create_engine, event, text
@@ -972,7 +972,6 @@ def create_quality_service_mock(quality_score=None):
             assert isinstance(result, QualityScore)
             assert result.overall_score() > 0.7
     """
-    from unittest.mock import Mock
     from backend.app.domain.quality import QualityScore
     
     mock = Mock()
@@ -1017,7 +1016,6 @@ def create_classification_service_mock(result=None):
             assert len(result.predictions) > 0
             assert result.predictions[0].confidence > 0.8
     """
-    from unittest.mock import Mock
     from backend.app.domain.classification import ClassificationResult, ClassificationPrediction
     
     mock = Mock()
@@ -1071,7 +1069,6 @@ def create_search_service_mock(results=None):
             assert isinstance(results[0], SearchResult)
             assert results[0].score > 0.8
     """
-    from unittest.mock import Mock
     from backend.app.domain.search import SearchResult, SearchResults, SearchQuery
     
     mock = Mock()
@@ -1147,7 +1144,6 @@ def create_recommendation_service_mock(recommendations=None):
             assert isinstance(recs[0], Recommendation)
             assert recs[0].is_high_quality()
     """
-    from unittest.mock import Mock
     from backend.app.domain.recommendation import Recommendation, RecommendationScore
     
     mock = Mock()
@@ -1632,7 +1628,7 @@ def assert_recommendation(
         rec_dict = {'resource_id': 'res-123', 'score': 0.85, 'confidence': 0.9}
         assert_recommendation(rec_dict, min_confidence=0.8)
     """
-    from backend.app.domain.recommendation import Recommendation, RecommendationScore
+    from backend.app.domain.recommendation import Recommendation
     
     # Handle both domain object and dict formats
     if isinstance(actual, Recommendation):
@@ -1930,7 +1926,7 @@ def ml_classification_model_cached():
                     
                     model.eval()
                     break
-                except Exception as e:
+                except Exception:
                     continue
         
         yield (model, tokenizer, device)
@@ -1946,7 +1942,7 @@ def ml_classification_model_cached():
     except ImportError:
         # ML libraries not available
         yield (None, None, None)
-    except Exception as e:
+    except Exception:
         # Model loading failed
         yield (None, None, None)
 
@@ -1994,7 +1990,7 @@ def sparse_embedding_model_cached():
             
             model.eval()
             
-        except Exception as e:
+        except Exception:
             # Model loading failed, return None
             pass
         
@@ -2011,7 +2007,7 @@ def sparse_embedding_model_cached():
     except ImportError:
         # ML libraries not available
         yield (None, None, None)
-    except Exception as e:
+    except Exception:
         # Model loading failed
         yield (None, None, None)
 
@@ -2034,7 +2030,6 @@ def mock_ml_classification_service():
             assert isinstance(result, ClassificationResult)
             assert len(result.predictions) > 0
     """
-    from unittest.mock import Mock, MagicMock
     from backend.app.domain.classification import ClassificationResult, ClassificationPrediction
     
     mock_service = Mock()
@@ -2097,7 +2092,6 @@ def mock_sparse_embedding_service():
             assert isinstance(embedding, dict)
             assert len(embedding) > 0
     """
-    from unittest.mock import Mock
     
     mock_service = Mock()
     
@@ -2205,7 +2199,6 @@ async def async_db_session(test_db):
         AsyncSession: SQLAlchemy async session
     """
     from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-    import os
     from backend.app.config.settings import get_settings
     
     settings = get_settings()

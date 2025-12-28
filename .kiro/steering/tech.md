@@ -2,9 +2,64 @@
 
 ## Architecture
 
-**Type**: Modular Monolith (transitioning from layered architecture)
-**Pattern**: Event-driven with vertical slices
+**Type**: Modular Monolith with Event-Driven Communication
+**Pattern**: Vertical slices with shared kernel
 **Deployment**: Self-hosted, containerized
+
+### Architectural Principles
+
+1. **Vertical Slice Architecture**: Each module is self-contained with its own models, schemas, services, and routes
+2. **Event-Driven Communication**: Modules communicate via event bus (no direct imports)
+3. **Shared Kernel**: Cross-cutting concerns (database, cache, embeddings, AI) in shared layer
+4. **Zero Circular Dependencies**: Enforced by module isolation rules
+5. **API-First Design**: All functionality exposed via REST API
+
+### Module Structure
+
+**13 Domain Modules**:
+- Annotations, Authority, Collections, Curation, Graph
+- Monitoring, Quality, Recommendations, Resources, Scholarly
+- Search, Taxonomy
+
+**Each Module Contains**:
+- `router.py` - FastAPI endpoints
+- `service.py` - Business logic
+- `schema.py` - Pydantic models
+- `model.py` - SQLAlchemy models
+- `handlers.py` - Event handlers
+- `README.md` - Documentation
+
+**Shared Kernel**:
+- Database session management
+- Event bus (in-memory, async)
+- Vector embeddings
+- AI operations (summarization, extraction)
+- Redis caching
+
+### Event-Driven Communication
+
+**Event Bus**: In-memory, async, <1ms latency (p95)
+
+**Event Categories**:
+- Resource lifecycle: `resource.created`, `resource.updated`, `resource.deleted`
+- Collections: `collection.created`, `collection.resource_added`
+- Annotations: `annotation.created`, `annotation.updated`, `annotation.deleted`
+- Quality: `quality.computed`, `quality.outlier_detected`
+- Classification: `resource.classified`, `taxonomy.model_trained`
+- Graph: `citation.extracted`, `graph.updated`, `hypothesis.discovered`
+- Recommendations: `recommendation.generated`, `user.profile_updated`
+- Curation: `curation.reviewed`, `curation.approved`
+- Metadata: `metadata.extracted`, `equations.parsed`, `tables.extracted`
+
+**Event Flow Example**:
+```
+1. User creates resource → resources module emits resource.created
+2. Quality module subscribes → computes quality scores
+3. Taxonomy module subscribes → auto-classifies resource
+4. Scholarly module subscribes → extracts metadata
+5. Graph module subscribes → extracts citations
+6. All happen asynchronously, no blocking
+```
 
 ## Backend Stack
 
@@ -82,6 +137,8 @@
 - Search latency: < 500ms for hybrid search
 - Embedding generation: < 2s per document
 - Database queries: < 100ms for most operations
+- Event emission + delivery: < 1ms (p95)
+- Module startup: < 10 seconds total
 
 ### Scalability Targets
 - 100K+ resources in database
@@ -136,12 +193,37 @@ alembic upgrade head
 # Run tests
 pytest tests/ -v
 
+# Run module-specific tests
+pytest tests/modules/test_resources_endpoints.py -v
+
 # Run with coverage
 pytest tests/ --cov=app --cov-report=html
 
 # Lint and format
 ruff check .
 ruff format .
+
+# Check module isolation
+python scripts/check_module_isolation.py
+
+# Verify all modules load
+python test_app_startup.py
+```
+
+### Module Development
+```bash
+# Create new module structure
+mkdir -p app/modules/mymodule
+touch app/modules/mymodule/{__init__.py,router.py,service.py,schema.py,model.py,handlers.py,README.md}
+
+# Register module in main.py
+# Add to register_all_modules() function
+
+# Test module endpoints
+pytest tests/modules/test_mymodule_endpoints.py -v
+
+# Verify module isolation
+python scripts/check_module_isolation.py
 ```
 
 ### Frontend Development
@@ -262,7 +344,42 @@ TEST_DATABASE_URL=sqlite:///:memory:
 ## Monitoring & Observability
 
 - Structured logging with JSON format
-- Health check endpoints
+- Health check endpoints per module
 - Database connection pool monitoring
 - ML model performance tracking
+- Event bus metrics (throughput, latency)
+- Module dependency graph validation
 - Error tracking and alerting (planned)
+
+## Module Isolation Rules
+
+### Allowed Imports
+✅ Modules can import from:
+- `app.shared.*` - Shared kernel only
+- `app.events.*` - Event system
+- `app.domain.*` - Domain objects
+- Standard library and third-party packages
+
+### Forbidden Imports
+❌ Modules CANNOT import from:
+- Other modules (`app.modules.*`)
+- Legacy layers (`app.routers.*`, `app.services.*`, `app.schemas.*`)
+
+### Communication Pattern
+- **Direct calls**: Use shared kernel services
+- **Cross-module**: Use event bus only
+- **Example**: Quality module needs resource data → subscribe to `resource.created` event
+
+### Validation
+```bash
+# Check all modules for violations
+python scripts/check_module_isolation.py
+
+# Generates dependency graph
+# Fails if circular dependencies or direct module imports found
+```
+
+### CI/CD Integration
+- Module isolation checker runs on every commit
+- Build fails if violations detected
+- Dependency graph generated and archived

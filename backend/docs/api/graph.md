@@ -306,9 +306,44 @@ const graph = await response.json();
 renderGraph(graph.nodes, graph.edges);
 ```
 
+## Module Structure
+
+The Graph module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.graph`  
+**Router Prefix**: `/graph`, `/citations`, `/discovery`  
+**Version**: 1.0.0
+
+```python
+from app.modules.graph import (
+    graph_router,
+    citations_router,
+    discovery_router,
+    GraphService,
+    CitationService,
+    LBDService,
+    GraphEdge,
+    Citation,
+    DiscoveryHypothesis
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `citation.extracted` - When citations are extracted from a resource
+- `graph.updated` - When the knowledge graph is updated
+- `hypothesis.discovered` - When a new discovery hypothesis is generated
+
+**Subscribed Events:**
+- `resource.created` - Extracts citations and updates graph
+- `resource.deleted` - Removes resource from graph
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Search API](search.md) - Discovery features
 - [Recommendations API](recommendations.md) - Related content
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors

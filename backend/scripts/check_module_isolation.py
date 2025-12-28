@@ -8,10 +8,15 @@ This script validates that modules follow the vertical slice architecture rules:
 3. No circular dependencies exist
 4. Cross-module communication must use events
 
+Checks all 12 modules:
+- annotations, authority, collections, curation, graph, monitoring
+- quality, recommendations, resources, scholarly, search, taxonomy
+
 Usage:
     python scripts/check_module_isolation.py
     python scripts/check_module_isolation.py --verbose
     python scripts/check_module_isolation.py --graph
+    python scripts/check_module_isolation.py --export-graph graph.txt
 """
 
 import ast
@@ -44,6 +49,13 @@ class ImportVisitor(ast.NodeVisitor):
 class ModuleIsolationChecker:
     """Checks module isolation rules for vertical slice architecture."""
     
+    # Expected modules in the system
+    EXPECTED_MODULES = {
+        'annotations', 'authority', 'collections', 'curation',
+        'graph', 'monitoring', 'quality', 'recommendations',
+        'resources', 'scholarly', 'search', 'taxonomy'
+    }
+    
     def __init__(self, app_root: Path, verbose: bool = False):
         self.app_root = app_root
         self.modules_root = app_root / "modules"
@@ -53,9 +65,13 @@ class ModuleIsolationChecker:
         # Track violations
         self.direct_imports: List[Tuple[str, str, str]] = []  # (from_module, to_module, file)
         self.circular_deps: List[List[str]] = []
+        self.non_shared_imports: List[Tuple[str, str, str]] = []  # (module, import, file)
         
         # Dependency graph
         self.dependencies: Dict[str, Set[str]] = defaultdict(set)
+        
+        # Track discovered modules
+        self.discovered_modules: Set[str] = set()
     
     def log(self, message: str):
         """Log message if verbose mode is enabled."""
@@ -122,6 +138,9 @@ class ModuleIsolationChecker:
         if not module_name:
             return
         
+        # Track discovered module
+        self.discovered_modules.add(module_name)
+        
         self.log(f"Checking {file_path}")
         
         imports = self.extract_imports(file_path)
@@ -151,6 +170,32 @@ class ModuleIsolationChecker:
                 
                 # Track dependency for circular detection
                 self.dependencies[module_name].add(target_module)
+            
+            # Check for non-shared kernel imports from app.*
+            elif import_path.startswith("app.") and not self.is_shared_import(import_path):
+                # Allow imports from app.database.models (shared models)
+                if import_path.startswith("app.database.models"):
+                    self.log(f"  ✓ Allowed database models import: {import_path}")
+                    continue
+                
+                # Allow imports from app.events (event system)
+                if import_path.startswith("app.events"):
+                    self.log(f"  ✓ Allowed events import: {import_path}")
+                    continue
+                
+                # Allow imports from app.config (configuration)
+                if import_path.startswith("app.config"):
+                    self.log(f"  ✓ Allowed config import: {import_path}")
+                    continue
+                
+                # Check if it's importing from old structure (routers, services, schemas)
+                if any(part in import_path for part in [".routers.", ".services.", ".schemas."]):
+                    self.log(f"  ⚠ Legacy import detected: {import_path}")
+                    self.non_shared_imports.append((
+                        module_name,
+                        import_path,
+                        str(file_path.relative_to(self.app_root))
+                    ))
     
     def check_all_modules(self):
         """Check all modules for isolation violations."""
@@ -206,19 +251,88 @@ class ModuleIsolationChecker:
         
         lines = ["Module Dependency Graph:", "=" * 50]
         
+        # Show all discovered modules
+        lines.append(f"\nDiscovered Modules ({len(self.discovered_modules)}):")
+        for module in sorted(self.discovered_modules):
+            lines.append(f"  • {module}")
+        
+        # Show dependencies
+        lines.append("\nModule Dependencies:")
         for module, deps in sorted(self.dependencies.items()):
             if deps:
                 lines.append(f"\n{module}:")
                 for dep in sorted(deps):
                     lines.append(f"  → {dep}")
         
+        # Show modules with no dependencies
+        no_deps = self.discovered_modules - set(self.dependencies.keys())
+        if no_deps:
+            lines.append("\nModules with no dependencies:")
+            for module in sorted(no_deps):
+                lines.append(f"  • {module}")
+        
         return "\n".join(lines)
+    
+    def export_dependency_graph(self, output_file: Path):
+        """Export dependency graph to a file."""
+        graph_text = self.generate_dependency_graph()
+        
+        # Add DOT format for visualization tools
+        dot_lines = ["", "", "DOT Format (for Graphviz):", "=" * 50, ""]
+        dot_lines.append("digraph ModuleDependencies {")
+        dot_lines.append("  rankdir=LR;")
+        dot_lines.append("  node [shape=box, style=rounded];")
+        dot_lines.append("")
+        
+        # Add all modules as nodes
+        for module in sorted(self.discovered_modules):
+            dot_lines.append(f'  "{module}";')
+        
+        dot_lines.append("")
+        
+        # Add dependencies as edges
+        for module, deps in sorted(self.dependencies.items()):
+            for dep in sorted(deps):
+                dot_lines.append(f'  "{module}" -> "{dep}";')
+        
+        dot_lines.append("}")
+        
+        full_output = graph_text + "\n" + "\n".join(dot_lines)
+        
+        with open(output_file, 'w') as f:
+            f.write(full_output)
+        
+        print(f"\n✓ Dependency graph exported to: {output_file}")
+        print(f"  To visualize: dot -Tpng {output_file} -o graph.png")
     
     def print_report(self, show_graph: bool = False):
         """Print the isolation check report."""
         print("\n" + "=" * 70)
         print("MODULE ISOLATION CHECK REPORT")
         print("=" * 70)
+        
+        # Module discovery
+        print(f"\n📦 DISCOVERED MODULES: {len(self.discovered_modules)}")
+        print("-" * 70)
+        
+        missing_modules = self.EXPECTED_MODULES - self.discovered_modules
+        extra_modules = self.discovered_modules - self.EXPECTED_MODULES
+        
+        if self.discovered_modules == self.EXPECTED_MODULES:
+            print("✅ All expected modules found")
+            for module in sorted(self.discovered_modules):
+                print(f"  • {module}")
+        else:
+            print("Found modules:")
+            for module in sorted(self.discovered_modules):
+                marker = "✓" if module in self.EXPECTED_MODULES else "?"
+                print(f"  {marker} {module}")
+            
+            if missing_modules:
+                print(f"\n⚠ Missing expected modules: {', '.join(sorted(missing_modules))}")
+            
+            if extra_modules:
+                print(f"\n⚠ Unexpected modules: {', '.join(sorted(extra_modules))}")
         
         # Direct import violations
         if self.direct_imports:
@@ -236,6 +350,20 @@ class ModuleIsolationChecker:
                     print(f"  → {to_mod} (in {file})")
         else:
             print("\n✅ NO DIRECT IMPORT VIOLATIONS")
+        
+        # Legacy imports
+        if self.non_shared_imports:
+            print(f"\n⚠ LEGACY IMPORTS DETECTED: {len(self.non_shared_imports)}")
+            print("-" * 70)
+            
+            by_module = defaultdict(list)
+            for module, import_path, file in self.non_shared_imports:
+                by_module[module].append((import_path, file))
+            
+            for module, imports in sorted(by_module.items()):
+                print(f"\nModule '{module}' has legacy imports:")
+                for import_path, file in imports:
+                    print(f"  → {import_path} (in {file})")
         
         # Circular dependencies
         if self.circular_deps:
@@ -255,16 +383,22 @@ class ModuleIsolationChecker:
         print("\n" + "=" * 70)
         print("SUMMARY")
         print("=" * 70)
+        print(f"Modules discovered: {len(self.discovered_modules)}/{len(self.EXPECTED_MODULES)}")
         print(f"Direct import violations: {len(self.direct_imports)}")
+        print(f"Legacy imports: {len(self.non_shared_imports)}")
         print(f"Circular dependencies: {len(self.circular_deps)}")
         
         total_violations = len(self.direct_imports) + len(self.circular_deps)
         
-        if total_violations == 0:
+        if total_violations == 0 and not missing_modules:
             print("\n✅ ALL CHECKS PASSED - Modules are properly isolated!")
+            if self.non_shared_imports:
+                print("⚠ Note: Legacy imports detected but not blocking")
             return 0
         else:
             print(f"\n❌ FAILED - {total_violations} violation(s) found")
+            if missing_modules:
+                print(f"⚠ Missing modules: {', '.join(sorted(missing_modules))}")
             print("\nModules must communicate through events, not direct imports.")
             print("Allowed imports: app.shared.* (shared kernel only)")
             return 1
@@ -286,6 +420,12 @@ def main():
         help="Show dependency graph"
     )
     parser.add_argument(
+        "--export-graph",
+        type=Path,
+        metavar="FILE",
+        help="Export dependency graph to file (includes DOT format)"
+    )
+    parser.add_argument(
         "--app-root",
         type=Path,
         default=Path(__file__).parent.parent / "app",
@@ -302,11 +442,16 @@ def main():
         sys.exit(1)
     
     print(f"Checking module isolation in: {app_root}")
+    print(f"Expected modules: {', '.join(sorted(ModuleIsolationChecker.EXPECTED_MODULES))}")
     
     # Run checker
     checker = ModuleIsolationChecker(app_root, verbose=args.verbose)
     checker.check_all_modules()
     checker.detect_circular_dependencies()
+    
+    # Export graph if requested
+    if args.export_graph:
+        checker.export_dependency_graph(args.export_graph)
     
     # Print report and exit with appropriate code
     exit_code = checker.print_report(show_graph=args.graph)

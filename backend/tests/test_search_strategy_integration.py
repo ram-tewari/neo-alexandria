@@ -5,7 +5,6 @@ This test verifies that the search service correctly uses the strategy pattern
 to select the appropriate full-text search implementation based on database type.
 """
 
-import pytest
 from sqlalchemy.orm import Session
 
 from backend.app.services.search_service import AdvancedSearchService

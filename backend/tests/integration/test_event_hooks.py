@@ -12,8 +12,7 @@ Test Strategy:
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+from unittest.mock import patch
 
 from backend.app.events import event_emitter, EventPriority
 from backend.app.events.event_types import SystemEvent

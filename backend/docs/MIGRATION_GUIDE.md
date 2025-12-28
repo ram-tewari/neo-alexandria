@@ -1,8 +1,8 @@
 # Migration Guide: Layered to Modular Architecture
 
-> **Phase 13.5: Vertical Slice Architecture Migration**
+> **Phase 14: Complete Vertical Slice Architecture**
 >
-> This guide documents the transition from a traditional layered architecture to a modular vertical slice architecture in Neo Alexandria 2.0.
+> This guide documents the complete transition from a traditional layered architecture to a fully modular vertical slice architecture in Neo Alexandria 2.0.
 
 ---
 
@@ -11,12 +11,14 @@
 1. [Overview](#overview)
 2. [Architecture Comparison](#architecture-comparison)
 3. [Migration Strategy](#migration-strategy)
-4. [Module Structure](#module-structure)
-5. [Event-Driven Communication](#event-driven-communication)
-6. [Adding New Modules](#adding-new-modules)
-7. [Updating Existing Code](#updating-existing-code)
-8. [Testing Modules](#testing-modules)
-9. [Troubleshooting](#troubleshooting)
+4. [Phase 14: Complete Module List](#phase-14-complete-module-list)
+5. [Module Structure](#module-structure)
+6. [Event-Driven Communication](#event-driven-communication)
+7. [Shared Kernel Usage](#shared-kernel-usage)
+8. [Adding New Modules](#adding-new-modules)
+9. [Updating Existing Code](#updating-existing-code)
+10. [Testing Modules](#testing-modules)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -24,7 +26,7 @@
 
 ### What Changed?
 
-Neo Alexandria 2.0 has transitioned from a **layered architecture** (horizontal slicing) to a **modular architecture** (vertical slicing). This change improves:
+Neo Alexandria 2.0 has completed the transition from a **layered architecture** (horizontal slicing) to a **fully modular architecture** (vertical slicing) with 13 self-contained modules. This change improves:
 
 - **Modularity**: Each module is self-contained with all its layers
 - **Independence**: Modules can be developed and tested independently
@@ -517,6 +519,149 @@ def register_handlers():
 
 ---
 
+## Shared Kernel Usage
+
+### Phase 14 Enhanced Shared Kernel
+
+Phase 14 enhanced the shared kernel with three new services that provide common functionality across all modules:
+
+#### Embedding Service
+
+Centralized embedding generation for semantic search and similarity:
+
+```python
+# app/shared/embeddings.py
+from app.shared.embeddings import EmbeddingService
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.embedding_service = EmbeddingService()
+    
+    def process_text(self, text: str):
+        # Generate dense embedding (768-dim vector)
+        dense_embedding = self.embedding_service.generate_embedding(text)
+        
+        # Generate sparse embedding (SPLADE)
+        sparse_embedding = self.embedding_service.generate_sparse_embedding(text)
+        
+        # Batch generation for efficiency
+        texts = ["text1", "text2", "text3"]
+        embeddings = self.embedding_service.batch_generate(texts)
+```
+
+**Key Features**:
+- Dense embeddings using nomic-embed-text-v1 (768 dimensions)
+- Sparse embeddings using SPLADE for keyword-aware semantic search
+- Batch processing for efficiency
+- Automatic caching of embeddings
+
+**Used By**: Search, Annotations, Collections, Graph, Recommendations
+
+#### AI Core Service
+
+Centralized AI/ML operations for text processing:
+
+```python
+# app/shared/ai_core.py
+from app.shared.ai_core import AICore
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.ai_core = AICore()
+    
+    def process_content(self, text: str):
+        # Generate summary (BART-large-cnn)
+        summary = self.ai_core.summarize(text, max_length=150)
+        
+        # Extract named entities (spaCy)
+        entities = self.ai_core.extract_entities(text)
+        # Returns: [{"text": "Python", "label": "LANGUAGE"}, ...]
+        
+        # Zero-shot classification
+        labels = ["science", "technology", "business"]
+        scores = self.ai_core.classify_text(text, labels)
+        # Returns: {"science": 0.8, "technology": 0.6, "business": 0.2}
+```
+
+**Key Features**:
+- Text summarization using BART-large-cnn
+- Named entity extraction using spaCy
+- Zero-shot classification using BART-large-mnli
+- Automatic model loading and caching
+
+**Used By**: Quality, Scholarly, Taxonomy, Curation
+
+#### Cache Service
+
+Centralized caching with TTL support and pattern-based invalidation:
+
+```python
+# app/shared/cache.py
+from app.shared.cache import CacheService
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.cache = CacheService()
+    
+    def get_expensive_data(self, key: str):
+        # Try cache first
+        cache_key = f"mymodule:{key}"
+        cached = self.cache.get(cache_key)
+        if cached:
+            return cached
+        
+        # Compute if not cached
+        data = self._compute_expensive_operation(key)
+        
+        # Cache with TTL (3600 seconds = 1 hour)
+        self.cache.set(cache_key, data, ttl=3600)
+        return data
+    
+    def invalidate_related_cache(self, pattern: str):
+        # Invalidate all keys matching pattern
+        self.cache.invalidate(f"mymodule:{pattern}*")
+```
+
+**Key Features**:
+- In-memory caching with Redis backend support
+- TTL (time-to-live) support for automatic expiration
+- Pattern-based invalidation (e.g., "user:*" invalidates all user keys)
+- Automatic serialization/deserialization
+
+**Used By**: Search, Embeddings, Quality, Recommendations
+
+### Shared Kernel Best Practices
+
+1. **Always use shared services** instead of creating module-specific versions
+2. **Namespace cache keys** by module (e.g., "search:query:abc123")
+3. **Set appropriate TTLs** based on data volatility
+4. **Batch operations** when possible for efficiency
+5. **Handle service failures gracefully** (embeddings, AI operations can fail)
+
+Example with error handling:
+
+```python
+def process_with_ai(self, text: str):
+    try:
+        summary = self.ai_core.summarize(text)
+    except Exception as e:
+        logger.error(f"Summarization failed: {e}")
+        summary = text[:200]  # Fallback to truncation
+    
+    try:
+        embedding = self.embedding_service.generate_embedding(text)
+    except Exception as e:
+        logger.error(f"Embedding generation failed: {e}")
+        embedding = None  # Fallback to None
+    
+    return summary, embedding
+```
+
+---
+
 ## Event-Driven Communication
 
 ### Event Naming Convention
@@ -529,38 +674,150 @@ Examples:
 - `resource.deleted`
 - `collection.updated`
 - `search.completed`
+- `annotation.created`
+- `quality.computed`
+- `quality.outlier_detected`
+- `resource.classified`
+- `citation.extracted`
+- `recommendation.generated`
+
+### Phase 14 Event Catalog
+
+Complete list of events in the system:
+
+| Event | Emitter | Subscribers | Payload | Purpose |
+|-------|---------|-------------|---------|---------|
+| `resource.created` | Resources | Annotations, Quality, Taxonomy, Graph, Scholarly | `{resource_id, title, content}` | Trigger processing for new resources |
+| `resource.updated` | Resources | Quality, Search | `{resource_id, changed_fields}` | Update dependent data |
+| `resource.deleted` | Resources | Collections, Annotations, Graph | `{resource_id}` | Cascade cleanup |
+| `annotation.created` | Annotations | Recommendations | `{annotation_id, resource_id, user_id}` | Update user profile |
+| `collection.updated` | Collections | Search | `{collection_id, resource_count}` | Reindex collection |
+| `collection.resource_added` | Collections | Recommendations | `{collection_id, resource_id, user_id}` | Update user preferences |
+| `quality.computed` | Quality | Monitoring | `{resource_id, overall_score, dimensions}` | Track quality metrics |
+| `quality.outlier_detected` | Quality | Curation | `{resource_id, outlier_score, reasons}` | Add to review queue |
+| `quality.degradation_detected` | Quality | Curation | `{resource_id, old_score, new_score}` | Flag for review |
+| `resource.classified` | Taxonomy | Search | `{resource_id, classifications}` | Update search index |
+| `taxonomy.node_created` | Taxonomy | Monitoring | `{node_id, parent_id, name}` | Track taxonomy growth |
+| `taxonomy.model_trained` | Taxonomy | Monitoring | `{model_version, accuracy, timestamp}` | Track ML model updates |
+| `citation.extracted` | Graph | Monitoring | `{resource_id, citation_count}` | Track citation network |
+| `graph.updated` | Graph | Search | `{resource_id, neighbor_count}` | Update graph-based features |
+| `hypothesis.discovered` | Graph | Monitoring | `{hypothesis_id, confidence}` | Track LBD discoveries |
+| `recommendation.generated` | Recommendations | Monitoring | `{user_id, count, strategy}` | Track recommendation quality |
+| `user.profile_updated` | Recommendations | Monitoring | `{user_id, preferences}` | Track user engagement |
+| `metadata.extracted` | Scholarly | Monitoring | `{resource_id, metadata_fields}` | Track metadata completeness |
+| `curation.reviewed` | Curation | Monitoring | `{resource_id, reviewer, decision}` | Track curation activity |
 
 ### Emitting Events
 
 ```python
 from app.shared.event_bus import event_bus
 
-# Emit an event after an operation
-def delete_resource(db: Session, resource_id: str):
-    # Perform operation
-    db.delete(resource)
-    db.commit()
-    
-    # Emit event
-    event_bus.emit("resource.deleted", {
-        "resource_id": str(resource_id),
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    })
+class MyModuleService:
+    def create_item(self, db: Session, data: ItemCreate):
+        # Create item
+        item = MyItem(**data.dict())
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        
+        # Emit event for other modules
+        event_bus.emit("mymodule.item_created", {
+            "item_id": str(item.id),
+            "name": item.name,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return item
 ```
 
 ### Subscribing to Events
 
 ```python
+# In your module handlers.py
 from app.shared.event_bus import event_bus
+from app.shared.database import SessionLocal
+from .service import MyModuleService
 
-def handle_resource_deleted(payload: Dict[str, Any]):
-    """Handle resource deletion."""
+def handle_resource_created(payload: dict):
+    """Handle resource creation event."""
     resource_id = payload.get("resource_id")
-    # Process the event
-    logger.info(f"Resource {resource_id} was deleted")
+    
+    # Create fresh database session
+    db = SessionLocal()
+    try:
+        service = MyModuleService(db)
+        service.process_new_resource(resource_id)
+        
+        logger.info(f"Successfully processed resource.created: {resource_id}")
+    except Exception as e:
+        logger.error(f"Error handling resource.created: {e}", exc_info=True)
+        # Don't re-raise - let other handlers continue
+    finally:
+        db.close()
 
-# Register handler
-event_bus.subscribe("resource.deleted", handle_resource_deleted)
+def register_handlers():
+    """Register all event handlers for this module."""
+    event_bus.subscribe("resource.created", handle_resource_created)
+    event_bus.subscribe("resource.updated", handle_resource_updated)
+```
+
+### Event Flow Examples
+
+#### Example 1: Resource Creation Flow
+
+```
+User creates resource
+        ↓
+Resources Module
+├─ Saves to database
+├─ Emits: resource.created
+└─ Returns response
+        ↓
+Event Bus distributes to subscribers:
+        ↓
+┌───────┴───────┬───────────┬──────────┬──────────┐
+│               │           │          │          │
+Quality      Taxonomy    Graph    Scholarly   Annotations
+│               │           │          │          │
+├─ Compute     ├─ Auto-    ├─ Extract ├─ Extract │
+│  quality     │  classify │  citations│  metadata│
+│  score       │  resource │          │          │
+│              │           │          │          │
+├─ Emit:       ├─ Emit:    ├─ Emit:   ├─ Emit:   │
+│  quality.    │  resource. │  citation.│  metadata.│
+│  computed    │  classified│  extracted│  extracted│
+```
+
+#### Example 2: Quality Outlier Detection Flow
+
+```
+Quality Module detects outlier
+        ↓
+Emits: quality.outlier_detected
+        ↓
+Curation Module receives event
+├─ Adds resource to review queue
+├─ Assigns priority based on outlier score
+└─ Emits: curation.reviewed (when reviewed)
+        ↓
+Monitoring Module tracks metrics
+```
+
+#### Example 3: User Interaction Flow
+
+```
+User adds annotation
+        ↓
+Annotations Module
+├─ Saves annotation
+├─ Emits: annotation.created
+└─ Returns response
+        ↓
+Recommendations Module receives event
+├─ Updates user profile
+├─ Adjusts preferences based on annotation
+├─ Emits: user.profile_updated
+└─ Triggers recommendation refresh
 ```
 
 ### Event Handler Best Practices
@@ -570,9 +827,10 @@ event_bus.subscribe("resource.deleted", handle_resource_deleted)
 3. **Idempotency**: Handlers should be idempotent (safe to run multiple times)
 4. **Logging**: Log all event processing for debugging
 5. **Performance**: Keep handlers fast (<100ms)
+6. **No Re-raising**: Don't re-raise exceptions - let other handlers continue
 
 ```python
-def handle_event(payload: Dict[str, Any]):
+def handle_event(payload: dict):
     """Example event handler with best practices."""
     from app.shared.database import SessionLocal
     
@@ -588,6 +846,40 @@ def handle_event(payload: Dict[str, Any]):
         # Don't re-raise - let other handlers continue
     finally:
         db.close()
+```
+
+### Monitoring Events
+
+Check event bus metrics:
+
+```bash
+curl http://localhost:8000/monitoring/events
+```
+
+Response:
+```json
+{
+  "events_emitted": 1523,
+  "events_delivered": 4569,
+  "handler_errors": 3,
+  "event_types": {
+    "resource.created": 234,
+    "resource.updated": 1289,
+    "quality.computed": 234,
+    "resource.classified": 234
+  },
+  "latency_ms": {
+    "p50": 0.8,
+    "p95": 2.3,
+    "p99": 5.1
+  }
+}
+```
+
+View event history:
+
+```bash
+curl http://localhost:8000/monitoring/events/history?limit=10
 ```
 
 ---
@@ -1121,20 +1413,63 @@ This will detect:
 
 ## Next Steps
 
-### Remaining Migrations
+### Phase 14 Migration Complete ✅
 
-The following modules still need to be extracted:
+All 13 modules have been successfully extracted and the modular architecture is complete:
 
-- Authority Control
-- Classification
-- Curation
-- Discovery
-- Graph
-- Quality
-- Recommendations
-- Taxonomy
-- Annotations
-- Citations
+**Completed Modules**:
+- ✅ Collections (Phase 13.5)
+- ✅ Resources (Phase 13.5)
+- ✅ Search (Phase 13.5)
+- ✅ Annotations (Phase 14)
+- ✅ Scholarly (Phase 14)
+- ✅ Authority (Phase 14)
+- ✅ Curation (Phase 14)
+- ✅ Quality (Phase 14)
+- ✅ Taxonomy (Phase 14)
+- ✅ Graph (Phase 14)
+- ✅ Recommendations (Phase 14)
+- ✅ Monitoring (Phase 14)
+
+**Shared Kernel Enhanced**:
+- ✅ database.py - Database session management
+- ✅ event_bus.py - Event-driven communication
+- ✅ base_model.py - Base SQLAlchemy model
+- ✅ embeddings.py - Embedding generation (Phase 14)
+- ✅ ai_core.py - AI/ML operations (Phase 14)
+- ✅ cache.py - Caching service (Phase 14)
+
+**Legacy Code Removed**:
+- ✅ app/routers/ directory deleted
+- ✅ app/services/ directory deleted
+- ✅ app/schemas/ directory deleted
+- ✅ Extracted models moved to modules
+
+### Architecture Statistics
+
+- **Total Modules**: 13
+- **Total API Endpoints**: 96
+- **Event Types**: 25+
+- **Shared Services**: 6
+- **Module Independence**: 100% (no direct module-to-module imports)
+- **Event-Driven Communication**: All cross-module interactions via events
+
+### Module Summary
+
+| Module | Endpoints | Events Emitted | Events Subscribed | Status |
+|--------|-----------|----------------|-------------------|--------|
+| collections | 8 | 3 | 1 | ✅ Complete |
+| resources | 10 | 3 | 0 | ✅ Complete |
+| search | 5 | 1 | 3 | ✅ Complete |
+| annotations | 11 | 3 | 1 | ✅ Complete |
+| scholarly | 5 | 3 | 1 | ✅ Complete |
+| authority | 2 | 0 | 0 | ✅ Complete |
+| curation | 5 | 3 | 1 | ✅ Complete |
+| quality | 9 | 3 | 2 | ✅ Complete |
+| taxonomy | 11 | 3 | 1 | ✅ Complete |
+| graph | 12 | 3 | 2 | ✅ Complete |
+| recommendations | 6 | 3 | 2 | ✅ Complete |
+| monitoring | 12 | 0 | All | ✅ Complete |
 
 ### Future Enhancements
 

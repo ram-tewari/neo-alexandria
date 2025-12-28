@@ -15,7 +15,6 @@ sys.path.insert(0, str(backend_path))
 
 import pytest
 from dataclasses import dataclass
-from typing import Optional
 import json
 
 # Direct import to avoid app initialization

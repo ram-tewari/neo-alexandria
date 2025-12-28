@@ -40,10 +40,9 @@ import sys
 import logging
 import json
 from datetime import datetime
-from typing import Dict, List, Any, Tuple
-from collections import defaultdict
+from typing import Dict, List, Any
 
-from sqlalchemy import create_engine, inspect, MetaData, Table, select, func, text
+from sqlalchemy import create_engine, inspect, MetaData, select, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -163,7 +162,7 @@ class PostgreSQLToSQLiteMigrator:
         self.source_session = None
         self.target_session = None
         
-        logger.info(f"Initialized PostgreSQLToSQLiteMigrator (REVERSE MIGRATION)")
+        logger.info("Initialized PostgreSQLToSQLiteMigrator (REVERSE MIGRATION)")
         logger.info(f"Source (PostgreSQL): {source_url}")
         logger.info(f"Target (SQLite): {target_url}")
         logger.info(f"Batch size: {batch_size}")

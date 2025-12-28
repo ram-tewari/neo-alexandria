@@ -15,15 +15,13 @@ import pytest
 import time
 import uuid
 import concurrent.futures
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Tuple, Dict, Any
-from unittest.mock import patch, MagicMock
 
 from backend.app.database.models import Resource
-from backend.app.services import resource_service
 from backend.app.services import search_service
 try:
-    from backend.app.cache.redis_cache import RedisCache
+    from backend.app.shared.cache import CacheService
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -144,7 +142,7 @@ def test_concurrent_ingestion_100(test_db):
     success_rate = (len(successful) / num_concurrent) * 100
     
     # Print results
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Total time: {overall_duration:.2f}ms ({overall_duration/1000:.2f}s)")
     print(f"  Successful: {len(successful)}/{num_concurrent} ({success_rate:.1f}%)")
     print(f"  Failed: {len(failed)}")
@@ -201,7 +199,7 @@ def test_cache_performance_hit_rate(test_db):
     
     # Initialize cache
     try:
-        cache = RedisCache()
+        cache = CacheService()
         cache.redis.flushdb()  # Clear cache for clean test
     except Exception as e:
         pytest.skip(f"Redis not available: {e}")
@@ -254,7 +252,7 @@ def test_cache_performance_hit_rate(test_db):
                             computation_time_without_cache) * 100
     
     # Print results
-    print(f"\nCache Performance Metrics:")
+    print("\nCache Performance Metrics:")
     print(f"  Total queries: {total_queries}")
     print(f"  Cache hits: {cache_hits}")
     print(f"  Cache misses: {cache_misses}")
@@ -268,7 +266,7 @@ def test_cache_performance_hit_rate(test_db):
     assert 50.0 <= computation_reduction <= 80.0, \
         f"Computation reduction {computation_reduction:.1f}% outside target range 50-70%"
     
-    print(f"\n[PASS] Cache performance meets targets")
+    print("\n[PASS] Cache performance meets targets")
     print("="*70)
     
     db.close()
@@ -337,7 +335,7 @@ def test_search_index_update_speed(test_db):
     search_duration = (search_end - search_start) * 1000
     
     # Print results
-    print(f"\nSearch Index Update Performance:")
+    print("\nSearch Index Update Performance:")
     print(f"  Update duration: {update_duration:.2f}ms")
     print(f"  Search duration: {search_duration:.2f}ms")
     print(f"  Total time to searchable: {update_duration + search_duration:.2f}ms")
@@ -347,7 +345,7 @@ def test_search_index_update_speed(test_db):
     total_time = update_duration + search_duration
     assert total_time < 5000, f"Search index update took {total_time:.2f}ms, expected <5000ms"
     
-    print(f"\n[PASS] Search index updated within 5 seconds")
+    print("\n[PASS] Search index updated within 5 seconds")
     print("="*70)
     
     db.close()
@@ -414,7 +412,7 @@ def test_task_reliability(test_db):
             
             task_results["success"] += 1
             
-        except Exception as e:
+        except Exception:
             task_results["failed"] += 1
     
     # Calculate metrics
@@ -423,7 +421,7 @@ def test_task_reliability(test_db):
     retry_rate = (task_results["retried"] / task_results["total"]) * 100
     
     # Print results
-    print(f"\nTask Reliability Metrics:")
+    print("\nTask Reliability Metrics:")
     print(f"  Total tasks: {task_results['total']}")
     print(f"  Successful: {task_results['success']} ({success_rate:.1f}%)")
     print(f"  Failed: {task_results['failed']} ({failure_rate:.1f}%)")
@@ -433,7 +431,7 @@ def test_task_reliability(test_db):
     assert failure_rate < 1.0, f"Task failure rate {failure_rate:.1f}% exceeds 1%"
     assert success_rate >= 99.0, f"Task success rate {success_rate:.1f}% is below 99%"
     
-    print(f"\n[PASS] Task reliability meets target (<1% failure rate)")
+    print("\n[PASS] Task reliability meets target (<1% failure rate)")
     print("="*70)
     
     db.close()
@@ -533,7 +531,7 @@ def test_horizontal_scalability(test_db):
         print(f"  Throughput: {throughput:.1f} tasks/second")
     
     # Analyze scaling
-    print(f"\nScalability Analysis:")
+    print("\nScalability Analysis:")
     baseline = results[0]
     
     for result in results[1:]:
@@ -550,7 +548,7 @@ def test_horizontal_scalability(test_db):
         assert scaling_efficiency >= 80.0, \
             f"Scaling efficiency {scaling_efficiency:.1f}% is below 80%"
     
-    print(f"\n[PASS] System scales linearly with worker count")
+    print("\n[PASS] System scales linearly with worker count")
     print("="*70)
     
     db.close()

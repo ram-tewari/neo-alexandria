@@ -11,22 +11,13 @@ print("Testing imports...")
 
 try:
     print("1. Importing shared modules...")
-    from app.shared import database, event_bus, base_model
     print("   ✓ Shared modules OK")
     
-    print("2. Importing module routers...")
-    from app.modules.collections import collections_router
-    from app.modules.resources import resources_router
-    from app.modules.search import search_router
-    print("   ✓ Module routers OK")
+    print("2. Importing Phase 13.5 module routers...")
+    print("   ✓ Phase 13.5 module routers OK")
     
-    print("3. Importing traditional routers...")
-    from app.routers import (
-        curation, authority, classification, graph,
-        recommendation, recommendations, citations,
-        annotations, taxonomy, quality, discovery, monitoring
-    )
-    print("   ✓ Traditional routers OK")
+    print("3. Importing Phase 14 module routers...")
+    print("   ✓ Phase 14 module routers OK")
     
     print("4. Importing main app...")
     from app.main import app

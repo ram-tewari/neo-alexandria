@@ -246,9 +246,39 @@ The core resource model follows Dublin Core metadata standards with custom exten
 }
 ```
 
+## Module Structure
+
+The Resources module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.resources`  
+**Router Prefix**: `/resources`  
+**Version**: 1.0.0
+
+```python
+from app.modules.resources import (
+    resources_router,
+    ResourceService,
+    ResourceCreate,
+    ResourceUpdate,
+    ResourceResponse
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `resource.created` - When a new resource is ingested
+- `resource.updated` - When resource metadata is updated
+- `resource.deleted` - When a resource is removed
+
+**Subscribed Events:**
+- None (Resources is a foundational module)
+
 ## Related Documentation
 
 - [Search API](search.md) - Search and discovery
 - [Collections API](collections.md) - Organize resources into collections
 - [Quality API](quality.md) - Quality assessment details
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors, pagination

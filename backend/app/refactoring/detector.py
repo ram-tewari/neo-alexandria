@@ -189,7 +189,7 @@ class CodeSmellDetector:
             with open(file_path, 'r', encoding='utf-8') as f:
                 source = f.read()
             
-            tree = ast.parse(source, filename=str(file_path))
+            ast.parse(source, filename=str(file_path))
             
             # Simplified detection - full implementation would track
             # method calls and compare internal vs external usage

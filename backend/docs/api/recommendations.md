@@ -232,10 +232,44 @@ Surfaces lesser-known but relevant resources:
 }
 ```
 
+## Module Structure
+
+The Recommendations module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.recommendations`  
+**Router Prefix**: `/recommendations`  
+**Version**: 1.0.0
+
+```python
+from app.modules.recommendations import (
+    recommendations_router,
+    RecommendationService,
+    HybridRecommendationService,
+    CollaborativeFilteringService,
+    NCFService,
+    UserProfileService,
+    RecommendationRequest,
+    RecommendationResponse
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `recommendation.generated` - When recommendations are generated
+- `user.profile_updated` - When user profile is updated
+- `interaction.recorded` - When user interaction is recorded
+
+**Subscribed Events:**
+- `annotation.created` - Updates user profile
+- `collection.resource_added` - Updates user profile
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Search API](search.md) - Discovery features
 - [Graph API](graph.md) - Knowledge graph
 - [Collections API](collections.md) - Collection recommendations
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors

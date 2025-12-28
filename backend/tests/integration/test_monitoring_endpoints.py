@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 from backend.app.events.event_system import event_emitter, EventPriority
-from backend.app.cache.redis_cache import cache
+from backend.app.shared.cache import cache
 
 
 @pytest.fixture

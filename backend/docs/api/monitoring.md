@@ -251,8 +251,35 @@ groups:
 3. **Set appropriate timeouts** - Health checks should respond within 5 seconds
 4. **Monitor trends** - Track metrics over time to identify degradation
 
+## Module Structure
+
+The Monitoring module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.monitoring`  
+**Router Prefix**: `/monitoring`, `/health`  
+**Version**: 1.0.0
+
+```python
+from app.modules.monitoring import (
+    monitoring_router,
+    MonitoringService,
+    HealthStatus,
+    SystemMetrics
+)
+```
+
+### Events
+
+**Emitted Events:**
+- None (Monitoring is a read-only aggregation module)
+
+**Subscribed Events:**
+- All events (for metrics aggregation)
+
 ## Related Documentation
 
 - [API Overview](overview.md) - Authentication, errors
 - [Architecture Overview](../architecture/overview.md) - System design
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [Deployment Guide](../guides/deployment.md) - Production setup

@@ -18,8 +18,7 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 import requests
-from typing import Dict, List, Tuple
-import json
+from typing import Tuple
 
 
 class EndpointTester:
@@ -185,13 +184,13 @@ class EndpointTester:
         passed = len(self.results['passed'])
         failed = len(self.results['failed'])
         
-        print(f"\n📊 Results:")
+        print("\n📊 Results:")
         print(f"   Total endpoints tested: {total}")
         print(f"   ✅ Passed: {passed}")
         print(f"   ❌ Failed: {failed}")
         
         if failed > 0:
-            print(f"\n❌ Failed Endpoints:")
+            print("\n❌ Failed Endpoints:")
             for method, path, message in self.results['failed']:
                 print(f"   {method:6} {path:40} - {message}")
         

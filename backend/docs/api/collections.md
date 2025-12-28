@@ -276,8 +276,40 @@ Collections automatically compute aggregate embeddings from member resources:
 }
 ```
 
+## Module Structure
+
+The Collections module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.collections`  
+**Router Prefix**: `/collections`  
+**Version**: 1.0.0
+
+```python
+from app.modules.collections import (
+    collections_router,
+    CollectionService,
+    CollectionCreate,
+    CollectionUpdate,
+    CollectionResponse
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `collection.created` - When a new collection is created
+- `collection.updated` - When collection metadata is updated
+- `collection.deleted` - When a collection is removed
+- `collection.resource_added` - When a resource is added to a collection
+- `collection.resource_removed` - When a resource is removed from a collection
+
+**Subscribed Events:**
+- `resource.deleted` - Removes resource from all collections
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Recommendations API](recommendations.md) - Personalized discovery
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors, pagination

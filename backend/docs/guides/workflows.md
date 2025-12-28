@@ -2,6 +2,45 @@
 
 Common development tasks and patterns for Neo Alexandria 2.0.
 
+> **Phase 14 Complete**: This guide reflects the fully modular vertical slice architecture with 13 self-contained modules, enhanced shared kernel, and event-driven communication patterns.
+
+## Quick Reference
+
+### Module Structure
+All modules follow a standard structure:
+```
+modules/{module_name}/
+├── __init__.py      # Public interface
+├── router.py        # API endpoints
+├── service.py       # Business logic
+├── schema.py        # Pydantic models
+├── model.py         # SQLAlchemy models (optional)
+├── handlers.py      # Event handlers
+└── README.md        # Documentation
+```
+
+### Current Modules (13 Total)
+1. **collections** - Collection management
+2. **resources** - Resource CRUD operations
+3. **search** - Hybrid search (keyword + semantic)
+4. **annotations** - Text highlights and notes
+5. **scholarly** - Academic metadata extraction
+6. **authority** - Subject authority control
+7. **curation** - Content review and batch operations
+8. **quality** - Multi-dimensional quality assessment
+9. **taxonomy** - ML-based classification
+10. **graph** - Knowledge graph and citations
+11. **recommendations** - Hybrid recommendation engine
+12. **monitoring** - System health and metrics
+
+### Shared Kernel Services
+- **database.py** - Database session management
+- **event_bus.py** - Event-driven communication
+- **base_model.py** - Base SQLAlchemy model
+- **embeddings.py** - Embedding generation (dense & sparse)
+- **ai_core.py** - AI/ML operations (summarization, entity extraction)
+- **cache.py** - Caching service with TTL support
+
 ## Code Quality
 
 ### Formatting
@@ -79,6 +118,166 @@ alembic current
 alembic history
 ```
 
+## Module Development Patterns
+
+### Using Shared Kernel Services
+
+#### Embedding Generation
+
+```python
+# In your module service
+from app.shared.embeddings import EmbeddingService
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.embedding_service = EmbeddingService()
+    
+    def process_text(self, text: str):
+        # Generate dense embedding
+        embedding = self.embedding_service.generate_embedding(text)
+        
+        # Generate sparse embedding (SPLADE)
+        sparse_embedding = self.embedding_service.generate_sparse_embedding(text)
+        
+        # Batch generation
+        embeddings = self.embedding_service.batch_generate([text1, text2, text3])
+```
+
+#### AI/ML Operations
+
+```python
+# In your module service
+from app.shared.ai_core import AICore
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.ai_core = AICore()
+    
+    def process_content(self, text: str):
+        # Generate summary
+        summary = self.ai_core.summarize(text)
+        
+        # Extract entities
+        entities = self.ai_core.extract_entities(text)
+        
+        # Zero-shot classification
+        labels = ["science", "technology", "business"]
+        scores = self.ai_core.classify_text(text, labels)
+```
+
+#### Caching
+
+```python
+# In your module service
+from app.shared.cache import CacheService
+
+class MyModuleService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.cache = CacheService()
+    
+    def get_expensive_data(self, key: str):
+        # Try cache first
+        cached = self.cache.get(f"mymodule:{key}")
+        if cached:
+            return cached
+        
+        # Compute if not cached
+        data = self._compute_expensive_operation(key)
+        
+        # Cache with TTL (seconds)
+        self.cache.set(f"mymodule:{key}", data, ttl=3600)
+        return data
+    
+    def invalidate_cache(self, pattern: str):
+        # Invalidate by pattern
+        self.cache.invalidate(f"mymodule:{pattern}*")
+```
+
+### Event-Driven Communication
+
+#### Emitting Events
+
+```python
+# In your module service
+from app.shared.event_bus import event_bus
+
+class MyModuleService:
+    def create_item(self, db: Session, data: ItemCreate):
+        # Create item
+        item = MyItem(**data.dict())
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        
+        # Emit event for other modules
+        event_bus.emit("mymodule.item_created", {
+            "item_id": str(item.id),
+            "name": item.name,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return item
+```
+
+#### Subscribing to Events
+
+```python
+# In your module handlers.py
+from app.shared.event_bus import event_bus
+from app.shared.database import SessionLocal
+from .service import MyModuleService
+
+def handle_resource_created(payload: dict):
+    """Handle resource creation event."""
+    resource_id = payload.get("resource_id")
+    
+    # Create fresh database session
+    db = SessionLocal()
+    try:
+        service = MyModuleService(db)
+        service.process_new_resource(resource_id)
+    except Exception as e:
+        logger.error(f"Error handling resource.created: {e}", exc_info=True)
+    finally:
+        db.close()
+
+def register_handlers():
+    """Register all event handlers for this module."""
+    event_bus.subscribe("resource.created", handle_resource_created)
+    event_bus.subscribe("resource.updated", handle_resource_updated)
+```
+
+#### Event Handler Best Practices
+
+1. **Always create fresh database sessions** in handlers
+2. **Always close sessions** in finally block
+3. **Catch exceptions** - don't let one handler break others
+4. **Log errors** with full traceback
+5. **Keep handlers fast** (<100ms) - offload heavy work to Celery
+6. **Make handlers idempotent** - safe to run multiple times
+
+```python
+def handle_event(payload: dict):
+    """Example handler with best practices."""
+    from app.shared.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        # Process event
+        service = MyService(db)
+        service.process(payload)
+        
+        logger.info(f"Successfully processed event: {payload}")
+    except Exception as e:
+        logger.error(f"Error processing event: {e}", exc_info=True)
+        # Don't re-raise - let other handlers continue
+    finally:
+        db.close()
+```
+
 ## Adding New Features
 
 ### 1. Create Module (Vertical Slice)
@@ -91,6 +290,7 @@ touch app/modules/new_feature/service.py
 touch app/modules/new_feature/schema.py
 touch app/modules/new_feature/model.py
 touch app/modules/new_feature/handlers.py
+touch app/modules/new_feature/README.md
 ```
 
 ### 2. Define Model
@@ -135,21 +335,25 @@ class NewFeatureResponse(BaseModel):
 from sqlalchemy.orm import Session
 from .model import NewFeature
 from .schema import NewFeatureCreate
-from app.shared.event_bus import event_bus, Event
+from app.shared.event_bus import event_bus
 
-def create_feature(db: Session, data: NewFeatureCreate) -> NewFeature:
-    feature = NewFeature(**data.dict())
-    db.add(feature)
-    db.commit()
-    db.refresh(feature)
+class NewFeatureService:
+    def __init__(self, db: Session):
+        self.db = db
     
-    # Publish event
-    event_bus.publish(Event(
-        type="new_feature.created",
-        payload={"id": str(feature.id), "name": feature.name}
-    ))
-    
-    return feature
+    def create_feature(self, data: NewFeatureCreate) -> NewFeature:
+        feature = NewFeature(**data.dict())
+        self.db.add(feature)
+        self.db.commit()
+        self.db.refresh(feature)
+        
+        # Publish event
+        event_bus.emit("new_feature.created", {
+            "id": str(feature.id),
+            "name": feature.name
+        })
+        
+        return feature
 ```
 
 ### 5. Create Router
@@ -159,34 +363,104 @@ def create_feature(db: Session, data: NewFeatureCreate) -> NewFeature:
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.shared.database import get_db
-from . import service
+from .service import NewFeatureService
 from .schema import NewFeatureCreate, NewFeatureResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/new-features", tags=["new-features"])
 
 @router.post("/", response_model=NewFeatureResponse)
 def create(data: NewFeatureCreate, db: Session = Depends(get_db)):
-    return service.create_feature(db, data)
+    service = NewFeatureService(db)
+    return service.create_feature(data)
 ```
 
-### 6. Register Router
+### 6. Create Event Handlers
 
 ```python
-# app/main.py
-from app.modules.new_feature import router as new_feature_router
+# app/modules/new_feature/handlers.py
+from app.shared.event_bus import event_bus
+from app.shared.database import SessionLocal
+from .service import NewFeatureService
 
-app.include_router(
-    new_feature_router,
-    prefix="/new-features",
-    tags=["new-features"]
-)
+def handle_external_event(payload: dict):
+    """Handle events from other modules."""
+    db = SessionLocal()
+    try:
+        service = NewFeatureService(db)
+        service.process_event(payload)
+    except Exception as e:
+        logger.error(f"Error handling event: {e}", exc_info=True)
+    finally:
+        db.close()
+
+def register_handlers():
+    """Register all event handlers for this module."""
+    event_bus.subscribe("external.event", handle_external_event)
 ```
 
-### 7. Create Migration
+### 7. Create Public Interface
+
+```python
+# app/modules/new_feature/__init__.py
+"""New Feature Module - Public Interface"""
+
+__version__ = "1.0.0"
+__domain__ = "new_feature"
+
+from .router import router as new_feature_router
+from .service import NewFeatureService
+from .schema import NewFeatureCreate, NewFeatureResponse
+from .handlers import register_handlers
+
+__all__ = [
+    "new_feature_router",
+    "NewFeatureService",
+    "NewFeatureCreate",
+    "NewFeatureResponse",
+    "register_handlers",
+]
+```
+
+### 8. Register Module
+
+Add to `app/__init__.py`:
+
+```python
+modules = [
+    # Existing modules
+    ("collections", "backend.app.modules.collections", "collections_router"),
+    ("resources", "backend.app.modules.resources", "resources_router"),
+    ("search", "backend.app.modules.search", "search_router"),
+    
+    # New module
+    ("new_feature", "backend.app.modules.new_feature", "new_feature_router"),
+]
+```
+
+### 9. Create Migration
 
 ```bash
 alembic revision --autogenerate -m "Add new_features table"
 alembic upgrade head
+```
+
+### 10. Write Tests
+
+```python
+# app/modules/new_feature/tests/test_service.py
+import pytest
+from app.modules.new_feature.service import NewFeatureService
+from app.modules.new_feature.schema import NewFeatureCreate
+
+def test_create_feature(db_session):
+    service = NewFeatureService(db_session)
+    data = NewFeatureCreate(name="Test", description="Test description")
+    
+    feature = service.create_feature(data)
+    
+    assert feature.name == "Test"
+    assert feature.description == "Test description"
+    assert feature.id is not None
 ```
 
 ## Adding API Endpoints
@@ -196,7 +470,8 @@ alembic upgrade head
 ```python
 @router.get("/{item_id}", response_model=ItemResponse)
 def get_item(item_id: UUID, db: Session = Depends(get_db)):
-    item = service.get_item(db, item_id)
+    service = ItemService(db)
+    item = service.get_item(item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
@@ -207,7 +482,8 @@ def get_item(item_id: UUID, db: Session = Depends(get_db)):
 ```python
 @router.post("/", response_model=ItemResponse, status_code=201)
 def create_item(data: ItemCreate, db: Session = Depends(get_db)):
-    return service.create_item(db, data)
+    service = ItemService(db)
+    return service.create_item(data)
 ```
 
 ### PUT Endpoint
@@ -219,7 +495,8 @@ def update_item(
     data: ItemUpdate,
     db: Session = Depends(get_db)
 ):
-    item = service.update_item(db, item_id, data)
+    service = ItemService(db)
+    item = service.update_item(item_id, data)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
@@ -230,37 +507,10 @@ def update_item(
 ```python
 @router.delete("/{item_id}", status_code=204)
 def delete_item(item_id: UUID, db: Session = Depends(get_db)):
-    success = service.delete_item(db, item_id)
+    service = ItemService(db)
+    success = service.delete_item(item_id)
     if not success:
         raise HTTPException(status_code=404, detail="Item not found")
-```
-
-## Event Handling
-
-### Subscribe to Events
-
-```python
-# app/modules/new_feature/handlers.py
-from app.shared.event_bus import event_bus, Event
-
-def handle_resource_created(event: Event):
-    resource_id = event.payload["resource_id"]
-    # React to resource creation
-    pass
-
-def register_handlers():
-    event_bus.subscribe("resource.created", handle_resource_created)
-```
-
-### Publish Events
-
-```python
-from app.shared.event_bus import event_bus, Event
-
-event_bus.publish(Event(
-    type="new_feature.created",
-    payload={"id": str(feature.id)}
-))
 ```
 
 ## Debugging
@@ -279,6 +529,18 @@ import logging
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 ```
 
+### Event Bus Debugging
+
+Check event metrics:
+```bash
+curl http://localhost:8000/monitoring/events
+```
+
+View event history:
+```bash
+curl http://localhost:8000/monitoring/events/history
+```
+
 ### Interactive Debugging
 
 ```python
@@ -288,8 +550,77 @@ import pdb; pdb.set_trace()
 # Or use VS Code debugger with launch.json
 ```
 
+### Module Isolation Validation
+
+Check for circular dependencies:
+```bash
+python backend/scripts/check_module_isolation.py
+```
+
+This will detect:
+- Direct imports between modules
+- Circular dependencies
+- Violations of module boundaries
+
+## Common Patterns
+
+### Async Background Tasks
+
+For long-running operations, use Celery:
+
+```python
+# In your service
+from app.tasks.celery_tasks import process_heavy_task
+
+def trigger_processing(self, item_id: str):
+    # Queue task for background processing
+    process_heavy_task.delay(item_id)
+    return {"status": "queued"}
+```
+
+### Pagination
+
+```python
+from fastapi import Query
+
+@router.get("/items")
+def list_items(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    service = ItemService(db)
+    items = service.list_items(skip=skip, limit=limit)
+    total = service.count_items()
+    
+    return {
+        "items": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+```
+
+### Error Handling
+
+```python
+from fastapi import HTTPException
+
+def get_item(self, item_id: str):
+    item = self.db.query(Item).filter(Item.id == item_id).first()
+    if not item:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Item {item_id} not found"
+        )
+    return item
+```
+
 ## Related Documentation
 
 - [Setup Guide](setup.md) - Installation
 - [Testing Guide](testing.md) - Running tests
 - [Architecture](../architecture/) - System design
+- [Migration Guide](../MIGRATION_GUIDE.md) - Understanding the modular architecture
+- [Event System](../architecture/event-system.md) - Event-driven patterns
+

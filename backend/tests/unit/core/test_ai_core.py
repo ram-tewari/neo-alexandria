@@ -2,7 +2,7 @@
 
 from unittest.mock import patch, Mock
 
-from backend.app.services.ai_core import Summarizer, ZeroShotTagger, AICore
+from backend.app.shared.ai_core import Summarizer, ZeroShotTagger, AICore
 
 
 class TestSummarizer:

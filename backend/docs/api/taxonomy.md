@@ -330,8 +330,40 @@ Initiate ML model fine-tuning.
 }
 ```
 
+## Module Structure
+
+The Taxonomy module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.taxonomy`  
+**Router Prefix**: `/taxonomy`  
+**Version**: 1.0.0
+
+```python
+from app.modules.taxonomy import (
+    taxonomy_router,
+    TaxonomyService,
+    MLClassificationService,
+    ClassificationService,
+    TaxonomyNode,
+    ClassificationResult
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `resource.classified` - When a resource is classified
+- `taxonomy.node_created` - When a taxonomy node is added
+- `taxonomy.model_trained` - When the ML model is retrained
+
+**Subscribed Events:**
+- `resource.created` - Triggers automatic classification
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Quality API](quality.md) - Quality assessment
+- [Authority API](authority.md) - Subject authority
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors

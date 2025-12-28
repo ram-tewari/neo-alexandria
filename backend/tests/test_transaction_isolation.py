@@ -7,7 +7,6 @@ and SELECT FOR UPDATE row-level locking.
 """
 
 import pytest
-import asyncio
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import select
 

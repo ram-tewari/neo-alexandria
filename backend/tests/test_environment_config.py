@@ -1,7 +1,5 @@
 """Test environment-specific configuration for Phase 13."""
 
-import os
-import pytest
 from backend.app.config.settings import get_settings
 
 

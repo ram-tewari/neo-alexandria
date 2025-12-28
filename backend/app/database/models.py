@@ -20,17 +20,32 @@ Models include:
 - CollectionResource: Many-to-many association between collections and resources
 """
 
+import enum
 import uuid
 from datetime import datetime
 from typing import List
 
 from sqlalchemy import String, Text, DateTime, Float, func, JSON, Integer, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import TypeDecorator, CHAR
 
 from ..shared.base_model import Base, GUID
 
+
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+class ResourceStatus(str, enum.Enum):
+    """Resource ingestion status."""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+# ============================================================================
+# Resource Models
+# ============================================================================
 
 class Resource(Base):
     """Resource model implementing hybrid Dublin Core + custom metadata schema."""

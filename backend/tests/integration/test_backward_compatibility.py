@@ -152,7 +152,7 @@ def test_module_routers_registered(client):
     search_routes = [p for p in paths.keys() if p.startswith("/search")]
     assert len(search_routes) > 0, "Search routes should be registered"
     
-    print(f"\n✓ Module routers registered:")
+    print("\n✓ Module routers registered:")
     print(f"  Collections: {len(collections_routes)} routes")
     print(f"  Resources: {len(resources_routes)} routes")
     print(f"  Search: {len(search_routes)} routes")

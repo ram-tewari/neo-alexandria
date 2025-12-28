@@ -7,7 +7,7 @@ validation and business logic for recommendation scoring and ranking.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from . import (
     ValueObject,
     validate_non_empty,

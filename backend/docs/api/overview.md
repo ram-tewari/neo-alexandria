@@ -117,17 +117,34 @@ Common sort fields: `created_at`, `updated_at`, `quality_score`, `title`, `relev
 
 ## API Endpoints by Domain
 
-| Domain | Description | Documentation |
+Neo Alexandria 2.0 uses a modular architecture where each domain is implemented as a self-contained module. All modules follow consistent patterns for routing, services, and event handling.
+
+| Module | Description | Documentation |
 |--------|-------------|---------------|
-| Resources | Content management | [resources.md](resources.md) |
-| Search | Hybrid search, vectors | [search.md](search.md) |
-| Collections | Collection management | [collections.md](collections.md) |
-| Annotations | Active reading system | [annotations.md](annotations.md) |
-| Taxonomy | Classification & ML | [taxonomy.md](taxonomy.md) |
-| Graph | Knowledge graph & citations | [graph.md](graph.md) |
-| Recommendations | Personalized content | [recommendations.md](recommendations.md) |
-| Quality | Quality assessment | [quality.md](quality.md) |
-| Monitoring | Health & metrics | [monitoring.md](monitoring.md) |
+| Resources | Content management and ingestion | [resources.md](resources.md) |
+| Search | Hybrid search with vector and FTS | [search.md](search.md) |
+| Collections | Collection management and sharing | [collections.md](collections.md) |
+| Annotations | Active reading with highlights and notes | [annotations.md](annotations.md) |
+| Taxonomy | ML classification and taxonomy trees | [taxonomy.md](taxonomy.md) |
+| Graph | Knowledge graph, citations, and discovery | [graph.md](graph.md) |
+| Recommendations | Hybrid recommendation engine | [recommendations.md](recommendations.md) |
+| Quality | Multi-dimensional quality assessment | [quality.md](quality.md) |
+| Scholarly | Academic metadata extraction | [scholarly.md](scholarly.md) |
+| Authority | Subject authority and classification | [authority.md](authority.md) |
+| Curation | Content review and batch operations | [curation.md](curation.md) |
+| Monitoring | System health and metrics | [monitoring.md](monitoring.md) |
+
+### Module Architecture
+
+Each module is self-contained with:
+- **Router**: FastAPI endpoints at `/module-name/*`
+- **Service**: Business logic and data access
+- **Schema**: Pydantic models for validation
+- **Model**: SQLAlchemy database models
+- **Handlers**: Event subscribers and emitters
+- **README**: Module-specific documentation
+
+Modules communicate through an event bus, eliminating direct dependencies.
 
 ## Complete Endpoint Reference
 
@@ -192,8 +209,13 @@ Common sort fields: `created_at`, `updated_at`, `quality_score`, `title`, `relev
 ## SDKs and Libraries
 
 ### Python
+
 ```python
 import requests
+
+# Import from modules (new structure)
+from app.modules.resources.schema import ResourceCreate
+from app.modules.search.schema import SearchRequest
 
 # Ingest a resource
 response = requests.post(
@@ -210,9 +232,19 @@ response = requests.post(
         "limit": 10
     }
 )
+
+# Create a collection
+response = requests.post(
+    "http://127.0.0.1:8000/collections",
+    json={
+        "name": "ML Papers",
+        "description": "Machine learning research papers"
+    }
+)
 ```
 
 ### JavaScript
+
 ```javascript
 // Ingest a resource
 const response = await fetch('http://127.0.0.1:8000/resources', {
@@ -231,6 +263,39 @@ const searchResponse = await fetch('http://127.0.0.1:8000/search', {
     limit: 10
   })
 });
+
+// Create a collection
+const collectionResponse = await fetch('http://127.0.0.1:8000/collections', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'ML Papers',
+    description: 'Machine learning research papers'
+  })
+});
+```
+
+### Module Imports (Backend Development)
+
+When developing backend features, import from modules:
+
+```python
+# Import from modules
+from app.modules.resources import ResourceService, ResourceCreate
+from app.modules.search import SearchService, SearchRequest
+from app.modules.collections import CollectionService, CollectionCreate
+from app.modules.annotations import AnnotationService, AnnotationCreate
+from app.modules.taxonomy import TaxonomyService, ClassificationResult
+from app.modules.graph import GraphService, CitationService
+from app.modules.recommendations import RecommendationService
+from app.modules.quality import QualityService, QualityDimensions
+
+# Import from shared kernel
+from app.shared.embeddings import EmbeddingService
+from app.shared.ai_core import AICore
+from app.shared.cache import CacheService
+from app.shared.database import get_db
+from app.shared.event_bus import event_bus
 ```
 
 ## Interactive API Documentation

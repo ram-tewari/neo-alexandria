@@ -4,7 +4,6 @@ Tests for database utility functions.
 This module tests the optimized database operations provided by db_utils.py.
 """
 
-import pytest
 from backend.tests.db_utils import (
     batch_insert,
     bulk_delete,

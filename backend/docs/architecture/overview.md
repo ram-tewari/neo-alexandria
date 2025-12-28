@@ -2,7 +2,7 @@
 
 High-level system architecture for Neo Alexandria 2.0.
 
-> **Last Updated**: Phase 13.5 - Vertical Slice Refactoring
+> **Last Updated**: Phase 14 - Complete Vertical Slice Refactor
 
 ## Table of Contents
 
@@ -19,55 +19,164 @@ High-level system architecture for Neo Alexandria 2.0.
 
 ## Modular Architecture Overview
 
-### High-Level Modular Structure (Phase 13.5)
+### High-Level Modular Structure (Phase 14 - Complete)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    NEO ALEXANDRIA 2.0 - MODULAR ARCHITECTURE            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                      FastAPI Application                         │   │
-│  │                         (main.py)                                │   │
-│  └────────────────────────────┬─────────────────────────────────────┘   │
-│                               │                                         │
-│                               │ registers routers & handlers            │
-│                               │                                         │
-│       ┌───────────────────────┼───────────────────────┐                 │
-│       │                       │                       │                 │
-│       ▼                       ▼                       ▼                 │
-│  ┌──────────┐          ┌──────────┐          ┌──────────┐              │
-│  │Resources │          │Collections│         │  Search  │              │
-│  │  Module  │          │  Module  │          │  Module  │              │
-│  └────┬─────┘          └────┬─────┘          └────┬─────┘              │
-│       │                     │                     │                     │
-│       │                     │                     │                     │
-│       │    ┌────────────────┴────────────────┐    │                     │
-│       │    │                                 │    │                     │
-│       │    ▼                                 ▼    │                     │
-│       │  ┌─────────────────────────────────────┐  │                     │
-│       │  │       Shared Kernel                 │  │                     │
-│       │  │  ┌──────────┐  ┌──────────────┐     │  │                     │
-│       └─►│  │ Database │  │  Event Bus   │     │◄─┘                     │
-│          │  │ (Base,   │  │ (Pub/Sub)    │     │                        │
-│          │  │Session)  │  │              │     │                        │
-│          │  └──────────┘  └──────────────┘     │                        │
-│          │  ┌──────────────────────────────┐   │                        │
-│          │  │      Base Model (GUID)       │   │                        │
-│          │  └──────────────────────────────┘   │                        │
-│          └─────────────────────────────────────┘                        │
-│                                                                         │
-│  Event-Driven Communication:                                            │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  Resources ──[resource.created]──► Collections                   │   │
-│  │  Resources ──[resource.updated]──► Collections                   │   │
-│  │  Resources ──[resource.deleted]──► Collections                   │   │
-│  │  Collections ─[collection.updated]─► Resources (placeholder)     │   │
-│  │  Search ──────[search.executed]────► Analytics (future)          │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    NEO ALEXANDRIA 2.0 - COMPLETE MODULAR ARCHITECTURE                   │
+│                              (13 Vertical Slice Modules)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         FastAPI Application (main.py)                            │   │
+│  │                    Registers all module routers & event handlers                 │   │
+│  └────────────────────────────────────┬─────────────────────────────────────────────┘   │
+│                                       │                                                 │
+│                                       │ Module Registration                             │
+│                                       │                                                 │
+│       ┌───────────────────────────────┼───────────────────────────────────┐             │
+│       │                               │                                   │             │
+│       ▼                               ▼                                   ▼             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+│  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│  │ Authority│     │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘     │
+│       │             │             │             │             │             │           │
+│       │             │             │             │             │             │           │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│  │Monitoring│     │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │  │  Module  │     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘     │
+│       │             │             │             │             │             │           │
+│       │             │             │             │             │             │           │
+│       │    ┌────────┴─────────────┴─────────────┴─────────────┴─────────────┘           │
+│       │    │                                                                            │
+│       │    ▼                                                                            │
+│       │  ┌─────────────────────────────────────────────────────────────────┐            │
+│       │  │                      Shared Kernel                              │            │
+│       │  │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐               │            │
+│       └─►│  │ Database │  │  Event Bus   │  │  Base Model  │               │◄──────────┘|
+│          │  │ (Session)│  │  (Pub/Sub)   │  │   (GUID)     │               │            │
+│          │  └──────────┘  └──────────────┘  └──────────────┘               │            │
+│          │  ┌──────────────────────────────────────────────────────────┐   │            │
+│          │  │  Cross-Cutting Services:                                 │   │            │
+│          │  │  • EmbeddingService (dense & sparse embeddings)          │   │            │
+│          │  │  • AICore (summarization, entity extraction)             │   │            │
+│          │  │  • CacheService (Redis caching with TTL)                 │   │            │
+│          │  └──────────────────────────────────────────────────────────┘   │            │
+│          └─────────────────────────────────────────────────────────────────┘            │
+│                                                                                         │
+│  Event-Driven Communication (All Modules):                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │  Resources ──[resource.created]──► Scholarly, Quality, Taxonomy, Graph           │   │
+│  │  Resources ──[resource.updated]──► Collections, Quality, Search                  │   │
+│  │  Resources ──[resource.deleted]──► Collections, Annotations, Graph               │   │
+│  │  Quality ────[quality.outlier_detected]──► Curation                              │   │
+│  │  Annotations ─[annotation.created]──► Recommendations                            │   │
+│  │  Collections ─[collection.resource_added]──► Recommendations                     │   │
+│  │  Taxonomy ───[resource.classified]──► Monitoring                                 │   │
+│  │  Graph ──────[citation.extracted]──► Monitoring                                  │   │
+│  │  All Modules ──[*.events]──► Monitoring (metrics aggregation)                    │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Module Summary (13 Modules)
+
+| Module | Purpose | Key Events Emitted | Key Events Consumed |
+|--------|---------|-------------------|---------------------|
+| **Resources** | Resource CRUD operations | resource.created, resource.updated, resource.deleted | - |
+| **Collections** | Collection management | collection.created, collection.updated, collection.resource_added | resource.created, resource.updated, resource.deleted |
+| **Search** | Hybrid search (keyword + semantic + sparse) | search.executed | resource.created, resource.updated |
+| **Annotations** | Text highlights and notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
+| **Scholarly** | Academic metadata extraction | metadata.extracted, equations.parsed, tables.extracted | resource.created |
+| **Authority** | Subject authority and classification trees | - | - |
+| **Curation** | Content review and batch operations | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
+| **Quality** | Multi-dimensional quality assessment | quality.computed, quality.outlier_detected, quality.degradation_detected | resource.created, resource.updated |
+| **Taxonomy** | ML classification and taxonomy management | resource.classified, taxonomy.node_created, taxonomy.model_trained | resource.created |
+| **Graph** | Knowledge graph, citations, discovery | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
+| **Recommendations** | Hybrid recommendation engine | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |
+| **Monitoring** | System health and metrics aggregation | - | All events (for metrics) |
+
+### Phase 14: Complete Vertical Slice Refactor
+
+Phase 14 completes the modular architecture transformation by migrating all remaining domains from the traditional layered structure to self-contained vertical slice modules.
+
+**Migration Summary:**
+- **Phase 13.5**: Extracted 3 modules (Resources, Collections, Search) - 20% of codebase
+- **Phase 14**: Extracted 10 additional modules - 80% of codebase
+- **Result**: 13 total modules with complete event-driven communication
+
+**New Modules Added in Phase 14:**
+
+1. **Annotations Module** - Text highlights and notes with semantic search
+   - Migrated from: `routers/annotations.py`, `services/annotation_service.py`
+   - Event handlers: Cascade delete on `resource.deleted`
+   - Public interface: `AnnotationService`, annotation schemas
+
+2. **Scholarly Module** - Academic metadata extraction (equations, tables, citations)
+   - Migrated from: `routers/scholarly.py`, `services/metadata_extractor.py`
+   - Event handlers: Extract metadata on `resource.created`
+   - Public interface: `MetadataExtractor`, scholarly schemas
+
+3. **Authority Module** - Subject authority and classification trees
+   - Migrated from: `routers/authority.py`, `services/authority_service.py`
+   - No event handlers (read-only service)
+   - Public interface: `AuthorityService`, authority schemas
+
+4. **Curation Module** - Content review and batch operations
+   - Migrated from: `routers/curation.py`, `services/curation_service.py`
+   - Event handlers: Add to review queue on `quality.outlier_detected`
+   - Public interface: `CurationService`, curation schemas
+
+5. **Quality Module** - Multi-dimensional quality assessment
+   - Migrated from: `routers/quality.py`, `services/quality_service.py`, `services/summarization_evaluator.py`
+   - Event handlers: Compute quality on `resource.created` and `resource.updated`
+   - Public interface: `QualityService`, `SummarizationEvaluator`, quality schemas
+
+6. **Taxonomy Module** - ML classification and taxonomy management
+   - Migrated from: `routers/taxonomy.py`, `routers/classification.py`, `services/taxonomy_service.py`, `services/ml_classification_service.py`, `services/classification_service.py`
+   - Event handlers: Auto-classify on `resource.created`
+   - Public interface: `TaxonomyService`, `MLClassificationService`, taxonomy schemas
+
+7. **Graph Module** - Knowledge graph, citations, and discovery
+   - Migrated from: `routers/graph.py`, `routers/citations.py`, `routers/discovery.py`, 5 graph services
+   - Event handlers: Extract citations on `resource.created`, remove from graph on `resource.deleted`
+   - Public interface: `GraphService`, `CitationService`, `LBDService`, graph schemas
+
+8. **Recommendations Module** - Hybrid recommendation engine (collaborative + content-based + graph-based)
+   - Migrated from: `routers/recommendation.py`, `routers/recommendations.py`, 6 recommendation services
+   - Event handlers: Update user profile on `annotation.created` and `collection.resource_added`
+   - Public interface: `RecommendationService`, strategy classes, `UserProfileService`, recommendation schemas
+
+9. **Monitoring Module** - System health and metrics aggregation
+   - Migrated from: `routers/monitoring.py`, monitoring services
+   - Event handlers: Aggregate metrics from all event types
+   - Public interface: `MonitoringService`, monitoring schemas
+
+10. **Shared Kernel Enhancements** - Cross-cutting services moved to shared kernel
+    - `EmbeddingService` - Dense and sparse embedding generation
+    - `AICore` - Summarization, entity extraction, classification
+    - `CacheService` - Redis caching with TTL and pattern-based invalidation
+
+**Architecture Benefits:**
+
+- **High Cohesion**: Related code stays together within each module
+- **Low Coupling**: Modules communicate only via events, no direct imports
+- **Independent Testing**: Each module can be tested in isolation
+- **Clear Boundaries**: Explicit public interfaces via `__init__.py`
+- **Event-Driven**: Asynchronous, decoupled communication
+- **Scalability**: Modules can be extracted to microservices if needed
+- **Maintainability**: Changes to one module don't affect others
+
+**Legacy Cleanup:**
+
+Phase 14 also removed all legacy layered structure directories:
+- ❌ Deleted `app/routers/` (all routers moved to modules)
+- ❌ Deleted `app/services/` (all services moved to modules or shared kernel)
+- ❌ Deleted `app/schemas/` (all schemas moved to modules)
+- ✅ Cleaned `app/database/models.py` (only shared models remain: Resource, User, ResourceStatus)
 
 ---
 
@@ -119,45 +228,45 @@ Each module follows a consistent structure:
 │  app/modules/{module_name}/                                             │
 │  │                                                                      │
 │  ├── __init__.py          # Public interface & exports                  │
-│  │   • router                                                          │
-│  │   • service functions                                               │
-│  │   • schemas                                                         │
-│  │   • models                                                          │
-│  │   • module metadata (__version__, __domain__)                       │
+│  │   • router                                                           │
+│  │   • service functions                                                │
+│  │   • schemas                                                          │
+│  │   • models                                                           │
+│  │   • module metadata (__version__, __domain__)                        │
 │  │                                                                      │
-│  ├── router.py            # FastAPI endpoints                          │
-│  │   • HTTP request/response handling                                  │
-│  │   • Input validation                                                │
-│  │   • Calls service layer                                             │
+│  ├── router.py            # FastAPI endpoints                           │
+│  │   • HTTP request/response handling                                   │
+│  │   • Input validation                                                 │
+│  │   • Calls service layer                                              │
 │  │                                                                      │
-│  ├── service.py           # Business logic                             │
-│  │   • Core domain operations                                          │
-│  │   • Orchestration                                                   │
-│  │   • Event emission                                                  │
+│  ├── service.py           # Business logic                              │
+│  │   • Core domain operations                                           │
+│  │   • Orchestration                                                    │
+│  │   • Event emission                                                   │
 │  │                                                                      │
-│  ├── schema.py            # Pydantic models                            │
-│  │   • Request/response validation                                     │
-│  │   • Data serialization                                              │
+│  ├── schema.py            # Pydantic models                             │
+│  │   • Request/response validation                                      │
+│  │   • Data serialization                                               │
 │  │                                                                      │
-│  ├── model.py             # SQLAlchemy models                          │
-│  │   • Database entities                                               │
-│  │   • String-based relationships (avoid circular imports)             │
+│  ├── model.py             # SQLAlchemy models                           │
+│  │   • Database entities                                                │
+│  │   • String-based relationships (avoid circular imports)              │
 │  │                                                                      │
-│  ├── handlers.py          # Event handlers                             │
-│  │   • Subscribe to events from other modules                          │
-│  │   • React to system events                                          │
+│  ├── handlers.py          # Event handlers                              │
+│  │   • Subscribe to events from other modules                           │
+│  │   • React to system events                                           │
 │  │                                                                      │
-│  ├── README.md            # Module documentation                       │
+│  ├── README.md            # Module documentation                        │
 │  │                                                                      │
-│  └── tests/               # Module-specific tests                      │
-│      └── __init__.py                                                   │
+│  └── tests/               # Module-specific tests                       │
+│      └── __init__.py                                                    │
 │                                                                         │
 │  Benefits:                                                              │
-│  • High cohesion - related code stays together                         │
-│  • Low coupling - modules communicate via events                       │
-│  • Independent deployment - modules can be extracted to microservices  │
-│  • Clear boundaries - explicit public interfaces                       │
-│  • Easy testing - isolated module tests                                │
+│  • High cohesion - related code stays together                          │
+│  • Low coupling - modules communicate via events                        │
+│  • Independent deployment - modules can be extracted to microservices   │
+│  • Clear boundaries - explicit public interfaces                        │
+│  • Easy testing - isolated module tests                                 │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```

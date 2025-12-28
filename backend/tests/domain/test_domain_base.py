@@ -7,11 +7,9 @@ functionality of the base domain object classes.
 
 import pytest
 from dataclasses import dataclass
-from typing import Optional
 import json
 
 from backend.app.domain.base import (
-    BaseDomainObject,
     ValueObject,
     DomainEntity,
     validate_range,

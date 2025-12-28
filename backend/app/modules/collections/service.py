@@ -27,9 +27,8 @@ import numpy as np
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-# NOTE: During migration phase, import from old database.models to avoid conflicts
-# from .model import Collection, CollectionResource
-from ...database.models import Collection, CollectionResource
+# Import from local model file to avoid circular dependencies
+from .model import Collection, CollectionResource
 from .schema import CollectionUpdate
 
 
@@ -133,7 +132,7 @@ class CollectionService:
     
     def list_collections(
         self,
-        owner_id: str,
+        owner_id: Optional[str] = None,
         parent_id: Optional[uuid.UUID] = None,
         include_public: bool = False,
         limit: int = 50,
@@ -143,7 +142,7 @@ class CollectionService:
         List collections for a user.
         
         Args:
-            owner_id: Owner user ID
+            owner_id: Owner user ID (optional - if None, returns only public collections)
             parent_id: Optional parent ID to filter by (None = root collections)
             include_public: Whether to include public collections from other users
             limit: Maximum number of results
@@ -156,7 +155,10 @@ class CollectionService:
         query = self.db.query(Collection)
         
         # Filter by ownership and visibility
-        if include_public:
+        if owner_id is None:
+            # No owner specified - only return public collections
+            query = query.filter(Collection.visibility == "public")
+        elif include_public:
             query = query.filter(
                 or_(
                     Collection.owner_id == owner_id,
@@ -183,7 +185,7 @@ class CollectionService:
     def update_collection(
         self,
         collection_id: uuid.UUID,
-        owner_id: str,
+        owner_id: Optional[str],
         updates: CollectionUpdate
     ) -> Collection:
         """
@@ -191,7 +193,7 @@ class CollectionService:
         
         Args:
             collection_id: Collection UUID
-            owner_id: Owner user ID for access control
+            owner_id: Owner user ID for access control (optional - if None, only checks collection exists)
             updates: CollectionUpdate schema with fields to update
             
         Returns:
@@ -200,10 +202,13 @@ class CollectionService:
         Raises:
             ValueError: If collection not found or access denied
         """
-        collection = self.db.query(Collection).filter(
-            Collection.id == collection_id,
-            Collection.owner_id == owner_id
-        ).first()
+        query = self.db.query(Collection).filter(Collection.id == collection_id)
+        
+        # Apply owner filter only if owner_id is provided
+        if owner_id is not None:
+            query = query.filter(Collection.owner_id == owner_id)
+        
+        collection = query.first()
         
         if not collection:
             raise ValueError("Collection not found or access denied")
@@ -238,22 +243,25 @@ class CollectionService:
     def delete_collection(
         self,
         collection_id: uuid.UUID,
-        owner_id: str
+        owner_id: Optional[str] = None
     ) -> None:
         """
         Delete a collection.
         
         Args:
             collection_id: Collection UUID
-            owner_id: Owner user ID for access control
+            owner_id: Owner user ID for access control (optional - if None, only checks collection exists)
             
         Raises:
             ValueError: If collection not found or access denied
         """
-        collection = self.db.query(Collection).filter(
-            Collection.id == collection_id,
-            Collection.owner_id == owner_id
-        ).first()
+        query = self.db.query(Collection).filter(Collection.id == collection_id)
+        
+        # Apply owner filter only if owner_id is provided
+        if owner_id is not None:
+            query = query.filter(Collection.owner_id == owner_id)
+        
+        collection = query.first()
         
         if not collection:
             raise ValueError("Collection not found or access denied")
@@ -266,7 +274,7 @@ class CollectionService:
         self,
         collection_id: uuid.UUID,
         resource_ids: List[uuid.UUID],
-        owner_id: str
+        owner_id: Optional[str] = None
     ) -> int:
         """
         Add resources to a collection.
@@ -274,7 +282,7 @@ class CollectionService:
         Args:
             collection_id: Collection UUID
             resource_ids: List of resource UUIDs to add
-            owner_id: Owner user ID for access control
+            owner_id: Owner user ID for access control (optional - if None, only checks collection exists)
             
         Returns:
             Number of resources added (excludes duplicates)
@@ -282,10 +290,13 @@ class CollectionService:
         Raises:
             ValueError: If collection not found or access denied
         """
-        collection = self.db.query(Collection).filter(
-            Collection.id == collection_id,
-            Collection.owner_id == owner_id
-        ).first()
+        query = self.db.query(Collection).filter(Collection.id == collection_id)
+        
+        # Apply owner filter only if owner_id is provided
+        if owner_id is not None:
+            query = query.filter(Collection.owner_id == owner_id)
+        
+        collection = query.first()
         
         if not collection:
             raise ValueError("Collection not found or access denied")
@@ -375,7 +386,7 @@ class CollectionService:
         self,
         collection_id: uuid.UUID,
         resource_ids: List[uuid.UUID],
-        owner_id: str
+        owner_id: Optional[str] = None
     ) -> int:
         """
         Remove resources from a collection.
@@ -383,7 +394,7 @@ class CollectionService:
         Args:
             collection_id: Collection UUID
             resource_ids: List of resource UUIDs to remove
-            owner_id: Owner user ID for access control
+            owner_id: Owner user ID for access control (optional - if None, only checks collection exists)
             
         Returns:
             Number of resources removed
@@ -391,10 +402,13 @@ class CollectionService:
         Raises:
             ValueError: If collection not found or access denied
         """
-        collection = self.db.query(Collection).filter(
-            Collection.id == collection_id,
-            Collection.owner_id == owner_id
-        ).first()
+        query = self.db.query(Collection).filter(Collection.id == collection_id)
+        
+        # Apply owner filter only if owner_id is provided
+        if owner_id is not None:
+            query = query.filter(Collection.owner_id == owner_id)
+        
+        collection = query.first()
         
         if not collection:
             raise ValueError("Collection not found or access denied")

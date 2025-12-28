@@ -21,8 +21,41 @@ Schemas:
 import uuid
 from datetime import datetime
 from typing import List, Optional, Literal, Union, Any
+from enum import Enum
 
 from pydantic import BaseModel, Field, ConfigDict, field_serializer
+
+
+# Query parameter schemas
+class PageParams(BaseModel):
+    """Pagination parameters."""
+    page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+    per_page: int = Field(default=25, ge=1, le=100, description="Items per page")
+
+
+class SortOrder(str, Enum):
+    """Sort order enum."""
+    ASC = "asc"
+    DESC = "desc"
+
+
+class SortParams(BaseModel):
+    """Sorting parameters."""
+    sort_by: Optional[str] = Field(default=None, description="Field to sort by")
+    sort_order: SortOrder = Field(default=SortOrder.DESC, description="Sort order")
+
+
+class ResourceFilters(BaseModel):
+    """Resource filtering parameters."""
+    type: Optional[str] = Field(default=None, description="Filter by resource type")
+    format: Optional[str] = Field(default=None, description="Filter by format")
+    language: Optional[str] = Field(default=None, description="Filter by language")
+    read_status: Optional[Literal["unread", "in_progress", "completed", "archived"]] = Field(
+        default=None, description="Filter by read status"
+    )
+    min_quality: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Minimum quality score")
+    subject: Optional[str] = Field(default=None, description="Filter by subject")
+    creator: Optional[str] = Field(default=None, description="Filter by creator")
 
 
 class ResourceBase(BaseModel):

@@ -6,7 +6,6 @@ Tests event bus performance with 1000+ events/second.
 
 import pytest
 import time
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from backend.app.shared.event_bus import EventBus
 
@@ -124,7 +123,7 @@ def test_event_bus_error_isolation(event_bus):
     metrics = event_bus.get_metrics()
     assert metrics["handler_errors"] == num_events
     
-    print(f"\nError isolation test passed")
+    print("\nError isolation test passed")
     print(f"Successful calls: {successful_calls['count']}")
     print(f"Handler errors: {metrics['handler_errors']}")
 
@@ -152,6 +151,6 @@ def test_event_bus_metrics_tracking(event_bus):
     assert metrics["events_delivered"] == num_events
     assert metrics["handler_errors"] == 0
     
-    print(f"\nMetrics tracking test passed")
+    print("\nMetrics tracking test passed")
     print(f"Events emitted: {metrics['events_emitted']}")
     print(f"Events delivered: {metrics['events_delivered']}")

@@ -6,7 +6,6 @@ import pytest
 import time
 from datetime import datetime
 from sqlalchemy.orm import Session
-from backend.app.services.quality_service import QualityService
 from backend.app.services.summarization_evaluator import SummarizationEvaluator
 from backend.app.database.models import Resource
 

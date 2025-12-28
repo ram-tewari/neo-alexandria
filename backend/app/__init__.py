@@ -29,18 +29,6 @@ from .shared.database import Base, sync_engine, get_pool_usage_warning, init_dat
 from .config.settings import get_settings
 # Ensure models are imported so Base.metadata is populated for create_all
 from .database import models  # noqa: F401
-from .routers.curation import router as curation_router
-from .routers.classification import router as classification_router
-from .routers.authority import router as authority_router
-from .routers.graph import router as graph_router
-from .routers.recommendation import router as recommendation_router
-from .routers.recommendations import router as recommendations_router
-from .routers.citations import router as citations_router
-from .routers.annotations import router as annotations_router
-from .routers.taxonomy import router as taxonomy_router
-from .routers.quality import router as quality_router
-from .routers.discovery import router as discovery_router
-from .routers.monitoring import router as monitoring_router
 from .monitoring import setup_monitoring
 
 logger = logging.getLogger(__name__)
@@ -62,17 +50,31 @@ def register_all_modules(app: FastAPI) -> None:
     """
     logger.info("Starting module registration...")
     
-    # Define modules to register: (module_name, import_path, router_name)
-    modules: List[Tuple[str, str, str]] = [
-        ("collections", "app.modules.collections", "collections_router"),
-        ("resources", "app.modules.resources", "resources_router"),
-        ("search", "app.modules.search", "search_router"),
+    # Define modules to register: (module_name, import_path, router_names)
+    # router_names can be a single string or a list of strings for modules with multiple routers
+    # Phase 13.5 modules (completed)
+    modules: List[Tuple[str, str, List[str]]] = [
+        ("collections", "app.modules.collections", ["collections_router"]),
+        ("resources", "app.modules.resources", ["resources_router"]),
+        ("search", "app.modules.search", ["search_router"]),
+        # Phase 14 modules (completed)
+        ("annotations", "app.modules.annotations", ["annotations_router"]),
+        ("scholarly", "app.modules.scholarly", ["scholarly_router"]),
+        ("authority", "app.modules.authority", ["authority_router"]),
+        ("curation", "app.modules.curation", ["curation_router"]),
+        ("quality", "app.modules.quality", ["quality_router"]),
+        ("taxonomy", "app.modules.taxonomy", ["taxonomy_router"]),
+        ("graph", "app.modules.graph", ["graph_router", "citations_router", "discovery_router"]),
+        ("recommendations", "app.modules.recommendations", ["recommendations_router"]),
+        ("monitoring", "app.modules.monitoring", ["monitoring_router"]),
     ]
     
     registered_count = 0
     failed_count = 0
+    handler_count = 0
+    total_routers = 0
     
-    for module_name, module_path, router_name in modules:
+    for module_name, module_path, router_names in modules:
         try:
             logger.debug(f"Loading module: {module_name}")
             
@@ -80,18 +82,28 @@ def register_all_modules(app: FastAPI) -> None:
             import importlib
             module = importlib.import_module(module_path)
             
-            # Register the router if it exists
-            if hasattr(module, router_name):
-                router = getattr(module, router_name)
-                app.include_router(router)
-                logger.info(f"✓ Registered router for module: {module_name}")
-            else:
-                logger.warning(f"Module {module_name} does not expose {router_name}")
+            # Get module version if available
+            module_version = getattr(module, "__version__", "unknown")
+            
+            # Register all routers for this module
+            routers_registered = 0
+            for router_name in router_names:
+                if hasattr(module, router_name):
+                    router = getattr(module, router_name)
+                    app.include_router(router)
+                    routers_registered += 1
+                    total_routers += 1
+                else:
+                    logger.warning(f"Module {module_name} does not expose {router_name}")
+            
+            if routers_registered > 0:
+                logger.info(f"✓ Registered {routers_registered} router(s) for module: {module_name} (v{module_version})")
             
             # Register event handlers if the module has them
             if hasattr(module, "register_handlers"):
                 register_handlers_func: Callable[[], None] = getattr(module, "register_handlers")
                 register_handlers_func()
+                handler_count += 1
                 logger.info(f"✓ Registered event handlers for module: {module_name}")
             else:
                 logger.debug(f"Module {module_name} has no event handlers to register")
@@ -112,7 +124,9 @@ def register_all_modules(app: FastAPI) -> None:
             # Continue with other modules even if one fails
     
     logger.info(
-        f"Module registration complete: {registered_count} succeeded, {failed_count} failed"
+        f"Module registration complete: {registered_count} modules registered, "
+        f"{total_routers} routers registered, "
+        f"{handler_count} event handler sets registered, {failed_count} failed"
     )
 
 
@@ -134,7 +148,7 @@ async def lifespan(app: FastAPI):
     
     # Initialize Redis cache connection
     try:
-        from .cache.redis_cache import cache
+        from .shared.cache import cache
         if cache.ping():
             logger.info("Redis cache connection established successfully")
         else:
@@ -223,24 +237,10 @@ def create_app() -> FastAPI:
     except Exception:
         pass
     
-    # Register modular vertical slices (Collections, Resources, Search)
+    # Register modular vertical slices (Collections, Resources, Search, and Phase 14 modules)
     # This must happen before processing requests to ensure event handlers are registered
     logger.info("Registering modular vertical slices...")
     register_all_modules(app)
-    
-    # Register remaining layered routers (to be migrated in future phases)
-    app.include_router(curation_router)
-    app.include_router(authority_router)
-    app.include_router(classification_router)
-    app.include_router(graph_router)
-    app.include_router(recommendation_router)
-    app.include_router(recommendations_router)
-    app.include_router(citations_router)
-    app.include_router(annotations_router)
-    app.include_router(taxonomy_router)
-    app.include_router(quality_router)
-    app.include_router(discovery_router)
-    app.include_router(monitoring_router)
     
     # Set up performance monitoring
     setup_monitoring(app)

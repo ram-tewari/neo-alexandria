@@ -399,8 +399,41 @@ recency_score = max(0.0, 1.0 - (age_years / 20))
 timeliness = recency_score + (0.1 if ingested_within_30_days else 0)
 ```
 
+## Module Structure
+
+The Quality module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.quality`  
+**Router Prefix**: `/quality`  
+**Version**: 1.0.0
+
+```python
+from app.modules.quality import (
+    quality_router,
+    QualityService,
+    SummarizationEvaluator,
+    QualityDimensions,
+    QualityResponse,
+    OutlierReport
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `quality.computed` - When quality scores are calculated
+- `quality.outlier_detected` - When anomalous quality is found
+- `quality.degradation_detected` - When quality degrades over time
+
+**Subscribed Events:**
+- `resource.created` - Triggers initial quality computation
+- `resource.updated` - Recomputes quality on changes
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Taxonomy API](taxonomy.md) - Classification
+- [Curation API](curation.md) - Content review
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors

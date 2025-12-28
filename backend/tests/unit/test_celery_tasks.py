@@ -10,8 +10,7 @@ Tests verify:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock, call
-from celery.exceptions import Retry
+from unittest.mock import patch, MagicMock
 
 from app.tasks.celery_tasks import (
     regenerate_embedding_task,
@@ -21,7 +20,6 @@ from app.tasks.celery_tasks import (
     classify_resource_task,
     invalidate_cache_task,
     refresh_recommendation_profile_task,
-    normalize_author_names_task,
     batch_process_resources_task,
     monitor_quality_degradation_task,
     detect_quality_outliers_task,
@@ -361,7 +359,6 @@ class TestDatabaseTaskSessionManagement:
         
         # Execute any DatabaseTask-based task
         from app.tasks.celery_tasks import DatabaseTask
-        from app.tasks.celery_app import celery_app
         
         @celery_app.task(bind=True, base=DatabaseTask, name='test_session_success')
         def test_task(self, db=None):
@@ -381,7 +378,6 @@ class TestDatabaseTaskSessionManagement:
         mock_session_local.return_value = mock_db
         
         from app.tasks.celery_tasks import DatabaseTask
-        from app.tasks.celery_app import celery_app
         
         @celery_app.task(bind=True, base=DatabaseTask, name='test_session_error')
         def failing_task(self, db=None):
@@ -402,7 +398,6 @@ class TestDatabaseTaskSessionManagement:
         mock_session_local.side_effect = [mock_db1, mock_db2]
         
         from app.tasks.celery_tasks import DatabaseTask
-        from app.tasks.celery_app import celery_app
         
         @celery_app.task(bind=True, base=DatabaseTask, name='test_multiple_sessions')
         def test_task(self, db=None):

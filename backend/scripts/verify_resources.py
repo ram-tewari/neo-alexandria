@@ -1,6 +1,5 @@
 import httpx
 import asyncio
-import json
 
 API_URL = "http://localhost:8000/resources"
 

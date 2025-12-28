@@ -2,55 +2,76 @@
 
 Module architecture, service layer, and class hierarchies for Neo Alexandria 2.0.
 
-## Modular Architecture Overview (Phase 13.5)
+> **Last Updated**: Phase 14 - Complete Vertical Slice Refactor
+
+## Modular Architecture Overview (Phase 14 - Complete)
+
+Phase 14 completes the vertical slice architecture transformation with 13 self-contained modules.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    NEO ALEXANDRIA 2.0 - MODULAR ARCHITECTURE            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │                      FastAPI Application                         │   │
-│  │                         (main.py)                                │   │
-│  └────────────────────────────┬─────────────────────────────────────┘   │
-│                               │                                         │
-│                               │ registers routers & handlers            │
-│                               │                                         │
-│       ┌───────────────────────┼───────────────────────┐                 │
-│       │                       │                       │                 │
-│       ▼                       ▼                       ▼                 │
-│  ┌──────────┐          ┌──────────┐          ┌──────────┐              │
-│  │Resources │          │Collections│         │  Search  │              │
-│  │  Module  │          │  Module  │          │  Module  │              │
-│  └────┬─────┘          └────┬─────┘          └────┬─────┘              │
-│       │                     │                     │                     │
-│       │                     │                     │                     │
-│       │    ┌────────────────┴────────────────┐    │                     │
-│       │    │                                 │    │                     │
-│       │    ▼                                 ▼    │                     │
-│       │  ┌─────────────────────────────────────┐  │                     │
-│       │  │       Shared Kernel                 │  │                     │
-│       │  │  ┌──────────┐  ┌──────────────┐     │  │                     │
-│       └─►│  │ Database │  │  Event Bus   │     │◄─┘                     │
-│          │  │ (Base,   │  │ (Pub/Sub)    │     │                        │
-│          │  │Session)  │  │              │     │                        │
-│          │  └──────────┘  └──────────────┘     │                        │
-│          │  ┌──────────────────────────────┐   │                        │
-│          │  │      Base Model (GUID)       │   │                        │
-│          │  └──────────────────────────────┘   │                        │
-│          └─────────────────────────────────────┘                        │
-│                                                                         │
-│  Event-Driven Communication:                                            │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  Resources ──[resource.created]──► Collections                   │   │
-│  │  Resources ──[resource.updated]──► Collections                   │   │
-│  │  Resources ──[resource.deleted]──► Collections                   │   │
-│  │  Collections ─[collection.updated]─► Resources (placeholder)     │   │
-│  │  Search ──────[search.executed]────► Analytics (future)          │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    NEO ALEXANDRIA 2.0 - COMPLETE MODULAR ARCHITECTURE                   │
+│                              (13 Vertical Slice Modules)                                │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         FastAPI Application (main.py)                            │   │
+│  │                    Registers all module routers & event handlers                 │   │
+│  └────────────────────────────────────┬─────────────────────────────────────────────┘   │
+│                                       │                                                 │
+│                                       │ Module Registration                             │
+│                                       │                                                 │
+│       ┌───────────────────────────────┼───────────────────────────────────┐             │
+│       │                               │                                   │             │
+│       ▼                               ▼                                   ▼             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│  │ Authority│   │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │   │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
+│       │             │             │             │             │             │          │
+│       │             │             │             │             │             │          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│  │Monitoring│   │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │  │  Module  │   │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
+│       │             │             │             │             │             │          │
+│       │             │             │             │             │             │          │
+│       │    ┌────────┴─────────────┴─────────────┴─────────────┴────────────┘          │
+│       │    │                                                                           │
+│       │    ▼                                                                           │
+│       │  ┌─────────────────────────────────────────────────────────────────┐           │
+│       │  │                      Shared Kernel                              │           │
+│       │  │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐              │           │
+│       └─►│  │ Database │  │  Event Bus   │  │  Base Model  │              │◄──────────┘
+│          │  │ (Session)│  │  (Pub/Sub)   │  │   (GUID)     │              │           │
+│          │  └──────────┘  └──────────────┘  └──────────────┘              │           │
+│          │  ┌──────────────────────────────────────────────────────────┐   │           │
+│          │  │  Cross-Cutting Services:                                 │   │           │
+│          │  │  • EmbeddingService (dense & sparse embeddings)          │   │           │
+│          │  │  • AICore (summarization, entity extraction)             │   │           │
+│          │  │  • CacheService (Redis caching with TTL)                 │   │           │
+│          │  └──────────────────────────────────────────────────────────┘   │           │
+│          └─────────────────────────────────────────────────────────────────┘           │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### All 13 Modules
+
+| # | Module | Domain | Events Emitted | Events Consumed |
+|---|--------|--------|----------------|-----------------|
+| 1 | **Resources** | Content management | resource.created, resource.updated, resource.deleted | - |
+| 2 | **Collections** | Organization | collection.created, collection.updated, collection.resource_added | resource.deleted |
+| 3 | **Search** | Discovery | search.executed | resource.created, resource.updated |
+| 4 | **Annotations** | Highlights & notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
+| 5 | **Scholarly** | Academic metadata | metadata.extracted, equations.parsed, tables.extracted | resource.created |
+| 6 | **Authority** | Subject authority | - | - |
+| 7 | **Curation** | Content review | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
+| 8 | **Quality** | Quality assessment | quality.computed, quality.outlier_detected | resource.created, resource.updated |
+| 9 | **Taxonomy** | ML classification | resource.classified, taxonomy.node_created | resource.created |
+| 10 | **Graph** | Knowledge graph | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
+| 11 | **Recommendations** | Personalization | recommendation.generated, user.profile_updated | annotation.created, collection.resource_added |
+| 12 | **Monitoring** | System health | - | All events (metrics) |
 
 ---
 

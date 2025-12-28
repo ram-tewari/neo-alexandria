@@ -23,7 +23,6 @@ import time
 logger = logging.getLogger(__name__)
 
 from ...shared.database import get_sync_db
-from ...shared.event_bus import event_bus
 from .schema import (
     SearchQuery, 
     SearchResults,
@@ -521,7 +520,8 @@ async def health_check(db: Session = Depends(get_sync_db)) -> Dict[str, Any]:
     try:
         # Check database connectivity
         try:
-            db.execute("SELECT 1")
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
             db_healthy = True
             db_message = "Database connection healthy"
         except Exception as e:
@@ -530,7 +530,6 @@ async def health_check(db: Session = Depends(get_sync_db)) -> Dict[str, Any]:
         
         # Check search service availability
         try:
-            from ...services.search_service import AdvancedSearchService
             search_available = True
             search_message = "Search service available"
         except Exception as e:

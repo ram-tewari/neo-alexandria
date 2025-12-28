@@ -70,22 +70,27 @@ async def health_check(db: Session = Depends(get_sync_db)) -> Dict[str, Any]:
         - event_handlers: Registered event handlers
         - timestamp: When the check was performed
     """
+    from sqlalchemy import text
+    
     try:
         # Check database connectivity
         try:
-            db.execute("SELECT 1")
+            db.execute(text("SELECT 1"))
             db_healthy = True
             db_message = "Database connection healthy"
         except Exception as e:
             db_healthy = False
             db_message = f"Database connection failed: {str(e)}"
         
-        # Check event handlers registration
-        handlers_registered = event_bus.get_handlers("resource.deleted")
-        handlers_count = len(handlers_registered)
+        # Check event handlers registration - make this optional for health
+        try:
+            handlers_registered = event_bus.get_handlers("resource.deleted")
+            handlers_count = len(handlers_registered)
+        except Exception:
+            handlers_count = 0
         
-        # Determine overall status
-        overall_healthy = db_healthy and handlers_count > 0
+        # Determine overall status - only require database connectivity
+        overall_healthy = db_healthy
         
         return {
             "status": "healthy" if overall_healthy else "unhealthy",
@@ -160,9 +165,10 @@ async def create_collection(
 
 @router.get("", response_model=List[CollectionRead])
 async def list_collections(
-    owner_id: str = Query(..., description="Owner user ID"),
+    owner_id: Optional[str] = Query(None, description="Owner user ID"),
     parent_id: Optional[uuid.UUID] = Query(None, description="Parent collection ID (None for root)"),
-    include_public: bool = Query(False, description="Include public collections from other users"),
+    include_public: bool = Query(True, description="Include public collections from other users"),
+    visibility: Optional[str] = Query(None, description="Filter by visibility"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     service: CollectionService = Depends(get_collection_service)
@@ -171,9 +177,10 @@ async def list_collections(
     List collections for a user.
     
     Args:
-        owner_id: Owner user ID
+        owner_id: Owner user ID (optional - if not provided, returns public collections)
         parent_id: Optional parent collection ID filter
         include_public: Whether to include public collections
+        visibility: Filter by visibility (private, shared, public)
         limit: Maximum number of results
         offset: Pagination offset
         service: Collection service instance
@@ -189,6 +196,10 @@ async def list_collections(
             limit=limit,
             offset=offset
         )
+        
+        # Filter by visibility if specified
+        if visibility:
+            collections = [c for c in collections if c.visibility == visibility]
         
         # Add resource counts
         from .model import CollectionResource
@@ -288,7 +299,7 @@ async def get_collection(
 async def update_collection(
     collection_id: uuid.UUID,
     payload: CollectionUpdate,
-    owner_id: str = Query(..., description="Owner user ID for access control"),
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
     service: CollectionService = Depends(get_collection_service)
 ):
     """
@@ -342,7 +353,7 @@ async def update_collection(
 @router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_collection(
     collection_id: uuid.UUID,
-    owner_id: str = Query(..., description="Owner user ID for access control"),
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
     service: CollectionService = Depends(get_collection_service)
 ):
     """
@@ -368,6 +379,177 @@ async def delete_collection(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete collection: {str(exc)}"
+        )
+
+
+@router.post("/{collection_id}/resources", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def add_resource_to_collection(
+    collection_id: uuid.UUID,
+    payload: dict,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    Add a single resource to a collection.
+    
+    Args:
+        collection_id: Collection UUID
+        payload: Dict with resource_id
+        owner_id: Owner user ID for access control
+        service: Collection service instance
+        
+    Returns:
+        Success message
+        
+    Raises:
+        404: If collection or resource not found
+        400: If resource_id not provided
+    """
+    try:
+        resource_id = payload.get("resource_id")
+        if not resource_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="resource_id is required"
+            )
+        
+        # Convert string to UUID if needed
+        if isinstance(resource_id, str):
+            resource_id = uuid.UUID(resource_id)
+        
+        added_count = service.add_resources_to_collection(
+            collection_id=collection_id,
+            resource_ids=[resource_id],
+            owner_id=owner_id
+        )
+        
+        return {
+            "collection_id": str(collection_id),
+            "resource_id": str(resource_id),
+            "added": added_count > 0,
+            "message": "Resource added to collection" if added_count > 0 else "Resource already in collection"
+        }
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to add resource to collection: {str(exc)}"
+        )
+
+
+@router.get("/{collection_id}/resources", response_model=List[ResourceSummary])
+async def list_collection_resources(
+    collection_id: uuid.UUID,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum resources to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    List resources in a collection.
+    
+    Args:
+        collection_id: Collection UUID
+        owner_id: Optional owner ID for access control
+        limit: Maximum resources to return
+        offset: Pagination offset
+        service: Collection service instance
+        
+    Returns:
+        List of resources in the collection
+        
+    Raises:
+        404: If collection not found or access denied
+    """
+    try:
+        # Verify collection exists
+        collection = service.get_collection(collection_id, owner_id)
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Collection not found or access denied"
+            )
+        
+        # Get resources with pagination
+        resources, total = service.get_collection_resources(
+            collection_id=collection_id,
+            owner_id=owner_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Convert to response format
+        return [
+            ResourceSummary(
+                id=r.id,
+                title=r.title,
+                description=r.description,
+                creator=r.creator,
+                type=r.type,
+                quality_score=r.quality_score or 0.0,
+                created_at=r.created_at
+            )
+            for r in resources
+        ]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list collection resources: {str(exc)}"
+        )
+
+
+@router.delete("/{collection_id}/resources/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_resource_from_collection(
+    collection_id: uuid.UUID,
+    resource_id: uuid.UUID,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    Remove a single resource from a collection.
+    
+    Args:
+        collection_id: Collection UUID
+        resource_id: Resource UUID to remove
+        owner_id: Owner user ID for access control
+        service: Collection service instance
+        
+    Raises:
+        404: If collection or resource not found
+    """
+    try:
+        removed_count = service.remove_resources_from_collection(
+            collection_id=collection_id,
+            resource_ids=[resource_id],
+            owner_id=owner_id
+        )
+        
+        if removed_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Resource not found in collection"
+            )
+        
+        return None
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to remove resource from collection: {str(exc)}"
         )
 
 

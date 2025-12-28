@@ -50,7 +50,7 @@ def test_event_emission_latency(event_bus):
     p50_latency = latencies[int(len(latencies) * 0.50)]
     p99_latency = latencies[int(len(latencies) * 0.99)]
     
-    print(f"\nEvent emission latency:")
+    print("\nEvent emission latency:")
     print(f"  P50: {p50_latency:.3f}ms")
     print(f"  P95: {p95_latency:.3f}ms")
     print(f"  P99: {p99_latency:.3f}ms")
@@ -66,10 +66,8 @@ def test_application_startup_time():
     start = time.time()
     
     # Import shared kernel
-    from backend.app.shared import database, event_bus, base_model
     
     # Import modules
-    from backend.app.modules import collections, resources, search
     
     # Initialize database (in-memory for testing)
     from backend.app.shared.database import init_database
@@ -119,7 +117,7 @@ def test_memory_usage_baseline():
     
     # For this test, we just report the memory usage
     # In production, compare against baseline from layered architecture
-    print(f"\nMemory usage:")
+    print("\nMemory usage:")
     print(f"  Initial: {initial_memory:.2f} MB")
     print(f"  Final: {final_memory:.2f} MB")
     print(f"  Increase: {memory_increase:.2f} MB ({memory_increase_pct:.1f}%)")
@@ -155,7 +153,7 @@ def test_event_bus_throughput_benchmark(event_bus):
     # Verify all events delivered
     assert call_count["count"] == num_events
     
-    print(f"\nEvent bus throughput benchmark:")
+    print("\nEvent bus throughput benchmark:")
     print(f"  Events: {num_events}")
     print(f"  Duration: {duration:.3f}s")
     print(f"  Throughput: {throughput:.0f} events/second")

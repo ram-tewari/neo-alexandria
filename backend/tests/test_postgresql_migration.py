@@ -5,8 +5,6 @@ This test verifies that the migration correctly detects database types
 and applies appropriate transformations.
 """
 import pytest
-from unittest.mock import Mock, MagicMock
-from alembic import op
 
 
 def test_migration_imports():
@@ -34,7 +32,6 @@ def test_migration_imports():
 
 def test_migration_detects_sqlite():
     """Test that migration skips PostgreSQL-specific changes for SQLite."""
-    import sys
     import os
     import importlib.util
     
@@ -58,7 +55,6 @@ def test_migration_detects_sqlite():
 
 def test_migration_structure():
     """Test that the migration has the correct structure."""
-    import sys
     import os
     import importlib.util
     
@@ -86,7 +82,6 @@ def test_migration_structure():
 
 def test_migration_has_proper_documentation():
     """Test that the migration has proper documentation."""
-    import sys
     import os
     import importlib.util
     

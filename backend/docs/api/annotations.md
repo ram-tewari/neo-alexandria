@@ -259,8 +259,38 @@ Annotations with notes get automatic semantic embeddings:
 }
 ```
 
+## Module Structure
+
+The Annotations module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.annotations`  
+**Router Prefix**: `/annotations`  
+**Version**: 1.0.0
+
+```python
+from app.modules.annotations import (
+    annotations_router,
+    AnnotationService,
+    AnnotationCreate,
+    AnnotationUpdate,
+    AnnotationResponse
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `annotation.created` - When a new annotation is created
+- `annotation.updated` - When an annotation is modified
+- `annotation.deleted` - When an annotation is removed
+
+**Subscribed Events:**
+- `resource.deleted` - Cascade deletes annotations for deleted resources
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Search API](search.md) - Search capabilities
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors

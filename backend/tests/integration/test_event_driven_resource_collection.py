@@ -10,15 +10,12 @@ This test verifies that:
 
 import pytest
 import logging
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from sqlalchemy.orm import Session
 
-from backend.app.services.resource_service import (
-    create_pending_resource,
-    delete_resource
-)
-from backend.app.shared.event_bus import event_bus
-from backend.app.events.event_types import SystemEvent
+from app.modules.resources.service import ResourceService
+from app.shared.event_bus import event_bus
+from app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +23,11 @@ logger = logging.getLogger(__name__)
 def test_resource_deletion_emits_event(db_session: Session):
     """Test that deleting a resource emits resource.deleted event."""
     # Create a test resource
-    resource = create_pending_resource(
-        db_session,
-        {"url": "https://example.com/test-event", "title": "Test Event Resource"}
+    resource_service = ResourceService(db_session)
+    resource = resource_service.create_resource(
+        url="https://example.com/test-event",
+        title="Test Event Resource",
+        content_type="text/html"
     )
     resource_id = str(resource.id)
     
@@ -45,7 +44,7 @@ def test_resource_deletion_emits_event(db_session: Session):
     # Patch event_bus.emit to capture events
     with patch.object(event_bus, 'emit', side_effect=capture_event):
         # Delete the resource
-        delete_resource(db_session, resource_id)
+        resource_service.delete_resource(resource_id)
     
     # Verify resource.deleted event was emitted
     resource_deleted_events = [
@@ -63,8 +62,9 @@ def test_resource_deletion_emits_event(db_session: Session):
 
 def test_collections_handler_receives_event(db_session: Session):
     """Test that Collections handler receives and processes resource.deleted event."""
-    from backend.app.modules.collections.handlers import handle_resource_deleted
-    from backend.app.modules.collections.service import CollectionService
+    from app.modules.collections.handlers import handle_resource_deleted
+    from app.modules.collections.service import CollectionService
+    from app.modules.resources.service import ResourceService
     
     # Create a collection
     collection_service = CollectionService(db_session)
@@ -75,9 +75,11 @@ def test_collections_handler_receives_event(db_session: Session):
     )
     
     # Create a resource
-    resource = create_pending_resource(
-        db_session,
-        {"url": "https://example.com/test-handler", "title": "Test Handler Resource"}
+    resource_service = ResourceService(db_session)
+    resource = resource_service.create_resource(
+        url="https://example.com/test-handler",
+        title="Test Handler Resource",
+        content_type="text/html"
     )
     resource_id = str(resource.id)
     
@@ -93,7 +95,7 @@ def test_collections_handler_receives_event(db_session: Session):
     original_embedding = collection.embedding
     
     # Delete the resource (this will emit the event)
-    delete_resource(db_session, resource_id)
+    resource_service.delete_resource(resource_id)
     
     # Manually trigger the handler (simulating event bus notification)
     payload = {
@@ -105,7 +107,7 @@ def test_collections_handler_receives_event(db_session: Session):
     def mock_get_sync_db():
         yield db_session
     
-    with patch('backend.app.modules.collections.handlers.get_sync_db', mock_get_sync_db):
+    with patch('app.modules.collections.handlers.get_sync_db', mock_get_sync_db):
         handle_resource_deleted(payload)
     
     # Verify collection was updated
@@ -126,16 +128,14 @@ def test_no_circular_imports():
     """Test that there are no circular import dependencies between modules."""
     import inspect
     
-    # Import resource_service module
-    from backend.app.services import resource_service
+    # Import resource module
+    from app.modules.resources import service as resource_service
     
     # Get source code
     resource_source = inspect.getsource(resource_service)
     
     # Verify ResourceService doesn't import CollectionService
-    assert "from backend.app.services.collection_service" not in resource_source, \
-        "ResourceService should not import CollectionService"
-    assert "from backend.app.modules.collections" not in resource_source, \
+    assert "from app.modules.collections" not in resource_source, \
         "ResourceService should not import from collections module"
     
     # Check for any direct references to CollectionService (excluding comments)
@@ -151,7 +151,7 @@ def test_no_circular_imports():
 
 def test_event_handler_registration():
     """Test that event handlers can be registered with the event bus."""
-    from backend.app.modules.collections.handlers import register_handlers
+    from app.modules.collections.handlers import register_handlers
     
     # Clear any existing subscriptions for testing
     if "resource.deleted" in event_bus._subscribers:
@@ -171,8 +171,9 @@ def test_event_handler_registration():
 
 def test_end_to_end_event_flow(db_session: Session):
     """Test complete end-to-end event flow from resource deletion to collection update."""
-    from backend.app.modules.collections.service import CollectionService
-    from backend.app.modules.collections.handlers import register_handlers
+    from app.modules.collections.service import CollectionService
+    from app.modules.collections.handlers import register_handlers
+    from app.modules.resources.service import ResourceService
     
     # Register event handlers
     register_handlers()
@@ -186,13 +187,16 @@ def test_end_to_end_event_flow(db_session: Session):
     )
     
     # Create two resources
-    resource1 = create_pending_resource(
-        db_session,
-        {"url": "https://example.com/e2e-1", "title": "E2E Resource 1"}
+    resource_service = ResourceService(db_session)
+    resource1 = resource_service.create_resource(
+        url="https://example.com/e2e-1",
+        title="E2E Resource 1",
+        content_type="text/html"
     )
-    resource2 = create_pending_resource(
-        db_session,
-        {"url": "https://example.com/e2e-2", "title": "E2E Resource 2"}
+    resource2 = resource_service.create_resource(
+        url="https://example.com/e2e-2",
+        title="E2E Resource 2",
+        content_type="text/html"
     )
     
     # Add both resources to collection
@@ -211,9 +215,9 @@ def test_end_to_end_event_flow(db_session: Session):
     def mock_get_sync_db():
         yield db_session
     
-    with patch('backend.app.modules.collections.handlers.get_sync_db', mock_get_sync_db):
+    with patch('app.modules.collections.handlers.get_sync_db', mock_get_sync_db):
         # Delete one resource (this should trigger the event and update the collection)
-        delete_resource(db_session, str(resource1.id))
+        resource_service.delete_resource(str(resource1.id))
     
     # Verify collection still exists and has been updated
     db_session.refresh(collection)

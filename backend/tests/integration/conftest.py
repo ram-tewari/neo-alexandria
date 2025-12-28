@@ -8,7 +8,6 @@ ensuring tests work with the same domain objects used in production code.
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
-from typing import List, Dict
 from unittest.mock import Mock
 
 from backend.app.domain.quality import QualityScore

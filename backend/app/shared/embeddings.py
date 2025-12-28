@@ -1,0 +1,334 @@
+"""
+Neo Alexandria 2.0 - Shared Embedding Service
+
+This module provides embedding generation and caching functionality for the shared kernel.
+It consolidates embedding operations used across all domain modules.
+
+Features:
+- Vector embedding generation using sentence-transformers
+- Sparse embedding generation for hybrid search
+- Batch embedding generation for efficiency
+- Redis caching with intelligent TTL
+- Thread-safe model loading
+
+Related files:
+- app/shared/ai_core.py: Core AI operations
+- app/shared/cache.py: Caching layer
+- app/shared/database.py: Database access
+"""
+
+import logging
+import threading
+from typing import List, Optional
+from sqlalchemy.orm import Session
+
+# Lazy import sentence-transformers for embeddings
+try:
+    from sentence_transformers import SentenceTransformer  # type: ignore
+except Exception:  # pragma: no cover
+    SentenceTransformer = None  # type: ignore
+
+logger = logging.getLogger(__name__)
+
+
+class EmbeddingGenerator:
+    """Abstraction around a sentence embedding model.
+    
+    Uses sentence-transformers with a configurable model for generating
+    vector embeddings from text content.
+    """
+    
+    def __init__(self, model_name: str = "nomic-ai/nomic-embed-text-v1") -> None:
+        self.model_name = model_name
+        self._model = None
+        self._model_lock = threading.Lock()
+    
+    def _ensure_loaded(self):
+        """Lazy load the embedding model in a thread-safe manner."""
+        if self._model is None:
+            with self._model_lock:
+                if self._model is None:  # Double-check locking pattern
+                    if SentenceTransformer is None:  # pragma: no cover
+                        # Leave model as None; caller will use fallback
+                        return
+                    try:
+                        self._model = SentenceTransformer(self.model_name)
+                    except Exception:  # pragma: no cover - model loading failures
+                        # Model loading failed, leave as None for fallback
+                        pass
+    
+    def generate_embedding(self, text: str) -> List[float]:
+        """Generate vector embedding for the given text.
+        
+        Args:
+            text: Input text to embed
+            
+        Returns:
+            List of float values representing the embedding vector.
+            Returns empty list if model unavailable or text is empty.
+        """
+        text = (text or "").strip()
+        if not text:
+            return []
+            
+        self._ensure_loaded()
+        if self._model is not None:
+            try:
+                # sentence-transformers returns numpy array, convert to list
+                embedding = self._model.encode(text, convert_to_tensor=False)
+                return embedding.tolist()
+            except Exception:  # pragma: no cover - encoding failures
+                pass
+        
+        # Fallback: return empty embedding
+        return []
+
+
+def create_composite_text(resource) -> str:
+    """Create composite text from resource for embedding generation.
+    
+    Combines title, description, and subjects into a single text string
+    optimized for semantic embedding.
+    
+    Args:
+        resource: Resource object with title, description, and subject fields
+        
+    Returns:
+        Composite text string suitable for embedding generation
+    """
+    parts = []
+    
+    # Add title (most important)
+    if hasattr(resource, 'title') and resource.title:
+        parts.append(resource.title)
+    
+    # Add description 
+    if hasattr(resource, 'description') and resource.description:
+        parts.append(resource.description)
+    
+    # Add subjects as keywords
+    if hasattr(resource, 'subject') and resource.subject:
+        try:
+            if isinstance(resource.subject, list):
+                subjects_text = " ".join(resource.subject)
+                if subjects_text.strip():
+                    parts.append(f"Keywords: {subjects_text}")
+        except Exception:
+            pass
+    
+    return " ".join(parts)
+
+
+class EmbeddingService:
+    """Service for generating and caching embeddings.
+    
+    This service provides embedding generation with Redis caching
+    to reduce expensive computation. Embeddings are cached with a 1-hour TTL.
+    
+    Attributes:
+        db: Database session
+        embedding_generator: EmbeddingGenerator instance
+        cache: Optional cache service for caching embeddings
+    """
+    
+    def __init__(
+        self, 
+        db: Optional[Session] = None,
+        embedding_generator: Optional[EmbeddingGenerator] = None,
+        cache_service=None
+    ):
+        """Initialize embedding service.
+        
+        Args:
+            db: Optional database session
+            embedding_generator: Optional EmbeddingGenerator instance
+            cache_service: Optional cache service for caching
+        """
+        self.db = db
+        self.embedding_generator = embedding_generator or EmbeddingGenerator()
+        self.cache = cache_service
+    
+    def generate_embedding(self, text: str) -> List[float]:
+        """Generate embedding for text.
+        
+        Args:
+            text: Input text to embed
+            
+        Returns:
+            Embedding vector as list of floats
+        """
+        return self.embedding_generator.generate_embedding(text)
+    
+    def generate_sparse_embedding(self, text: str) -> dict:
+        """Generate sparse embedding for hybrid search.
+        
+        This is a placeholder for sparse embedding generation.
+        In a full implementation, this would use BM25 or similar.
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            Dictionary with sparse embedding data
+        """
+        # Placeholder implementation
+        # In production, this would use BM25 or similar sparse representation
+        words = text.lower().split()
+        word_freq = {}
+        for word in words:
+            word_freq[word] = word_freq.get(word, 0) + 1
+        return word_freq
+    
+    def batch_generate(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for multiple texts efficiently.
+        
+        Args:
+            texts: List of input texts
+            
+        Returns:
+            List of embedding vectors
+        """
+        return [self.generate_embedding(text) for text in texts]
+    
+    def get_embedding(self, resource_id: str) -> Optional[List[float]]:
+        """Get embedding for a resource with caching.
+        
+        First checks cache, then generates if not found and stores in cache.
+        
+        Args:
+            resource_id: Resource ID
+            
+        Returns:
+            Embedding vector as list of floats, or None if generation fails
+        """
+        if not self.db:
+            logger.warning("No database session provided to EmbeddingService")
+            return None
+            
+        cache_key = f"embedding:{resource_id}"
+        
+        # Try cache first if available
+        if self.cache:
+            cached_embedding = self.cache.get(cache_key)
+            if cached_embedding is not None:
+                logger.debug(f"Cache hit for embedding: {resource_id}")
+                return cached_embedding
+            logger.debug(f"Cache miss for embedding: {resource_id}")
+        
+        # Cache miss - generate embedding
+        embedding = self._generate_embedding_from_db(resource_id)
+        
+        # Store in cache if generation succeeded and cache available
+        if embedding and self.cache:
+            self.cache.set(cache_key, embedding, ttl=3600)  # 1 hour TTL
+        
+        return embedding
+    
+    def _generate_embedding_from_db(self, resource_id: str) -> Optional[List[float]]:
+        """Generate embedding for a resource from database.
+        
+        Args:
+            resource_id: Resource ID
+            
+        Returns:
+            Embedding vector as list of floats, or None if generation fails
+        """
+        if not self.db:
+            return None
+            
+        try:
+            # Import here to avoid circular dependency
+            from ..database import models as db_models
+            
+            # Fetch resource from database
+            resource = self.db.query(db_models.Resource).filter(
+                db_models.Resource.id == resource_id
+            ).first()
+            
+            if not resource:
+                logger.warning(f"Resource not found: {resource_id}")
+                return None
+            
+            # Create composite text from resource
+            composite_text = create_composite_text(resource)
+            
+            if not composite_text.strip():
+                logger.warning(f"Empty composite text for resource: {resource_id}")
+                return None
+            
+            # Generate embedding
+            embedding = self.generate_embedding(composite_text)
+            
+            if not embedding:
+                logger.warning(f"Embedding generation failed for resource: {resource_id}")
+                return None
+            
+            logger.info(f"Generated embedding for resource: {resource_id}")
+            return embedding
+            
+        except Exception as e:
+            logger.error(f"Error generating embedding for resource {resource_id}: {e}")
+            return None
+    
+    def generate_and_store_embedding(self, resource_id: str) -> bool:
+        """Generate embedding and store in both database and cache.
+        
+        This method is used by background tasks to regenerate embeddings
+        after resource updates.
+        
+        Args:
+            resource_id: Resource ID
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.db:
+            logger.warning("No database session provided to EmbeddingService")
+            return False
+            
+        try:
+            # Import here to avoid circular dependency
+            from ..database import models as db_models
+            
+            # Generate embedding
+            embedding = self._generate_embedding_from_db(resource_id)
+            
+            if not embedding:
+                return False
+            
+            # Store in database
+            resource = self.db.query(db_models.Resource).filter(
+                db_models.Resource.id == resource_id
+            ).first()
+            
+            if not resource:
+                logger.warning(f"Resource not found: {resource_id}")
+                return False
+            
+            resource.embedding = embedding
+            self.db.commit()
+            
+            # Store in cache if available
+            if self.cache:
+                cache_key = f"embedding:{resource_id}"
+                self.cache.set(cache_key, embedding, ttl=3600)  # 1 hour TTL
+            
+            logger.info(f"Stored embedding for resource: {resource_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error storing embedding for resource {resource_id}: {e}")
+            if self.db:
+                self.db.rollback()
+            return False
+    
+    def invalidate_cache(self, resource_id: str):
+        """Invalidate cached embedding for a resource.
+        
+        Args:
+            resource_id: Resource ID
+        """
+        if self.cache:
+            cache_key = f"embedding:{resource_id}"
+            self.cache.delete(cache_key)
+            logger.info(f"Invalidated embedding cache for resource: {resource_id}")

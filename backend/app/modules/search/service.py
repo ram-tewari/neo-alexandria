@@ -20,17 +20,13 @@ Architecture:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from sqlalchemy.orm import Session
 
 # Import existing services (delayed import for AdvancedSearchService to avoid circular dependency)
 from ...services.hybrid_search_methods import (
-    fallback_search,
-    pure_vector_search,
-    fusion_search,
-    cosine_similarity,
-    normalize_scores
+    pure_vector_search
 )
 from ...services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
 from ...services.reranking_service import RerankingService

@@ -2,11 +2,13 @@
 
 Installation and environment configuration for Neo Alexandria 2.0.
 
+> **Phase 14 Complete**: Neo Alexandria now uses a fully modular vertical slice architecture with 13 self-contained modules, enhanced shared kernel, and event-driven communication.
+
 ## Prerequisites
 
 - Python 3.8 or higher
 - Git
-- SQLite (included with Python)
+- SQLite (included with Python) or PostgreSQL 15+ (recommended for production)
 - 4GB RAM minimum (8GB recommended for AI features)
 - 2GB free disk space
 
@@ -99,11 +101,97 @@ Expected response:
 {"status": "healthy", "timestamp": "2024-01-01T10:00:00Z"}
 ```
 
+### Verify Module Registration
+
+Check that all 13 modules are loaded:
+
+```bash
+curl http://127.0.0.1:8000/monitoring/health
+```
+
+Expected response should show all modules as healthy:
+```json
+{
+  "status": "healthy",
+  "modules": {
+    "collections": "healthy",
+    "resources": "healthy",
+    "search": "healthy",
+    "annotations": "healthy",
+    "scholarly": "healthy",
+    "authority": "healthy",
+    "curation": "healthy",
+    "quality": "healthy",
+    "taxonomy": "healthy",
+    "graph": "healthy",
+    "recommendations": "healthy",
+    "monitoring": "healthy"
+  },
+  "event_bus": {
+    "status": "healthy",
+    "handlers_registered": 12
+  }
+}
+```
+
 ### Run Tests
 
 ```bash
 pytest tests/ -v
 ```
+
+## Understanding the Module Structure
+
+### Phase 14 Architecture
+
+Neo Alexandria uses a **vertical slice architecture** where each feature is a self-contained module:
+
+```
+app/
+├── shared/              # Shared kernel (no business logic)
+│   ├── database.py      # Database session management
+│   ├── event_bus.py     # Event-driven communication
+│   ├── base_model.py    # Base SQLAlchemy model
+│   ├── embeddings.py    # Embedding generation service
+│   ├── ai_core.py       # AI/ML operations
+│   └── cache.py         # Caching service
+└── modules/             # 13 self-contained modules
+    ├── collections/     # Collection management
+    ├── resources/       # Resource CRUD
+    ├── search/          # Hybrid search
+    ├── annotations/     # Text highlights & notes
+    ├── scholarly/       # Academic metadata
+    ├── authority/       # Subject authority
+    ├── curation/        # Content review
+    ├── quality/         # Quality assessment
+    ├── taxonomy/        # ML classification
+    ├── graph/           # Knowledge graph & citations
+    ├── recommendations/ # Hybrid recommendations
+    └── monitoring/      # System health & metrics
+```
+
+### Module Standard Structure
+
+Each module follows this pattern:
+
+```
+modules/{module_name}/
+├── __init__.py      # Public interface
+├── router.py        # API endpoints
+├── service.py       # Business logic
+├── schema.py        # Pydantic models
+├── model.py         # SQLAlchemy models (optional)
+├── handlers.py      # Event handlers
+└── README.md        # Documentation
+```
+
+### Key Principles
+
+1. **Module Independence**: Modules don't import from each other
+2. **Event-Driven**: Modules communicate via events, not direct calls
+3. **Shared Kernel**: Common infrastructure (database, events, cache) in `shared/`
+4. **Standard Structure**: All modules follow the same layout
+5. **Self-Contained**: Each module has its own router, service, schema, and tests
 
 ## Database Configuration
 
@@ -187,6 +275,24 @@ source .venv/bin/activate
 which python  # Should show .venv path
 ```
 
+### Module Not Loading
+
+Check application startup logs for module registration:
+```bash
+uvicorn app.main:app --reload --log-level debug
+```
+
+Look for lines like:
+```
+INFO: ✓ Registered router for module: collections
+INFO: ✓ Registered event handlers for module: collections
+```
+
+If a module fails to load, check:
+1. Module `__init__.py` exists and exports correctly
+2. No circular imports within the module
+3. All dependencies are installed
+
 ### Database Locked (SQLite)
 
 SQLite doesn't support concurrent writes. For development:
@@ -204,14 +310,30 @@ AI models require significant RAM. Options:
 - Use smaller models
 - Disable AI features for testing
 
+### Event Handlers Not Firing
+
+Check that event handlers are registered during startup:
+```bash
+curl http://127.0.0.1:8000/monitoring/events
+```
+
+Should show events being emitted and delivered. If not:
+1. Verify `register_handlers()` is called in module `__init__.py`
+2. Check application logs for handler registration errors
+3. Ensure event types match exactly (case-sensitive)
+
 ## Next Steps
 
-- [Development Workflows](workflows.md) - Common tasks
+- [Development Workflows](workflows.md) - Common tasks and module development patterns
 - [Testing Guide](testing.md) - Running tests
+- [Migration Guide](../MIGRATION_GUIDE.md) - Understanding the modular architecture
 - [API Documentation](../api/) - API reference
 
 ## Related Documentation
 
-- [Architecture Overview](../architecture/overview.md)
+- [Architecture Overview](../architecture/overview.md) - System architecture and module structure
+- [Module Documentation](../architecture/modules.md) - Complete module reference
+- [Event System](../architecture/event-system.md) - Event-driven communication patterns
 - [Database Configuration](../architecture/database.md)
 - [Troubleshooting](troubleshooting.md)
+

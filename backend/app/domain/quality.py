@@ -7,7 +7,7 @@ validation and business logic for multi-dimensional quality scoring.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from . import ValueObject, validate_range
 
 

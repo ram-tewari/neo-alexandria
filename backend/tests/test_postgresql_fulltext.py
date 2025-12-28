@@ -10,7 +10,7 @@ Run these tests with:
 """
 
 import pytest
-from sqlalchemy import text, func
+from sqlalchemy import text
 from datetime import datetime, timezone
 
 from backend.app.database.models import Resource

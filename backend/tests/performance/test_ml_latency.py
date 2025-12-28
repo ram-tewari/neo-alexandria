@@ -485,7 +485,7 @@ class TestMLLatency:
         
         # Import embedding service
         try:
-            from backend.app.services.ai_core import AICore
+            from backend.app.shared.ai_core import AICore
         except ImportError:
             pytest.skip("AICore service not available")
         

@@ -21,7 +21,6 @@ Phase 13.5 focused on:
 This verification ensures no endpoints were lost during the refactor.
 """
 
-import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
@@ -184,7 +183,7 @@ class EndpointVerifier:
     
     def print_results(self, results: Dict):
         """Print verification results"""
-        print(f"\n📊 STATISTICS:")
+        print("\n📊 STATISTICS:")
         print(f"   Total Phase 13 endpoints: {results['total_phase13']}")
         print(f"   Total Phase 13.5 module endpoints: {results['total_phase135_modules']}")
         print(f"   Endpoints that should be migrated: {results['should_be_migrated']}")

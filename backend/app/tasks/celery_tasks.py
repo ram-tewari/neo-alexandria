@@ -116,7 +116,7 @@ def regenerate_embedding_task(self, resource_id: str, db=None):
         logger.info(f"Regenerating embedding for resource {resource_id}")
         
         # Import here to avoid circular dependencies
-        from ..services.embedding_service import EmbeddingService
+        from ..shared.embeddings import EmbeddingService
         
         embedding_service = EmbeddingService(db)
         embedding_service.generate_and_store_embedding(resource_id)
@@ -305,7 +305,7 @@ def invalidate_cache_task(cache_keys: List[str]):
     try:
         logger.info(f"Invalidating {len(cache_keys)} cache keys/patterns")
         
-        from ..cache.redis_cache import cache
+        from ..shared.cache import cache
         
         invalidation_count = 0
         for key in cache_keys:
@@ -750,7 +750,7 @@ def cleanup_expired_cache_task():
     try:
         logger.info("Starting cache cleanup")
         
-        from ..cache.redis_cache import cache
+        from ..shared.cache import cache
         
         # Redis automatically handles TTL expiration
         # This task can perform additional cleanup if needed
@@ -792,14 +792,14 @@ def update_collection_embeddings_task(self, resource_id: str, db=None) -> Dict[s
     """
     import uuid
     from ..services.collection_service import CollectionService
-    from ..database.models import Collection, CollectionResource
+    from ..database.models import Collection
     
     try:
         logger.info(f"Updating collection embeddings for deleted resource {resource_id}")
         
         # Convert resource_id to UUID
         try:
-            resource_uuid = uuid.UUID(resource_id)
+            uuid.UUID(resource_id)
         except (ValueError, TypeError) as e:
             logger.error(f"Invalid resource_id format: {resource_id}")
             return {"status": "error", "message": f"Invalid UUID: {e}"}

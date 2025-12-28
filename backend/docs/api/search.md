@@ -347,9 +347,40 @@ Batch generate sparse embeddings for existing resources without them.
 }
 ```
 
+## Module Structure
+
+The Search module is implemented as a self-contained vertical slice:
+
+**Module**: `app.modules.search`  
+**Router Prefix**: `/search`  
+**Version**: 1.0.0
+
+```python
+from app.modules.search import (
+    search_router,
+    SearchService,
+    SearchRequest,
+    SearchResponse,
+    SearchStrategy
+)
+```
+
+### Events
+
+**Emitted Events:**
+- `search.executed` - When a search is performed
+- `search.results_returned` - When search results are returned
+
+**Subscribed Events:**
+- `resource.created` - Updates search indices
+- `resource.updated` - Updates search indices
+- `resource.deleted` - Removes from search indices
+
 ## Related Documentation
 
 - [Resources API](resources.md) - Content management
 - [Recommendations API](recommendations.md) - Personalized discovery
 - [Graph API](graph.md) - Knowledge graph exploration
+- [Architecture: Modules](../architecture/modules.md) - Module architecture
+- [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors, pagination

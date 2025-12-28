@@ -5,7 +5,7 @@ They should be run separately from unit tests and may require AI dependencies.
 """
 
 import pytest
-from backend.app.services.ai_core import AICore
+from backend.app.shared.ai_core import AICore
 
 
 class TestAIIntegration:

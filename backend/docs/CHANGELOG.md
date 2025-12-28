@@ -4,6 +4,237 @@ All notable changes to Neo Alexandria 2.0 are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-01-28 - Phase 14: Complete Vertical Slice Architecture
+
+### Added
+- **Complete Module Isolation**
+  - All 13 modules fully isolated with zero circular dependencies
+  - Module isolation validation script with CI/CD integration
+  - Dependency graph generation and validation
+  - Automated checks on every commit
+
+- **Module Test Suite Rewrite**
+  - Comprehensive test suite for all 13 modules
+  - 150+ endpoint tests with proper fixtures
+  - Database-agnostic test infrastructure
+  - Multi-database testing support (SQLite and PostgreSQL)
+  - Test coverage >95% for all modules
+
+- **Enhanced Module Documentation**
+  - Updated README.md for all 13 modules
+  - Module-specific implementation summaries
+  - Event handler documentation
+  - Integration point documentation
+
+- **Modular API Documentation**
+  - Split API documentation into 13 domain-specific files
+  - `backend/docs/api/overview.md` - Base URL, auth, errors
+  - `backend/docs/api/resources.md` - Resource endpoints
+  - `backend/docs/api/search.md` - Search endpoints
+  - `backend/docs/api/collections.md` - Collection endpoints
+  - `backend/docs/api/annotations.md` - Annotation endpoints
+  - `backend/docs/api/taxonomy.md` - Taxonomy endpoints
+  - `backend/docs/api/graph.md` - Graph/citation endpoints
+  - `backend/docs/api/recommendations.md` - Recommendation endpoints
+  - `backend/docs/api/quality.md` - Quality endpoints
+  - `backend/docs/api/scholarly.md` - Scholarly metadata endpoints
+  - `backend/docs/api/authority.md` - Authority control endpoints
+  - `backend/docs/api/curation.md` - Curation endpoints
+  - `backend/docs/api/monitoring.md` - Health/monitoring endpoints
+
+- **Modular Architecture Documentation**
+  - `backend/docs/architecture/overview.md` - System architecture
+  - `backend/docs/architecture/database.md` - Schema and models
+  - `backend/docs/architecture/event-system.md` - Event bus
+  - `backend/docs/architecture/events.md` - Event catalog
+  - `backend/docs/architecture/modules.md` - Vertical slices
+  - `backend/docs/architecture/decisions.md` - ADRs
+
+- **Developer Guides**
+  - `backend/docs/guides/setup.md` - Installation guide
+  - `backend/docs/guides/workflows.md` - Development tasks
+  - `backend/docs/guides/testing.md` - Testing strategies
+  - `backend/docs/guides/deployment.md` - Docker/production
+  - `backend/docs/guides/troubleshooting.md` - FAQ and issues
+
+- **Documentation Hub**
+  - `backend/docs/index.md` - Central navigation hub
+  - `backend/docs/README.md` - Documentation overview
+  - Clear documentation hierarchy
+  - Easy navigation and discoverability
+
+- **Legacy Cleanup**
+  - Removed all legacy routers, services, and schemas
+  - Archived historical documentation
+  - Cleaned up redundant code
+  - Removed unused imports and dependencies
+
+### Changed
+- **Module Structure**
+  - All modules follow consistent structure:
+    - `router.py` - FastAPI endpoints
+    - `service.py` - Business logic
+    - `schema.py` - Pydantic models
+    - `model.py` - SQLAlchemy models
+    - `handlers.py` - Event handlers
+    - `README.md` - Documentation
+
+- **Import Patterns**
+  - Modules only import from:
+    - `app.shared.*` - Shared kernel
+    - `app.events.*` - Event system
+    - `app.domain.*` - Domain objects
+    - Standard library and third-party packages
+  - No direct module-to-module imports
+  - All cross-module communication via events
+
+- **Test Infrastructure**
+  - Unified test fixtures across all modules
+  - Database-agnostic test patterns
+  - Proper cleanup and isolation
+  - Consistent test organization
+
+### Fixed
+- **Model Field Consistency**
+  - Fixed Resource model field usage (`url` → `source`, `resource_type` → `type`)
+  - Fixed DiscoveryHypothesis field names
+  - Fixed GraphEmbedding field names
+  - Updated all tests with correct field names
+
+- **Import Issues**
+  - Resolved circular import issues
+  - Fixed missing imports
+  - Cleaned up unused imports
+  - Proper module initialization
+
+- **Test Failures**
+  - Fixed 173+ test failures
+  - Improved test pass rate from 89% to >97%
+  - Resolved database fixture issues
+  - Fixed async test handling
+
+### Performance
+- **Module Startup**
+  - All modules load in <10 seconds total
+  - Lazy loading for heavy dependencies
+  - Optimized import structure
+  - Reduced startup overhead
+
+- **Event System**
+  - Event emission + delivery <1ms (p95)
+  - In-memory async event bus
+  - Zero blocking operations
+  - Efficient handler registration
+
+### Documentation
+- **Comprehensive Updates**
+  - 20+ documentation files created/updated
+  - Modular structure for easy maintenance
+  - Clear navigation and hierarchy
+  - Archived legacy documentation
+
+### Migration Notes
+- **No Breaking Changes**
+  - All API endpoints remain unchanged
+  - Backward compatible with existing clients
+  - Database schema unchanged
+  - Configuration unchanged
+
+### Technical Debt Reduction
+- Eliminated all circular dependencies
+- Removed legacy code (>5000 lines)
+- Consolidated duplicate functionality
+- Improved code organization
+- Enhanced maintainability
+
+## [1.9.5] - 2025-01-25 - Phase 13.5: Vertical Slice Refactoring
+
+### Added
+- **Vertical Slice Architecture Foundation**
+  - Introduced modular architecture with 13 self-contained modules
+  - Each module contains router, service, schema, model, and handlers
+  - Event-driven communication between modules
+  - Zero circular dependencies enforced
+
+- **Module Structure**
+  - `backend/app/modules/annotations/` - Text highlights and notes
+  - `backend/app/modules/authority/` - Subject authority trees
+  - `backend/app/modules/collections/` - Collection management
+  - `backend/app/modules/curation/` - Content review
+  - `backend/app/modules/graph/` - Knowledge graph and citations
+  - `backend/app/modules/monitoring/` - System health and metrics
+  - `backend/app/modules/quality/` - Quality assessment
+  - `backend/app/modules/recommendations/` - Hybrid recommendations
+  - `backend/app/modules/resources/` - Resource CRUD
+  - `backend/app/modules/scholarly/` - Academic metadata
+  - `backend/app/modules/search/` - Hybrid search
+  - `backend/app/modules/taxonomy/` - ML classification
+
+- **Shared Kernel**
+  - `backend/app/shared/database.py` - Database sessions
+  - `backend/app/shared/event_bus.py` - Event system
+  - `backend/app/shared/base_model.py` - Base models
+  - `backend/app/shared/embeddings.py` - Vector embeddings
+  - `backend/app/shared/ai_core.py` - AI operations
+  - `backend/app/shared/cache.py` - Redis cache
+
+- **Event System**
+  - In-memory async event bus
+  - Event types for all module interactions
+  - Event handlers in each module
+  - <1ms event emission and delivery (p95)
+
+- **Module Isolation Validation**
+  - `backend/scripts/check_module_isolation.py` - Validation script
+  - Dependency graph generation
+  - Circular dependency detection
+  - Import pattern validation
+
+### Changed
+- **Architecture Pattern**
+  - Migrated from layered architecture to vertical slices
+  - Replaced direct imports with event-driven communication
+  - Consolidated duplicate code into shared kernel
+  - Improved separation of concerns
+
+- **Module Communication**
+  - All cross-module communication via events
+  - No direct module-to-module imports
+  - Async event handling
+  - Decoupled module dependencies
+
+### Performance
+- **Event System**
+  - Event emission + delivery <1ms (p95)
+  - In-memory async processing
+  - Zero blocking operations
+  - Efficient handler registration
+
+- **Module Loading**
+  - All modules load in <10 seconds
+  - Lazy loading for heavy dependencies
+  - Optimized import structure
+
+### Documentation
+- **Architecture Documentation**
+  - Updated architecture diagrams
+  - Module structure documentation
+  - Event system documentation
+  - Migration guides
+
+### Migration Notes
+- **Backward Compatibility**
+  - All API endpoints unchanged
+  - Database schema unchanged
+  - Configuration unchanged
+  - No breaking changes
+
+### Technical Debt Reduction
+- Eliminated circular dependencies
+- Consolidated duplicate code
+- Improved code organization
+- Enhanced maintainability
+
 ## [1.9.0] - 2025-01-20 - Phase 13: PostgreSQL Migration
 
 ### Added

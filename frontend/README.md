@@ -2,6 +2,12 @@
 
 A futuristic knowledge management interface built with React, TypeScript, and Vite.
 
+> **📚 Quick Navigation:**
+> - [Product Vision & Goals](../.kiro/steering/product.md) - What we're building and why
+> - [Tech Stack & Architecture](../.kiro/steering/tech.md) - Full stack overview
+> - [Repository Structure](../.kiro/steering/structure.md) - Where things are located
+> - [Backend API Documentation](../backend/docs/index.md) - API reference
+
 ## 🎨 Design Features
 
 - **Glassmorphism UI**: Beautiful frosted glass effects with backdrop blur

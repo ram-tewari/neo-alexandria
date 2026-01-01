@@ -90,7 +90,9 @@
 - **pytest** - Test framework
 - **pytest-asyncio** - Async test support
 - **pytest-cov** - Coverage reporting
-- **hypothesis** - Property-based testing (planned)
+- **hypothesis** - Property-based testing
+- **Golden Data Pattern** - Immutable test expectations in JSON files
+- **Protocol-Based Testing** - Anti-gaslighting test framework
 
 ## Frontend Stack
 
@@ -199,6 +201,15 @@ pytest tests/modules/test_resources_endpoints.py -v
 # Run with coverage
 pytest tests/ --cov=app --cov-report=html
 
+# Run property-based tests
+pytest tests/properties/ -v
+
+# Run E2E workflow tests
+pytest tests/test_e2e_workflows.py -v
+
+# Run performance tests
+pytest tests/performance.py -v
+
 # Lint and format
 ruff check .
 ruff format .
@@ -208,6 +219,29 @@ python scripts/check_module_isolation.py
 
 # Verify all modules load
 python test_app_startup.py
+```
+
+### Testing Patterns
+
+```bash
+# Protocol-based testing (Golden Data pattern)
+# Tests load expectations from immutable JSON files
+# Never modify tests to match implementation - fix implementation instead
+
+# Run tests with Golden Data validation
+pytest tests/modules/quality/test_scoring.py -v
+
+# Run all module tests
+pytest tests/modules/ -v
+
+# Run tests for specific module
+pytest tests/modules/search/ -v
+
+# Run property-based tests (hypothesis)
+pytest tests/properties/ -v
+
+# Check test infrastructure
+pytest tests/test_infrastructure_checkpoint.py -v
 ```
 
 ### Module Development

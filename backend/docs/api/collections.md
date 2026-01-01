@@ -1,28 +1,25 @@
 ﻿# Collections API
 
-Collection management endpoints for organizing resources into hierarchical groups.
+Collection management endpoints for organizing resources and generating recommendations.
 
 ## Overview
 
-Collections allow users to organize resources into named groups with:
-- Hierarchical parent-child relationships
-- Visibility controls (private, shared, public)
-- Aggregate embeddings for similarity-based recommendations
-- Batch resource membership operations
+The Collections API provides functionality for creating and managing collections of resources. Collections enable users to organize content thematically, generate collection-based recommendations using semantic similarity, and discover related collections.
 
 ## Endpoints
 
 ### POST /collections
 
-Create a new collection with metadata and optional hierarchical parent.
+Create a new collection.
 
 **Request Body:**
 ```json
 {
-  "name": "string (required, 1-255 characters)",
-  "description": "string (optional, max 2000 characters)",
-  "visibility": "private|shared|public (optional, default: private)",
-  "parent_id": "string (optional, UUID of parent collection)"
+  "name": "Machine Learning Papers",
+  "description": "Collection of ML research papers",
+  "owner_id": "user-123",
+  "visibility": "private",
+  "parent_id": null
 }
 ```
 
@@ -31,231 +28,397 @@ Create a new collection with metadata and optional hierarchical parent.
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Machine Learning Papers",
-  "description": "Curated collection of ML research",
-  "owner_id": "user123",
-  "visibility": "public",
+  "description": "Collection of ML research papers",
+  "owner_id": "user-123",
+  "visibility": "private",
   "parent_id": null,
   "resource_count": 0,
   "created_at": "2024-01-01T10:00:00Z",
-  "updated_at": "2024-01-01T10:00:00Z",
-  "resources": []
+  "updated_at": "2024-01-01T10:00:00Z"
 }
 ```
-
-**Error Responses:**
-- `400 Bad Request` - Invalid name length, visibility value, or circular hierarchy
-- `404 Not Found` - Parent collection not found
 
 **Example:**
 ```bash
 curl -X POST http://127.0.0.1:8000/collections \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Machine Learning Papers",
-    "description": "Curated collection of ML research",
-    "visibility": "public"
+    "name": "ML Papers",
+    "description": "Research papers on machine learning",
+    "owner_id": "user-123",
+    "visibility": "private"
   }'
 ```
 
 ---
 
-### GET /collections/{id}
+### GET /collections
 
-Retrieve a specific collection with member resource summaries.
+List collections for a user.
 
-**Response (200 OK):**
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Owner user ID (optional) | - |
+| `parent_id` | uuid | Parent collection ID filter | - |
+| `include_public` | boolean | Include public collections | true |
+| `visibility` | string | Filter by visibility (private/shared/public) | - |
+| `limit` | integer | Maximum results (1-100) | 50 |
+| `offset` | integer | Pagination offset | 0 |
+
+**Response:**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Machine Learning Papers",
+    "description": "Collection of ML research papers",
+    "owner_id": "user-123",
+    "visibility": "private",
+    "parent_id": null,
+    "resource_count": 15,
+    "created_at": "2024-01-01T10:00:00Z",
+    "updated_at": "2024-01-01T10:00:00Z"
+  }
+]
+```
+
+---
+
+### GET /collections/{collection_id}
+
+Retrieve a collection with its resources.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Owner user ID for access control | - |
+| `limit` | integer | Maximum resources to return (1-100) | 50 |
+| `offset` | integer | Pagination offset for resources | 0 |
+
+**Response:**
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Machine Learning Papers",
-  "description": "Curated collection of ML research",
-  "owner_id": "user123",
-  "visibility": "public",
+  "description": "Collection of ML research papers",
+  "owner_id": "user-123",
+  "visibility": "private",
   "parent_id": null,
-  "resource_count": 2,
+  "resource_count": 15,
   "created_at": "2024-01-01T10:00:00Z",
-  "updated_at": "2024-01-01T10:05:00Z",
+  "updated_at": "2024-01-01T10:00:00Z",
   "resources": [
     {
       "id": "660e8400-e29b-41d4-a716-446655440001",
       "title": "Deep Learning Fundamentals",
+      "description": "Introduction to deep learning",
       "creator": "John Doe",
-      "quality_score": 0.92
+      "type": "article",
+      "quality_score": 0.85,
+      "created_at": "2024-01-01T09:00:00Z"
     }
   ]
 }
 ```
 
-**Access Rules:**
-- `private`: Only owner can access
-- `shared`: Owner + explicit permissions (future)
-- `public`: All authenticated users
-
 ---
 
-### PUT /collections/{id}
+### PUT /collections/{collection_id}
 
-Update collection metadata (name, description, visibility, parent).
+Update collection metadata.
 
 **Request Body:**
 ```json
 {
-  "name": "string (optional)",
-  "description": "string (optional)",
-  "visibility": "private|shared|public (optional)",
-  "parent_id": "string (optional, UUID or null)"
+  "name": "Updated Collection Name",
+  "description": "Updated description",
+  "visibility": "shared"
 }
 ```
 
-**Response (200 OK):** Returns updated collection object.
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Updated Collection Name",
+  "description": "Updated description",
+  "owner_id": "user-123",
+  "visibility": "shared",
+  "parent_id": null,
+  "resource_count": 15,
+  "created_at": "2024-01-01T10:00:00Z",
+  "updated_at": "2024-01-01T11:00:00Z"
+}
+```
 
 ---
 
-### DELETE /collections/{id}
+### DELETE /collections/{collection_id}
 
-Delete a collection. Cascade deletes all descendant collections.
+Delete a collection.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Owner user ID for access control | - |
 
 **Response:** `204 No Content`
 
 ---
 
-### GET /collections
+### POST /collections/{collection_id}/resources
 
-List collections with filtering and pagination.
+Add a single resource to a collection.
+
+**Request Body:**
+```json
+{
+  "resource_id": "660e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "collection_id": "550e8400-e29b-41d4-a716-446655440000",
+  "resource_id": "660e8400-e29b-41d4-a716-446655440001",
+  "added": true,
+  "message": "Resource added to collection"
+}
+```
+
+---
+
+### GET /collections/{collection_id}/resources
+
+List resources in a collection.
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `owner_id` | string | Filter by owner | - |
-| `visibility` | string | Filter by visibility | - |
-| `parent_id` | string | Filter by parent (null for root) | - |
-| `page` | integer | Page number | 1 |
-| `limit` | integer | Results per page (1-100) | 50 |
+| `owner_id` | string | Owner user ID for access control | - |
+| `limit` | integer | Maximum resources to return (1-100) | 50 |
+| `offset` | integer | Pagination offset | 0 |
 
 **Response:**
 ```json
-{
-  "items": [...],
-  "total": 1,
-  "page": 1,
-  "limit": 50
-}
+[
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "title": "Deep Learning Fundamentals",
+    "description": "Introduction to deep learning",
+    "creator": "John Doe",
+    "type": "article",
+    "quality_score": 0.85,
+    "created_at": "2024-01-01T09:00:00Z"
+  }
+]
 ```
 
 ---
 
-### POST /collections/{id}/resources
+### DELETE /collections/{collection_id}/resources/{resource_id}
 
-Add resources to a collection (batch operation, up to 100 resources).
-
-**Request Body:**
-```json
-{
-  "resource_ids": ["uuid", "uuid"]
-}
-```
-
-**Response (200 OK):** Returns updated collection with new resource count.
-
-**Behavior:**
-- Validates all resource IDs exist before adding
-- Handles duplicate associations gracefully (idempotent)
-- Triggers aggregate embedding recomputation
-
----
-
-### DELETE /collections/{id}/resources
-
-Remove resources from a collection (batch operation).
-
-**Request Body:**
-```json
-{
-  "resource_ids": ["uuid", "uuid"]
-}
-```
-
-**Response (200 OK):** Returns updated collection.
-
----
-
-### GET /collections/{id}/recommendations
-
-Get recommendations for similar resources and collections based on aggregate embedding.
+Remove a single resource from a collection.
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `limit` | integer | Max results per category (1-50) | 10 |
-| `include_resources` | boolean | Include resource recommendations | true |
-| `include_collections` | boolean | Include collection recommendations | true |
+| `owner_id` | string | Owner user ID for access control | - |
 
-**Response:**
+**Response:** `204 No Content`
+
+---
+
+### PUT /collections/{collection_id}/resources
+
+Batch add/remove resources from a collection.
+
+**Request Body:**
 ```json
 {
-  "resources": [
-    {
-      "id": "880e8400-e29b-41d4-a716-446655440003",
-      "title": "Advanced Neural Networks",
-      "similarity": 0.92
-    }
+  "add_resource_ids": [
+    "660e8400-e29b-41d4-a716-446655440001",
+    "660e8400-e29b-41d4-a716-446655440002"
   ],
-  "collections": [
-    {
-      "id": "aa0e8400-e29b-41d4-a716-446655440005",
-      "name": "AI Research Papers",
-      "similarity": 0.85
-    }
+  "remove_resource_ids": [
+    "660e8400-e29b-41d4-a716-446655440003"
   ]
 }
 ```
 
+**Response:**
+```json
+{
+  "collection_id": "550e8400-e29b-41d4-a716-446655440000",
+  "added": 2,
+  "removed": 1,
+  "message": "Added 2 and removed 1 resources"
+}
+```
+
 ---
 
-### GET /collections/{id}/embedding
+### POST /collections/{collection_id}/resources/batch
 
-Retrieve the aggregate embedding vector for a collection.
+Add multiple resources to a collection in a single batch operation.
+
+More efficient than adding resources one at a time. Supports up to 100 resources per batch.
+
+**Request Body:**
+```json
+{
+  "resource_ids": [
+    "660e8400-e29b-41d4-a716-446655440001",
+    "660e8400-e29b-41d4-a716-446655440002",
+    "660e8400-e29b-41d4-a716-446655440003"
+  ]
+}
+```
 
 **Response:**
 ```json
 {
-  "embedding": [0.123, -0.456, 0.789, ...],
-  "dimension": 768
+  "collection_id": "550e8400-e29b-41d4-a716-446655440000",
+  "added": 3,
+  "skipped": 0,
+  "invalid": 0,
+  "message": "Added 3 resources, skipped 0 duplicates, 0 invalid"
 }
 ```
 
-## Features
+---
 
-### Hierarchical Organization
+### DELETE /collections/{collection_id}/resources/batch
 
-Collections support parent-child relationships:
+Remove multiple resources from a collection in a single batch operation.
 
-```bash
-# Create parent
-curl -X POST http://127.0.0.1:8000/collections \
-  -d '{"name": "Computer Science", "visibility": "public"}'
+More efficient than removing resources one at a time. Supports up to 100 resources per batch.
 
-# Create child
-curl -X POST http://127.0.0.1:8000/collections \
-  -d '{"name": "Machine Learning", "parent_id": "{parent_id}"}'
+**Request Body:**
+```json
+{
+  "resource_ids": [
+    "660e8400-e29b-41d4-a716-446655440001",
+    "660e8400-e29b-41d4-a716-446655440002"
+  ]
+}
 ```
 
-### Aggregate Embeddings
+**Response:**
+```json
+{
+  "collection_id": "550e8400-e29b-41d4-a716-446655440000",
+  "removed": 2,
+  "not_found": 0,
+  "message": "Removed 2 resources, 0 not found in collection"
+}
+```
 
-Collections automatically compute aggregate embeddings from member resources:
-- Mean vector across all member resource embeddings
-- Normalized to unit length (L2 norm)
-- Recomputed when resources are added/removed
+---
 
-### Access Control
+### GET /collections/{collection_id}/recommendations
 
-| Level | Owner | Other Users |
-|-------|-------|-------------|
-| `private` | Full access | None |
-| `shared` | Full access | Read only (future) |
-| `public` | Full access | Read only |
+Get resource recommendations based on collection embedding.
+
+Uses semantic similarity between the collection's aggregate embedding and individual resource embeddings to find related content.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Owner user ID for access control | - |
+| `limit` | integer | Maximum recommendations (1-100) | 20 |
+| `min_similarity` | float | Minimum similarity threshold (0.0-1.0) | 0.5 |
+| `exclude_collection_resources` | boolean | Exclude resources already in collection | true |
+
+**Response:**
+```json
+{
+  "collection_id": "550e8400-e29b-41d4-a716-446655440000",
+  "collection_name": "Machine Learning Papers",
+  "recommendations": [
+    {
+      "resource_id": "770e8400-e29b-41d4-a716-446655440004",
+      "title": "Neural Network Architectures",
+      "description": "Overview of modern neural network designs",
+      "similarity_score": 0.87,
+      "reason": "Semantically similar to collection (similarity: 0.87)"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/collections/550e8400-e29b-41d4-a716-446655440000/recommendations?limit=10&min_similarity=0.7"
+```
+
+---
+
+### GET /collections/{collection_id}/similar-collections
+
+Get similar collections based on embedding similarity.
+
+Uses semantic similarity between collection embeddings to find related collections that might be of interest.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `owner_id` | string | Owner user ID for access control | - |
+| `limit` | integer | Maximum recommendations (1-100) | 20 |
+| `min_similarity` | float | Minimum similarity threshold (0.0-1.0) | 0.5 |
+
+**Response:**
+```json
+[
+  {
+    "collection_id": "880e8400-e29b-41d4-a716-446655440005",
+    "name": "Deep Learning Resources",
+    "description": "Curated deep learning materials",
+    "similarity_score": 0.82,
+    "owner_id": "user-456",
+    "visibility": "public",
+    "resource_count": 25
+  }
+]
+```
+
+---
+
+### GET /collections/health
+
+Health check endpoint for Collections module.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "module": {
+    "name": "collections",
+    "version": "1.0.0",
+    "domain": "collections"
+  },
+  "database": {
+    "healthy": true,
+    "message": "Database connection healthy"
+  },
+  "event_handlers": {
+    "registered": true,
+    "count": 1,
+    "events": ["resource.deleted"]
+  },
+  "timestamp": "2024-01-01T10:00:00Z"
+}
+```
 
 ## Data Models
 
@@ -264,15 +427,28 @@ Collections automatically compute aggregate embeddings from member resources:
 ```json
 {
   "id": "uuid",
-  "name": "string (1-255 characters)",
-  "description": "string (max 2000 characters) or null",
-  "owner_id": "string",
-  "visibility": "private|shared|public",
-  "parent_id": "uuid or null",
+  "name": "string (required)",
+  "description": "string (optional)",
+  "owner_id": "string (required)",
+  "visibility": "private|shared|public (default: private)",
+  "parent_id": "uuid (optional)",
   "resource_count": "integer",
-  "created_at": "datetime",
-  "updated_at": "datetime",
-  "resources": [...]
+  "created_at": "datetime (ISO 8601)",
+  "updated_at": "datetime (ISO 8601)"
+}
+```
+
+### Resource Summary Model
+
+```json
+{
+  "id": "uuid",
+  "title": "string",
+  "description": "string",
+  "creator": "string",
+  "type": "string",
+  "quality_score": "float (0.0-1.0)",
+  "created_at": "datetime (ISO 8601)"
 }
 ```
 
@@ -286,11 +462,11 @@ The Collections module is implemented as a self-contained vertical slice:
 
 ```python
 from app.modules.collections import (
-    collections_router,
+    router,
     CollectionService,
     CollectionCreate,
     CollectionUpdate,
-    CollectionResponse
+    CollectionRead
 )
 ```
 
@@ -304,12 +480,13 @@ from app.modules.collections import (
 - `collection.resource_removed` - When a resource is removed from a collection
 
 **Subscribed Events:**
-- `resource.deleted` - Removes resource from all collections
+- `resource.deleted` - Removes resource from all collections when deleted
 
 ## Related Documentation
 
-- [Resources API](resources.md) - Content management
-- [Recommendations API](recommendations.md) - Personalized discovery
+- [Resources API](resources.md) - Resource management
+- [Recommendations API](recommendations.md) - Recommendation system
+- [Search API](search.md) - Search functionality
 - [Architecture: Modules](../architecture/modules.md) - Module architecture
 - [Architecture: Events](../architecture/events.md) - Event system
 - [API Overview](overview.md) - Authentication, errors, pagination

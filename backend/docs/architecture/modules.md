@@ -62,16 +62,17 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 |---|--------|--------|----------------|-----------------|
 | 1 | **Resources** | Content management | resource.created, resource.updated, resource.deleted | - |
 | 2 | **Collections** | Organization | collection.created, collection.updated, collection.resource_added | resource.deleted |
-| 3 | **Search** | Discovery | search.executed | resource.created, resource.updated |
+| 3 | **Search** | Discovery | search.executed | resource.created, resource.updated, resource.deleted |
 | 4 | **Annotations** | Highlights & notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
 | 5 | **Scholarly** | Academic metadata | metadata.extracted, equations.parsed, tables.extracted | resource.created |
 | 6 | **Authority** | Subject authority | - | - |
 | 7 | **Curation** | Content review | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
-| 8 | **Quality** | Quality assessment | quality.computed, quality.outlier_detected | resource.created, resource.updated |
-| 9 | **Taxonomy** | ML classification | resource.classified, taxonomy.node_created | resource.created |
+| 8 | **Quality** | Quality assessment | quality.computed, quality.outlier_detected, quality.degradation_detected | resource.created, resource.updated |
+| 9 | **Taxonomy** | ML classification | resource.classified, taxonomy.node_created, taxonomy.model_trained | resource.created |
 | 10 | **Graph** | Knowledge graph | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
-| 11 | **Recommendations** | Personalization | recommendation.generated, user.profile_updated | annotation.created, collection.resource_added |
+| 11 | **Recommendations** | Personalization | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |
 | 12 | **Monitoring** | System health | - | All events (metrics) |
+| 13 | **Total** | **13 Modules** | **25+ event types** | **Event-driven architecture** |
 
 ---
 
@@ -195,6 +196,247 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 - `resource.deleted` → Remove from index
 
 **Location:** `app/modules/search/`
+
+### Annotations Module
+
+**Domain:** Text highlights, notes, and tags
+
+**Responsibilities:**
+- Create, update, delete annotations on resources
+- Precise text range highlighting with character offsets
+- Semantic search across annotation content and notes
+- Tag-based organization and filtering
+- Export annotations to Markdown and JSON formats
+- Shared annotations for collaboration
+
+**Services:**
+- `AnnotationService` - Core CRUD operations and business logic
+- Semantic search with embedding-based similarity
+- Export service for multiple formats
+
+**Events Published:**
+- `annotation.created` - New annotation added to resource
+- `annotation.updated` - Annotation content or metadata changed
+- `annotation.deleted` - Annotation removed
+
+**Events Subscribed:**
+- `resource.deleted` → Delete all annotations on resource
+
+**Location:** `app/modules/annotations/`
+
+### Scholarly Module
+
+**Domain:** Academic metadata extraction
+
+**Responsibilities:**
+- Extract academic metadata from resources (equations, tables, figures)
+- Parse LaTeX equations and mathematical notation
+- Extract structured table data
+- Identify and catalog figures and diagrams
+- Extract author information, abstracts, DOIs
+- Support for academic paper formats
+
+**Services:**
+- `ScholarlyExtractor` - Main extraction service
+- LaTeX parser for mathematical content
+- Table extraction and structuring
+- Metadata normalization
+
+**Events Published:**
+- `metadata.extracted` - Academic metadata parsed from resource
+- `equations.parsed` - Mathematical equations found
+- `tables.extracted` - Tables extracted from content
+
+**Events Subscribed:**
+- `resource.created` → Extract scholarly metadata
+
+**Location:** `app/modules/scholarly/`
+
+### Authority Module
+
+**Domain:** Subject authority control
+
+**Responsibilities:**
+- Manage hierarchical subject authority trees
+- Subject heading normalization
+- Authority record management
+- Cross-reference management
+
+**Events Published:**
+- None (passive module)
+
+**Events Subscribed:**
+- None
+
+**Location:** `app/modules/authority/`
+
+### Curation Module
+
+**Domain:** Content review and quality control
+
+**Responsibilities:**
+- Review queue management for flagged resources
+- Batch operations on resources (approve, reject, flag)
+- Curator workflow support
+- Review history and audit trail
+- Priority-based review scheduling
+
+**Services:**
+- `CurationService` - Review workflow management
+- Batch operation processing
+- Review status tracking
+
+**Events Published:**
+- `curation.reviewed` - Resource reviewed by curator
+- `curation.approved` - Resource approved for publication
+- `curation.rejected` - Resource rejected
+
+**Events Subscribed:**
+- `quality.outlier_detected` → Add to review queue with high priority
+
+**Location:** `app/modules/curation/`
+
+### Quality Module
+
+**Domain:** Multi-dimensional quality assessment
+
+**Responsibilities:**
+- Compute quality scores across 5 dimensions (accuracy, completeness, consistency, timeliness, relevance)
+- Monitor quality degradation over time
+- Detect quality outliers using statistical methods
+- Track quality metrics and trends
+- Provide quality-based filtering and ranking
+
+**Services:**
+- `QualityService` - Quality computation and monitoring
+- `ContentQualityAnalyzer` - Dimension-specific analysis
+- Outlier detection with configurable thresholds
+
+**Events Published:**
+- `quality.computed` - Quality scores calculated for resource
+- `quality.outlier_detected` - Anomalous quality detected
+- `quality.degradation_detected` - Quality decreased over time
+
+**Events Subscribed:**
+- `resource.created` → Compute initial quality scores
+- `resource.updated` → Recompute quality scores
+
+**Location:** `app/modules/quality/`
+
+### Taxonomy Module
+
+**Domain:** ML-based classification and taxonomy management
+
+**Responsibilities:**
+- Automatic resource classification using ML models
+- Hierarchical taxonomy tree management
+- Rule-based and ML-based classification strategies
+- Active learning for model improvement
+- Classification confidence scoring
+- Multi-label classification support
+
+**Services:**
+- `ClassificationService` - Unified classification interface
+- `MLClassificationService` - Deep learning classification (DistilBERT)
+- `RuleBasedClassifier` - Pattern-based classification
+- `TaxonomyService` - Taxonomy tree operations
+
+**Events Published:**
+- `resource.classified` - Resource auto-classified
+- `taxonomy.node_created` - New taxonomy node added
+- `taxonomy.model_trained` - ML model retrained
+
+**Events Subscribed:**
+- `resource.created` → Auto-classify resource
+
+**Location:** `app/modules/taxonomy/`
+
+### Graph Module
+
+**Domain:** Knowledge graph and citation network
+
+**Responsibilities:**
+- Extract citations from resources
+- Build and maintain citation network graph
+- Graph traversal and path finding
+- PageRank computation for resource importance
+- Literature-Based Discovery (LBD) for hypothesis generation
+- Semantic graph embeddings
+- Citation context extraction
+
+**Services:**
+- `GraphService` - Graph operations and queries
+- `CitationExtractor` - Citation parsing and extraction
+- `LBDService` - Hypothesis discovery (ABC pattern)
+- `GraphEmbeddingService` - Node embedding generation
+
+**Events Published:**
+- `citation.extracted` - Citations parsed from resource
+- `graph.updated` - Graph structure changed
+- `hypothesis.discovered` - LBD found new connection
+
+**Events Subscribed:**
+- `resource.created` → Extract citations and update graph
+- `resource.deleted` → Remove from graph
+
+**Location:** `app/modules/graph/`
+
+### Recommendations Module
+
+**Domain:** Hybrid recommendation engine
+
+**Responsibilities:**
+- Generate personalized recommendations using multiple strategies
+- Collaborative filtering (user-item matrix)
+- Content-based recommendations (embedding similarity)
+- Graph-based recommendations (citation network)
+- Hybrid fusion with configurable weights
+- User profile generation and updates
+- Interaction tracking and learning
+
+**Services:**
+- `RecommendationService` - Main recommendation interface
+- `CollaborativeFilteringStrategy` - User similarity-based
+- `ContentBasedStrategy` - Embedding similarity-based
+- `GraphBasedStrategy` - Citation network-based
+- `HybridStrategy` - Weighted fusion of all strategies
+- `UserProfileService` - User preference modeling
+
+**Events Published:**
+- `recommendation.generated` - Recommendations produced for user
+- `user.profile_updated` - User preferences changed
+- `interaction.recorded` - User interaction logged
+
+**Events Subscribed:**
+- `annotation.created` → Update user profile with annotation topics
+- `collection.resource_added` → Update user profile with collection preferences
+
+**Location:** `app/modules/recommendations/`
+
+### Monitoring Module
+
+**Domain:** System health and observability
+
+**Responsibilities:**
+- Health check endpoints for all modules
+- Event bus metrics tracking
+- Performance monitoring and alerting
+- System resource usage tracking
+- API endpoint latency monitoring
+- Database connection pool monitoring
+
+**Services:**
+- `MonitoringService` - Health checks and metrics aggregation
+- Event bus statistics
+- Performance metric collection
+
+**Events Published:**
+- None (observability module)
+
+**Events Subscribed:**
+- All events (for metrics tracking)
+
+**Location:** `app/modules/monitoring/`
 
 ---
 

@@ -96,6 +96,27 @@ Events related to collection management.
 | `collection.resource_added` | Collections | Resource added to collection |
 | `collection.resource_removed` | Collections | Resource removed from collection |
 
+**Payload Examples**:
+
+`collection.resource_added`:
+```python
+{
+    "collection_id": str,      # UUID of collection
+    "resource_id": str,        # UUID of added resource
+    "user_id": str             # UUID of user who added it
+}
+```
+
+`collection.resource_removed`:
+```python
+{
+    "collection_id": str,      # UUID of collection
+    "resource_id": str,        # UUID of removed resource
+    "user_id": str | None,     # UUID of user who removed it (optional)
+    "reason": str              # Reason (user_removed, resource_deleted)
+}
+```
+
 ### Annotation Events
 
 Events related to user annotations.
@@ -105,6 +126,38 @@ Events related to user annotations.
 | `annotation.created` | Annotations | User created annotation |
 | `annotation.updated` | Annotations | User modified annotation |
 | `annotation.deleted` | Annotations | User deleted annotation |
+
+**Payload Examples**:
+
+`annotation.created`:
+```python
+{
+    "annotation_id": str,      # UUID of created annotation
+    "resource_id": str,        # UUID of annotated resource
+    "user_id": str,            # UUID of user who created it
+    "has_note": bool           # Whether annotation includes a note
+}
+```
+
+`annotation.updated`:
+```python
+{
+    "annotation_id": str,      # UUID of updated annotation
+    "resource_id": str,        # UUID of annotated resource
+    "user_id": str,            # UUID of user who updated it
+    "changes": list            # List of changed field names
+}
+```
+
+`annotation.deleted`:
+```python
+{
+    "annotation_id": str,      # UUID of deleted annotation
+    "resource_id": str,        # UUID of annotated resource
+    "user_id": str,            # UUID of user who deleted it
+    "reason": str              # Reason for deletion (user_deleted, resource_deleted)
+}
+```
 
 ### Quality Events
 
@@ -116,6 +169,29 @@ Events related to quality assessment.
 | `quality.outlier_detected` | Quality | Anomalous quality detected |
 | `quality.degradation_detected` | Quality | Quality decreased over time |
 
+**Payload Examples**:
+
+`quality.computed`:
+```python
+{
+    "resource_id": str,        # UUID of assessed resource
+    "quality_score": float,    # Overall quality score (0.0-1.0)
+    "dimensions": dict,        # Dimension scores (accuracy, completeness, etc.)
+    "computation_version": str # Version of quality algorithm
+}
+```
+
+`quality.outlier_detected`:
+```python
+{
+    "resource_id": str,        # UUID of outlier resource
+    "quality_score": float,    # Overall quality score
+    "outlier_score": float,    # Outlier detection score (-1 for outlier)
+    "dimensions": dict,        # Dimension scores
+    "reason": str              # Reason for outlier detection
+}
+```
+
 ### Taxonomy Events
 
 Events related to classification and taxonomy.
@@ -125,6 +201,30 @@ Events related to classification and taxonomy.
 | `resource.classified` | Taxonomy | Resource auto-classified |
 | `taxonomy.node_created` | Taxonomy | New taxonomy node added |
 | `taxonomy.model_trained` | Taxonomy | ML model retrained |
+
+**Payload Examples**:
+
+`resource.classified`:
+```python
+{
+    "resource_id": str,        # UUID of classified resource
+    "classification_code": str, # Assigned classification code
+    "confidence": float,       # Classification confidence (0.0-1.0)
+    "method": str,             # Method (rule_based, ml, hybrid)
+    "taxonomy_version": str    # Optional taxonomy version
+}
+```
+
+`taxonomy.model_trained`:
+```python
+{
+    "model_type": str,         # Type (random_forest, svm, neural_network, etc.)
+    "training_samples": int,   # Number of training samples
+    "accuracy": float,         # Model accuracy on validation set
+    "model_version": str,      # Version identifier
+    "features_used": list      # Optional list of features
+}
+```
 
 ### Graph Events
 
@@ -136,6 +236,39 @@ Events related to knowledge graph and citations.
 | `graph.updated` | Graph | Graph structure changed |
 | `hypothesis.discovered` | Graph | LBD found new connection |
 
+**Payload Examples**:
+
+`citation.extracted`:
+```python
+{
+    "resource_id": str,        # UUID of resource with citations
+    "citations": list,         # List of citation dictionaries
+    "count": int               # Number of citations extracted
+}
+```
+
+`graph.updated`:
+```python
+{
+    "update_type": str,        # Type (node_added, edge_added, bulk_update, etc.)
+    "node_count": int,         # Number of nodes affected
+    "edge_count": int,         # Number of edges affected
+    "affected_nodes": list     # Optional list of affected node IDs
+}
+```
+
+`hypothesis.discovered`:
+```python
+{
+    "hypothesis_id": str,      # UUID of discovered hypothesis
+    "concept_a": str,          # Starting concept
+    "concept_c": str,          # Target concept
+    "bridging_concepts": list, # List of bridging concepts (B)
+    "plausibility_score": float, # Plausibility score
+    "evidence_count": int      # Number of evidence chains
+}
+```
+
 ### Recommendation Events
 
 Events related to recommendations and user profiles.
@@ -145,6 +278,41 @@ Events related to recommendations and user profiles.
 | `recommendation.generated` | Recommendations | Recommendations produced |
 | `user.profile_updated` | Recommendations | User preferences changed |
 | `interaction.recorded` | Recommendations | User interaction logged |
+
+**Payload Examples**:
+
+`recommendation.generated`:
+```python
+{
+    "user_id": str,            # UUID of user receiving recommendations
+    "count": int,              # Number of recommendations generated
+    "strategy": str,           # Strategy used (collaborative, content, graph, hybrid)
+    "resource_ids": list,      # List of recommended resource IDs
+    "timestamp": str           # ISO 8601 timestamp
+}
+```
+
+`user.profile_updated`:
+```python
+{
+    "user_id": str,            # UUID of user
+    "update_type": str,        # Type (annotation, collection, interaction)
+    "preferences": dict,       # Updated preference vector or topics
+    "timestamp": str           # ISO 8601 timestamp
+}
+```
+
+`interaction.recorded`:
+```python
+{
+    "user_id": str,            # UUID of user
+    "resource_id": str,        # UUID of resource
+    "interaction_type": str,   # Type (view, bookmark, rate, download, click)
+    "rating": int,             # Optional rating (1-5)
+    "duration_seconds": int,   # Optional duration for views
+    "timestamp": str           # ISO 8601 timestamp
+}
+```
 
 ### Scholarly Events
 
@@ -156,6 +324,37 @@ Events related to academic metadata.
 | `equations.parsed` | Scholarly | Mathematical equations found |
 | `tables.extracted` | Scholarly | Tables extracted from content |
 
+**Payload Examples**:
+
+`metadata.extracted`:
+```python
+{
+    "resource_id": str,        # UUID of resource
+    "metadata": dict,          # Extracted metadata dictionary
+    "equation_count": int,     # Number of equations extracted
+    "table_count": int,        # Number of tables extracted
+    "figure_count": int        # Number of figures extracted
+}
+```
+
+`equations.parsed`:
+```python
+{
+    "resource_id": str,        # UUID of resource
+    "equations": list,         # List of equation dictionaries
+    "equation_count": int      # Number of equations parsed
+}
+```
+
+`tables.extracted`:
+```python
+{
+    "resource_id": str,        # UUID of resource
+    "tables": list,            # List of table dictionaries
+    "table_count": int         # Number of tables extracted
+}
+```
+
 ### Curation Events
 
 Events related to content review.
@@ -165,6 +364,43 @@ Events related to content review.
 | `curation.reviewed` | Curation | Content reviewed by curator |
 | `curation.approved` | Curation | Content approved |
 | `curation.rejected` | Curation | Content rejected |
+| `curation.flagged` | Curation | Content flagged for review |
+
+**Payload Examples**:
+
+`curation.reviewed`:
+```python
+{
+    "review_id": str,          # UUID of review record
+    "resource_id": str,        # UUID of reviewed resource
+    "reviewer_id": str,        # User ID of reviewer
+    "status": str,             # Status (pending, approved, rejected, needs_revision)
+    "quality_rating": float,   # Optional quality rating (0.0-1.0)
+    "notes": str               # Optional reviewer notes
+}
+```
+
+`curation.approved`:
+```python
+{
+    "review_id": str,          # UUID of review record
+    "resource_id": str,        # UUID of approved resource
+    "reviewer_id": str,        # User ID of reviewer
+    "approval_notes": str,     # Optional approval notes
+    "timestamp": str           # ISO 8601 timestamp
+}
+```
+
+`curation.rejected`:
+```python
+{
+    "review_id": str,          # UUID of review record
+    "resource_id": str,        # UUID of rejected resource
+    "reviewer_id": str,        # User ID of reviewer
+    "rejection_reason": str,   # Reason for rejection
+    "timestamp": str           # ISO 8601 timestamp
+}
+```
 
 ### Search Events
 
@@ -172,7 +408,21 @@ Events related to search operations.
 
 | Event | Emitter | Purpose |
 |-------|---------|---------|
-| `search.completed` | Search | Search query executed |
+| `search.executed` | Search | Search query executed |
+
+**Payload Example**:
+
+`search.executed`:
+```python
+{
+    "query": str,              # Search query text
+    "search_type": str,        # Type (fulltext, semantic, hybrid, three_way_hybrid)
+    "result_count": int,       # Number of results returned
+    "execution_time": float,   # Query execution time in seconds
+    "user_id": str | None,     # Optional user ID
+    "filters": dict | None     # Optional filters applied
+}
+```
 
 ---
 

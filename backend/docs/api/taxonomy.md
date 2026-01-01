@@ -1,332 +1,270 @@
 ﻿# Taxonomy API
 
-Hierarchical taxonomy management and ML-powered classification endpoints.
+ML-based classification and taxonomy management endpoints.
 
 ## Overview
 
-The Taxonomy API provides:
-- CRUD operations for hierarchical taxonomy trees
-- Materialized paths for efficient queries
-- ML-powered resource classification
-- Active learning for continuous model improvement
-- Authority control for subjects and classification
+The Taxonomy API provides functionality for:
+- Hierarchical taxonomy tree management
+- ML-based resource classification using Random Forest and Logistic Regression
+- Rule-based classification fallback
+- Active learning for uncertain predictions
+- Model training and retraining
+- Classification confidence scoring
 
-## Taxonomy Management Endpoints
+## Endpoints
 
-### POST /taxonomy/nodes
+### POST /taxonomy/categories
 
-Create a new taxonomy node in the hierarchical tree.
+Create a new taxonomy category.
 
 **Request Body:**
 ```json
 {
   "name": "Machine Learning",
-  "parent_id": "550e8400-e29b-41d4-a716-446655440000",
-  "description": "ML and deep learning topics",
-  "keywords": ["neural networks", "deep learning"],
+  "description": "Resources about machine learning and AI",
+  "parent_id": null,
   "allow_resources": true
 }
 ```
 
-**Response (200 OK):**
+**Response:**
 ```json
 {
-  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Machine Learning",
   "slug": "machine-learning",
-  "parent_id": "550e8400-e29b-41d4-a716-446655440000",
-  "level": 1,
-  "path": "/computer-science/machine-learning",
-  "description": "ML and deep learning topics",
-  "keywords": ["neural networks", "deep learning"],
-  "resource_count": 0,
-  "descendant_resource_count": 0,
-  "is_leaf": true,
-  "allow_resources": true,
-  "created_at": "2024-01-01T10:00:00Z",
-  "updated_at": "2024-01-01T10:00:00Z"
-}
-```
-
----
-
-### PUT /taxonomy/nodes/{node_id}
-
-Update taxonomy node metadata.
-
-**Request Body:**
-```json
-{
-  "name": "Deep Learning",
-  "description": "Neural networks with multiple layers",
-  "keywords": ["CNN", "RNN", "transformers"],
+  "parent_id": null,
+  "level": 0,
+  "path": "/machine-learning",
+  "description": "Resources about machine learning and AI",
   "allow_resources": true
 }
 ```
 
-**Note:** To change parent, use the move endpoint instead.
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/categories \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Machine Learning",
+    "description": "ML and AI resources",
+    "allow_resources": true
+  }'
+```
 
 ---
 
-### DELETE /taxonomy/nodes/{node_id}
+### POST /taxonomy/classify/{resource_id}
 
-Delete a taxonomy node.
+Classify a resource using ML and/or rule-based classification.
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `cascade` | boolean | Delete descendants vs reparent children | false |
+| `use_ml` | boolean | Use ML-based classification | true |
+| `use_rules` | boolean | Use rule-based classification | true |
 
-**Behavior:**
-- `cascade=false`: Child nodes reparented to deleted node's parent
-- `cascade=true`: All descendant nodes deleted recursively
-- Fails if node has assigned resources
-
----
-
-### POST /taxonomy/nodes/{node_id}/move
-
-Move a taxonomy node to a different parent.
-
-**Request Body:**
+**Response:**
 ```json
 {
-  "new_parent_id": "770e8400-e29b-41d4-a716-446655440002"
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "primary_prediction": {
+    "node_id": "660e8400-e29b-41d4-a716-446655440001",
+    "node_name": "Machine Learning",
+    "confidence": 0.87,
+    "method": "ml"
+  },
+  "alternative_predictions": [
+    {
+      "node_id": "770e8400-e29b-41d4-a716-446655440002",
+      "node_name": "Deep Learning",
+      "confidence": 0.65,
+      "method": "ml"
+    }
+  ],
+  "applied_to_resource": true
 }
 ```
 
-**Validation:**
-- Prevents circular references
-- Prevents self-parenting
-- Updates level and path for node and all descendants
-
----
-
-### GET /taxonomy/tree
-
-Retrieve the hierarchical taxonomy tree as nested JSON.
-
-**Query Parameters:**
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `root_id` | string | Starting node UUID | null (all roots) |
-| `max_depth` | integer | Maximum tree depth | null (unlimited) |
-
-**Response:** Nested tree structure with `children` arrays.
-
----
-
-### GET /taxonomy/nodes/{node_id}/ancestors
-
-Get all ancestor nodes for breadcrumb navigation.
-
-**Performance:** O(depth) using materialized path, typically <10ms
-
----
-
-### GET /taxonomy/nodes/{node_id}/descendants
-
-Get all descendant nodes at any depth.
-
-**Performance:** O(1) query using path pattern matching, typically <10ms
-
----
-
-## Authority Control Endpoints
-
-### GET /authority/subjects/suggest
-
-Get subject suggestions for autocomplete.
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | string | Search query (required) |
-
-**Response:**
-```json
-["Machine Learning", "Artificial Intelligence", "Data Science"]
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/taxonomy/classify/550e8400-e29b-41d4-a716-446655440000?use_ml=true&use_rules=true"
 ```
 
 ---
 
-### GET /authority/classification/tree
+### GET /taxonomy/predictions/{resource_id}
 
-Retrieve the hierarchical classification tree (Dewey-style).
+Get classification predictions for a resource.
 
 **Response:**
 ```json
 {
-  "tree": [
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "primary_prediction": {
+    "node_id": "660e8400-e29b-41d4-a716-446655440001",
+    "node_name": "Machine Learning",
+    "confidence": 0.87,
+    "method": "ml"
+  },
+  "alternative_predictions": [
     {
-      "code": "000",
-      "name": "General",
-      "description": "General knowledge and reference",
-      "children": [
-        {
-          "code": "004",
-          "name": "Computer Science",
-          "description": "Computer science and programming",
-          "children": []
-        }
-      ]
+      "node_id": "770e8400-e29b-41d4-a716-446655440002",
+      "node_name": "Deep Learning",
+      "confidence": 0.65,
+      "method": "ml"
     }
   ]
 }
 ```
 
----
-
-### GET /classification/tree
-
-Alternative endpoint for classification tree (same response).
-
----
-
-## ML Classification Endpoints
-
-### POST /taxonomy/classify/{resource_id}
-
-Classify a resource using the fine-tuned ML model.
-
-**Response (202 Accepted):**
-```json
-{
-  "status": "accepted",
-  "message": "Classification task enqueued",
-  "resource_id": "550e8400-e29b-41d4-a716-446655440000"
-}
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/taxonomy/predictions/550e8400-e29b-41d4-a716-446655440000"
 ```
 
-**Background Processing:**
-1. Load ML model (lazy loading)
-2. Extract resource content
-3. Predict taxonomy categories with confidence scores
-4. Filter predictions (confidence >= 0.3)
-5. Store classifications
-6. Flag low-confidence predictions (< 0.7) for review
-
 ---
 
-### GET /taxonomy/active-learning/uncertain
+### POST /taxonomy/retrain
 
-Get resources with uncertain classifications for human review.
+Retrain the ML classification model with new labeled data.
+
+**Request Body:**
+```json
+{
+  "samples": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "node_id": "660e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      "resource_id": "770e8400-e29b-41d4-a716-446655440002",
+      "node_id": "660e8400-e29b-41d4-a716-446655440001"
+    }
+  ],
+  "validation_split": 0.2,
+  "model_type": "random_forest"
+}
+```
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `limit` | integer | Number of samples (1-1000) | 100 |
-
-**Response:**
-```json
-[
-  {
-    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Introduction to Neural Networks",
-    "uncertainty_score": 0.87,
-    "predicted_categories": [
-      {
-        "taxonomy_node_id": "660e8400-e29b-41d4-a716-446655440001",
-        "name": "Machine Learning",
-        "confidence": 0.65
-      }
-    ]
-  }
-]
-```
-
-**Uncertainty Metrics:**
-- **Entropy**: Prediction uncertainty across all classes
-- **Margin**: Difference between top-2 predictions
-- **Confidence**: Maximum probability
-
----
-
-### POST /taxonomy/active-learning/feedback
-
-Submit human classification feedback.
-
-**Request Body:**
-```json
-{
-  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
-  "correct_taxonomy_ids": ["node_id_1", "node_id_2"]
-}
-```
+| `validation_split` | float | Fraction for validation (0.0-1.0) | 0.2 |
+| `model_type` | string | Model type: random_forest or logistic | random_forest |
 
 **Response:**
 ```json
 {
-  "updated": true,
-  "message": "Feedback recorded successfully",
-  "manual_labels_count": 87,
-  "retraining_threshold": 100,
-  "retraining_recommended": false
+  "accuracy": 0.89,
+  "f1_score": 0.87,
+  "precision": 0.88,
+  "recall": 0.86,
+  "training_samples": 800,
+  "validation_samples": 200,
+  "model_type": "random_forest",
+  "training_time_seconds": 45.3
 }
+```
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/taxonomy/retrain \
+  -H "Content-Type: application/json" \
+  -d '{
+    "samples": [...],
+    "validation_split": 0.2,
+    "model_type": "random_forest"
+  }'
 ```
 
 ---
 
-### POST /taxonomy/train
+### GET /taxonomy/uncertain
 
-Initiate ML model fine-tuning.
+Get resources with uncertain classifications for active learning.
 
-**Request Body:**
+Returns resources where the classification confidence is below the threshold, indicating they would benefit from manual review.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `threshold` | float | Confidence threshold (0.0-1.0) | 0.5 |
+| `limit` | integer | Maximum resources to return | 100 |
+
+**Response:**
 ```json
 {
-  "labeled_data": [
-    {
-      "text": "Introduction to neural networks",
-      "taxonomy_ids": ["node_id_1", "node_id_2"]
-    }
-  ],
-  "unlabeled_texts": ["Article about CNNs..."],
-  "epochs": 3,
-  "batch_size": 16,
-  "learning_rate": 2e-5
+  "threshold": 0.5,
+  "count": 15,
+  "resource_ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "660e8400-e29b-41d4-a716-446655440001"
+  ]
 }
 ```
 
-**Response (202 Accepted):**
-```json
-{
-  "status": "accepted",
-  "message": "Training task enqueued",
-  "training_id": "990e8400-e29b-41d4-a716-446655440004",
-  "labeled_examples": 150,
-  "unlabeled_examples": 5000,
-  "estimated_duration_minutes": 15
-}
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/taxonomy/uncertain?threshold=0.5&limit=100"
 ```
-
-**Semi-Supervised Learning:**
-- High-confidence predictions (>= 0.9) become pseudo-labels
-- Enables effective training with <500 labeled examples
 
 ## Data Models
 
-### Taxonomy Node Model
+### Category Model
 
 ```json
 {
   "id": "uuid",
-  "name": "string",
-  "slug": "string",
-  "parent_id": "uuid or null",
+  "name": "string (required)",
+  "slug": "string (auto-generated)",
+  "description": "string (optional)",
+  "parent_id": "uuid (optional)",
   "level": "integer",
-  "path": "string (materialized path)",
-  "description": "string or null",
-  "keywords": ["string"],
-  "resource_count": "integer",
-  "descendant_resource_count": "integer",
-  "is_leaf": "boolean",
-  "allow_resources": "boolean",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "path": "string",
+  "allow_resources": "boolean (default: true)"
+}
+```
+
+### Classification Result Model
+
+```json
+{
+  "resource_id": "uuid",
+  "primary_prediction": {
+    "node_id": "uuid",
+    "node_name": "string",
+    "confidence": "float (0.0-1.0)",
+    "method": "ml|rules"
+  },
+  "alternative_predictions": [
+    {
+      "node_id": "uuid",
+      "node_name": "string",
+      "confidence": "float (0.0-1.0)",
+      "method": "ml|rules"
+    }
+  ],
+  "applied_to_resource": "boolean"
+}
+```
+
+### Training Metrics Model
+
+```json
+{
+  "accuracy": "float (0.0-1.0)",
+  "f1_score": "float (0.0-1.0)",
+  "precision": "float (0.0-1.0)",
+  "recall": "float (0.0-1.0)",
+  "training_samples": "integer",
+  "validation_samples": "integer",
+  "model_type": "random_forest|logistic",
+  "training_time_seconds": "float"
 }
 ```
 
@@ -342,10 +280,8 @@ The Taxonomy module is implemented as a self-contained vertical slice:
 from app.modules.taxonomy import (
     taxonomy_router,
     TaxonomyService,
-    MLClassificationService,
     ClassificationService,
-    TaxonomyNode,
-    ClassificationResult
+    MLClassificationService
 )
 ```
 
@@ -353,17 +289,15 @@ from app.modules.taxonomy import (
 
 **Emitted Events:**
 - `resource.classified` - When a resource is classified
-- `taxonomy.node_created` - When a taxonomy node is added
-- `taxonomy.model_trained` - When the ML model is retrained
+- `taxonomy.model_trained` - When ML model is trained/retrained
 
 **Subscribed Events:**
 - `resource.created` - Triggers automatic classification
 
 ## Related Documentation
 
-- [Resources API](resources.md) - Content management
+- [Resources API](resources.md) - Resource management
 - [Quality API](quality.md) - Quality assessment
-- [Authority API](authority.md) - Subject authority
 - [Architecture: Modules](../architecture/modules.md) - Module architecture
 - [Architecture: Events](../architecture/events.md) - Event system
-- [API Overview](overview.md) - Authentication, errors
+- [API Overview](overview.md) - Authentication, errors, pagination

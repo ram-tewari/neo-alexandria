@@ -108,6 +108,12 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 │ quality_score: Float (0.0-1.0)                                   │
 │ read_status: Enum (unread, in_progress, completed, archived)     │
 │ embedding: JSON (vector array)                                   │
+│ sparse_embedding: JSON (sparse vector for SPLADE)                │
+│ content: Text (full text content)                                │
+│ content_hash: String (SHA-256 hash for deduplication)            │
+│ doi: String (Digital Object Identifier for academic papers)      │
+│ isbn: String (International Standard Book Number)                │
+│ url: String (source URL)                                         │
 │ created_at: DateTime                                             │
 │ updated_at: DateTime                                             │
 └──────────────────────────────────────────────────────────────────┘
@@ -209,6 +215,51 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+### Curation Review Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                      CurationReview                              │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ resource_id: UUID (FK → Resource)                                │
+│ reviewer_id: String (indexed)                                    │
+│ status: Enum (pending, approved, rejected, needs_revision)       │
+│ priority: Enum (low, medium, high, urgent)                       │
+│ quality_rating: Float (0.0-1.0, nullable)                        │
+│ notes: Text (reviewer notes)                                     │
+│ rejection_reason: Text (nullable)                                │
+│ reviewed_at: DateTime (nullable)                                 │
+│ created_at: DateTime                                             │
+│ updated_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Scholarly Metadata Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    ScholarlyMetadata                             │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ resource_id: UUID (FK → Resource)                                │
+│ authors: JSON (array of author objects)                          │
+│ abstract: Text                                                   │
+│ doi: String                                                      │
+│ publication_date: Date                                           │
+│ journal: String                                                  │
+│ volume: String                                                   │
+│ issue: String                                                    │
+│ pages: String                                                    │
+│ equations: JSON (array of equation objects)                      │
+│ tables: JSON (array of table objects)                            │
+│ figures: JSON (array of figure objects)                          │
+│ keywords: JSON (array of strings)                                │
+│ created_at: DateTime                                             │
+│ updated_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Association Tables
@@ -237,6 +288,98 @@ CREATE TABLE resource_taxonomy (
     is_predicted BOOLEAN DEFAULT TRUE,
     PRIMARY KEY (resource_id, taxonomy_id)
 );
+
+CREATE INDEX idx_resource_taxonomy_resource ON resource_taxonomy(resource_id);
+CREATE INDEX idx_resource_taxonomy_taxonomy ON resource_taxonomy(taxonomy_id);
+```
+
+---
+
+## Database Indexes
+
+### Performance-Critical Indexes
+
+```sql
+-- Resource indexes
+CREATE INDEX idx_resources_classification_code ON resources(classification_code);
+CREATE INDEX idx_resources_quality_score ON resources(quality_score);
+CREATE INDEX idx_resources_type ON resources(type);
+CREATE INDEX idx_resources_language ON resources(language);
+CREATE INDEX idx_resources_created_at ON resources(created_at);
+CREATE INDEX idx_resources_content_hash ON resources(content_hash);
+
+-- Annotation indexes
+CREATE INDEX idx_annotations_resource_id ON annotations(resource_id);
+CREATE INDEX idx_annotations_user_id ON annotations(user_id);
+CREATE INDEX idx_annotations_created_at ON annotations(created_at);
+
+-- Collection indexes
+CREATE INDEX idx_collections_owner_id ON collections(owner_id);
+CREATE INDEX idx_collections_parent_id ON collections(parent_id);
+CREATE INDEX idx_collections_visibility ON collections(visibility);
+
+-- Citation indexes
+CREATE INDEX idx_citations_source_resource ON citations(source_resource_id);
+CREATE INDEX idx_citations_target_resource ON citations(target_resource_id);
+CREATE INDEX idx_citations_type ON citations(citation_type);
+
+-- User interaction indexes
+CREATE INDEX idx_user_interactions_user_id ON user_interactions(user_id);
+CREATE INDEX idx_user_interactions_resource_id ON user_interactions(resource_id);
+CREATE INDEX idx_user_interactions_type ON user_interactions(interaction_type);
+CREATE INDEX idx_user_interactions_created_at ON user_interactions(created_at);
+
+-- Curation review indexes
+CREATE INDEX idx_curation_reviews_resource_id ON curation_reviews(resource_id);
+CREATE INDEX idx_curation_reviews_reviewer_id ON curation_reviews(reviewer_id);
+CREATE INDEX idx_curation_reviews_status ON curation_reviews(status);
+CREATE INDEX idx_curation_reviews_priority ON curation_reviews(priority);
+
+-- Taxonomy indexes
+CREATE INDEX idx_taxonomy_nodes_parent_id ON taxonomy_nodes(parent_id);
+CREATE INDEX idx_taxonomy_nodes_slug ON taxonomy_nodes(slug);
+CREATE INDEX idx_taxonomy_nodes_level ON taxonomy_nodes(level);
+
+-- Scholarly metadata indexes
+CREATE INDEX idx_scholarly_metadata_resource_id ON scholarly_metadata(resource_id);
+CREATE INDEX idx_scholarly_metadata_doi ON scholarly_metadata(doi);
+```
+
+### Full-Text Search Indexes (SQLite FTS5)
+
+```sql
+-- Resource full-text search
+CREATE VIRTUAL TABLE resources_fts USING fts5(
+    resource_id UNINDEXED,
+    title,
+    description,
+    content,
+    creator,
+    subject,
+    tokenize='porter unicode61'
+);
+
+-- Annotation full-text search
+CREATE VIRTUAL TABLE annotations_fts USING fts5(
+    annotation_id UNINDEXED,
+    highlighted_text,
+    note,
+    tags,
+    tokenize='porter unicode61'
+);
+```
+
+### PostgreSQL-Specific Indexes
+
+```sql
+-- GIN indexes for JSONB columns (PostgreSQL only)
+CREATE INDEX idx_resources_subject_gin ON resources USING GIN (subject);
+CREATE INDEX idx_resources_embedding_gin ON resources USING GIN (embedding);
+CREATE INDEX idx_annotations_tags_gin ON annotations USING GIN (tags);
+
+-- Full-text search indexes (PostgreSQL)
+CREATE INDEX idx_resources_content_fts ON resources USING GIN (to_tsvector('english', content));
+CREATE INDEX idx_resources_title_fts ON resources USING GIN (to_tsvector('english', title));
 ```
 
 ---

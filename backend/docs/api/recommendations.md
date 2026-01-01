@@ -1,21 +1,76 @@
 ﻿# Recommendations API
 
-Personalized content recommendation endpoints using hybrid strategies.
+Hybrid recommendation engine endpoints for personalized content discovery.
 
 ## Overview
 
-The Recommendations API provides:
-- Multi-strategy recommendations (collaborative, content, graph)
-- User profile learning from interactions
-- Diversity optimization with MMR
-- Novelty promotion for discovery
-- Cold start handling for new users
+The Recommendations API provides a sophisticated hybrid recommendation system combining:
+- **Collaborative filtering**: Neural Collaborative Filtering (NCF) for user-item interactions
+- **Content-based**: Semantic similarity using embeddings
+- **Graph-based**: Citation network and knowledge graph relationships
+- **Quality filtering**: Exclude low-quality or outlier resources
+- **Diversity and novelty**: Configurable preferences for exploration vs exploitation
 
 ## Endpoints
 
 ### GET /recommendations
 
-Get personalized content recommendations based on library content.
+Get personalized recommendations for the authenticated user (hybrid approach).
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Number of recommendations (1-100) | 20 |
+| `strategy` | string | Strategy: collaborative/content/graph/hybrid | hybrid |
+| `diversity` | float | Override diversity preference (0.0-1.0) | - |
+| `min_quality` | float | Minimum quality threshold (0.0-1.0) | - |
+
+**Response:**
+```json
+{
+  "recommendations": [
+    {
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Machine Learning Fundamentals",
+      "score": 0.87,
+      "strategy": "hybrid",
+      "scores": {
+        "collaborative": 0.85,
+        "content": 0.90,
+        "graph": 0.82,
+        "quality": 0.88,
+        "recency": 0.75
+      },
+      "rank": 1,
+      "novelty_score": 0.65,
+      "view_count": 42
+    }
+  ],
+  "metadata": {
+    "total": 20,
+    "strategy": "hybrid",
+    "is_cold_start": false,
+    "interaction_count": 150,
+    "diversity_applied": true,
+    "novelty_applied": true,
+    "gini_coefficient": 0.35,
+    "diversity_preference": 0.3,
+    "novelty_preference": 0.2
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/recommendations?limit=20&strategy=hybrid&min_quality=0.7"
+```
+
+---
+
+### GET /recommendations/simple
+
+Get simple recommendations (basic endpoint for compatibility).
 
 **Query Parameters:**
 
@@ -28,189 +83,287 @@ Get personalized content recommendations based on library content.
 {
   "items": [
     {
-      "url": "https://example.com/new-ml-article",
-      "title": "Latest Advances in Machine Learning",
-      "snippet": "Recent developments in ML algorithms",
-      "relevance_score": 0.85,
-      "reasoning": ["Aligned with Machine Learning, Python"]
+      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Machine Learning Fundamentals",
+      "score": 0.87,
+      "reason": "Based on your interests"
     }
   ]
 }
 ```
 
-**Example:**
-```bash
-curl "http://127.0.0.1:8000/recommendations?limit=5"
-```
-
 ---
 
-### GET /api/recommendations
+### POST /recommendations/interactions
 
-Get personalized recommendations using hybrid strategy (Phase 11).
-
-**Query Parameters:**
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `limit` | integer | Number of recommendations (1-100) | 20 |
-| `strategy` | string | Recommendation strategy | hybrid |
-| `diversity` | float | Diversity preference (0.0-1.0) | user profile |
-| `min_quality` | float | Minimum quality threshold (0.0-1.0) | 0.0 |
-
-**Strategy Options:**
-- `collaborative` - Neural Collaborative Filtering (requires ≥5 interactions)
-- `content` - Content-based similarity only
-- `graph` - Graph-based relationships only
-- `hybrid` - Combines all strategies (default)
-
-**Response:**
-```json
-{
-  "recommendations": [
-    {
-      "resource_id": "550e8400-e29b-41d4-a716-446655440000",
-      "title": "Advanced Machine Learning Techniques",
-      "description": "Comprehensive guide to modern ML algorithms",
-      "score": 0.87,
-      "strategy": "hybrid",
-      "scores": {
-        "collaborative": 0.92,
-        "content": 0.85,
-        "graph": 0.78,
-        "quality": 0.88,
-        "recency": 0.65
-      },
-      "rank": 1,
-      "novelty_score": 0.42,
-      "source": "https://example.com/ml-guide",
-      "classification_code": "004",
-      "created_at": "2024-01-15T10:00:00Z"
-    }
-  ],
-  "metadata": {
-    "total": 20,
-    "strategy": "hybrid",
-    "diversity_applied": true,
-    "gini_coefficient": 0.24,
-    "user_interactions": 47,
-    "cold_start": false
-  }
-}
-```
-
-**Hybrid Scoring Formula:**
-```
-hybrid_score = 
-  0.35 * collaborative_score +
-  0.30 * content_score +
-  0.20 * graph_score +
-  0.10 * quality_score +
-  0.05 * recency_score
-```
-
-**Performance:**
-- Target latency: <200ms for 20 recommendations
-- Cache hit rate: >80% for user embeddings
-
-**Cold Start Behavior:**
-- Users with <5 interactions: Uses content + graph strategies only
-- Collaborative filtering enabled after 5+ interactions
-
----
-
-### POST /api/interactions
-
-Track user-resource interactions for personalized learning.
+Track a user-resource interaction.
 
 **Request Body:**
 ```json
 {
   "resource_id": "550e8400-e29b-41d4-a716-446655440000",
   "interaction_type": "view",
-  "dwell_time": 45,
-  "scroll_depth": 0.8,
-  "session_id": "session_abc123"
+  "dwell_time": 120,
+  "scroll_depth": 0.85,
+  "session_id": "session-123",
+  "rating": 5
 }
 ```
 
 **Interaction Types:**
-
-| Type | Strength | Description |
-|------|----------|-------------|
-| `view` | 0.1-0.5 | Based on dwell time and scroll depth |
-| `annotation` | 0.7 | User annotated the resource |
-| `collection_add` | 0.8 | User added to collection |
-| `export` | 0.9 | User exported the resource |
-| `rating` | varies | Based on rating value |
+- `view` - User viewed the resource
+- `annotation` - User created an annotation
+- `collection_add` - User added to collection
+- `export` - User exported the resource
+- `rating` - User rated the resource (1-5 stars)
 
 **Response (201 Created):**
 ```json
 {
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "user_id": "user123",
+  "interaction_id": "660e8400-e29b-41d4-a716-446655440001",
+  "user_id": "test-user",
   "resource_id": "550e8400-e29b-41d4-a716-446655440000",
   "interaction_type": "view",
-  "interaction_strength": 0.42,
+  "interaction_strength": 0.75,
   "is_positive": true,
-  "confidence": 0.85,
-  "dwell_time": 45,
-  "scroll_depth": 0.8,
-  "return_visits": 1,
-  "interaction_timestamp": "2024-01-15T14:30:00Z"
+  "created_at": "2024-01-01T10:00:00Z"
 }
 ```
 
-## Features
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/recommendations/interactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "view",
+    "dwell_time": 120
+  }'
+```
 
-### Multi-Strategy Recommendations
+---
 
-The hybrid engine combines multiple strategies:
+### GET /recommendations/profile
 
-1. **Collaborative Filtering (NCF)**
-   - Learns from user interaction patterns
-   - Requires ≥5 interactions to activate
-   - Uses neural network for user-item embeddings
+Get user profile settings.
 
-2. **Content-Based Similarity**
-   - Uses resource embeddings for semantic similarity
-   - Works immediately for new users
-   - Based on resource metadata and content
+**Response:**
+```json
+{
+  "user_id": "test-user",
+  "diversity_preference": 0.3,
+  "novelty_preference": 0.2,
+  "recency_bias": 0.5,
+  "research_domains": ["machine-learning", "nlp"],
+  "active_domain": "machine-learning",
+  "excluded_sources": ["example.com"],
+  "total_interactions": 150,
+  "last_active_at": "2024-01-01T10:00:00Z"
+}
+```
 
-3. **Graph-Based Discovery**
-   - Leverages knowledge graph relationships
-   - Finds resources through citation networks
-   - Discovers related topics through classification
+---
 
-### Diversity Optimization
+### PUT /recommendations/profile
 
-Uses Maximal Marginal Relevance (MMR) to:
-- Prevent filter bubbles
-- Balance relevance with diversity
-- Surface varied content types
+Update user profile settings.
 
-### Novelty Promotion
+**Request Body:**
+```json
+{
+  "diversity_preference": 0.4,
+  "novelty_preference": 0.3,
+  "recency_bias": 0.6,
+  "excluded_sources": ["example.com", "spam.com"],
+  "research_domains": ["machine-learning", "nlp", "computer-vision"],
+  "active_domain": "computer-vision"
+}
+```
 
-Surfaces lesser-known but relevant resources:
-- Tracks resource popularity
-- Boosts underexposed quality content
-- Balances popular vs. niche recommendations
+**Response:**
+```json
+{
+  "user_id": "test-user",
+  "diversity_preference": 0.4,
+  "novelty_preference": 0.3,
+  "recency_bias": 0.6,
+  "research_domains": ["machine-learning", "nlp", "computer-vision"],
+  "active_domain": "computer-vision",
+  "excluded_sources": ["example.com", "spam.com"],
+  "total_interactions": 150,
+  "last_active_at": "2024-01-01T10:00:00Z"
+}
+```
+
+---
+
+### GET /recommendations/interactions
+
+Get user interaction history.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Number of interactions (1-1000) | 100 |
+| `offset` | integer | Pagination offset | 0 |
+| `interaction_type` | string | Filter by type | - |
+
+**Response:**
+```json
+[
+  {
+    "interaction_id": "660e8400-e29b-41d4-a716-446655440001",
+    "user_id": "test-user",
+    "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+    "interaction_type": "view",
+    "interaction_strength": 0.75,
+    "is_positive": true,
+    "created_at": "2024-01-01T10:00:00Z"
+  }
+]
+```
+
+---
+
+### POST /recommendations/feedback
+
+Submit feedback for a recommendation.
+
+**Request Body:**
+```json
+{
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "was_clicked": true,
+  "was_useful": true,
+  "feedback_notes": "Very relevant to my research"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "feedback_id": "770e8400-e29b-41d4-a716-446655440002",
+  "user_id": "test-user",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "was_clicked": true,
+  "was_useful": true,
+  "created_at": "2024-01-01T10:00:00Z"
+}
+```
+
+---
+
+### GET /recommendations/metrics
+
+Get performance metrics for the recommendation system.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "metrics": {
+    "cache_hit_rate": 0.85,
+    "avg_response_time_ms": 125.5,
+    "slow_query_count": 3,
+    "recommendation_generation": {
+      "total_requests": 1250,
+      "avg_latency_ms": 145.2,
+      "p95_latency_ms": 280.5
+    }
+  }
+}
+```
+
+---
+
+### POST /recommendations/refresh
+
+Trigger a refresh of recommendations for the current user.
+
+**Response (202 Accepted):**
+```json
+{
+  "status": "accepted",
+  "message": "Recommendation refresh queued",
+  "user_id": "test-user"
+}
+```
+
+---
+
+### GET /recommendations/health
+
+Health check endpoint for Recommendations module.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "module": {
+    "name": "recommendations",
+    "version": "1.0.0",
+    "domain": "recommendations"
+  },
+  "database": {
+    "healthy": true,
+    "message": "Database connection healthy"
+  },
+  "services": {
+    "recommendation_service": {
+      "available": true,
+      "message": "Recommendation service available"
+    },
+    "user_profile_service": {
+      "available": true,
+      "message": "User profile service available"
+    }
+  },
+  "event_handlers": {
+    "registered": false,
+    "count": 0,
+    "events": []
+  },
+  "timestamp": "2024-01-01T10:00:00Z"
+}
+```
 
 ## Data Models
 
-### Recommendation Response Model
+### Recommendation Item Model
 
 ```json
 {
-  "items": [
-    {
-      "url": "string",
-      "title": "string",
-      "snippet": "string",
-      "relevance_score": "float (0.0-1.0)",
-      "reasoning": ["string"]
-    }
-  ]
+  "resource_id": "uuid",
+  "title": "string",
+  "score": "float (0.0-1.0)",
+  "strategy": "string",
+  "scores": {
+    "collaborative": "float",
+    "content": "float",
+    "graph": "float",
+    "quality": "float",
+    "recency": "float"
+  },
+  "rank": "integer",
+  "novelty_score": "float (0.0-1.0)",
+  "view_count": "integer"
+}
+```
+
+### User Profile Model
+
+```json
+{
+  "user_id": "string",
+  "diversity_preference": "float (0.0-1.0, default: 0.3)",
+  "novelty_preference": "float (0.0-1.0, default: 0.2)",
+  "recency_bias": "float (0.0-1.0, default: 0.5)",
+  "research_domains": ["string"],
+  "active_domain": "string",
+  "excluded_sources": ["string"],
+  "total_interactions": "integer",
+  "last_active_at": "datetime (ISO 8601)"
 }
 ```
 
@@ -218,17 +371,17 @@ Surfaces lesser-known but relevant resources:
 
 ```json
 {
-  "id": "uuid",
+  "interaction_id": "uuid",
   "user_id": "string",
   "resource_id": "uuid",
   "interaction_type": "view|annotation|collection_add|export|rating",
   "interaction_strength": "float (0.0-1.0)",
   "is_positive": "boolean",
-  "confidence": "float (0.0-1.0)",
-  "dwell_time": "integer (seconds)",
-  "scroll_depth": "float (0.0-1.0)",
-  "return_visits": "integer",
-  "interaction_timestamp": "datetime"
+  "dwell_time": "integer (seconds, optional)",
+  "scroll_depth": "float (0.0-1.0, optional)",
+  "session_id": "string (optional)",
+  "rating": "integer (1-5, optional)",
+  "created_at": "datetime (ISO 8601)"
 }
 ```
 
@@ -243,12 +396,8 @@ The Recommendations module is implemented as a self-contained vertical slice:
 ```python
 from app.modules.recommendations import (
     recommendations_router,
-    RecommendationService,
     HybridRecommendationService,
-    CollaborativeFilteringService,
-    NCFService,
     UserProfileService,
-    RecommendationRequest,
     RecommendationResponse
 )
 ```
@@ -258,18 +407,17 @@ from app.modules.recommendations import (
 **Emitted Events:**
 - `recommendation.generated` - When recommendations are generated
 - `user.profile_updated` - When user profile is updated
-- `interaction.recorded` - When user interaction is recorded
 
 **Subscribed Events:**
-- `annotation.created` - Updates user profile
-- `collection.resource_added` - Updates user profile
+- `resource.created` - Updates recommendation models
+- `annotation.created` - Tracks user interactions
+- `collection.resource_added` - Tracks user interactions
 
 ## Related Documentation
 
-- [Resources API](resources.md) - Content management
-- [Search API](search.md) - Discovery features
+- [Resources API](resources.md) - Resource management
+- [Collections API](collections.md) - Collection management
 - [Graph API](graph.md) - Knowledge graph
-- [Collections API](collections.md) - Collection recommendations
 - [Architecture: Modules](../architecture/modules.md) - Module architecture
 - [Architecture: Events](../architecture/events.md) - Event system
-- [API Overview](overview.md) - Authentication, errors
+- [API Overview](overview.md) - Authentication, errors, pagination

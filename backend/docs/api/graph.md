@@ -1,26 +1,58 @@
 ﻿# Graph API
 
-Knowledge graph and citation network endpoints for relationship exploration.
+Knowledge graph, citation extraction, and literature-based discovery endpoints.
 
 ## Overview
 
-The Graph API provides:
-- Knowledge graph for resource relationships
-- Citation network analysis
-- Mind-map visualization data
-- PageRank importance scoring
+The Graph API provides functionality for:
+- Citation extraction and graph construction
+- Hybrid neighbor exploration for mind-map visualization
+- Global overview of strongest connections
+- Graph embeddings (Node2Vec, DeepWalk)
+- Literature-Based Discovery (LBD) using ABC pattern
+- Hypothesis generation and validation
 
-## Knowledge Graph Endpoints
+## Endpoints
 
-### GET /graph/resource/{resource_id}/neighbors
+### POST /api/graph/resources/{resource_id}/extract-citations
 
-Find related resources for mind-map visualization.
+Extract citations from a resource and create citation edges in the graph.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+  "citations": [
+    {
+      "marker": "[1]",
+      "position": 1250,
+      "context": "...as shown in previous work [1]...",
+      "text": "[1]"
+    }
+  ],
+  "count": 1
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/graph/resources/550e8400-e29b-41d4-a716-446655440000/extract-citations"
+```
+
+---
+
+### GET /api/graph/resource/{resource_id}/neighbors
+
+Get hybrid neighbors for mind-map view.
+
+Returns a knowledge graph showing the most relevant neighbors for a given resource, ranked by hybrid scoring that combines vector similarity, shared subjects, and classification code matches.
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `limit` | integer | Number of neighbors (1-50) | 7 |
+| `limit` | integer | Maximum neighbors to return (1-20) | 10 |
 
 **Response:**
 ```json
@@ -30,212 +62,248 @@ Find related resources for mind-map visualization.
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "Machine Learning Fundamentals",
       "type": "article",
-      "classification_code": "004"
+      "quality_score": 0.85
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "title": "Neural Network Architectures",
+      "type": "paper",
+      "quality_score": 0.90
     }
   ],
   "edges": [
     {
       "source": "550e8400-e29b-41d4-a716-446655440000",
-      "target": "550e8400-e29b-41d4-a716-446655440001",
-      "weight": 0.76,
-      "details": {
-        "connection_type": "classification",
-        "vector_similarity": 0.8,
-        "shared_subjects": ["python", "programming"]
+      "target": "660e8400-e29b-41d4-a716-446655440001",
+      "weight": 0.87,
+      "relationship_type": "semantic_similarity",
+      "metadata": {
+        "vector_similarity": 0.85,
+        "shared_subjects": 3,
+        "classification_match": true
       }
     }
   ]
-}
-```
-
----
-
-### GET /graph/overview
-
-Get global relationship overview of strongest connections across the library.
-
-**Query Parameters:**
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `limit` | integer | Number of edges (1-200) | 50 |
-| `vector_threshold` | float | Minimum vector similarity | 0.85 |
-
-**Response:** Same structure as neighbors endpoint with `connection_type: "hybrid"`.
-
----
-
-## Citation Network Endpoints
-
-### GET /citations/resources/{resource_id}/citations
-
-Retrieve all citations for a specific resource.
-
-**Query Parameters:**
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `direction` | string | `outbound`, `inbound`, or `both` | both |
-
-**Response:**
-```json
-{
-  "resource_id": "uuid",
-  "outbound": [
-    {
-      "id": "uuid",
-      "source_resource_id": "uuid",
-      "target_url": "string",
-      "target_resource_id": "uuid or null",
-      "citation_type": "reference|dataset|code|general",
-      "context_snippet": "string or null",
-      "position": "integer or null",
-      "importance_score": "float or null",
-      "created_at": "datetime",
-      "target_resource": {
-        "id": "uuid",
-        "title": "string",
-        "source": "string"
-      }
-    }
-  ],
-  "inbound": [...],
-  "counts": {
-    "outbound": 5,
-    "inbound": 3,
-    "total": 8
-  }
 }
 ```
 
 **Example:**
 ```bash
-# Get all citations
-curl "http://127.0.0.1:8000/citations/resources/{resource_id}/citations"
-
-# Get only outbound citations
-curl "http://127.0.0.1:8000/citations/resources/{resource_id}/citations?direction=outbound"
+curl "http://127.0.0.1:8000/api/graph/resource/550e8400-e29b-41d4-a716-446655440000/neighbors?limit=10"
 ```
 
 ---
 
-### GET /citations/graph/citations
+### GET /api/graph/overview
 
-Get citation network for visualization.
+Get global overview of strongest connections across the library.
+
+Returns a knowledge graph showing the strongest relationships across the entire collection, combining high vector similarity pairs and significant tag overlap pairs.
 
 **Query Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `resource_ids` | string[] | Filter to specific resources | - |
-| `min_importance` | float | Minimum importance score (0.0-1.0) | 0.0 |
-| `depth` | integer | Graph traversal depth (1-2) | 1 |
+| `limit` | integer | Maximum edges to return (1-100) | 50 |
+| `vector_threshold` | float | Minimum vector similarity (0.0-1.0) | 0.7 |
 
 **Response:**
 ```json
 {
-  "nodes": [
+  "nodes": [...],
+  "edges": [...]
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/overview?limit=50&vector_threshold=0.7"
+```
+
+---
+
+### POST /api/graph/embeddings/generate
+
+Generate graph embeddings using Node2Vec or DeepWalk algorithm.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `algorithm` | string | Algorithm: "node2vec" or "deepwalk" | node2vec |
+| `dimensions` | integer | Embedding dimensionality (32-512) | 128 |
+| `walk_length` | integer | Length of random walks (10-200) | 80 |
+| `num_walks` | integer | Number of walks per node (1-100) | 10 |
+| `p` | float | Return parameter for Node2Vec (0.1-10.0) | 1.0 |
+| `q` | float | In-out parameter for Node2Vec (0.1-10.0) | 1.0 |
+
+**Response:**
+```json
+{
+  "status": "success",
+  "embeddings_computed": 1250,
+  "dimensions": 128,
+  "execution_time": 45.3
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/graph/embeddings/generate?algorithm=node2vec&dimensions=128&walk_length=80&num_walks=10"
+```
+
+---
+
+### GET /api/graph/embeddings/{node_id}
+
+Get the graph embedding for a specific node (resource).
+
+**Response:**
+```json
+{
+  "node_id": "550e8400-e29b-41d4-a716-446655440000",
+  "embedding": [0.123, -0.456, 0.789, ...],
+  "dimensions": 128
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/embeddings/550e8400-e29b-41d4-a716-446655440000"
+```
+
+---
+
+### GET /api/graph/embeddings/{node_id}/similar
+
+Find similar nodes using graph embeddings.
+
+Uses cosine similarity to rank nodes by their structural similarity in the citation graph.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `limit` | integer | Maximum similar nodes (1-100) | 10 |
+| `min_similarity` | float | Minimum similarity threshold (0.0-1.0) | 0.0 |
+
+**Response:**
+```json
+{
+  "node_id": "550e8400-e29b-41d4-a716-446655440000",
+  "similar_nodes": [
     {
-      "id": "uuid",
-      "title": "string",
-      "type": "source|cited|citing"
+      "node_id": "660e8400-e29b-41d4-a716-446655440001",
+      "similarity": 0.87,
+      "title": "Neural Network Architectures",
+      "type": "paper"
     }
   ],
-  "edges": [
+  "count": 1
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/embeddings/550e8400-e29b-41d4-a716-446655440000/similar?limit=10&min_similarity=0.7"
+```
+
+---
+
+### POST /api/graph/discover
+
+Discover hypotheses using ABC pattern (Literature-Based Discovery).
+
+Finds bridging concepts B that connect concept A to concept C through the literature. Returns hypotheses ranked by support strength and novelty.
+
+**Query Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `concept_a` | string | Starting concept (required) | - |
+| `concept_c` | string | Target concept (required) | - |
+| `limit` | integer | Maximum hypotheses (1-100) | 50 |
+| `start_date` | string | Start date for time-slicing (ISO format) | - |
+| `end_date` | string | End date for time-slicing (ISO format) | - |
+
+**Response:**
+```json
+{
+  "concept_a": "machine learning",
+  "concept_c": "drug discovery",
+  "hypotheses": [
     {
-      "source": "uuid",
-      "target": "uuid",
-      "type": "reference|dataset|code|general"
+      "bridging_concept": "molecular modeling",
+      "support_strength": 0.85,
+      "novelty_score": 0.72,
+      "evidence_count": 15,
+      "a_to_b_resources": ["resource_id_1", "resource_id_2"],
+      "b_to_c_resources": ["resource_id_3", "resource_id_4"]
     }
-  ]
+  ],
+  "count": 1,
+  "execution_time": 3.5,
+  "time_slice": {
+    "start_date": "2020-01-01",
+    "end_date": "2024-12-31"
+  }
 }
 ```
 
-**Performance Notes:**
-- Results limited to 100 nodes maximum
-- Depth capped at 2 to prevent exponential explosion
+**Target Response Time:** < 5 seconds for typical queries
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/graph/discover?concept_a=machine+learning&concept_c=drug+discovery&limit=50"
+```
 
 ---
 
-### POST /citations/resources/{resource_id}/citations/extract
+### GET /api/graph/hypotheses/{hypothesis_id}
 
-Manually trigger citation extraction for a resource.
+Get details for a specific hypothesis.
 
-**Response (202 Accepted):**
+**Response:**
 ```json
 {
-  "status": "queued",
-  "resource_id": "uuid",
-  "message": "Citation extraction queued for processing"
+  "id": "770e8400-e29b-41d4-a716-446655440005",
+  "hypothesis_type": "abc_pattern",
+  "a_resource": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Machine Learning Methods",
+    "type": "paper"
+  },
+  "c_resource": {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "title": "Drug Discovery Techniques",
+    "type": "paper"
+  },
+  "b_resources": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440002",
+      "title": "Molecular Modeling",
+      "type": "article",
+      "publication_year": 2023
+    }
+  ],
+  "plausibility_score": 0.85,
+  "path_strength": 0.78,
+  "path_length": 2,
+  "common_neighbors": 5,
+  "discovered_at": "2024-01-01T10:00:00Z",
+  "is_validated": null,
+  "validation_notes": null
 }
 ```
 
-**Background Processing:**
-1. Retrieve resource content from archive
-2. Determine content type (HTML, PDF, Markdown)
-3. Extract citations using appropriate parser
-4. Classify citation types
-5. Extract context snippets
-6. Store citations and trigger resolution
-
----
-
-### POST /citations/resolve
-
-Trigger internal citation resolution to match URLs to existing resources.
-
-**Response (202 Accepted):**
-```json
-{
-  "status": "queued"
-}
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/hypotheses/770e8400-e29b-41d4-a716-446655440005"
 ```
-
-**Processing:**
-- Queries citations with `target_resource_id = NULL`
-- Normalizes URLs and matches to existing resources
-- Processes in batches of 100
-
----
-
-### POST /citations/importance/compute
-
-Recompute PageRank importance scores for all citations.
-
-**Response (202 Accepted):**
-```json
-{
-  "status": "queued"
-}
-```
-
-**Algorithm:**
-- Damping factor: 0.85
-- Max iterations: 100
-- Convergence threshold: 1e-6
-- Normalizes scores to [0, 1] range
-
-**Performance:**
-- Small graphs (<100 nodes): <1s
-- Medium graphs (100-1000 nodes): <5s
-- Large graphs (1000+ nodes): <30s
-
----
-
-## Citation Type Classification
-
-The system automatically classifies citations:
-
-| Type | Indicators |
-|------|------------|
-| `dataset` | File extensions: `.csv`, `.json`, `.xml`, `.xlsx` |
-| `code` | Domains: `github.com`, `gitlab.com`, `bitbucket.org` |
-| `reference` | Domains: `doi.org`, `arxiv.org`, `scholar.google` |
-| `general` | All other URLs |
 
 ## Data Models
 
-### Graph Response Model
+### Knowledge Graph Model
 
 ```json
 {
@@ -244,7 +312,7 @@ The system automatically classifies citations:
       "id": "uuid",
       "title": "string",
       "type": "string",
-      "classification_code": "string"
+      "quality_score": "float (0.0-1.0)"
     }
   ],
   "edges": [
@@ -252,58 +320,40 @@ The system automatically classifies citations:
       "source": "uuid",
       "target": "uuid",
       "weight": "float (0.0-1.0)",
-      "details": {
-        "connection_type": "vector|subject|classification|hybrid",
-        "vector_similarity": "float",
-        "shared_subjects": ["string"],
-        "classification_match": "boolean"
-      }
+      "relationship_type": "string",
+      "metadata": "object"
     }
   ]
 }
 ```
 
-### Citation Model
+### Graph Embedding Model
+
+```json
+{
+  "node_id": "uuid",
+  "embedding": ["float"],
+  "dimensions": "integer"
+}
+```
+
+### Hypothesis Model
 
 ```json
 {
   "id": "uuid",
-  "source_resource_id": "uuid",
-  "target_resource_id": "uuid or null",
-  "target_url": "string",
-  "citation_type": "reference|dataset|code|general",
-  "context_snippet": "string or null",
-  "position": "integer or null",
-  "importance_score": "float or null (0.0-1.0)",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "hypothesis_type": "abc_pattern",
+  "a_resource_id": "uuid",
+  "c_resource_id": "uuid",
+  "b_resource_ids": ["uuid"],
+  "plausibility_score": "float (0.0-1.0)",
+  "path_strength": "float (0.0-1.0)",
+  "path_length": "integer",
+  "common_neighbors": "integer",
+  "discovered_at": "datetime (ISO 8601)",
+  "is_validated": "boolean (optional)",
+  "validation_notes": "string (optional)"
 }
-```
-
-## Integration Examples
-
-### Periodic Citation Resolution
-
-```bash
-# Cron job (daily at 2 AM)
-0 2 * * * curl -X POST http://127.0.0.1:8000/citations/resolve
-```
-
-### Periodic Importance Updates
-
-```bash
-# Cron job (weekly on Sunday at 3 AM)
-0 3 * * 0 curl -X POST http://127.0.0.1:8000/citations/importance/compute
-```
-
-### Citation Network Visualization
-
-```javascript
-const response = await fetch(
-  `/citations/graph/citations?resource_ids=${resourceId}&depth=2`
-);
-const graph = await response.json();
-renderGraph(graph.nodes, graph.edges);
 ```
 
 ## Module Structure
@@ -311,20 +361,16 @@ renderGraph(graph.nodes, graph.edges);
 The Graph module is implemented as a self-contained vertical slice:
 
 **Module**: `app.modules.graph`  
-**Router Prefix**: `/graph`, `/citations`, `/discovery`  
+**Router Prefix**: `/api/graph`  
 **Version**: 1.0.0
 
 ```python
 from app.modules.graph import (
-    graph_router,
-    citations_router,
-    discovery_router,
+    router,
     GraphService,
-    CitationService,
+    GraphEmbeddingsService,
     LBDService,
-    GraphEdge,
-    Citation,
-    DiscoveryHypothesis
+    KnowledgeGraph
 )
 ```
 
@@ -333,17 +379,16 @@ from app.modules.graph import (
 **Emitted Events:**
 - `citation.extracted` - When citations are extracted from a resource
 - `graph.updated` - When the knowledge graph is updated
-- `hypothesis.discovered` - When a new discovery hypothesis is generated
+- `hypothesis.discovered` - When a new hypothesis is discovered
 
 **Subscribed Events:**
-- `resource.created` - Extracts citations and updates graph
-- `resource.deleted` - Removes resource from graph
+- `resource.created` - Triggers citation extraction
+- `resource.deleted` - Removes nodes and edges from graph
 
 ## Related Documentation
 
-- [Resources API](resources.md) - Content management
-- [Search API](search.md) - Discovery features
-- [Recommendations API](recommendations.md) - Related content
+- [Resources API](resources.md) - Resource management
+- [Search API](search.md) - Search functionality
 - [Architecture: Modules](../architecture/modules.md) - Module architecture
 - [Architecture: Events](../architecture/events.md) - Event system
-- [API Overview](overview.md) - Authentication, errors
+- [API Overview](overview.md) - Authentication, errors, pagination

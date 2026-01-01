@@ -564,6 +564,173 @@ This will detect:
 
 ## Common Patterns
 
+### Annotation Workflow
+
+```python
+# 1. Create annotation on resource
+from app.modules.annotations.service import AnnotationService
+from app.modules.annotations.schema import AnnotationCreate
+
+service = AnnotationService(db)
+
+# Create highlight with note
+annotation_data = AnnotationCreate(
+    resource_id=resource_id,
+    user_id=user_id,
+    start_offset=100,
+    end_offset=250,
+    highlighted_text="Important concept for my research",
+    note="This relates to my hypothesis about X",
+    tags=["research", "hypothesis"],
+    color="#FFFF00"
+)
+
+annotation = service.create_annotation(annotation_data)
+# → Emits annotation.created event
+# → Recommendations module updates user profile
+
+# 2. Search annotations semantically
+results = service.search_annotations_semantic(
+    user_id=user_id,
+    query="machine learning concepts",
+    limit=10
+)
+
+# 3. Export annotations
+markdown_export = service.export_annotations(
+    user_id=user_id,
+    resource_id=resource_id,
+    format="markdown"
+)
+```
+
+### Classification Workflow
+
+```python
+# 1. Auto-classify resource on creation
+from app.modules.taxonomy.classification_service import ClassificationService
+
+classifier = ClassificationService(db)
+
+# Classify using hybrid approach (rules + ML)
+result = classifier.classify_resource(
+    resource_id=resource_id,
+    use_ml=True,
+    use_rules=True,
+    confidence_threshold=0.7
+)
+# → Emits resource.classified event
+# → Search module updates index with classification
+
+# 2. Train ML model with new data
+from app.modules.taxonomy.ml_service import MLClassificationService
+
+ml_service = MLClassificationService(db)
+
+# Fine-tune model with labeled data
+training_result = ml_service.fine_tune(
+    labeled_data=training_samples,
+    epochs=3,
+    batch_size=16,
+    learning_rate=2e-5
+)
+# → Emits taxonomy.model_trained event
+
+# 3. Active learning for model improvement
+uncertain_samples = ml_service.active_learning_uncertainty_sampling(
+    unlabeled_pool=unlabeled_resources,
+    n_samples=50,
+    strategy="least_confident"
+)
+# Returns resources that need manual labeling
+```
+
+### Curation Workflow
+
+```python
+# 1. Quality outlier triggers review
+# (Automatic via quality.outlier_detected event)
+
+# 2. Curator reviews flagged resource
+from app.modules.curation.service import CurationService
+from app.modules.curation.schema import ReviewCreate
+
+curation_service = CurationService(db)
+
+# Create review record
+review_data = ReviewCreate(
+    resource_id=resource_id,
+    reviewer_id=curator_id,
+    status="pending",
+    priority="high"
+)
+
+review = curation_service.create_review(review_data)
+
+# 3. Approve or reject resource
+approved_review = curation_service.update_review_status(
+    review_id=review.id,
+    status="approved",
+    notes="High quality content, approved for publication"
+)
+# → Emits curation.approved event
+
+# 4. Batch operations on multiple resources
+batch_result = curation_service.batch_approve(
+    resource_ids=[id1, id2, id3],
+    reviewer_id=curator_id,
+    notes="Batch approval for verified sources"
+)
+```
+
+### Literature-Based Discovery (LBD) Workflow
+
+```python
+# 1. Extract citations from new resource
+from app.modules.graph.service import GraphService
+
+graph_service = GraphService(db)
+
+# Automatic citation extraction on resource.created event
+# Manual trigger:
+citations = graph_service.extract_citations(resource_id)
+# → Emits citation.extracted event
+# → Updates knowledge graph
+
+# 2. Discover hidden connections (ABC pattern)
+from app.modules.graph.discovery import LBDService
+
+lbd_service = LBDService(db)
+
+# Find bridging concepts between A and C
+hypotheses = lbd_service.discover_hypotheses(
+    concept_a="machine learning",
+    concept_c="drug discovery",
+    max_bridging_concepts=5,
+    min_plausibility=0.6
+)
+# → Emits hypothesis.discovered event
+
+# Returns list of hypotheses with:
+# - Bridging concepts (B)
+# - Plausibility scores
+# - Evidence chains
+# - Supporting resources
+
+# 3. Traverse citation network
+path = graph_service.find_shortest_path(
+    source_resource_id=resource_a_id,
+    target_resource_id=resource_c_id,
+    max_depth=4
+)
+
+# 4. Compute resource importance
+pagerank_scores = graph_service.compute_pagerank(
+    damping_factor=0.85,
+    max_iterations=100
+)
+```
+
 ### Async Background Tasks
 
 For long-running operations, use Celery:

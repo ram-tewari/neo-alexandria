@@ -128,7 +128,7 @@ This document outlines the step-by-step tasks for rewriting the failing module t
 
 ### Task 8: Rewrite Scholarly Tests
 
-**Goal**: Create new `test_scholarly_endpoints.py` from scratch
+**Goal**: Create new `test_scholarly_endpoints.py` from scrnoatch
 
 **File**: `backend/tests/modules/test_scholarly_endpoints.py`
 

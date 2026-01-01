@@ -23,6 +23,9 @@ numpy>=2.0.0
 duckduckgo-search==5.3.1
 pdfplumber==0.11.0
 networkx==3.2.1
+gensim>=4.3.3
+# node2vec==0.4.6  # Optional: Install manually if needed for graph embeddings (requires numpy<2.0, incompatible with Python 3.13)
+# Note: Using gensim Word2Vec with custom Node2Vec implementation for Python 3.13 compatibility
 
 # Phase 6.5: Advanced Metadata Extraction Dependencies
 camelot-py[base]==0.11.0
@@ -47,3 +50,6 @@ redis>=5.0.0
 
 # Phase 12.6: Test Suite Optimization Dependencies
 pytest-xdist>=3.5.0
+
+# Phase 14.5: Property-Based Testing Dependencies
+hypothesis>=6.0.0

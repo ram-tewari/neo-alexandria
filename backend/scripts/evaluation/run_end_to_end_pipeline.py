@@ -25,6 +25,13 @@ from typing import Dict, Any
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 try:
     from scripts.dataset_acquisition.arxiv_collector import ArxivCollector
     from scripts.dataset_acquisition.dataset_preprocessor import DatasetPreprocessor
@@ -34,13 +41,6 @@ try:
 except ImportError as e:
     logger.warning(f"Some imports failed: {e}")
     logger.warning("This is expected if running verification only")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 
 class EndToEndPipeline:

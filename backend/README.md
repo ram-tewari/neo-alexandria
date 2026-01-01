@@ -4,6 +4,14 @@
 
 Neo Alexandria 2.0 is a comprehensive knowledge management system that provides intelligent content processing, advanced search capabilities, and personalized recommendations through a RESTful API. The system combines traditional information retrieval with modern AI-powered features to deliver a complete solution for knowledge curation and discovery.
 
+> **📚 Quick Navigation:**
+> - [Product Vision & Goals](../.kiro/steering/product.md) - What we're building and why
+> - [Tech Stack & Architecture](../.kiro/steering/tech.md) - How we're building it
+> - [Repository Structure](../.kiro/steering/structure.md) - Where things are located
+> - [API Documentation](docs/index.md) - Complete API reference
+> - [Architecture Guide](docs/architecture/overview.md) - System architecture details
+> - [Developer Setup](docs/guides/setup.md) - Getting started guide
+
 ## Key Features
 
 ### Content Ingestion and Processing
@@ -1124,11 +1132,18 @@ uvicorn backend.app.main:app --reload
 
 ## Support and Documentation
 
-### Comprehensive Documentation
-- **[API Reference](docs/API_DOCUMENTATION.md)** - Complete endpoint documentation
-- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Architecture and development setup
-- **[Examples](docs/EXAMPLES.md)** - Practical usage examples and tutorials
-- **[Changelog](docs/CHANGELOG.md)** - Version history and release notes
+### Steering Documentation (Start Here)
+- **[Product Overview](../.kiro/steering/product.md)** - Product vision, goals, and non-goals
+- **[Tech Stack](../.kiro/steering/tech.md)** - Technology choices, commands, and constraints
+- **[Repository Structure](../.kiro/steering/structure.md)** - Navigation guide and truth sources
+- **[Agent Routing](../AGENTS.md)** - Context management for AI agents
+
+### Technical Documentation
+- **[Documentation Index](docs/index.md)** - Complete documentation hub
+- **[API Reference](docs/api/overview.md)** - Modular API documentation by domain
+- **[Architecture Guide](docs/architecture/overview.md)** - System architecture and design
+- **[Developer Guide](docs/guides/setup.md)** - Setup and development workflows
+- **[Testing Guide](docs/guides/testing.md)** - Testing strategies and patterns
 
 ### Community and Support
 - GitHub Issues for bug reports and feature requests

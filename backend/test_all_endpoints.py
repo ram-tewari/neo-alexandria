@@ -223,7 +223,7 @@ class EndpointTester:
                 if response.status_code == 200:
                     print("✓ Server is ready!\n")
                     break
-            except:
+            except (requests.RequestException, requests.Timeout):
                 if i < max_retries - 1:
                     print(f"  Waiting... ({i+1}/{max_retries})")
                     time.sleep(2)

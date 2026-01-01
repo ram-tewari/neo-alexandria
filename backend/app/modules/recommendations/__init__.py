@@ -37,6 +37,7 @@ from .schema import (
     FeedbackRequest,
     FeedbackResponse,
 )
+from .handlers import register_handlers
 
 __all__ = [
     # Router
@@ -64,4 +65,7 @@ __all__ = [
     "RecommendationsResponse",
     "FeedbackRequest",
     "FeedbackResponse",
+    
+    # Event handlers
+    "register_handlers",
 ]

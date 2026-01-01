@@ -228,7 +228,7 @@ class CollaborativeFilteringService:
         """
         Train NCF model on positive interactions with negative sampling.
         
-        Queries positive interactions (is_positive=True) as training data.
+        Queries interactions with interaction_strength > 0.5 as positive training data.
         Implements negative sampling by randomly selecting non-interacted items.
         Uses interaction_strength as continuous feedback signal.
         
@@ -243,9 +243,9 @@ class CollaborativeFilteringService:
         try:
             logger.info(f"Starting NCF model training (epochs={epochs}, batch_size={batch_size})")
             
-            # Query positive interactions
+            # Query positive interactions (interaction_strength > 0.5 indicates positive)
             interactions = self.db.query(UserInteraction).filter(
-                UserInteraction.is_positive == 1
+                UserInteraction.interaction_strength > 0.5
             ).all()
             
             if len(interactions) < 10:

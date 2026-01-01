@@ -13,6 +13,7 @@ class PerformanceMetrics(BaseModel):
     status: str
     timestamp: str
     metrics: Dict[str, Any]
+    warnings: Optional[List[str]] = None
 
 
 class RecommendationQualityMetrics(BaseModel):

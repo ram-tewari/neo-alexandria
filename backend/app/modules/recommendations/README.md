@@ -1,13 +1,14 @@
 # Recommendations Module
 
-## Purpose
-
-The Recommendations module provides intelligent, personalized resource recommendations using a hybrid approach that combines multiple recommendation strategies:
+## Features
 
 - **Content-Based Filtering**: Recommends resources similar to those the user has interacted with
 - **Collaborative Filtering**: Recommends resources based on similar users' preferences
 - **Neural Collaborative Filtering (NCF)**: Deep learning-based recommendations
 - **Hybrid Strategies**: Combines multiple approaches with configurable weights
+- **User Profile Tracking** (Task 14 - Phase 16.7): Comprehensive interaction tracking and preference learning
+- **Temporal Weighting**: Recent interactions weighted more heavily (30-day half-life)
+- **Cold Start Handling**: Graceful handling of new users with no interaction history
 
 ## Architecture
 
@@ -32,8 +33,26 @@ recommendations/
 ### Database Models
 
 - **UserProfile**: Stores user preferences, interests, and profile data
+  - `interest_vector`: Learned embedding from interaction history
+  - `topics`: Frequent topics from interacted resources
+  - `tags`: Frequent tags from user annotations
+  - `interaction_counts`: Counts by interaction type
+  - `settings`: Diversity, novelty, and recency preferences (0.0-1.0)
+  - `total_interactions`: Total number of tracked interactions
+  - `last_active_at`: Timestamp of last interaction
+  
 - **UserInteraction**: Records user interactions with resources (views, annotations, collections)
+  - `interaction_type`: view, annotation, collection_add, export, rating
+  - `interaction_strength`: 0.0-1.0 based on engagement signals
+  - `dwell_time_seconds`: Time spent viewing (for view interactions)
+  - `scroll_depth`: Percentage scrolled (for view interactions)
+  - `return_visits`: Number of times user returned to same resource
+  - `created_at`: Timestamp for temporal weighting
+  
 - **RecommendationFeedback**: Captures user feedback on recommendations
+  - `feedback_type`: helpful, not_helpful, irrelevant
+  - `rating`: 1-5 star rating (optional)
+  - Used for active learning and model improvement
 
 ### Dependencies
 
@@ -80,7 +99,56 @@ await user_profile_service.update_from_interaction(
 )
 ```
 
-## Event-Driven Communication
+## User Profile Tracking (Task 14 - Phase 16.7)
+
+### Interaction Types and Strengths
+
+The system tracks various user interactions with implicit feedback signals:
+
+| Interaction Type | Strength | Signals Used |
+|-----------------|----------|--------------|
+| **View** | 0.1-0.5 | Dwell time (>30s), scroll depth (>50%) |
+| **Annotation** | 0.7 | Creating highlights or notes |
+| **Collection Add** | 0.8 | Adding resource to collection |
+| **Export** | 0.9 | Exporting annotations (high intent) |
+| **Rating** | 0.2-1.0 | Explicit 1-5 star rating |
+
+### Temporal Weighting
+
+Recent interactions are weighted more heavily using exponential decay:
+
+```python
+weight = 0.5 ^ (age_days / 30)
+```
+
+- **Recent interactions** (0-7 days): weight ≈ 0.87-1.0
+- **Medium age** (30 days): weight = 0.5
+- **Old interactions** (90 days): weight ≈ 0.125
+
+### Profile Computation
+
+User profiles are automatically computed from interaction history:
+
+1. **Interest Vector**: Mean of resource embeddings, weighted by interaction strength and recency
+2. **Frequent Topics**: Top topics from interacted resources
+3. **Frequent Tags**: Top tags from user annotations
+4. **Interaction Counts**: Breakdown by interaction type
+
+Profiles are recomputed every 10 interactions for efficiency.
+
+### Cold Start Handling
+
+For new users with no interaction history:
+- Interest vector: Zero vector (512 dimensions)
+- Topics: Empty list
+- Tags: Empty list
+- Recommendations: Fall back to popularity-based or content-based only
+
+### Caching Strategy
+
+- **Embedding cache**: In-memory cache with 5-minute TTL
+- **Cache invalidation**: On profile updates
+- **Performance**: <10ms for cached embeddings, <50ms for cache miss
 
 ### Events Subscribed
 
@@ -133,7 +201,112 @@ hybrid_score = (
 
 ## Usage Examples
 
+### Track User Interactions
+
+```python
+from app.modules.recommendations import UserProfileService
+
+profile_service = UserProfileService(db)
+
+# Track view interaction with engagement signals
+await profile_service.track_interaction(
+    user_id="user-123",
+    resource_id="resource-456",
+    interaction_type="view",
+    dwell_time_seconds=120,  # 2 minutes
+    scroll_depth=0.75  # Scrolled 75%
+)
+# Strength calculated: 0.1 + (120/300)*0.2 + 0.75*0.2 = 0.33
+
+# Track annotation creation
+await profile_service.track_interaction(
+    user_id="user-123",
+    resource_id="resource-456",
+    interaction_type="annotation"
+)
+# Strength: 0.7 (fixed)
+
+# Track collection add
+await profile_service.track_interaction(
+    user_id="user-123",
+    resource_id="resource-456",
+    interaction_type="collection_add"
+)
+# Strength: 0.8 (fixed)
+
+# Track explicit rating
+await profile_service.track_interaction(
+    user_id="user-123",
+    resource_id="resource-456",
+    interaction_type="rating",
+    rating=5
+)
+# Strength: 1.0 (5 stars)
+```
+
+### Get User Profile
+
+```python
+# Get or create user profile
+profile = await profile_service.get_or_create_profile(user_id="user-123")
+
+# Profile structure:
+{
+    "user_id": "user-123",
+    "interest_vector": [0.1, 0.2, ...],  # 512-dim embedding
+    "topics": ["machine learning", "nlp", "computer vision"],
+    "tags": ["important", "research", "todo"],
+    "interaction_counts": {
+        "view": 45,
+        "annotation": 12,
+        "collection_add": 8,
+        "export": 3,
+        "rating": 5
+    },
+    "total_interactions": 73,
+    "last_active_at": "2024-12-31T12:00:00Z",
+    "settings": {
+        "diversity_preference": 0.5,
+        "novelty_preference": 0.3,
+        "recency_preference": 0.7
+    }
+}
+```
+
+### Update Profile Settings
+
+```python
+# Update user preferences
+await profile_service.update_profile_settings(
+    user_id="user-123",
+    diversity_preference=0.7,  # More diverse recommendations
+    novelty_preference=0.5,    # Balance familiar and novel
+    recency_preference=0.8     # Prefer recent content
+)
+```
+
 ### Get Personalized Recommendations
+
+```python
+GET /recommendations/personalized?user_id=123&limit=10&strategy=hybrid
+
+Response:
+{
+  "recommendations": [
+    {
+      "resource_id": 456,
+      "score": 0.95,
+      "reason": "Similar to resources you've annotated",
+      "strategy": "content_based"
+    },
+    ...
+  ],
+  "strategy": "hybrid",
+  "generated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Get Personalized Recommendations (continued)
 
 ```python
 GET /recommendations/personalized?user_id=123&limit=10&strategy=hybrid

@@ -32,6 +32,7 @@ from .schema import (
     LowQualityResponse,
     BulkQualityCheckRequest,
 )
+from .handlers import register_handlers
 
 __all__ = [
     "curation_router",
@@ -43,4 +44,5 @@ __all__ = [
     "QualityAnalysisResponse",
     "LowQualityResponse",
     "BulkQualityCheckRequest",
+    "register_handlers",
 ]

@@ -28,8 +28,8 @@ __domain__ = "resources"
 def __getattr__(name):
     """Lazy import to avoid model conflicts during migration phase."""
     if name == "resources_router":
-        from .router import router
-        return router
+        from .router import router as resources_router
+        return resources_router
     elif name == "register_handlers":
         from .handlers import register_handlers
         return register_handlers

@@ -1,104 +1,148 @@
 """
-Collections Module - Event Handlers
+Collections Event Handlers
 
-Event handlers for cross-module communication.
-Handles events from other modules that affect collections.
+Handles events from other modules and emits collection-related events.
 
-Events:
-- resource.deleted: Recompute embeddings for affected collections
+Events Subscribed:
+- resource.deleted: Remove resource from all collections when deleted
+
+Events Emitted:
+- collection.resource_added: When a resource is added to a collection
+- collection.resource_removed: When a resource is removed from a collection
 """
 
 import logging
-from typing import Dict, Any
-import uuid
+from uuid import UUID
 
-from ...shared.event_bus import event_bus
-from ...shared.database import get_sync_db
-from .service import CollectionService
+from app.shared.event_bus import event_bus, EventPriority
+from app.shared.database import get_sync_db
 
 logger = logging.getLogger(__name__)
 
 
-def handle_resource_deleted(payload: Dict[str, Any]) -> None:
+def handle_resource_deleted(event):
     """
-    Handle resource deletion event.
+    Handle resource.deleted event to remove resource from collections.
     
-    When a resource is deleted, we need to:
+    When a resource is deleted, we:
     1. Find all collections containing that resource
-    2. Recompute their embeddings (since a member was removed)
+    2. Remove the resource from each collection
+    3. Emit collection.resource_removed events
     
     Args:
-        payload: Event payload containing:
-            - resource_id: UUID of deleted resource
+        event: Event object containing resource deletion details
+            - resource_id: UUID of the deleted resource
     """
     try:
-        resource_id = payload.get("resource_id")
-        
-        if not resource_id:
-            logger.warning("resource.deleted event missing resource_id")
-            return
-        
-        # Convert to UUID if string
-        if isinstance(resource_id, str):
-            resource_id = uuid.UUID(resource_id)
-        
-        logger.info(f"Handling resource.deleted event for resource {resource_id}")
+        payload = event.data
+        resource_id = UUID(payload.get('resource_id'))
         
         # Get database session
-        db_gen = get_sync_db()
-        db = next(db_gen)
+        db = next(get_sync_db())
         
         try:
-            # Create service instance
-            service = CollectionService(db)
+            from .model import CollectionResource
+            from sqlalchemy import select
             
-            # Find collections containing this resource
-            collections = service.find_collections_with_resource(resource_id)
+            # Find all collection associations for this resource
+            stmt = select(CollectionResource).where(CollectionResource.resource_id == resource_id)
+            result = db.execute(stmt)
+            associations = result.scalars().all()
             
-            if not collections:
-                logger.debug(f"No collections contain resource {resource_id}")
-                return
+            # Delete each association and emit events
+            for association in associations:
+                collection_id = str(association.collection_id)
+                
+                # Delete association
+                db.delete(association)
+                
+                # Emit collection.resource_removed event
+                event_bus.emit(
+                    'collection.resource_removed',
+                    {
+                        'collection_id': collection_id,
+                        'resource_id': str(resource_id),
+                        'reason': 'resource_deleted'
+                    },
+                    priority=EventPriority.NORMAL
+                )
             
-            logger.info(f"Found {len(collections)} collections containing resource {resource_id}")
+            db.commit()
             
-            # Recompute embeddings for each affected collection
-            for collection in collections:
-                try:
-                    logger.debug(f"Recomputing embedding for collection {collection.id} ({collection.name})")
-                    service.compute_collection_embedding(collection.id)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to recompute embedding for collection {collection.id}: {e}",
-                        exc_info=True
-                    )
-            
-            logger.info(f"Successfully updated {len(collections)} collections after resource deletion")
+            logger.info(f"Removed resource {resource_id} from {len(associations)} collections")
             
         finally:
-            # Close database session
-            try:
-                next(db_gen)
-            except StopIteration:
-                pass
-    
+            db.close()
+            
     except Exception as e:
-        logger.error(
-            f"Error handling resource.deleted event: {e}",
-            exc_info=True,
-            extra={"payload": payload}
+        logger.error(f"Error handling resource.deleted event: {str(e)}", exc_info=True)
+
+
+def emit_collection_resource_added(collection_id: str, resource_id: str, user_id: str):
+    """
+    Emit collection.resource_added event.
+    
+    This should be called by the collection service after adding a resource to a collection.
+    
+    Args:
+        collection_id: UUID of the collection
+        resource_id: UUID of the resource added
+        user_id: User ID who added the resource
+    """
+    try:
+        event_bus.emit(
+            'collection.resource_added',
+            {
+                'collection_id': collection_id,
+                'resource_id': resource_id,
+                'user_id': user_id
+            },
+            priority=EventPriority.NORMAL
         )
+        logger.debug(f"Emitted collection.resource_added event for collection {collection_id}")
+    except Exception as e:
+        logger.error(f"Error emitting collection.resource_added event: {str(e)}", exc_info=True)
 
 
-def register_handlers() -> None:
+def emit_collection_resource_removed(collection_id: str, resource_id: str, user_id: str = None, reason: str = 'user_removed'):
     """
-    Register all event handlers for the Collections module.
+    Emit collection.resource_removed event.
     
-    This should be called during application startup to ensure
-    the module responds to relevant events from other modules.
+    This should be called by the collection service after removing a resource from a collection.
+    
+    Args:
+        collection_id: UUID of the collection
+        resource_id: UUID of the resource removed
+        user_id: Optional user ID who removed the resource
+        reason: Reason for removal (user_removed, resource_deleted, etc.)
     """
-    logger.info("Registering Collections module event handlers")
+    try:
+        payload = {
+            'collection_id': collection_id,
+            'resource_id': resource_id,
+            'reason': reason
+        }
+        if user_id:
+            payload['user_id'] = user_id
+            
+        event_bus.emit(
+            'collection.resource_removed',
+            payload,
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted collection.resource_removed event for collection {collection_id}")
+    except Exception as e:
+        logger.error(f"Error emitting collection.resource_removed event: {str(e)}", exc_info=True)
+
+
+def register_handlers():
+    """
+    Register all event handlers for the collections module.
     
-    # Subscribe to resource.deleted event
-    event_bus.subscribe("resource.deleted", handle_resource_deleted)
+    This function should be called during application startup to
+    subscribe to events from other modules.
+    """
+    # Subscribe to resource events
+    event_bus.on('resource.deleted', handle_resource_deleted, async_handler=False)
     
-    logger.info("Collections module event handlers registered successfully")
+    logger.info("Collections module event handlers registered")

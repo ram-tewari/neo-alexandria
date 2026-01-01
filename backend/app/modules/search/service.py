@@ -25,12 +25,10 @@ from typing import Any, Dict, List, Tuple
 from sqlalchemy.orm import Session
 
 # Import existing services (delayed import for AdvancedSearchService to avoid circular dependency)
-from ...services.hybrid_search_methods import (
-    pure_vector_search
-)
-from ...services.reciprocal_rank_fusion_service import ReciprocalRankFusionService
-from ...services.reranking_service import RerankingService
-from ...services.sparse_embedding_service import SparseEmbeddingService
+from .hybrid_methods import pure_vector_search
+from .rrf import ReciprocalRankFusionService
+from .reranking import RerankingService
+from .sparse_embeddings import SparseEmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -236,8 +234,8 @@ class VectorSearchStrategy:
         limit: int = 100
     ) -> List[Tuple[str, float]]:
         """Execute dense vector search and return (resource_id, score) tuples."""
-        # Use pure_vector_search from hybrid_search_methods
-        from ...modules.search.schema import SearchQuery
+        # Use pure_vector_search from hybrid_methods
+        from .schema import SearchQuery
         AdvancedSearchService = _get_advanced_search_service()
         search_query = SearchQuery(text=query, limit=limit, offset=0)
         items, _, _, _ = pure_vector_search(self.db, search_query, AdvancedSearchService)

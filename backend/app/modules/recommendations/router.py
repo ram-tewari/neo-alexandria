@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 
 from app.shared.database import get_sync_db
-from app.database.models import User, RecommendationFeedback
+from app.database.models import RecommendationFeedback
 
 # Module-local imports
 from .service import generate_recommendations
@@ -161,25 +161,23 @@ class FeedbackResponse(BaseModel):
 # Helper Functions
 # ============================================================================
 
-def _get_current_user_id(db: Session) -> UUID:
+def _get_current_user_id() -> UUID:
     """
     Get current authenticated user ID.
     
-    For now, returns a test user. In production, this would extract
-    user ID from JWT token or session.
+    In production, this would extract the user ID from:
+    - JWT token in Authorization header
+    - Session cookie
+    - API key
+    
+    For now, returns a fixed test user ID. The actual User record
+    should be created by application startup or test fixtures.
+    
+    TODO: Implement proper authentication with JWT tokens
     """
-    # TODO: Replace with actual authentication
-    # For now, get or create a test user
-    test_user = db.query(User).filter(User.email == "test@example.com").first()
-    if not test_user:
-        test_user = User(
-            email="test@example.com",
-            username="testuser"
-        )
-        db.add(test_user)
-        db.commit()
-        db.refresh(test_user)
-    return test_user.id
+    # Return a fixed UUID for the test user
+    # The test fixtures will create a User with this ID
+    return UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _get_hybrid_recommendation_service(db: Session) -> HybridRecommendationService:
@@ -203,6 +201,7 @@ async def get_recommendations_hybrid(
     diversity: Optional[float] = Query(None, ge=0.0, le=1.0, description="Override diversity preference"),
     min_quality: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum quality threshold"),
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Get personalized recommendations for the authenticated user (Phase 11 hybrid).
@@ -213,13 +212,12 @@ async def get_recommendations_hybrid(
         diversity: Override user's diversity preference (0.0-1.0)
         min_quality: Minimum quality threshold (0.0-1.0)
         db: Database session
+        user_id: Current authenticated user ID
         
     Returns:
         RecommendationsResponse with recommendations and metadata
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # Validate strategy
         allowed_strategies = ["collaborative", "content", "graph", "hybrid"]
@@ -272,6 +270,9 @@ async def get_recommendations_hybrid(
             metadata=metadata
         )
     
+    except HTTPException:
+        # Re-raise HTTPException without modification
+        raise
     except ValueError as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -317,6 +318,7 @@ def get_recommendations_simple(limit: int = Query(10, ge=1, le=100), db: Session
 async def track_interaction(
     request: InteractionRequest,
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Track a user-resource interaction.
@@ -324,13 +326,12 @@ async def track_interaction(
     Args:
         request: InteractionRequest with interaction details
         db: Database session
+        user_id: Current authenticated user ID
         
     Returns:
         InteractionResponse with interaction details
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # Parse resource_id
         try:
@@ -378,19 +379,19 @@ async def track_interaction(
 @recommendations_router.get("/profile", response_model=ProfileResponse)
 async def get_profile(
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Get user profile settings.
     
     Args:
         db: Database session
+        user_id: Current authenticated user ID
         
     Returns:
         ProfileResponse with user profile settings
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # Get profile
         profile_service = _get_user_profile_service(db)
@@ -431,10 +432,79 @@ async def get_profile(
         )
 
 
+@recommendations_router.get("/interactions", response_model=List[InteractionResponse])
+async def get_user_interactions(
+    limit: int = Query(100, ge=1, le=1000, description="Number of interactions to return"),
+    offset: int = Query(0, ge=0, description="Number of interactions to skip"),
+    interaction_type: Optional[str] = Query(None, description="Filter by interaction type"),
+    db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
+):
+    """
+    Get user interaction history.
+    
+    Args:
+        limit: Number of interactions to return (1-1000, default 100)
+        offset: Number of interactions to skip (default 0)
+        interaction_type: Optional filter by interaction type
+        db: Database session
+        user_id: Current authenticated user ID
+        
+    Returns:
+        List of InteractionResponse with interaction details
+    """
+    try:
+        from app.database.models import UserInteraction
+        
+        # Build query
+        query = db.query(UserInteraction).filter(
+            UserInteraction.user_id == user_id
+        )
+        
+        # Apply interaction type filter if provided
+        if interaction_type:
+            allowed_types = ["view", "annotation", "collection_add", "export", "rating"]
+            if interaction_type not in allowed_types:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid interaction_type. Must be one of {allowed_types}"
+                )
+            query = query.filter(UserInteraction.interaction_type == interaction_type)
+        
+        # Order by most recent first
+        query = query.order_by(UserInteraction.interaction_timestamp.desc())
+        
+        # Apply pagination
+        interactions = query.offset(offset).limit(limit).all()
+        
+        # Convert to response format
+        return [
+            InteractionResponse(
+                interaction_id=str(interaction.id),
+                user_id=str(interaction.user_id),
+                resource_id=str(interaction.resource_id),
+                interaction_type=interaction.interaction_type,
+                interaction_strength=interaction.interaction_strength,
+                is_positive=bool(interaction.is_positive),
+                created_at=interaction.created_at
+            )
+            for interaction in interactions
+        ]
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving interactions: {str(e)}"
+        )
+
+
 @recommendations_router.put("/profile", response_model=ProfileResponse)
 async def update_profile(
     request: ProfileUpdateRequest,
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Update user profile settings.
@@ -442,13 +512,12 @@ async def update_profile(
     Args:
         request: ProfileUpdateRequest with updated settings
         db: Database session
+        user_id: Current authenticated user ID
         
     Returns:
         ProfileResponse with updated profile settings
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # Update profile
         profile_service = _get_user_profile_service(db)
@@ -506,6 +575,7 @@ async def update_profile(
 async def submit_feedback(
     request: FeedbackRequest,
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Submit feedback for a recommendation.
@@ -513,13 +583,12 @@ async def submit_feedback(
     Args:
         request: FeedbackRequest with feedback details
         db: Database session
+        user_id: Current authenticated user ID
         
     Returns:
         FeedbackResponse with feedback details
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # Parse resource_id
         try:
@@ -531,31 +600,37 @@ async def submit_feedback(
             )
         
         # Create feedback record using the actual database schema
-        # Note: The database schema has Phase 11 fields, not the simplified Phase 5.5 schema
         feedback = RecommendationFeedback(
             user_id=user_id,
             resource_id=resource_id,
-            recommendation_strategy="hybrid",  # Default strategy
-            recommendation_score=0.0,  # Would be populated from recommendation context
-            rank_position=0,  # Would be populated from recommendation context
-            was_clicked=1 if request.was_clicked else 0,
-            was_useful=1 if request.was_useful else 0 if request.was_useful is not None else None,
-            feedback_notes=request.feedback_notes
+            feedback_type="click" if request.was_clicked else "view",
+            feedback_value=1.0 if request.was_useful else 0.5 if request.was_clicked else 0.0,
+            context={
+                "was_clicked": request.was_clicked,
+                "was_useful": request.was_useful,
+                "feedback_notes": request.feedback_notes
+            }
         )
         
         db.add(feedback)
         db.commit()
         db.refresh(feedback)
         
+        # Extract values from context for response
+        context = feedback.context or {}
+        
         return FeedbackResponse(
             feedback_id=str(feedback.id),
             user_id=str(feedback.user_id),
             resource_id=str(feedback.resource_id),
-            was_clicked=bool(feedback.was_clicked),
-            was_useful=bool(feedback.was_useful) if feedback.was_useful is not None else None,
+            was_clicked=context.get("was_clicked", False),
+            was_useful=context.get("was_useful"),
             created_at=feedback.created_at
         )
     
+    except HTTPException:
+        # Re-raise HTTPException without modification
+        raise
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -597,6 +672,7 @@ async def get_performance_metrics():
 @recommendations_router.post("/refresh", status_code=status.HTTP_202_ACCEPTED)
 async def refresh_recommendations(
     db: Session = Depends(get_sync_db),
+    user_id: UUID = Depends(_get_current_user_id),
 ):
     """
     Trigger a refresh of recommendations for the current user.
@@ -610,8 +686,6 @@ async def refresh_recommendations(
         Status message indicating refresh has been queued
     """
     try:
-        # Get current user
-        user_id = _get_current_user_id(db)
         
         # In a production system, this would queue a background task
         # For now, we'll just return a success response

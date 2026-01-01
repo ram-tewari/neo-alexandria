@@ -17,6 +17,10 @@ Features:
 - Quality-based filtering and sorting
 - Content archiving and organization
 - Workflow management for content curation
+- Batch review operations (approve/reject/flag)
+- Batch tagging
+- Curator assignment
+- Review tracking
 """
 
 from __future__ import annotations
@@ -25,15 +29,16 @@ from pathlib import Path
 import uuid
 from typing import List, Tuple, Dict, Any, Optional
 from datetime import datetime, timezone
+import time
 
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
 from ...config.settings import Settings
-from ...database.models import Resource
-from ...schemas.resource import ResourceUpdate
-from ...services.quality_service import ContentQualityAnalyzer
-from .schema import ReviewQueueParams, BatchUpdateResult
+from ...database.models import Resource, CurationReview
+from ...shared.event_bus import EventBus
+from ..quality.service import ContentQualityAnalyzer
+from .schema import ReviewQueueParams, BatchUpdateResult, EnhancedReviewQueueParams
 
 
 class CurationService:
@@ -49,7 +54,10 @@ class CurationService:
         """
         self.db = db
         self.settings = settings
-        self._ensure_tables()
+        self.event_bus = EventBus()
+        # Don't call _ensure_tables() - tables should already exist
+        # In production, tables are created by Alembic migrations
+        # In tests, tables are created by test fixtures
     
     def _ensure_tables(self):
         """Ensure database tables exist."""
@@ -58,6 +66,253 @@ class CurationService:
             Base.metadata.create_all(bind=self.db.get_bind())
         except Exception:
             pass
+    
+    def batch_review(
+        self,
+        resource_ids: List[uuid.UUID],
+        action: str,
+        curator_id: str,
+        comment: Optional[str] = None
+    ) -> BatchUpdateResult:
+        """
+        Perform batch review operations on multiple resources.
+        
+        Args:
+            resource_ids: List of resource UUIDs to review
+            action: Review action (approve, reject, flag)
+            curator_id: ID of curator performing review
+            comment: Optional comment for review
+            
+        Returns:
+            BatchUpdateResult with updated count and failed IDs
+        """
+        start_time = time.time()
+        failed: List[uuid.UUID] = []
+        updated_count = 0
+        
+        # Validate action
+        if action not in ["approve", "reject", "flag"]:
+            raise ValueError(f"Invalid action: {action}")
+        
+        # Map action to curation status
+        status_map = {
+            "approve": "approved",
+            "reject": "rejected",
+            "flag": "flagged"
+        }
+        new_status = status_map[action]
+        
+        # Process each resource
+        for rid in resource_ids:
+            try:
+                resource = self.db.query(Resource).filter(Resource.id == rid).first()
+                if not resource:
+                    failed.append(rid)
+                    continue
+                
+                # Update resource status
+                resource.curation_status = new_status
+                resource.updated_at = datetime.now(timezone.utc)
+                
+                # Create review record
+                review = CurationReview(
+                    resource_id=rid,
+                    curator_id=curator_id,
+                    action=action,
+                    comment=comment,
+                    timestamp=datetime.now(timezone.utc)
+                )
+                self.db.add(review)
+                self.db.add(resource)
+                
+                # Emit curation.reviewed event
+                from .handlers import emit_curation_reviewed
+                emit_curation_reviewed(
+                    review_id=str(review.id) if hasattr(review, 'id') else str(uuid.uuid4()),
+                    resource_id=str(rid),
+                    reviewer_id=curator_id,
+                    status=new_status,
+                    quality_rating=resource.quality_score
+                )
+                
+                # Emit curation.approved event if approved
+                if action == "approve":
+                    from .handlers import emit_curation_approved
+                    emit_curation_approved(
+                        review_id=str(review.id) if hasattr(review, 'id') else str(uuid.uuid4()),
+                        resource_id=str(rid),
+                        reviewer_id=curator_id,
+                        approval_notes=comment
+                    )
+                
+                updated_count += 1
+                
+            except Exception:
+                failed.append(rid)
+                continue
+        
+        # Commit transaction
+        self.db.commit()
+        
+        # Emit event
+        elapsed_time = time.time() - start_time
+        self.event_bus.emit(
+            "curation.batch_reviewed",
+            {
+                "resource_ids": [str(rid) for rid in resource_ids],
+                "action": action,
+                "curator_id": curator_id,
+                "updated_count": updated_count,
+                "failed_count": len(failed),
+                "elapsed_time_seconds": elapsed_time
+            }
+        )
+        
+        return BatchUpdateResult(updated_count=updated_count, failed_ids=failed)
+    
+    def batch_tag(
+        self,
+        resource_ids: List[uuid.UUID],
+        tags: List[str]
+    ) -> BatchUpdateResult:
+        """
+        Add tags to multiple resources in batch.
+        
+        Args:
+            resource_ids: List of resource UUIDs
+            tags: List of tags to add
+            
+        Returns:
+            BatchUpdateResult with updated count and failed IDs
+        """
+        failed: List[uuid.UUID] = []
+        updated_count = 0
+        
+        # Deduplicate and normalize tags
+        normalized_tags = list(set(tag.strip().lower() for tag in tags if tag.strip()))
+        
+        for rid in resource_ids:
+            try:
+                resource = self.db.query(Resource).filter(Resource.id == rid).first()
+                if not resource:
+                    failed.append(rid)
+                    continue
+                
+                # Get existing subjects (tags)
+                existing_subjects = resource.subject or []
+                
+                # Merge with new tags, avoiding duplicates
+                updated_subjects = list(set(existing_subjects + normalized_tags))
+                
+                # Update resource
+                resource.subject = updated_subjects
+                resource.updated_at = datetime.now(timezone.utc)
+                self.db.add(resource)
+                
+                updated_count += 1
+                
+            except Exception:
+                failed.append(rid)
+                continue
+        
+        # Commit transaction
+        self.db.commit()
+        
+        return BatchUpdateResult(updated_count=updated_count, failed_ids=failed)
+    
+    def assign_curator(
+        self,
+        resource_ids: List[uuid.UUID],
+        curator_id: str
+    ) -> BatchUpdateResult:
+        """
+        Assign resources to a curator for review.
+        
+        Args:
+            resource_ids: List of resource UUIDs
+            curator_id: ID of curator to assign
+            
+        Returns:
+            BatchUpdateResult with updated count and failed IDs
+        """
+        failed: List[uuid.UUID] = []
+        updated_count = 0
+        
+        for rid in resource_ids:
+            try:
+                resource = self.db.query(Resource).filter(Resource.id == rid).first()
+                if not resource:
+                    failed.append(rid)
+                    continue
+                
+                # Assign curator and update status
+                resource.assigned_curator = curator_id
+                resource.curation_status = "assigned"
+                resource.updated_at = datetime.now(timezone.utc)
+                self.db.add(resource)
+                
+                updated_count += 1
+                
+            except Exception:
+                failed.append(rid)
+                continue
+        
+        # Commit transaction
+        self.db.commit()
+        
+        return BatchUpdateResult(updated_count=updated_count, failed_ids=failed)
+    
+    def review_queue_enhanced(
+        self,
+        params: EnhancedReviewQueueParams
+    ) -> Tuple[List[Resource], int]:
+        """
+        Get items in the review queue with enhanced filtering.
+        
+        Args:
+            params: Enhanced review queue parameters
+            
+        Returns:
+            Tuple of (items, total_count)
+        """
+        # Start with base query
+        query = self.db.query(Resource)
+        
+        # Apply quality threshold filter
+        if params.threshold is not None:
+            query = query.filter(Resource.quality_score < float(params.threshold))
+        
+        # Apply quality range filters
+        if params.min_quality is not None:
+            query = query.filter(Resource.quality_score >= float(params.min_quality))
+        if params.max_quality is not None:
+            query = query.filter(Resource.quality_score <= float(params.max_quality))
+        
+        # Apply curation status filter
+        if params.status:
+            query = query.filter(Resource.curation_status == params.status)
+        
+        # Apply curator assignment filter
+        if params.assigned_curator:
+            query = query.filter(Resource.assigned_curator == params.assigned_curator)
+        
+        # Apply unread filter
+        if params.include_unread_only:
+            query = query.filter(Resource.read_status == "unread")
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply ordering (low quality first for priority)
+        query = query.order_by(
+            asc(Resource.quality_score),
+            asc(Resource.updated_at)
+        )
+        
+        # Apply pagination
+        items = query.offset(params.offset).limit(params.limit).all()
+        
+        return items, total
     
     def review_queue(self, params: ReviewQueueParams) -> Tuple[List[Resource], int]:
         """
@@ -234,14 +489,14 @@ class CurationService:
     def batch_update(
         self, 
         resource_ids: List[uuid.UUID], 
-        updates: ResourceUpdate
+        updates: Dict[str, Any]
     ) -> BatchUpdateResult:
         """
         Apply batch updates to multiple resources.
         
         Args:
             resource_ids: List of resource UUIDs
-            updates: ResourceUpdate with fields to update
+            updates: Dictionary with fields to update
             
         Returns:
             BatchUpdateResult with updated count and failed IDs
@@ -249,8 +504,7 @@ class CurationService:
         Raises:
             ValueError: If no updates provided
         """
-        payload = updates.model_dump(exclude_unset=True)
-        if not payload:
+        if not updates:
             raise ValueError("No updates provided")
 
         failed: List[uuid.UUID] = []
@@ -265,9 +519,9 @@ class CurationService:
 
             # Protect immutable fields
             for key in ["id", "created_at", "updated_at"]:
-                payload.pop(key, None)
+                updates.pop(key, None)
 
-            for key, value in payload.items():
+            for key, value in updates.items():
                 setattr(resource, key, value)
 
             resource.updated_at = datetime.now(timezone.utc)

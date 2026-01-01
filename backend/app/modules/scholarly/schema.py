@@ -38,9 +38,9 @@ class Figure(BaseModel):
     position: int
     caption: Optional[str] = None
     alt_text: Optional[str] = None
-    url: str
+    src: str
     format: str
-    confidence: float = Field(ge=0.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0, default=0.8)
 
 
 class ScholarlyMetadataResponse(BaseModel):

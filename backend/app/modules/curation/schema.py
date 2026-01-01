@@ -80,3 +80,39 @@ class BulkQualityCheckRequest(BaseModel):
     """Request for bulk quality checking."""
     
     resource_ids: List[str]
+
+
+class BatchReviewRequest(BaseModel):
+    """Request for batch review operations."""
+    
+    resource_ids: List[uuid.UUID] = Field(min_length=1)
+    action: str = Field(pattern="^(approve|reject|flag)$")
+    curator_id: str
+    comment: Optional[str] = None
+
+
+class BatchTagRequest(BaseModel):
+    """Request for batch tagging operations."""
+    
+    resource_ids: List[uuid.UUID] = Field(min_length=1)
+    tags: List[str] = Field(min_length=1)
+
+
+class AssignCuratorRequest(BaseModel):
+    """Request for curator assignment."""
+    
+    resource_ids: List[uuid.UUID] = Field(min_length=1)
+    curator_id: str
+
+
+class EnhancedReviewQueueParams(BaseModel):
+    """Enhanced parameters for review queue queries."""
+    
+    threshold: Optional[float] = None
+    status: Optional[str] = None  # pending, approved, rejected, assigned
+    assigned_curator: Optional[str] = None
+    min_quality: Optional[float] = None
+    max_quality: Optional[float] = None
+    include_unread_only: bool = False
+    limit: int = Field(default=25, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)

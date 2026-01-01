@@ -30,6 +30,7 @@ from .schema import (
     MetadataExtractionResponse,
     MetadataCompletenessStats
 )
+from .handlers import register_handlers
 
 __version__ = "1.0.0"
 __domain__ = "scholarly"
@@ -45,4 +46,5 @@ __all__ = [
     "MetadataExtractionRequest",
     "MetadataExtractionResponse",
     "MetadataCompletenessStats",
+    "register_handlers",
 ]

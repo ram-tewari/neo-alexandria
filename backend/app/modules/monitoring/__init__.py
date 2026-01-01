@@ -38,6 +38,7 @@ from .schema import (
     WorkerStatus,
     HealthCheckResponse
 )
+from .handlers import register_handlers
 
 __all__ = [
     "monitoring_router",
@@ -52,4 +53,5 @@ __all__ = [
     "CacheStats",
     "WorkerStatus",
     "HealthCheckResponse",
+    "register_handlers",
 ]

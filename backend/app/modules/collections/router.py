@@ -696,3 +696,208 @@ async def get_collection_recommendations(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get recommendations: {str(exc)}"
         )
+
+
+@router.get("/{collection_id}/similar-collections", response_model=List[Dict[str, Any]])
+async def get_similar_collections(
+    collection_id: uuid.UUID,
+    owner_id: Optional[str] = Query(None, description="Owner user ID for access control"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum recommendations"),
+    min_similarity: float = Query(0.5, ge=0.0, le=1.0, description="Minimum similarity threshold"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    Get similar collections based on embedding similarity.
+    
+    Uses semantic similarity between collection embeddings to find
+    related collections that might be of interest.
+    
+    Args:
+        collection_id: Source collection UUID
+        owner_id: Optional owner ID for access control
+        limit: Maximum number of recommendations
+        min_similarity: Minimum similarity threshold (0.0-1.0)
+        service: Collection service instance
+        
+    Returns:
+        List of similar collections with similarity scores
+        
+    Raises:
+        404: If collection not found or access denied
+        400: If collection has no embedding
+    """
+    try:
+        similar_collections = service.find_similar_collections(
+            collection_id=collection_id,
+            owner_id=owner_id,
+            limit=limit,
+            min_similarity=min_similarity
+        )
+        
+        return similar_collections
+    except ValueError as ve:
+        if "no embedding" in str(ve).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(ve)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get similar collections: {str(exc)}"
+        )
+
+
+@router.post("/{collection_id}/resources/batch", response_model=dict)
+async def batch_add_resources(
+    collection_id: uuid.UUID,
+    payload: dict,
+    owner_id: str = Query(..., description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    Add multiple resources to a collection in a single batch operation.
+    
+    More efficient than adding resources one at a time. Supports up to
+    100 resources per batch.
+    
+    Args:
+        collection_id: Collection UUID
+        payload: Dict with resource_ids list
+        owner_id: Owner user ID for access control
+        service: Collection service instance
+        
+    Returns:
+        Summary of batch operation results
+        
+    Raises:
+        400: If batch size exceeds limit or validation fails
+        404: If collection not found or access denied
+    """
+    try:
+        resource_ids = payload.get("resource_ids", [])
+        
+        if not resource_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="resource_ids list is required"
+            )
+        
+        # Convert string IDs to UUIDs if needed
+        resource_uuids = []
+        for rid in resource_ids:
+            if isinstance(rid, str):
+                resource_uuids.append(uuid.UUID(rid))
+            else:
+                resource_uuids.append(rid)
+        
+        result = service.add_resources_batch(
+            collection_id=collection_id,
+            resource_ids=resource_uuids,
+            owner_id=owner_id
+        )
+        
+        return {
+            "collection_id": str(collection_id),
+            "added": result["added"],
+            "skipped": result["skipped"],
+            "invalid": result["invalid"],
+            "message": f"Added {result['added']} resources, skipped {result['skipped']} duplicates, {result['invalid']} invalid"
+        }
+    except ValueError as ve:
+        if "exceed" in str(ve).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(ve)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to batch add resources: {str(exc)}"
+        )
+
+
+@router.delete("/{collection_id}/resources/batch", response_model=dict)
+async def batch_remove_resources(
+    collection_id: uuid.UUID,
+    payload: dict,
+    owner_id: str = Query(..., description="Owner user ID for access control"),
+    service: CollectionService = Depends(get_collection_service)
+):
+    """
+    Remove multiple resources from a collection in a single batch operation.
+    
+    More efficient than removing resources one at a time. Supports up to
+    100 resources per batch.
+    
+    Args:
+        collection_id: Collection UUID
+        payload: Dict with resource_ids list
+        owner_id: Owner user ID for access control
+        service: Collection service instance
+        
+    Returns:
+        Summary of batch operation results
+        
+    Raises:
+        400: If batch size exceeds limit or validation fails
+        404: If collection not found or access denied
+    """
+    try:
+        resource_ids = payload.get("resource_ids", [])
+        
+        if not resource_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="resource_ids list is required"
+            )
+        
+        # Convert string IDs to UUIDs if needed
+        resource_uuids = []
+        for rid in resource_ids:
+            if isinstance(rid, str):
+                resource_uuids.append(uuid.UUID(rid))
+            else:
+                resource_uuids.append(rid)
+        
+        result = service.remove_resources_batch(
+            collection_id=collection_id,
+            resource_ids=resource_uuids,
+            owner_id=owner_id
+        )
+        
+        return {
+            "collection_id": str(collection_id),
+            "removed": result["removed"],
+            "not_found": result["not_found"],
+            "message": f"Removed {result['removed']} resources, {result['not_found']} not found in collection"
+        }
+    except ValueError as ve:
+        if "exceed" in str(ve).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(ve)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to batch remove resources: {str(exc)}"
+        )

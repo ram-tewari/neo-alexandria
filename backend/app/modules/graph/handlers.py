@@ -1,115 +1,133 @@
 """
-Graph Module Event Handlers
+Graph Event Handlers
 
-Event handlers for graph-related operations.
-Handles resource lifecycle events to maintain graph consistency.
+Emits graph-related events for knowledge graph updates and discoveries.
+
+Events Emitted:
+- citation.extracted: When citations are extracted from a resource
+- graph.updated: When the knowledge graph is updated
+- hypothesis.discovered: When a new hypothesis is discovered via LBD
 """
 
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from app.shared.event_bus import event_bus, EventPriority
-from app.events.event_types import SystemEvent
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_resource_created(payload: Dict[str, Any]) -> None:
+def emit_citation_extracted(
+    resource_id: str,
+    citations: List[Dict[str, Any]],
+    citation_count: int
+):
     """
-    Handle resource.created event.
+    Emit citation.extracted event.
     
-    Extracts citations from the resource and adds it to the knowledge graph.
+    This should be called after extracting citations from a resource.
     
     Args:
-        payload: Event payload containing resource_id and resource data
+        resource_id: UUID of the resource
+        citations: List of extracted citation dictionaries
+        citation_count: Number of citations extracted
     """
-    resource_id = payload.get("resource_id")
-    
-    if not resource_id:
-        logger.warning("resource.created event missing resource_id")
-        return
-    
     try:
-        # Import here to avoid circular dependencies
-        from app.modules.graph.citations import CitationService
-        from app.shared.database import get_db
-        
-        # Get database session
-        db = next(get_db())
-        
-        try:
-            # Extract citations from the resource
-            citation_service = CitationService(db)
-            citations = citation_service.extract_citations(resource_id)
-            
-            if citations:
-                logger.info(f"Extracted {len(citations)} citations from resource {resource_id}")
-                
-                # Emit citation.extracted event
-                event_bus.emit(
-                    SystemEvent.CITATIONS_EXTRACTED.value,
-                    {
-                        "resource_id": resource_id,
-                        "citation_count": len(citations),
-                        "citations": [c["target_url"] for c in citations]
-                    },
-                    priority=EventPriority.NORMAL
-                )
-            
-            # Emit graph.updated event
-            event_bus.emit(
-                "graph.updated",
-                {
-                    "resource_id": resource_id,
-                    "action": "resource_added",
-                    "citation_count": len(citations)
-                },
-                priority=EventPriority.LOW
-            )
-            
-        finally:
-            db.close()
-            
-    except Exception as e:
-        logger.error(f"Error handling resource.created for {resource_id}: {e}")
-
-
-async def handle_resource_deleted(payload: Dict[str, Any]) -> None:
-    """
-    Handle resource.deleted event.
-    
-    Removes the resource from the knowledge graph and updates relationships.
-    Citations are automatically cascade-deleted by database constraints.
-    
-    Args:
-        payload: Event payload containing resource_id
-    """
-    resource_id = payload.get("resource_id")
-    
-    if not resource_id:
-        logger.warning("resource.deleted event missing resource_id")
-        return
-    
-    try:
-        logger.info(f"Resource {resource_id} deleted, citations cascade-deleted by database")
-        
-        # Emit graph.updated event
         event_bus.emit(
-            "graph.updated",
+            'citation.extracted',
             {
-                "resource_id": resource_id,
-                "action": "resource_removed"
+                'resource_id': resource_id,
+                'citations': citations,
+                'count': citation_count
             },
-            priority=EventPriority.LOW
+            priority=EventPriority.NORMAL
         )
-        
+        logger.debug(f"Emitted citation.extracted event for resource {resource_id}")
     except Exception as e:
-        logger.error(f"Error handling resource.deleted for {resource_id}: {e}")
+        logger.error(f"Error emitting citation.extracted event: {str(e)}", exc_info=True)
 
 
-def register_handlers() -> None:
-    """Register all graph module event handlers."""
-    event_bus.subscribe("resource.created", handle_resource_created)
-    event_bus.subscribe("resource.deleted", handle_resource_deleted)
+def emit_graph_updated(
+    update_type: str,
+    node_count: int = 0,
+    edge_count: int = 0,
+    affected_nodes: List[str] = None
+):
+    """
+    Emit graph.updated event.
     
+    This should be called when the knowledge graph structure is updated.
+    
+    Args:
+        update_type: Type of update (node_added, edge_added, node_removed, edge_removed, bulk_update)
+        node_count: Number of nodes affected
+        edge_count: Number of edges affected
+        affected_nodes: Optional list of affected node IDs
+    """
+    try:
+        payload = {
+            'update_type': update_type,
+            'node_count': node_count,
+            'edge_count': edge_count
+        }
+        
+        if affected_nodes:
+            payload['affected_nodes'] = affected_nodes
+        
+        event_bus.emit(
+            'graph.updated',
+            payload,
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted graph.updated event: {update_type}")
+    except Exception as e:
+        logger.error(f"Error emitting graph.updated event: {str(e)}", exc_info=True)
+
+
+def emit_hypothesis_discovered(
+    hypothesis_id: str,
+    concept_a: str,
+    concept_c: str,
+    bridging_concepts: List[str],
+    plausibility_score: float,
+    evidence_count: int
+):
+    """
+    Emit hypothesis.discovered event.
+    
+    This should be called when a new hypothesis is discovered via Literature-Based Discovery.
+    
+    Args:
+        hypothesis_id: UUID of the discovered hypothesis
+        concept_a: Starting concept
+        concept_c: Target concept
+        bridging_concepts: List of bridging concepts (B)
+        plausibility_score: Plausibility score of the hypothesis
+        evidence_count: Number of evidence chains supporting the hypothesis
+    """
+    try:
+        event_bus.emit(
+            'hypothesis.discovered',
+            {
+                'hypothesis_id': hypothesis_id,
+                'concept_a': concept_a,
+                'concept_c': concept_c,
+                'bridging_concepts': bridging_concepts,
+                'plausibility_score': plausibility_score,
+                'evidence_count': evidence_count
+            },
+            priority=EventPriority.HIGH
+        )
+        logger.info(f"Emitted hypothesis.discovered event for hypothesis {hypothesis_id}")
+    except Exception as e:
+        logger.error(f"Error emitting hypothesis.discovered event: {str(e)}", exc_info=True)
+
+
+def register_handlers():
+    """
+    Register all event handlers for the graph module.
+    
+    This function should be called during application startup.
+    Currently, graph module only emits events and doesn't subscribe to any.
+    """
     logger.info("Graph module event handlers registered")

@@ -24,15 +24,14 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Response
 from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from sqlalchemy.orm import Session
 
 from ...shared.database import get_sync_db
 from ...shared.event_bus import event_bus
 from ...config.settings import get_settings
-from .schema import ResourceRead, ResourceUpdate, ResourceStatus
-from ...schemas.query import PageParams, SortParams, ResourceFilters
+from .schema import ResourceRead, ResourceUpdate, ResourceStatus, PageParams, SortParams, ResourceFilters
 from .service import (
     create_pending_resource,
     get_resource,
@@ -61,6 +60,8 @@ class ResourceIngestRequest(BaseModel):
 class ResourceAccepted(BaseModel):
     id: str
     status: str = "pending"
+    title: str
+    ingestion_status: str = "pending"
 
 
 @router.get("/resources/health", response_model=Dict[str, Any])
@@ -126,10 +127,11 @@ async def health_check(db: Session = Depends(get_sync_db)) -> Dict[str, Any]:
         }
 
 
-@router.post("/resources", response_model=ResourceAccepted, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/resources", response_model=ResourceAccepted)
 async def create_resource_endpoint(
     payload: ResourceIngestRequest,
     background: BackgroundTasks,
+    response: Response,
     db: Session = Depends(get_sync_db),
 ):
     try:
@@ -138,7 +140,22 @@ async def create_resource_endpoint(
         # Convert HttpUrl to string
         if "url" in payload_dict:
             payload_dict["url"] = str(payload_dict["url"])
+        
+        # create_pending_resource handles duplicate detection
         resource = create_pending_resource(db, payload_dict)
+        
+        # Check if this is an existing resource (reused)
+        # If the resource was just created, it will have ingestion_status="pending"
+        # If it was reused, the log will say "Reusing existing resource"
+        is_new = resource.ingestion_status == "pending" and resource.ingestion_started_at is None
+        
+        if not is_new:
+            # Return existing resource with 200 OK
+            response.status_code = status.HTTP_200_OK
+        else:
+            # Create new resource with 202 Accepted
+            response.status_code = status.HTTP_202_ACCEPTED
+        
         # Derive engine URL from current DB bind so background uses the same database
         engine_url = None
         try:
@@ -149,7 +166,12 @@ async def create_resource_endpoint(
             engine_url = get_settings().DATABASE_URL
         # Kick off background ingestion
         background.add_task(process_ingestion, str(resource.id), archive_root=None, ai=None, engine_url=engine_url)
-        return ResourceAccepted(id=str(resource.id), status="pending")
+        return ResourceAccepted(
+            id=str(resource.id),
+            status="pending",
+            title=resource.title,
+            ingestion_status=resource.ingestion_status
+        )
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as exc:  # pragma: no cover - unexpected error path

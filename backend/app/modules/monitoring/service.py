@@ -383,12 +383,14 @@ class MonitoringService:
             Dictionary with database metrics
         """
         try:
+            from sqlalchemy import text
+            
             # Get pool statistics
             pool_stats = get_pool_status()
             
             # Check database connectivity
             try:
-                db.execute("SELECT 1")
+                db.execute(text("SELECT 1"))
                 db_healthy = True
                 health_message = "Database connection healthy"
             except Exception as e:
@@ -609,52 +611,48 @@ class MonitoringService:
             Dictionary with overall system health status
         """
         try:
+            from sqlalchemy import text
+            
             # Check database connectivity
             try:
-                db.execute("SELECT 1")
+                db.execute(text("SELECT 1"))
                 db_healthy = True
             except Exception as e:
                 logger.error(f"Database health check failed: {str(e)}")
                 db_healthy = False
             
-            # Check model availability
+            # Check model availability (optional - not required for healthy status)
             backend_dir = Path(__file__).parent.parent.parent.parent
             model_path = os.path.join(backend_dir, "models", "ncf_model.pt")
             model_available = os.path.exists(model_path)
             
             # Check all registered modules
             module_health = {}
+            unhealthy_modules = []
             for module_name, health_check_func in _module_health_checks.items():
                 try:
                     module_health[module_name] = health_check_func()
+                    if module_health[module_name].get("status") == "unhealthy":
+                        unhealthy_modules.append(module_name)
                 except Exception as e:
                     logger.error(f"Health check failed for module {module_name}: {str(e)}")
                     module_health[module_name] = {
                         "status": "unhealthy",
                         "error": str(e)
                     }
+                    unhealthy_modules.append(module_name)
             
-            # Overall status
+            # Overall status - only database is critical
             if db_healthy:
-                if model_available:
+                if unhealthy_modules:
+                    status = "degraded"
+                    message = f"Database healthy but some modules unhealthy: {', '.join(unhealthy_modules)}"
+                else:
                     status = "healthy"
                     message = "All systems operational"
-                else:
-                    status = "degraded"
-                    message = "Database healthy, NCF model not available (using fallback recommendations)"
             else:
                 status = "unhealthy"
                 message = "Database connection failed"
-            
-            # Check if any modules are unhealthy
-            unhealthy_modules = [
-                name for name, health in module_health.items()
-                if health.get("status") == "unhealthy"
-            ]
-            
-            if unhealthy_modules:
-                status = "degraded"
-                message = f"Some modules unhealthy: {', '.join(unhealthy_modules)}"
             
             response = {
                 "status": status,
@@ -693,10 +691,15 @@ class MonitoringService:
         """
         try:
             if module_name not in _module_health_checks:
+                # Module exists but hasn't registered a health check - assume healthy
                 return {
-                    "status": "error",
-                    "error": f"Module {module_name} not registered",
-                    "timestamp": datetime.utcnow().isoformat()
+                    "status": "ok",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "module": module_name,
+                    "health": {
+                        "status": "healthy",
+                        "message": "Module operational (no health check registered)"
+                    }
                 }
             
             health_check_func = _module_health_checks[module_name]

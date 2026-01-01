@@ -8,6 +8,7 @@ Public Interface:
 - annotations_router: FastAPI router with all annotation endpoints
 - AnnotationService: Business logic for annotation management
 - Schema classes: Pydantic models for API validation
+- register_handlers: Register event handlers for cross-module communication
 
 Version: 1.0.0
 Domain: annotations
@@ -23,6 +24,7 @@ from .schema import (
     AnnotationSearchResult,
     AnnotationSearchResponse,
 )
+from .handlers import register_handlers
 
 __version__ = "1.0.0"
 __domain__ = "annotations"
@@ -36,5 +38,5 @@ __all__ = [
     "AnnotationListResponse",
     "AnnotationSearchResult",
     "AnnotationSearchResponse",
+    "register_handlers",
 ]
-

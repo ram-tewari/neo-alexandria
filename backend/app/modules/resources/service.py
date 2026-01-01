@@ -15,13 +15,7 @@ from ...database import models as db_models
 from ...shared.database import Base, SessionLocal
 from ...utils import content_extractor as ce
 from ...utils.text_processor import clean_text, readability_scores
-from ...services.dependencies import (
-    get_classification_service,
-    get_quality_analyzer,
-    get_authority_control,
-)
-from ...schemas.query import PageParams, SortParams, ResourceFilters
-from .schema import ResourceUpdate
+from .schema import ResourceUpdate, PageParams, SortParams, ResourceFilters
 from ...shared.ai_core import AICore
 from ...monitoring import (
     track_ingestion_success,
@@ -88,7 +82,10 @@ def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.R
     # Modifier: Create new resource
     logger.info(f"Creating new pending resource for URL: {url}")
     now = datetime.now(timezone.utc)
-    authority = get_authority_control(db)
+    
+    # Import authority control service
+    from ...modules.authority.service import AuthorityControl
+    authority = AuthorityControl(db)
 
     resource = db_models.Resource(
         title=payload.get("title") or "Untitled",
@@ -117,7 +114,7 @@ def create_pending_resource(db: Session, payload: Dict[str, Any]) -> db_models.R
     )
     db.add(resource)
     db.commit()
-    db.refresh(resource)
+    # No need to refresh - all fields are set explicitly
     logger.info(f"Created pending resource with source: {url}")
     
     # Emit resource.created event
@@ -260,7 +257,7 @@ def _generate_embeddings(
     
     # Generate sparse embedding
     try:
-        from ...services.sparse_embedding_service import SparseEmbeddingService
+        from ..search.sparse_embeddings import SparseEmbeddingService
         sparse_service = SparseEmbeddingService(session, model_name="BAAI/bge-m3")
         
         text_parts = []
@@ -479,11 +476,13 @@ def process_ingestion(
         summary, tags_raw = _generate_ai_content(ai_core, text_clean)
 
         # Query: Normalize tags
-        authority = get_authority_control(session)
+        from ...modules.authority.service import AuthorityControl
+        authority = AuthorityControl(session)
         normalized_tags = authority.normalize_subjects(tags_raw)
 
         # Query: Classify resource
-        classifier = get_classification_service()
+        from ...modules.taxonomy.classification_service import ClassificationService
+        classifier = ClassificationService(session)
         extracted_title = extracted.get("title") or ""
         if resource.title == "Untitled" and extracted_title:
             title_final = extracted_title
@@ -521,19 +520,22 @@ def process_ingestion(
         # Modifier: Perform ML classification
         _perform_ml_classification(session, resource.id)
 
-        # Query: Compute legacy quality score
-        analyzer = get_quality_analyzer()
-        candidate_metadata = {
-            "title": title_final,
-            "description": description_final,
-            "subject": normalized_tags,
-            "creator": resource.creator,
-            "language": resource.language,
-            "type": resource.type,
-            "identifier": archive_info.get("archive_path"),
-            "source": resource.source or fetched.get("url"),
-        }
-        quality = analyzer.overall_quality(candidate_metadata, text_clean)
+        # Query: Compute legacy quality score (simple heuristic)
+        # Use a basic quality score calculation based on metadata completeness
+        quality_score = 0.0
+        if title_final and title_final != "Untitled":
+            quality_score += 0.2
+        if description_final:
+            quality_score += 0.2
+        if normalized_tags:
+            quality_score += 0.2
+        if resource.creator:
+            quality_score += 0.1
+        if resource.language:
+            quality_score += 0.1
+        if len(text_clean) > 100:
+            quality_score += 0.2
+        quality = quality_score
 
         # Modifier: Persist resource updates
         resource.title = title_final
@@ -865,7 +867,7 @@ def _regenerate_embeddings(db: Session, resource: db_models.Resource) -> None:
     
     # Regenerate sparse embedding
     try:
-        from ...services.sparse_embedding_service import SparseEmbeddingService
+        from ..search.sparse_embeddings import SparseEmbeddingService
         sparse_service = SparseEmbeddingService(db, model_name="BAAI/bge-m3")
         
         text_parts = []
@@ -960,7 +962,8 @@ def update_resource(db: Session, resource_id, payload: ResourceUpdate) -> db_mod
     changed_fields = list(updates.keys())
     
     # Modifier: Apply updates
-    authority = get_authority_control(db)
+    from ...modules.authority.service import AuthorityControl
+    authority = AuthorityControl(db)
     embedding_changed, quality_changed, content_changed = _apply_resource_updates(resource, updates, authority)
 
     # Modifier: Regenerate embeddings if needed

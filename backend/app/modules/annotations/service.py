@@ -134,6 +134,15 @@ class AnnotationService:
         if note:
             self._generate_annotation_embedding(annotation)
         
+        # Emit annotation.created event
+        from .handlers import emit_annotation_created
+        emit_annotation_created(
+            annotation_id=str(annotation.id),
+            resource_id=str(resource_uuid),
+            user_id=user_id,
+            note=note
+        )
+        
         return annotation
     
     def _validate_offsets(self, start_offset: int, end_offset: int) -> None:
@@ -255,19 +264,25 @@ class AnnotationService:
         
         # Track if note changed for embedding regeneration
         note_changed = False
+        changes = {}
+        
         if note is not None and note != annotation.note:
             annotation.note = note
             note_changed = True
+            changes['note'] = note
         
         # Update fields
         if tags is not None:
             annotation.tags = json.dumps(tags)
+            changes['tags'] = tags
         
         if color is not None:
             annotation.color = color
+            changes['color'] = color
         
         if is_shared is not None:
             annotation.is_shared = 1 if is_shared else 0
+            changes['is_shared'] = is_shared
         
         # Update timestamp
         annotation.updated_at = datetime.now(timezone.utc)
@@ -278,6 +293,16 @@ class AnnotationService:
         # Regenerate embedding if note changed
         if note_changed and note:
             self._generate_annotation_embedding(annotation)
+        
+        # Emit annotation.updated event
+        if changes:
+            from .handlers import emit_annotation_updated
+            emit_annotation_updated(
+                annotation_id=str(annotation.id),
+                resource_id=str(annotation.resource_id),
+                user_id=user_id,
+                changes=changes
+            )
         
         return annotation
 
@@ -325,6 +350,14 @@ class AnnotationService:
         # Delete annotation
         self.db.delete(annotation)
         self.db.commit()
+        
+        # Emit annotation.deleted event
+        from .handlers import emit_annotation_deleted
+        emit_annotation_deleted(
+            annotation_id=str(annotation.id),
+            resource_id=str(annotation.resource_id),
+            user_id=user_id
+        )
         
         return True
 

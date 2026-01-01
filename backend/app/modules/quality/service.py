@@ -475,6 +475,21 @@ class QualityService:
         
         self.db.commit()
         
+        # Emit quality.computed event
+        from .handlers import emit_quality_computed
+        emit_quality_computed(
+            resource_id=resource_id,
+            quality_score=overall,
+            dimensions={
+                'accuracy': accuracy,
+                'completeness': completeness,
+                'consistency': consistency,
+                'timeliness': timeliness,
+                'relevance': relevance
+            },
+            computation_version=self.quality_version
+        )
+        
         return quality_score
     
     def invalidate_cache(self, resource_id: str):
@@ -772,6 +787,22 @@ class QualityService:
                 resource.outlier_score = float(anomaly_score)
                 resource.outlier_reasons = json.dumps(reasons)
                 resource.needs_quality_review = True
+                
+                # Emit quality.outlier_detected event
+                from .handlers import emit_quality_outlier_detected
+                emit_quality_outlier_detected(
+                    resource_id=str(resource.id),
+                    quality_score=resource.quality_overall or 0.0,
+                    outlier_score=float(anomaly_score),
+                    dimensions={
+                        'accuracy': resource.quality_accuracy or 0.0,
+                        'completeness': resource.quality_completeness or 0.0,
+                        'consistency': resource.quality_consistency or 0.0,
+                        'timeliness': resource.quality_timeliness or 0.0,
+                        'relevance': resource.quality_relevance or 0.0
+                    },
+                    reason=', '.join(reasons) if reasons else 'anomalous_pattern'
+                )
                 
                 outlier_count += 1
             else:

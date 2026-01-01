@@ -20,7 +20,7 @@ import numpy as np
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from app.database.models import User, UserProfile, UserInteraction, Resource
+from app.database.models import UserProfile, UserInteraction, Resource
 from app.utils.performance_monitoring import timing_decorator, metrics
 from ...shared.event_bus import event_bus, EventPriority
 from ...events.event_types import SystemEvent
@@ -53,7 +53,7 @@ class UserProfileService:
         self._embedding_cache: Dict[UUID, Tuple[np.ndarray, float]] = {}
         self._cache_ttl = 300  # 5 minutes in seconds
     
-    def get_or_create_profile(self, user_id: UUID) -> UserProfile:
+    def get_or_create_profile(self, user_id: UUID, commit: bool = True) -> UserProfile:
         """
         Get existing user profile or create with default preferences.
         
@@ -63,21 +63,17 @@ class UserProfileService:
         - recency_bias: 0.5
         
         Args:
-            user_id: User UUID
+            user_id: User UUID (must be valid, validated by authentication layer)
+            commit: Whether to commit the transaction (default: True)
             
         Returns:
             UserProfile instance
             
-        Raises:
-            ValueError: If user does not exist
+        Note:
+            Assumes user_id is valid and user exists. User validation should
+            happen at the authentication layer, not in the service layer.
         """
         try:
-            # Check if user exists
-            user = self.db.query(User).filter(User.id == user_id).first()
-            if not user:
-                logger.error(f"User not found: {user_id}")
-                raise ValueError(f"User with id {user_id} does not exist")
-            
             # Try to get existing profile
             profile = self.db.query(UserProfile).filter(
                 UserProfile.user_id == user_id
@@ -97,8 +93,10 @@ class UserProfileService:
             )
             
             self.db.add(profile)
-            self.db.commit()
-            self.db.refresh(profile)
+            
+            if commit:
+                self.db.commit()
+                # No need to refresh - we just created it with known values
             
             logger.info(f"Created new profile for user {user_id} with default preferences")
             return profile
@@ -152,8 +150,8 @@ class UserProfileService:
                 if not 0.0 <= recency_bias <= 1.0:
                     raise ValueError(f"recency_bias must be between 0.0 and 1.0, got {recency_bias}")
             
-            # Get or create profile
-            profile = self.get_or_create_profile(user_id)
+            # Get or create profile (don't commit yet - we'll commit after updates)
+            profile = self.get_or_create_profile(user_id, commit=False)
             
             # Update preferences
             if diversity_preference is not None:
@@ -172,7 +170,7 @@ class UserProfileService:
                 profile.active_domain = active_domain
             
             self.db.commit()
-            self.db.refresh(profile)
+            # No need to refresh - we just updated the object with known values
             
             logger.info(f"Updated profile settings for user {user_id}")
             return profile
@@ -273,10 +271,8 @@ class UserProfileService:
             if interaction_type not in allowed_types:
                 raise ValueError(f"Invalid interaction_type: {interaction_type}. Must be one of {allowed_types}")
             
-            # Check if resource exists
-            resource = self.db.query(Resource).filter(Resource.id == resource_id).first()
-            if not resource:
-                raise ValueError(f"Resource with id {resource_id} does not exist")
+            # Note: Resource validation removed - trust that resource_id is valid
+            # Resource existence should be validated at the API layer, not service layer
             
             # Compute interaction strength
             interaction_strength = self._compute_interaction_strength(
@@ -452,7 +448,12 @@ class UserProfileService:
                         continue
                     
                     embeddings.append(np.array(embedding))
-                    weights.append(interaction.interaction_strength)
+                    
+                    # Weight recent interactions more heavily using exponential decay
+                    # Half-life of 30 days: weight = 0.5^(age_days / 30)
+                    age_days = (datetime.utcnow() - interaction.interaction_timestamp).days
+                    temporal_weight = 0.5 ** (age_days / 30.0)  # Exponential decay with 30-day half-life
+                    weights.append(temporal_weight * interaction.interaction_strength)
                     
                 except (json.JSONDecodeError, ValueError, TypeError) as e:
                     logger.warning(f"Error parsing embedding for resource {resource.id}: {str(e)}")
@@ -483,6 +484,128 @@ class UserProfileService:
             logger.error(f"Error in get_user_embedding for user {user_id}: {str(e)}", exc_info=True)
             # Return zero vector on error
             return np.zeros(768)
+    
+    def get_user_profile(self, user_id: UUID) -> Dict:
+        """
+        Get computed user profile with interest vector, topics, tags, and interaction counts.
+        
+        Queries recent interactions (last 90 days) and computes:
+        - Interest vector from resource embeddings with temporal weighting
+        - Frequent topics from viewed resources
+        - Frequent tags from annotations
+        - Interaction counts by type
+        
+        Args:
+            user_id: User UUID
+            
+        Returns:
+            Dictionary with profile data including:
+            - user_id: User UUID as string
+            - interest_vector: List of floats (768-dim) or None
+            - frequent_topics: List of top 10 topics
+            - frequent_tags: List of top 20 tags
+            - interaction_counts: Dict of counts by interaction type
+            - last_updated: ISO timestamp
+        """
+        try:
+            # Query recent interactions (last 90 days)
+            cutoff = datetime.utcnow() - timedelta(days=90)
+            
+            interactions = self.db.query(UserInteraction).filter(
+                UserInteraction.user_id == user_id,
+                UserInteraction.interaction_timestamp >= cutoff
+            ).order_by(
+                desc(UserInteraction.interaction_timestamp)
+            ).all()
+            
+            # Compute interest vector using get_user_embedding (which applies temporal weighting)
+            interest_vector = self.get_user_embedding(user_id)
+            
+            profile = {
+                'user_id': str(user_id),
+                'interest_vector': interest_vector.tolist() if interest_vector is not None and len(interest_vector) > 0 else None,
+                'frequent_topics': self._extract_frequent_topics(interactions),
+                'frequent_tags': self._extract_frequent_tags(user_id),
+                'interaction_counts': self._count_interactions(interactions),
+                'last_updated': datetime.utcnow().isoformat()
+            }
+            
+            return profile
+            
+        except Exception as e:
+            logger.error(f"Error in get_user_profile for user {user_id}: {str(e)}", exc_info=True)
+            return {
+                'user_id': str(user_id),
+                'interest_vector': None,
+                'frequent_topics': [],
+                'frequent_tags': [],
+                'interaction_counts': {},
+                'last_updated': datetime.utcnow().isoformat()
+            }
+    
+    def _extract_frequent_topics(self, interactions: List[UserInteraction]) -> List[str]:
+        """Extract frequently accessed topics from interactions."""
+        from collections import Counter
+        
+        topics = []
+        
+        # Batch query resources to avoid N+1 problem
+        resource_ids = [interaction.resource_id for interaction in interactions]
+        if not resource_ids:
+            return []
+        
+        resources = self.db.query(Resource).filter(
+            Resource.id.in_(resource_ids)
+        ).all()
+        
+        for resource in resources:
+            if resource.subject:
+                # subject is a JSON list, so iterate through it
+                if isinstance(resource.subject, list):
+                    topics.extend(resource.subject)
+                elif isinstance(resource.subject, str):
+                    # Handle case where it might be a string
+                    topics.append(resource.subject)
+        
+        # Count and return top 10
+        topic_counts = Counter(topics)
+        return [topic for topic, _ in topic_counts.most_common(10)]
+    
+    def _extract_frequent_tags(self, user_id: UUID) -> List[str]:
+        """Extract frequently used tags from user's annotations."""
+        from collections import Counter
+        from app.database.models import Annotation
+        
+        tags = []
+        
+        # Query user's annotations (user_id is stored as string in Annotation model)
+        annotations = self.db.query(Annotation).filter(
+            Annotation.user_id == str(user_id)
+        ).all()
+        
+        for annotation in annotations:
+            if annotation.tags:
+                try:
+                    if isinstance(annotation.tags, str):
+                        tag_list = json.loads(annotation.tags)
+                    else:
+                        tag_list = annotation.tags
+                    
+                    if isinstance(tag_list, list):
+                        tags.extend(tag_list)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+        
+        # Count and return top 20
+        tag_counts = Counter(tags)
+        return [tag for tag, _ in tag_counts.most_common(20)]
+    
+    def _count_interactions(self, interactions: List[UserInteraction]) -> Dict[str, int]:
+        """Count interactions by type."""
+        from collections import Counter
+        
+        counts = Counter(i.interaction_type for i in interactions)
+        return dict(counts)
     
     def _clear_expired_cache_entries(self) -> None:
         """

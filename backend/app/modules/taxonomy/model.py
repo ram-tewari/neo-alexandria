@@ -2,9 +2,9 @@
 Taxonomy Models
 
 SQLAlchemy models for taxonomy and classification.
-Placeholder - will be populated by extracting models from database/models.py
+Re-exports models from app.database.models to avoid circular imports.
 """
 
-# Models will be extracted from database/models.py:
-# - TaxonomyNode
-# - ResourceClassification
+from app.database.models import TaxonomyNode, ResourceTaxonomy
+
+__all__ = ["TaxonomyNode", "ResourceTaxonomy"]

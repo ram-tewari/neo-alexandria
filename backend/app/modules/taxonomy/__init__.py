@@ -37,6 +37,7 @@ from .schema import (
     ActiveLearningRequest,
     ActiveLearningResponse,
 )
+from .handlers import register_handlers
 
 __version__ = "1.0.0"
 __domain__ = "taxonomy"
@@ -56,4 +57,5 @@ __all__ = [
     "TrainingResponse",
     "ActiveLearningRequest",
     "ActiveLearningResponse",
+    "register_handlers",
 ]

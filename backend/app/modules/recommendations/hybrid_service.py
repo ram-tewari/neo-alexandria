@@ -435,8 +435,10 @@ class HybridRecommendationService:
                 logger.warning("Empty candidate list for MMR")
                 return []
             
-            # Get lambda parameter from user profile
-            lambda_param = user_profile.diversity_preference if user_profile.diversity_preference else 0.5
+            # Get lambda parameter from user profile preferences
+            lambda_param = 0.5  # Default
+            if user_profile and hasattr(user_profile, 'diversity_preference'):
+                lambda_param = user_profile.diversity_preference
             
             # Extract embeddings for all candidates
             candidate_embeddings = []
@@ -557,8 +559,10 @@ class HybridRecommendationService:
             if not candidates:
                 return []
             
-            # Get novelty preference from user profile
-            novelty_preference = user_profile.novelty_preference if user_profile.novelty_preference else 0.3
+            # Get novelty preference from user profile preferences
+            novelty_preference = 0.3  # Default
+            if user_profile and hasattr(user_profile, 'novelty_preference'):
+                novelty_preference = user_profile.novelty_preference
             
             # Compute view counts for all candidates
             # Note: We don't have a view_count field in Resource model, so we'll use interaction counts as proxy
@@ -684,6 +688,9 @@ class HybridRecommendationService:
         try:
             logger.info(f"Generating recommendations for user {user_id} (limit={limit}, strategy={strategy})")
             
+            # Save the original requested strategy for metadata
+            requested_strategy = strategy
+            
             # Get or create user profile
             profile = self.user_profile_service.get_or_create_profile(user_id)
             
@@ -708,7 +715,7 @@ class HybridRecommendationService:
                     'recommendations': [],
                     'metadata': {
                         'total': 0,
-                        'strategy': strategy,
+                        'strategy': requested_strategy,  # Use the originally requested strategy
                         'is_cold_start': is_cold_start,
                         'diversity_applied': False,
                         'novelty_applied': False
@@ -785,7 +792,7 @@ class HybridRecommendationService:
                     elif isinstance(resource.subject, str):
                         try:
                             json.loads(resource.subject)
-                        except:
+                        except (json.JSONDecodeError, TypeError):
                             pass
 
                 recommendations.append({
@@ -802,14 +809,14 @@ class HybridRecommendationService:
             # Metadata
             metadata = {
                 'total': len(recommendations),
-                'strategy': strategy,
+                'strategy': requested_strategy,  # Use the originally requested strategy
                 'is_cold_start': is_cold_start,
                 'interaction_count': interaction_count,
                 'diversity_applied': True,
                 'novelty_applied': True,
                 'gini_coefficient': gini_coefficient,
-                'diversity_preference': profile.diversity_preference,
-                'novelty_preference': profile.novelty_preference
+                'diversity_preference': profile.diversity_preference if profile else 0.5,
+                'novelty_preference': profile.novelty_preference if profile else 0.3
             }
             
             logger.info(f"Generated {len(recommendations)} recommendations for user {user_id} (Gini={gini_coefficient:.3f})")
@@ -834,6 +841,8 @@ class HybridRecommendationService:
                 'metadata': {
                     'total': 0,
                     'strategy': strategy,
+                    'diversity_applied': False,
+                    'novelty_applied': False,
                     'error': str(e)
                 }
             }

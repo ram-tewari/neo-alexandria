@@ -1,171 +1,102 @@
 """
-Neo Alexandria 2.0 - Curation Module Event Handlers
+Curation Event Handlers
 
-Event handlers for the Curation module to enable event-driven communication
-with other modules.
-
-Events Subscribed:
-- quality.outlier_detected: Adds resources to review queue when quality outliers are detected
+Emits curation-related events for review workflows.
 
 Events Emitted:
-- curation.reviewed: When an item is reviewed by a curator
-- curation.approved: When content is approved after review
-- curation.rejected: When content is rejected during review
+- curation.reviewed: When a resource is reviewed
+- curation.approved: When a resource is approved
 """
 
 import logging
-from typing import Dict
-from datetime import datetime, timezone
 
-from ...shared.event_bus import event_bus, EventPriority
-from ...shared.database import get_db
-from ...database.models import Resource
+from app.shared.event_bus import event_bus, EventPriority
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_quality_outlier_detected(payload: Dict) -> None:
-    """
-    Handle quality.outlier_detected event by adding resource to review queue.
-    
-    The review queue is implicitly managed by the quality_score field on resources.
-    This handler logs the outlier detection and can trigger additional workflows.
-    
-    Args:
-        payload: Event payload containing resource_id, outlier_score, and reasons
-    """
-    resource_id = payload.get("resource_id")
-    outlier_score = payload.get("outlier_score")
-    reasons = payload.get("reasons", [])
-    
-    if not resource_id:
-        logger.warning("quality.outlier_detected event missing resource_id")
-        return
-    
-    try:
-        # Get database session
-        db = next(get_db())
-        
-        # Verify resource exists
-        resource = db.query(Resource).filter(Resource.id == resource_id).first()
-        if not resource:
-            logger.warning(f"Resource {resource_id} not found for outlier detection")
-            return
-        
-        # Log the outlier detection
-        logger.info(
-            f"Quality outlier detected for resource {resource_id}: "
-            f"score={outlier_score}, reasons={reasons}"
-        )
-        
-        # The resource is automatically in the review queue due to its low quality_score
-        # Additional workflow logic can be added here (e.g., notifications, assignments)
-        
-        # Emit curation.reviewed event to track that this item needs review
-        event_bus.emit(
-            "curation.reviewed",
-            {
-                "resource_id": str(resource_id),
-                "reviewer_id": "system",  # System-initiated review
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "action": "flagged",
-                "outlier_score": outlier_score,
-                "reasons": reasons
-            },
-            priority=EventPriority.LOW
-        )
-        
-        logger.info(f"Added resource {resource_id} to review queue")
-            
-    except Exception as e:
-        logger.error(f"Failed to handle quality.outlier_detected event for {resource_id}: {e}")
-    finally:
-        if 'db' in locals():
-            db.close()
-
-
-def emit_reviewed_event(resource_id: str, reviewer_id: str, action: str) -> None:
+def emit_curation_reviewed(
+    review_id: str,
+    resource_id: str,
+    reviewer_id: str,
+    status: str,
+    quality_rating: float = None
+):
     """
     Emit curation.reviewed event.
     
+    This should be called after a curator reviews a resource.
+    
     Args:
-        resource_id: Resource UUID
-        reviewer_id: Curator/user ID
-        action: Action taken (approved, rejected, flagged)
+        review_id: UUID of the review record
+        resource_id: UUID of the reviewed resource
+        reviewer_id: User ID of the reviewer
+        status: Review status (pending, approved, rejected, needs_revision)
+        quality_rating: Optional quality rating assigned by reviewer
     """
-    event_bus.emit(
-        "curation.reviewed",
-        {
-            "resource_id": resource_id,
-            "reviewer_id": reviewer_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "action": action
-        },
-        priority=EventPriority.NORMAL
-    )
+    try:
+        payload = {
+            'review_id': review_id,
+            'resource_id': resource_id,
+            'reviewer_id': reviewer_id,
+            'status': status
+        }
+        
+        if quality_rating is not None:
+            payload['quality_rating'] = quality_rating
+        
+        event_bus.emit(
+            'curation.reviewed',
+            payload,
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted curation.reviewed event for resource {resource_id}")
+    except Exception as e:
+        logger.error(f"Error emitting curation.reviewed event: {str(e)}", exc_info=True)
 
 
-def emit_approved_event(
-    resource_id: str, 
-    reviewer_id: str, 
-    previous_quality: float, 
-    new_quality: float
-) -> None:
+def emit_curation_approved(
+    review_id: str,
+    resource_id: str,
+    reviewer_id: str,
+    approval_notes: str = None
+):
     """
     Emit curation.approved event.
     
-    Args:
-        resource_id: Resource UUID
-        reviewer_id: Curator/user ID
-        previous_quality: Quality score before approval
-        new_quality: Quality score after approval
-    """
-    event_bus.emit(
-        "curation.approved",
-        {
-            "resource_id": resource_id,
-            "reviewer_id": reviewer_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "previous_quality": previous_quality,
-            "new_quality": new_quality
-        },
-        priority=EventPriority.NORMAL
-    )
-
-
-def emit_rejected_event(resource_id: str, reviewer_id: str, reason: str) -> None:
-    """
-    Emit curation.rejected event.
+    This should be called when a resource is approved by a curator.
     
     Args:
-        resource_id: Resource UUID
-        reviewer_id: Curator/user ID
-        reason: Reason for rejection
+        review_id: UUID of the review record
+        resource_id: UUID of the approved resource
+        reviewer_id: User ID of the reviewer who approved
+        approval_notes: Optional notes about the approval
     """
-    event_bus.emit(
-        "curation.rejected",
-        {
-            "resource_id": resource_id,
-            "reviewer_id": reviewer_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "reason": reason
-        },
-        priority=EventPriority.NORMAL
-    )
+    try:
+        payload = {
+            'review_id': review_id,
+            'resource_id': resource_id,
+            'reviewer_id': reviewer_id
+        }
+        
+        if approval_notes:
+            payload['approval_notes'] = approval_notes
+        
+        event_bus.emit(
+            'curation.approved',
+            payload,
+            priority=EventPriority.NORMAL
+        )
+        logger.info(f"Emitted curation.approved event for resource {resource_id}")
+    except Exception as e:
+        logger.error(f"Error emitting curation.approved event: {str(e)}", exc_info=True)
 
 
-def register_handlers() -> None:
+def register_handlers():
     """
-    Register all event handlers for the Curation module.
+    Register all event handlers for the curation module.
     
-    This function should be called during application startup to subscribe
-    to relevant events.
+    This function should be called during application startup.
+    Currently, curation module only emits events and doesn't subscribe to any.
     """
-    # Subscribe to quality.outlier_detected event
-    event_bus.subscribe(
-        "quality.outlier_detected",
-        handle_quality_outlier_detected,
-        priority=EventPriority.NORMAL
-    )
-    
     logger.info("Curation module event handlers registered")

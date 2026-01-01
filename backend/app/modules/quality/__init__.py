@@ -38,6 +38,7 @@ from .schema import (
     QualityDimensionsResponse,
     ReviewQueueResponse,
 )
+from .handlers import register_handlers
 
 __all__ = [
     "quality_router",
@@ -53,4 +54,5 @@ __all__ = [
     "QualityTrendsResponse",
     "QualityDimensionsResponse",
     "ReviewQueueResponse",
+    "register_handlers",
 ]

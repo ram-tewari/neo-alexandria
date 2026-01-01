@@ -1,145 +1,178 @@
 """
-Annotations Event Handlers - Event-driven integration.
+Annotations Event Handlers
 
-This module handles events related to annotations and subscribes to
-events from other modules.
+Handles events from other modules and emits annotation-related events.
+
+Events Subscribed:
+- resource.deleted: Clean up annotations when a resource is deleted
 
 Events Emitted:
 - annotation.created: When a new annotation is created
-- annotation.updated: When an annotation is modified
-- annotation.deleted: When an annotation is removed
-
-Events Subscribed:
-- resource.deleted: Cascade delete annotations for deleted resource
+- annotation.updated: When an annotation is updated
+- annotation.deleted: When an annotation is deleted
 """
 
 import logging
 from typing import Dict, Any
-from sqlalchemy import delete
+from uuid import UUID
 
-from ...shared.event_bus import event_bus
-from ...shared.database import get_sync_db
-from .model import Annotation
+from app.shared.event_bus import event_bus, EventPriority
+from app.shared.database import get_sync_db
 
 logger = logging.getLogger(__name__)
 
 
-def handle_resource_deleted(payload: Dict[str, Any]) -> None:
+def handle_resource_deleted(event):
     """
-    Handle resource.deleted event by cascade deleting associated annotations.
+    Handle resource.deleted event to clean up annotations.
     
-    When a resource is deleted, all annotations on that resource should be
-    automatically deleted to maintain referential integrity.
+    When a resource is deleted, we:
+    1. Find all annotations for that resource
+    2. Delete them from the database
+    3. Emit annotation.deleted events for each
     
     Args:
-        payload: Event payload containing:
+        event: Event object containing resource deletion details
             - resource_id: UUID of the deleted resource
     """
-    resource_id = payload.get("resource_id")
-    
-    if not resource_id:
-        logger.warning("resource.deleted event missing resource_id")
-        return
-    
     try:
+        payload = event.data
+        resource_id = UUID(payload.get('resource_id'))
+        
         # Get database session
         db = next(get_sync_db())
         
-        # Delete all annotations for this resource
-        stmt = delete(Annotation).where(Annotation.resource_id == resource_id)
-        result = db.execute(stmt)
-        db.commit()
-        
-        deleted_count = result.rowcount
-        if deleted_count > 0:
-            logger.info(f"Cascade deleted {deleted_count} annotations for resource {resource_id}")
+        try:
+            from .model import Annotation
+            from sqlalchemy import select
             
-            # Emit annotation.deleted events for each deleted annotation
-            # Note: In a production system, we might want to fetch the annotation IDs
-            # before deletion to emit individual events
-            event_bus.emit(
-                "annotation.deleted",
-                {
-                    "resource_id": str(resource_id),
-                    "count": deleted_count,
-                    "reason": "resource_deleted"
-                }
-            )
+            # Find all annotations for this resource
+            stmt = select(Annotation).where(Annotation.resource_id == resource_id)
+            result = db.execute(stmt)
+            annotations = result.scalars().all()
+            
+            # Delete each annotation and emit events
+            for annotation in annotations:
+                annotation_id = str(annotation.id)
+                user_id = annotation.user_id
+                
+                # Delete annotation
+                db.delete(annotation)
+                
+                # Emit annotation.deleted event
+                event_bus.emit(
+                    'annotation.deleted',
+                    {
+                        'annotation_id': annotation_id,
+                        'resource_id': str(resource_id),
+                        'user_id': user_id,
+                        'reason': 'resource_deleted'
+                    },
+                    priority=EventPriority.NORMAL
+                )
+            
+            db.commit()
+            
+            logger.info(f"Deleted {len(annotations)} annotations for resource {resource_id}")
+            
+        finally:
+            db.close()
+            
     except Exception as e:
-        logger.error(f"Failed to cascade delete annotations for resource {resource_id}: {e}")
-        # Don't raise - event handlers should be resilient
-    finally:
-        db.close()
+        logger.error(f"Error handling resource.deleted event: {str(e)}", exc_info=True)
 
 
-def emit_annotation_created(annotation_id: str, resource_id: str, user_id: str) -> None:
+def emit_annotation_created(annotation_id: str, resource_id: str, user_id: str, note: str = None):
     """
     Emit annotation.created event.
+    
+    This should be called by the annotation service after creating an annotation.
     
     Args:
         annotation_id: UUID of the created annotation
         resource_id: UUID of the resource
-        user_id: User ID of the annotation owner
+        user_id: User ID who created the annotation
+        note: Optional annotation note text
     """
-    event_bus.emit(
-        "annotation.created",
-        {
-            "annotation_id": annotation_id,
-            "resource_id": resource_id,
-            "user_id": user_id
-        }
-    )
+    try:
+        event_bus.emit(
+            'annotation.created',
+            {
+                'annotation_id': annotation_id,
+                'resource_id': resource_id,
+                'user_id': user_id,
+                'has_note': note is not None and len(note) > 0
+            },
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted annotation.created event for {annotation_id}")
+    except Exception as e:
+        logger.error(f"Error emitting annotation.created event: {str(e)}", exc_info=True)
 
 
-def emit_annotation_updated(annotation_id: str, resource_id: str, user_id: str, changed_fields: list) -> None:
+def emit_annotation_updated(annotation_id: str, resource_id: str, user_id: str, changes: Dict[str, Any]):
     """
     Emit annotation.updated event.
+    
+    This should be called by the annotation service after updating an annotation.
     
     Args:
         annotation_id: UUID of the updated annotation
         resource_id: UUID of the resource
-        user_id: User ID of the annotation owner
-        changed_fields: List of field names that were changed
+        user_id: User ID who updated the annotation
+        changes: Dictionary of changed fields
     """
-    event_bus.emit(
-        "annotation.updated",
-        {
-            "annotation_id": annotation_id,
-            "resource_id": resource_id,
-            "user_id": user_id,
-            "changed_fields": changed_fields
-        }
-    )
+    try:
+        event_bus.emit(
+            'annotation.updated',
+            {
+                'annotation_id': annotation_id,
+                'resource_id': resource_id,
+                'user_id': user_id,
+                'changes': list(changes.keys())
+            },
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted annotation.updated event for {annotation_id}")
+    except Exception as e:
+        logger.error(f"Error emitting annotation.updated event: {str(e)}", exc_info=True)
 
 
-def emit_annotation_deleted(annotation_id: str, resource_id: str, user_id: str) -> None:
+def emit_annotation_deleted(annotation_id: str, resource_id: str, user_id: str):
     """
     Emit annotation.deleted event.
+    
+    This should be called by the annotation service after deleting an annotation.
     
     Args:
         annotation_id: UUID of the deleted annotation
         resource_id: UUID of the resource
-        user_id: User ID of the annotation owner
+        user_id: User ID who deleted the annotation
     """
-    event_bus.emit(
-        "annotation.deleted",
-        {
-            "annotation_id": annotation_id,
-            "resource_id": resource_id,
-            "user_id": user_id
-        }
-    )
+    try:
+        event_bus.emit(
+            'annotation.deleted',
+            {
+                'annotation_id': annotation_id,
+                'resource_id': resource_id,
+                'user_id': user_id,
+                'reason': 'user_deleted'
+            },
+            priority=EventPriority.NORMAL
+        )
+        logger.debug(f"Emitted annotation.deleted event for {annotation_id}")
+    except Exception as e:
+        logger.error(f"Error emitting annotation.deleted event: {str(e)}", exc_info=True)
 
 
-def register_handlers() -> None:
+def register_handlers():
     """
     Register all event handlers for the annotations module.
     
-    This function should be called during application startup to subscribe
-    to events from other modules.
+    This function should be called during application startup to
+    subscribe to events from other modules.
     """
-    # Subscribe to resource.deleted event
-    event_bus.subscribe("resource.deleted", handle_resource_deleted)
+    # Subscribe to resource events
+    event_bus.on('resource.deleted', handle_resource_deleted, async_handler=False)
     
     logger.info("Annotations module event handlers registered")
-

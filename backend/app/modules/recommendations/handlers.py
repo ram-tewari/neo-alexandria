@@ -4,6 +4,7 @@ Recommendations Event Handlers
 Handles events from other modules to update user profiles and generate recommendations.
 
 Events Subscribed:
+- resource.viewed: Update user profile based on resource view activity
 - annotation.created: Update user profile based on annotation activity
 - collection.resource_added: Update user profile based on collection activity
 
@@ -22,6 +23,74 @@ from app.shared.event_bus import event_bus
 from app.shared.database import get_sync_db
 
 logger = logging.getLogger(__name__)
+
+
+def handle_resource_viewed(payload: Dict[str, Any]):
+    """
+    Handle resource.viewed event to update user profile.
+    
+    When a user views a resource, we:
+    1. Record it as an interaction
+    2. Update user profile preferences
+    3. Emit user.profile_updated event
+    
+    Args:
+        payload: Event payload containing resource view details
+            - user_id: UUID of the user
+            - resource_id: UUID of the resource
+            - dwell_time: Optional time spent on resource in seconds
+            - scroll_depth: Optional scroll depth (0.0-1.0)
+            - session_id: Optional session identifier
+    """
+    try:
+        from .user_profile import UserProfileService
+        
+        user_id = UUID(payload.get('user_id'))
+        resource_id = UUID(payload.get('resource_id'))
+        dwell_time = payload.get('dwell_time')
+        scroll_depth = payload.get('scroll_depth')
+        session_id = payload.get('session_id')
+        
+        # Get database session
+        db = next(get_sync_db())
+        
+        try:
+            # Track interaction
+            profile_service = UserProfileService(db)
+            interaction = profile_service.track_interaction(
+                user_id=user_id,
+                resource_id=resource_id,
+                interaction_type='view',
+                dwell_time=dwell_time,
+                scroll_depth=scroll_depth,
+                session_id=session_id,
+                rating=None
+            )
+            
+            # Emit interaction recorded event
+            event_bus.emit('interaction.recorded', {
+                'interaction_id': str(interaction.id),
+                'user_id': str(user_id),
+                'resource_id': str(resource_id),
+                'interaction_type': 'view',
+                'interaction_strength': interaction.interaction_strength,
+                'timestamp': interaction.created_at.isoformat()
+            })
+            
+            # Emit profile updated event
+            event_bus.emit('user.profile_updated', {
+                'user_id': str(user_id),
+                'update_type': 'view_activity',
+                'timestamp': interaction.created_at.isoformat()
+            })
+            
+            logger.info(f"Updated user profile for resource view: user={user_id}, resource={resource_id}")
+            
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"Error handling resource.viewed event: {str(e)}", exc_info=True)
 
 
 def handle_annotation_created(payload: Dict[str, Any]):
@@ -158,6 +227,9 @@ def register_handlers():
     This function should be called during application startup to
     subscribe to events from other modules.
     """
+    # Subscribe to resource events
+    event_bus.subscribe('resource.viewed', handle_resource_viewed)
+    
     # Subscribe to annotation events
     event_bus.subscribe('annotation.created', handle_annotation_created)
     

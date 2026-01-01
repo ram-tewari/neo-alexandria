@@ -36,9 +36,9 @@ from .schema import (
     BatchSparseEmbeddingRequest,
     BatchSparseEmbeddingResponse
 )
-from ...schemas.resource import ResourceRead
+from ..resources.schema import ResourceRead
 from ...services.search_service import AdvancedSearchService
-from ...services.sparse_embedding_service import SparseEmbeddingService
+from .sparse_embeddings import SparseEmbeddingService
 from ...database.models import Resource
 
 

@@ -7,9 +7,10 @@ The Curation module provides content review queue management and batch operation
 ## Purpose
 
 - Manage review queues for low-quality content
-- Perform batch operations on multiple resources
+- Perform batch operations on multiple resources (Task 15 - Phase 16.7)
 - Analyze quality metrics and provide improvement suggestions
 - Integrate with quality assessment system for automated flagging
+- Support curator assignment and workflow management
 
 ## Public Interface
 
@@ -139,20 +140,104 @@ Triggered when the Quality module detects an outlier.
 ### External Modules (via Events)
 - Quality Module: Receives outlier detection events
 
-## Usage Example
+## Usage Examples
+
+### Batch Review Operations (Task 15.1 - Phase 16.7)
 
 ```python
-from app.modules.curation import curation_router, CurationService
-from app.shared.database import get_sync_db
+from app.modules.curation import CurationService
 
-# Use in FastAPI app
-app.include_router(curation_router)
-
-# Use service directly
-db = next(get_sync_db())
 service = CurationService(db)
 
-# Get review queue
+# Batch approve multiple resources
+result = await service.batch_review(
+    resource_ids=["uuid1", "uuid2", "uuid3"],
+    action="approve",
+    reviewer_id="curator-123",
+    notes="Quality verified, content accurate"
+)
+# Returns: {"updated_count": 3, "failed_count": 0, "errors": []}
+
+# Batch reject resources
+result = await service.batch_review(
+    resource_ids=["uuid4", "uuid5"],
+    action="reject",
+    reviewer_id="curator-123",
+    notes="Low quality, needs improvement"
+)
+
+# Batch flag for review
+result = await service.batch_review(
+    resource_ids=["uuid6", "uuid7", "uuid8"],
+    action="flag",
+    reviewer_id="curator-123",
+    notes="Requires expert review"
+)
+
+# Performance: <5s for 100 resources (target met)
+```
+
+### Batch Tagging (Task 15.2 - Phase 16.7)
+
+```python
+# Add tags to multiple resources
+result = await service.batch_tag(
+    resource_ids=["uuid1", "uuid2", "uuid3"],
+    tags=["reviewed", "high-quality", "featured"]
+)
+# Tags are deduplicated (case-insensitive)
+# Existing tags are preserved
+```
+
+### Enhanced Review Queue (Task 15.3 - Phase 16.7)
+
+```python
+# Filter by curation status
+items, total = await service.get_review_queue(
+    status="pending",  # pending, assigned, approved, rejected, flagged
+    limit=25,
+    offset=0
+)
+
+# Filter by quality score range
+items, total = await service.get_review_queue(
+    min_quality=0.3,
+    max_quality=0.6,
+    limit=25
+)
+
+# Filter by assigned curator
+items, total = await service.get_review_queue(
+    assigned_to="curator-123",
+    limit=25
+)
+
+# Combine filters
+items, total = await service.get_review_queue(
+    status="assigned",
+    assigned_to="curator-123",
+    min_quality=0.4,
+    limit=25,
+    offset=0
+)
+```
+
+### Curator Assignment (Task 15.4 - Phase 16.7)
+
+```python
+# Assign resources to curator
+result = await service.batch_assign(
+    resource_ids=["uuid1", "uuid2", "uuid3"],
+    curator_id="curator-123"
+)
+# Updates status to 'assigned'
+# Emits curation.assigned event
+```
+
+### Quality Analysis
+
+```python
+# Get review queue by quality threshold
 items, total = service.review_queue(
     threshold=0.5,
     include_unread_only=True,
@@ -160,11 +245,15 @@ items, total = service.review_queue(
     offset=0
 )
 
-# Batch update resources
-result = service.batch_update(
-    resource_ids=[uuid1, uuid2, uuid3],
-    updates={"read_status": "read"}
+# Get detailed quality analysis
+analysis = await service.get_quality_analysis(resource_id="uuid1")
+# Returns: Quality metrics, suggestions, outlier status
+
+# Bulk quality check
+result = await service.bulk_quality_check(
+    resource_ids=["uuid1", "uuid2", "uuid3"]
 )
+# Returns: Quality scores for all resources
 ```
 
 ## Testing
@@ -178,9 +267,15 @@ Tests are located in `modules/curation/tests/`:
 
 - The module uses the Quality module's `ContentQualityAnalyzer` for quality assessment
 - Review queue is sorted by quality score (ascending) and updated_at
-- Batch operations are performed in a single database transaction
+- **Batch operations** (Task 15 - Phase 16.7):
+  - Performed in a single database transaction for atomicity
+  - Support partial success with detailed error reporting
+  - Performance target: <5s for 100 resources (met)
+  - Emit events for tracking and auditing
 - Event handlers are isolated - failures don't affect other handlers
 - All quality scores are stored as floats in the range [0.0, 1.0]
+- Curator assignment updates resource status automatically
+- Tag deduplication is case-insensitive
 
 ## Future Enhancements
 

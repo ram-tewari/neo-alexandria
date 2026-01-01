@@ -17,7 +17,7 @@ from typing import List, Optional, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from ...schemas.resource import ResourceRead
+from ..resources.schema import ResourceRead
 
 
 class FacetBucket(BaseModel):

@@ -8,7 +8,6 @@ Extracted from app/routers/quality.py as part of Phase 14 vertical slice refacto
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -49,8 +48,7 @@ def _get_quality_service(db: Session) -> QualityService:
 
 def _get_summarization_evaluator(db: Session) -> SummarizationEvaluator:
     """Helper to create SummarizationEvaluator instance."""
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    return SummarizationEvaluator(db, openai_api_key=openai_api_key)
+    return SummarizationEvaluator(db)
 
 
 @router.get("/resources/{resource_id}/quality-details", response_model=QualityDetailsResponse)
@@ -243,10 +241,10 @@ async def get_degradation_report(
 @router.post("/summaries/{resource_id}/evaluate", status_code=status.HTTP_202_ACCEPTED)
 async def evaluate_summary(
     resource_id: str,
-    use_g_eval: bool = Query(False, description="Whether to use G-Eval (requires OpenAI API)"),
+    use_g_eval: bool = Query(True, description="Whether to use G-Eval with Flan-T5 (default: True)"),
     db: Session = Depends(get_sync_db),
 ):
-    """Trigger summary quality evaluation for a resource."""
+    """Trigger summary quality evaluation for a resource using Flan-T5."""
     resource = db.query(Resource).filter(Resource.id == resource_id).first()
     
     if not resource:

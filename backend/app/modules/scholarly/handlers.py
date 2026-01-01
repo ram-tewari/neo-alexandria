@@ -1,108 +1,123 @@
 """
-Neo Alexandria 2.0 - Scholarly Module Event Handlers
+Scholarly Event Handlers
 
-Event handlers for the Scholarly module to enable event-driven communication
-with other modules.
-
-Events Subscribed:
-- resource.created: Triggers metadata extraction for new resources
+Emits scholarly metadata extraction events.
 
 Events Emitted:
-- metadata.extracted: When metadata is successfully extracted
-- equations.parsed: When equations are found and parsed
-- tables.extracted: When tables are extracted
+- metadata.extracted: When scholarly metadata is extracted from a resource
+- equations.parsed: When equations are parsed from content
+- tables.extracted: When tables are extracted from content
 """
 
 import logging
-from typing import Dict
+from typing import Dict, Any, List
 
-from ...shared.event_bus import event_bus, EventPriority
-from ...shared.database import get_db
-from ...events.event_types import SystemEvent
-from .extractor import MetadataExtractor
+from app.shared.event_bus import event_bus, EventPriority
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_resource_created(payload: Dict) -> None:
+def emit_metadata_extracted(
+    resource_id: str,
+    metadata: Dict[str, Any],
+    equation_count: int = 0,
+    table_count: int = 0,
+    figure_count: int = 0
+):
     """
-    Handle resource.created event by extracting scholarly metadata.
+    Emit metadata.extracted event.
+    
+    This should be called by the metadata extractor after extracting scholarly metadata.
     
     Args:
-        payload: Event payload containing resource_id and resource details
+        resource_id: UUID of the resource
+        metadata: Dictionary of extracted metadata
+        equation_count: Number of equations extracted
+        table_count: Number of tables extracted
+        figure_count: Number of figures extracted
     """
-    resource_id = payload.get("resource_id")
-    if not resource_id:
-        logger.warning("resource.created event missing resource_id")
-        return
-    
     try:
-        # Get database session
-        db = next(get_db())
-        
-        # Extract metadata
-        extractor = MetadataExtractor(db)
-        metadata = extractor.extract_scholarly_metadata(resource_id)
-        
-        if metadata:
-            # Emit metadata.extracted event
-            event_bus.emit(
-                "metadata.extracted",
-                {
-                    "resource_id": resource_id,
-                    "metadata_fields": list(metadata.keys()),
-                    "completeness_score": metadata.get("metadata_completeness_score", 0.0),
-                    "extraction_confidence": metadata.get("extraction_confidence", 0.0)
-                },
-                priority=EventPriority.LOW
-            )
-            
-            # Emit equations.parsed event if equations were found
-            if metadata.get("equation_count", 0) > 0:
-                event_bus.emit(
-                    "equations.parsed",
-                    {
-                        "resource_id": resource_id,
-                        "equation_count": metadata["equation_count"]
-                    },
-                    priority=EventPriority.LOW
-                )
-            
-            # Emit tables.extracted event if tables were found
-            if metadata.get("table_count", 0) > 0:
-                event_bus.emit(
-                    "tables.extracted",
-                    {
-                        "resource_id": resource_id,
-                        "table_count": metadata["table_count"]
-                    },
-                    priority=EventPriority.LOW
-                )
-            
-            logger.info(f"Successfully extracted metadata for resource {resource_id}")
-        else:
-            logger.warning(f"No metadata extracted for resource {resource_id}")
-            
+        event_bus.emit(
+            'metadata.extracted',
+            {
+                'resource_id': resource_id,
+                'metadata': metadata,
+                'equation_count': equation_count,
+                'table_count': table_count,
+                'figure_count': figure_count
+            },
+            priority=EventPriority.LOW
+        )
+        logger.debug(f"Emitted metadata.extracted event for resource {resource_id}")
     except Exception as e:
-        logger.error(f"Failed to handle resource.created event for {resource_id}: {e}")
-    finally:
-        if 'db' in locals():
-            db.close()
+        logger.error(f"Error emitting metadata.extracted event: {str(e)}", exc_info=True)
 
 
-def register_handlers() -> None:
+def emit_equations_parsed(
+    resource_id: str,
+    equations: List[Dict[str, Any]],
+    equation_count: int
+):
     """
-    Register all event handlers for the Scholarly module.
+    Emit equations.parsed event.
     
-    This function should be called during application startup to subscribe
-    to relevant events.
+    This should be called after parsing equations from content.
+    
+    Args:
+        resource_id: UUID of the resource
+        equations: List of parsed equation dictionaries
+        equation_count: Number of equations parsed
     """
-    # Subscribe to resource.created event
-    event_bus.subscribe(
-        SystemEvent.RESOURCE_CREATED.value,
-        handle_resource_created,
-        priority=EventPriority.LOW
-    )
+    try:
+        event_bus.emit(
+            'equations.parsed',
+            {
+                'resource_id': resource_id,
+                'equations': equations,
+                'equation_count': equation_count
+            },
+            priority=EventPriority.LOW
+        )
+        logger.debug(f"Emitted equations.parsed event for resource {resource_id}")
+    except Exception as e:
+        logger.error(f"Error emitting equations.parsed event: {str(e)}", exc_info=True)
+
+
+def emit_tables_extracted(
+    resource_id: str,
+    tables: List[Dict[str, Any]],
+    table_count: int
+):
+    """
+    Emit tables.extracted event.
     
+    This should be called after extracting tables from content.
+    
+    Args:
+        resource_id: UUID of the resource
+        tables: List of extracted table dictionaries
+        table_count: Number of tables extracted
+    """
+    try:
+        event_bus.emit(
+            'tables.extracted',
+            {
+                'resource_id': resource_id,
+                'tables': tables,
+                'table_count': table_count
+            },
+            priority=EventPriority.LOW
+        )
+        logger.debug(f"Emitted tables.extracted event for resource {resource_id}")
+    except Exception as e:
+        logger.error(f"Error emitting tables.extracted event: {str(e)}", exc_info=True)
+
+
+def register_handlers():
+    """
+    Register all event handlers for the scholarly module.
+    
+    This function should be called during application startup.
+    Currently, scholarly module only emits events and doesn't subscribe to any.
+    """
     logger.info("Scholarly module event handlers registered")
-

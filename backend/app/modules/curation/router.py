@@ -36,6 +36,10 @@ from .schema import (
     QualityAnalysisResponse,
     LowQualityResponse,
     BulkQualityCheckRequest,
+    BatchReviewRequest,
+    BatchTagRequest,
+    AssignCuratorRequest,
+    EnhancedReviewQueueParams,
 )
 from .service import CurationService
 
@@ -66,7 +70,21 @@ def review_queue_endpoint(
     )
     service = CurationService(db, settings)
     items, total = service.review_queue(params)
-    return ReviewQueueResponse(items=items, total=total)
+    
+    # Convert Resource objects to dictionaries
+    items_dict = [
+        {
+            "id": str(item.id),
+            "title": item.title,
+            "description": item.description,
+            "quality_score": item.quality_score,
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+            "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+        }
+        for item in items
+    ]
+    
+    return ReviewQueueResponse(items=items_dict, total=total)
 
 
 @router.post("/batch-update", response_model=BatchUpdateResult)
@@ -133,7 +151,21 @@ def low_quality_endpoint(
     )
     service = CurationService(db, settings)
     items, total = service.review_queue(params)
-    return LowQualityResponse(items=items, total=total)
+    
+    # Convert Resource objects to dictionaries
+    items_dict = [
+        {
+            "id": str(item.id),
+            "title": item.title,
+            "description": item.description,
+            "quality_score": item.quality_score,
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+            "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+        }
+        for item in items
+    ]
+    
+    return LowQualityResponse(items=items_dict, total=total)
 
 
 @router.post("/bulk-quality-check", response_model=BatchUpdateResult)
@@ -157,6 +189,125 @@ def bulk_quality_check_endpoint(
     service = CurationService(db)
     result = service.bulk_quality_check(ids)
     return result
+
+
+@router.post("/batch/review", response_model=BatchUpdateResult)
+def batch_review_endpoint(
+    payload: BatchReviewRequest,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Perform batch review operations on multiple resources.
+    
+    Applies review action (approve/reject/flag) to all specified resources
+    and tracks review records for audit trail.
+    """
+    try:
+        service = CurationService(db)
+        result = service.batch_review(
+            resource_ids=payload.resource_ids,
+            action=payload.action,
+            curator_id=payload.curator_id,
+            comment=payload.comment
+        )
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+
+@router.post("/batch/tag", response_model=BatchUpdateResult)
+def batch_tag_endpoint(
+    payload: BatchTagRequest,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Add tags to multiple resources in batch.
+    
+    Tags are deduplicated and merged with existing tags.
+    """
+    try:
+        service = CurationService(db)
+        result = service.batch_tag(
+            resource_ids=payload.resource_ids,
+            tags=payload.tags
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/batch/assign", response_model=BatchUpdateResult)
+def batch_assign_endpoint(
+    payload: AssignCuratorRequest,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Assign multiple resources to a curator for review.
+    
+    Updates curation status to 'assigned' and sets assigned curator.
+    """
+    try:
+        service = CurationService(db)
+        result = service.assign_curator(
+            resource_ids=payload.resource_ids,
+            curator_id=payload.curator_id
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/queue", response_model=ReviewQueueResponse)
+def enhanced_review_queue_endpoint(
+    threshold: Optional[float] = None,
+    status: Optional[str] = None,
+    assigned_curator: Optional[str] = None,
+    min_quality: Optional[float] = None,
+    max_quality: Optional[float] = None,
+    include_unread_only: bool = False,
+    limit: int = 25,
+    offset: int = 0,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Get items in the review queue with enhanced filtering.
+    
+    Supports filtering by:
+    - Quality threshold
+    - Curation status (pending/approved/rejected/assigned)
+    - Assigned curator
+    - Quality score range
+    - Read status
+    """
+    params = EnhancedReviewQueueParams(
+        threshold=threshold,
+        status=status,
+        assigned_curator=assigned_curator,
+        min_quality=min_quality,
+        max_quality=max_quality,
+        include_unread_only=include_unread_only,
+        limit=limit,
+        offset=offset,
+    )
+    service = CurationService(db)
+    items, total = service.review_queue_enhanced(params)
+    
+    # Convert Resource objects to dictionaries
+    items_dict = [
+        {
+            "id": str(item.id),
+            "title": item.title,
+            "description": item.description,
+            "quality_score": item.quality_score,
+            "curation_status": getattr(item, "curation_status", "pending"),
+            "assigned_curator": getattr(item, "assigned_curator", None),
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+            "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+        }
+        for item in items
+    ]
+    
+    return ReviewQueueResponse(items=items_dict, total=total)
 
 
 # Export router for module interface

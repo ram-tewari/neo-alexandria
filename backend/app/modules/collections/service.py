@@ -19,6 +19,7 @@ Key Features:
 - Support hierarchical collections (parent/subcollections)
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
@@ -26,6 +27,8 @@ from typing import List, Optional, Dict, Any, Tuple
 import numpy as np
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
+
+logger = logging.getLogger(__name__)
 
 # Import from local model file to avoid circular dependencies
 from .model import Collection, CollectionResource
@@ -92,7 +95,8 @@ class CollectionService:
         
         self.db.add(collection)
         self.db.commit()
-        self.db.refresh(collection)
+        # No need to refresh - all fields are set explicitly
+        # Refresh can cause issues with relationships in test environments
         
         return collection
     
@@ -218,7 +222,7 @@ class CollectionService:
         
         for key, value in update_data.items():
             if key == "parent_id" and value is not None:
-                # Validate parent collection
+                # Validate parent collection exists
                 parent = self.db.query(Collection).filter(
                     Collection.id == value,
                     Collection.owner_id == owner_id
@@ -227,16 +231,17 @@ class CollectionService:
                 if not parent:
                     raise ValueError(f"Parent collection {value} not found or access denied")
                 
-                # Prevent circular references
-                if value == collection_id:
-                    raise ValueError("Collection cannot be its own parent")
+                # Validate hierarchy to prevent circular references
+                is_valid, error_msg = self.validate_parent_hierarchy(collection_id, value)
+                if not is_valid:
+                    raise ValueError(error_msg)
             
             setattr(collection, key, value)
         
         collection.updated_at = datetime.now(timezone.utc)
         
         self.db.commit()
-        self.db.refresh(collection)
+        # No need to refresh - all fields are set explicitly
         
         return collection
     
@@ -341,6 +346,16 @@ class CollectionService:
             
             # Recompute collection embedding
             self.compute_collection_embedding(collection_id)
+            
+            # Emit collection.resource_added events
+            from .handlers import emit_collection_resource_added
+            for resource_id in new_resource_ids:
+                if resource_id in existing_resource_ids:
+                    emit_collection_resource_added(
+                        collection_id=str(collection_id),
+                        resource_id=str(resource_id),
+                        user_id=owner_id or "system"
+                    )
         
         return added_count
     
@@ -427,6 +442,16 @@ class CollectionService:
             
             # Recompute collection embedding
             self.compute_collection_embedding(collection_id)
+            
+            # Emit collection.resource_removed events
+            from .handlers import emit_collection_resource_removed
+            for resource_id in resource_ids:
+                emit_collection_resource_removed(
+                    collection_id=str(collection_id),
+                    resource_id=str(resource_id),
+                    user_id=owner_id,
+                    reason='user_removed'
+                )
         
         return removed_count
     
@@ -676,3 +701,290 @@ class CollectionService:
         ).all()
         
         return collections
+    
+    def find_similar_collections(
+        self,
+        collection_id: uuid.UUID,
+        owner_id: Optional[str] = None,
+        limit: int = 20,
+        min_similarity: float = 0.5
+    ) -> List[Dict[str, Any]]:
+        """
+        Find collections similar to a given collection based on embeddings.
+        
+        Uses cosine similarity between collection embeddings to find
+        semantically related collections.
+        
+        Args:
+            collection_id: Source collection UUID
+            owner_id: Optional owner ID for access control
+            limit: Maximum number of recommendations
+            min_similarity: Minimum similarity threshold (0.0-1.0)
+            
+        Returns:
+            List of dicts with collection info and similarity scores
+            
+        Raises:
+            ValueError: If collection not found, access denied, or no embedding
+        """
+        # Get source collection with embedding
+        collection = self.get_collection(collection_id, owner_id)
+        if not collection:
+            raise ValueError("Collection not found or access denied")
+        
+        if not collection.embedding:
+            raise ValueError("Collection has no embedding - add resources first")
+        
+        collection_embedding = np.array(collection.embedding)
+        
+        # Get all other collections with embeddings
+        query = self.db.query(Collection).filter(
+            Collection.embedding.isnot(None),
+            Collection.id != collection_id
+        )
+        
+        # Filter by visibility - include public collections and user's own collections
+        if owner_id:
+            query = query.filter(
+                or_(
+                    Collection.owner_id == owner_id,
+                    Collection.visibility == "public"
+                )
+            )
+        else:
+            # No owner specified - only public collections
+            query = query.filter(Collection.visibility == "public")
+        
+        collections = query.all()
+        
+        # Compute similarities
+        similarities = []
+        for other_collection in collections:
+            if not other_collection.embedding or not isinstance(other_collection.embedding, list):
+                continue
+            
+            other_embedding = np.array(other_collection.embedding)
+            
+            # Cosine similarity
+            similarity = float(np.dot(collection_embedding, other_embedding))
+            
+            if similarity >= min_similarity:
+                # Get resource count
+                resource_count = self.db.query(CollectionResource).filter(
+                    CollectionResource.collection_id == other_collection.id
+                ).count()
+                
+                similarities.append({
+                    "collection_id": other_collection.id,
+                    "name": other_collection.name,
+                    "description": other_collection.description,
+                    "similarity_score": similarity,
+                    "resource_count": resource_count,
+                    "visibility": other_collection.visibility,
+                    "owner_id": other_collection.owner_id
+                })
+        
+        # Sort by similarity and limit
+        similarities.sort(key=lambda x: x["similarity_score"], reverse=True)
+        
+        return similarities[:limit]
+    
+    def validate_parent_hierarchy(
+        self,
+        collection_id: uuid.UUID,
+        new_parent_id: uuid.UUID
+    ) -> tuple[bool, str]:
+        """
+        Validate that setting a parent doesn't create circular references.
+        
+        Traverses the parent chain to detect cycles. A cycle would occur if
+        the new parent is the collection itself or any of its descendants.
+        
+        Args:
+            collection_id: Collection UUID
+            new_parent_id: Proposed parent collection UUID
+            
+        Returns:
+            Tuple of (is_valid, error_message)
+            - (True, "") if hierarchy is valid
+            - (False, error_message) if circular reference detected
+        """
+        # Can't be its own parent
+        if collection_id == new_parent_id:
+            return False, "Collection cannot be its own parent"
+        
+        # Traverse up the parent chain from new_parent
+        visited = set()
+        current_id = new_parent_id
+        
+        while current_id is not None:
+            # Check if we've encountered the original collection
+            if current_id == collection_id:
+                return False, "Invalid parent assignment: would create circular reference"
+            
+            # Check if we've visited this node before (another type of cycle)
+            if current_id in visited:
+                return False, "Invalid parent assignment: cycle detected in parent chain"
+            
+            visited.add(current_id)
+            
+            # Get parent of current collection
+            current = self.db.query(Collection).filter(
+                Collection.id == current_id
+            ).first()
+            
+            if not current:
+                # Parent doesn't exist
+                return False, "Parent collection does not exist"
+            
+            current_id = current.parent_id
+        
+        return True, ""
+    
+    def add_resources_batch(
+        self,
+        collection_id: uuid.UUID,
+        resource_ids: List[uuid.UUID],
+        owner_id: str
+    ) -> Dict[str, Any]:
+        """
+        Add multiple resources to a collection in a single batch operation.
+        
+        This is more efficient than adding resources one at a time and
+        triggers embedding recomputation only once after all resources
+        are added.
+        
+        Args:
+            collection_id: Collection UUID
+            resource_ids: List of resource UUIDs to add (max 100)
+            owner_id: Owner user ID for access control
+            
+        Returns:
+            Dict with operation results:
+                - added: Number of resources added
+                - skipped: Number of resources already in collection
+                - invalid: Number of invalid resource IDs
+                
+        Raises:
+            ValueError: If collection not found, access denied, or too many resources
+        """
+        # Validate batch size
+        if len(resource_ids) > 100:
+            raise ValueError("Batch size cannot exceed 100 resources")
+        
+        # Verify collection access
+        collection = self.get_collection(collection_id, owner_id)
+        if not collection:
+            raise ValueError("Collection not found or access denied")
+        
+        # Get existing resource IDs in collection
+        existing_ids = {
+            cr.resource_id
+            for cr in self.db.query(CollectionResource.resource_id).filter(
+                CollectionResource.collection_id == collection_id
+            ).all()
+        }
+        
+        # Filter out resources already in collection
+        new_resource_ids = [rid for rid in resource_ids if rid not in existing_ids]
+        skipped_count = len(resource_ids) - len(new_resource_ids)
+        
+        if not new_resource_ids:
+            return {
+                "added": 0,
+                "skipped": skipped_count,
+                "invalid": 0
+            }
+        
+        # Verify resources exist
+        from ...database.models import Resource
+        existing_resources = self.db.query(Resource.id).filter(
+            Resource.id.in_(new_resource_ids)
+        ).all()
+        existing_resource_ids = {r.id for r in existing_resources}
+        
+        # Separate valid and invalid resource IDs
+        valid_ids = [rid for rid in new_resource_ids if rid in existing_resource_ids]
+        invalid_count = len(new_resource_ids) - len(valid_ids)
+        
+        # Batch insert associations
+        added_count = 0
+        for resource_id in valid_ids:
+            association = CollectionResource(
+                collection_id=collection_id,
+                resource_id=resource_id
+            )
+            self.db.add(association)
+            added_count += 1
+        
+        if added_count > 0:
+            # Update collection timestamp
+            collection.updated_at = datetime.now(timezone.utc)
+            
+            self.db.commit()
+            
+            # Recompute collection embedding once for all added resources
+            self.compute_collection_embedding(collection_id)
+        
+        return {
+            "added": added_count,
+            "skipped": skipped_count,
+            "invalid": invalid_count
+        }
+    
+    def remove_resources_batch(
+        self,
+        collection_id: uuid.UUID,
+        resource_ids: List[uuid.UUID],
+        owner_id: str
+    ) -> Dict[str, Any]:
+        """
+        Remove multiple resources from a collection in a single batch operation.
+        
+        This is more efficient than removing resources one at a time and
+        triggers embedding recomputation only once after all resources
+        are removed.
+        
+        Args:
+            collection_id: Collection UUID
+            resource_ids: List of resource UUIDs to remove (max 100)
+            owner_id: Owner user ID for access control
+            
+        Returns:
+            Dict with operation results:
+                - removed: Number of resources removed
+                - not_found: Number of resources not in collection
+                
+        Raises:
+            ValueError: If collection not found, access denied, or too many resources
+        """
+        # Validate batch size
+        if len(resource_ids) > 100:
+            raise ValueError("Batch size cannot exceed 100 resources")
+        
+        # Verify collection access
+        collection = self.get_collection(collection_id, owner_id)
+        if not collection:
+            raise ValueError("Collection not found or access denied")
+        
+        # Delete associations
+        removed_count = self.db.query(CollectionResource).filter(
+            CollectionResource.collection_id == collection_id,
+            CollectionResource.resource_id.in_(resource_ids)
+        ).delete(synchronize_session=False)
+        
+        not_found_count = len(resource_ids) - removed_count
+        
+        if removed_count > 0:
+            # Update collection timestamp
+            collection.updated_at = datetime.now(timezone.utc)
+            
+            self.db.commit()
+            
+            # Recompute collection embedding once for all removed resources
+            self.compute_collection_embedding(collection_id)
+        
+        return {
+            "removed": removed_count,
+            "not_found": not_found_count
+        }

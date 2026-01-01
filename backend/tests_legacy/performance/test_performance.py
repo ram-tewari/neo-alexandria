@@ -312,8 +312,8 @@ def test_single_prediction_inference_time(test_db):
         assert avg_time < 100.0, f"Single prediction took {avg_time:.2f}ms, expected <100ms"
         
         # Verify correctness
-        assert isinstance(predictions, dict)
-        assert len(predictions) <= 5
+        assert isinstance(result.predictions, dict)
+        assert len(result.predictions) <= 5
         
     except ImportError:
         pytest.skip("ML libraries not installed")

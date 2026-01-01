@@ -300,7 +300,7 @@ def test_search_index_update_speed(test_db):
     # Initial index (if search service has this function)
     try:
         search_service.update_fts5_index(db, str(resource.id))
-    except:
+    except (AttributeError, Exception):
         pass  # Skip if function doesn't exist
     
     # Update resource description
@@ -316,7 +316,7 @@ def test_search_index_update_speed(test_db):
     # Trigger index update (simulating the hook)
     try:
         search_service.update_fts5_index(db, str(resource.id))
-    except:
+    except (AttributeError, Exception):
         pass  # Skip if function doesn't exist
     
     update_end = time.perf_counter()
@@ -327,7 +327,7 @@ def test_search_index_update_speed(test_db):
     try:
         results = search_service.search(db, "searchable terms", limit=10)
         resource_found = any(r.id == resource.id for r in results)
-    except:
+    except (AttributeError, Exception):
         # If search doesn't work, just verify update completed
         resource_found = True
         results = []

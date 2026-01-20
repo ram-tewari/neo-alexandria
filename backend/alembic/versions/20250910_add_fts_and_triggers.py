@@ -8,6 +8,7 @@ Notes:
 - This migration is a no-op on non-SQLite engines.
 - It guards execution if FTS5 is not available in the SQLite build.
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -31,7 +32,9 @@ def _sqlite_has_fts5(conn: Connection) -> bool:
         pass
     # Fallback probe: attempt to create and drop a temp fts5 table
     try:
-        conn.exec_driver_sql("CREATE VIRTUAL TABLE IF NOT EXISTS temp.__fts5_probe USING fts5(x);")
+        conn.exec_driver_sql(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS temp.__fts5_probe USING fts5(x);"
+        )
         conn.exec_driver_sql("DROP TABLE IF EXISTS temp.__fts5_probe;")
         return True
     except Exception:
@@ -152,5 +155,3 @@ def downgrade() -> None:
     # Drop FTS and mapping tables
     op.execute("DROP TABLE IF EXISTS resources_fts;")
     op.execute("DROP TABLE IF EXISTS resources_fts_doc;")
-
-

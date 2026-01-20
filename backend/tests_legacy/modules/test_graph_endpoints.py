@@ -13,7 +13,6 @@ Endpoints tested:
 from unittest.mock import patch, MagicMock
 
 
-
 class TestGraphEndpoints:
     def test_get_graph_overview(self, client, create_test_resource):
         """Test getting graph overview."""
@@ -42,8 +41,10 @@ class TestCitations:
         """Test extracting citations from a resource."""
         resource = create_test_resource()
         # Mock celery to avoid import errors
-        with patch.dict('sys.modules', {'celery': MagicMock()}):
-            response = client.post(f"/citations/resources/{str(resource.id)}/citations/extract")
+        with patch.dict("sys.modules", {"celery": MagicMock()}):
+            response = client.post(
+                f"/citations/resources/{str(resource.id)}/citations/extract"
+            )
             # Accept various status codes - 200/202 for success, 404 if not found, 500 if celery issues
             assert response.status_code in [200, 202, 404, 500]
 
@@ -65,10 +66,13 @@ class TestDiscovery:
         """Test closed discovery with seed resources."""
         resource1 = create_test_resource(title="Resource 1")
         resource2 = create_test_resource(title="Resource 2")
-        response = client.post("/discovery/closed", json={
-            "a_resource_id": str(resource1.id),
-            "c_resource_id": str(resource2.id),
-            "max_hops": 2
-        })
+        response = client.post(
+            "/discovery/closed",
+            json={
+                "a_resource_id": str(resource1.id),
+                "c_resource_id": str(resource2.id),
+                "max_hops": 2,
+            },
+        )
         # 200 for success, 404 if no paths found, 422 for validation errors
         assert response.status_code in [200, 404, 422, 500]

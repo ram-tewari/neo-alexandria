@@ -1,0 +1,30 @@
+﻿python : Traceback (most recent call last):
+At line:1 char:1
++ python test_server_stability.py 2>&1 | 
+Out-File -FilePath stability_t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Tr 
+   aceback (most recent call last)::String) []  
+  , RemoteException
+    + FullyQualifiedErrorId : NativeCommandErro 
+   r
+ 
+  File "C:\Users\rooma\PycharmProjects\neo_alexa
+dria\backend\test_server_stability.py", line 
+130, in <module>
+    if not check_server():
+           ~~~~~~~~~~~~^^
+  File "C:\Users\rooma\PycharmProjects\neo_alexa
+dria\backend\test_server_stability.py", line 
+124, in check_server
+    print("\u2717 Server is not running")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", 
+line 19, in encode
+    return codecs.charmap_encode(input,self.erro
+rs,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't 
+encode character '\u2717' in position 0: 
+character maps to <undefined>

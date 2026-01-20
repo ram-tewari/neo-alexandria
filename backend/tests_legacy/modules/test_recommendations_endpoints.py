@@ -11,8 +11,6 @@ Endpoints tested:
 """
 
 
-
-
 class TestRecommendations:
     def test_get_recommendations(self, client):
         """Test getting recommendations."""
@@ -22,11 +20,14 @@ class TestRecommendations:
     def test_submit_feedback(self, client, create_test_resource):
         """Test submitting feedback on a recommendation."""
         resource = create_test_resource()
-        response = client.post("/recommendations/feedback", json={
-            "resource_id": str(resource.id),
-            "was_clicked": True,
-            "was_useful": True
-        })
+        response = client.post(
+            "/recommendations/feedback",
+            json={
+                "resource_id": str(resource.id),
+                "was_clicked": True,
+                "was_useful": True,
+            },
+        )
         # Accept various success codes or validation/server errors
         assert response.status_code in [200, 201, 400, 422, 500]
 
@@ -44,9 +45,10 @@ class TestUserProfile:
 
     def test_update_profile(self, client):
         """Test updating user profile."""
-        response = client.put("/recommendations/profile", json={
-            "interests": ["machine learning", "python"]
-        })
+        response = client.put(
+            "/recommendations/profile",
+            json={"interests": ["machine learning", "python"]},
+        )
         assert response.status_code in [200, 201, 404, 422]
 
 

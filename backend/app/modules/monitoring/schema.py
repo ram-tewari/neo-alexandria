@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 class PerformanceMetrics(BaseModel):
     """Performance metrics response."""
+
     status: str
     timestamp: str
     metrics: Dict[str, Any]
@@ -18,6 +19,7 @@ class PerformanceMetrics(BaseModel):
 
 class RecommendationQualityMetrics(BaseModel):
     """Recommendation quality metrics response."""
+
     status: str
     timestamp: str
     time_window_days: int
@@ -27,6 +29,7 @@ class RecommendationQualityMetrics(BaseModel):
 
 class UserEngagementMetrics(BaseModel):
     """User engagement metrics response."""
+
     status: str
     timestamp: str
     time_window_days: int
@@ -35,6 +38,7 @@ class UserEngagementMetrics(BaseModel):
 
 class ModelHealthMetrics(BaseModel):
     """Model health metrics response."""
+
     status: str
     timestamp: str
     model: Dict[str, Any]
@@ -43,6 +47,7 @@ class ModelHealthMetrics(BaseModel):
 
 class DatabaseMetrics(BaseModel):
     """Database metrics response."""
+
     status: str
     timestamp: str
     database: Dict[str, Any]
@@ -53,6 +58,7 @@ class DatabaseMetrics(BaseModel):
 
 class EventBusMetrics(BaseModel):
     """Event bus metrics response."""
+
     status: str
     timestamp: str
     metrics: Dict[str, Any]
@@ -61,6 +67,7 @@ class EventBusMetrics(BaseModel):
 
 class CacheStats(BaseModel):
     """Cache statistics response."""
+
     status: str
     timestamp: str
     cache_stats: Dict[str, Any]
@@ -69,6 +76,7 @@ class CacheStats(BaseModel):
 
 class WorkerStatus(BaseModel):
     """Worker status response."""
+
     status: str
     timestamp: str
     workers: Optional[Dict[str, Any]] = None
@@ -78,8 +86,12 @@ class WorkerStatus(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Health check response."""
+
     status: str
     message: str
     timestamp: str
-    components: Dict[str, str]
+    components: Dict[
+        str, Any
+    ]  # Changed from Dict[str, str] to Dict[str, Any] to support nested objects
+    modules: Optional[Dict[str, Any]] = None
     error: Optional[str] = None

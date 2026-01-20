@@ -76,7 +76,9 @@ class AuthorityControl:
 
         # Title-case fallback
         canonical = self._title_case_subject(s)
-        self._ensure_subject_persisted(canonical, variant=raw if raw.strip() and raw.strip() != canonical else None)
+        self._ensure_subject_persisted(
+            canonical, variant=raw if raw.strip() and raw.strip() != canonical else None
+        )
         return canonical
 
     def normalize_subjects(self, raw_tags: List[str] | None) -> List[str]:
@@ -107,15 +109,22 @@ class AuthorityControl:
         q = partial.lower()
         suggestions: List[str] = []
         # Include built-in synonyms mappings targets
-        builtin_targets = {v for k, v in self.SYNONYMS.items() if q in k or q in v.lower()}
+        builtin_targets = {
+            v for k, v in self.SYNONYMS.items() if q in k or q in v.lower()
+        }
         suggestions.extend(sorted(builtin_targets))
 
         if self.db:
             # Match canonical by substring, order by usage_count desc
             rows = (
                 self.db.query(db_models.AuthoritySubject)
-                .filter(func.lower(db_models.AuthoritySubject.canonical_form).like(f"%{q}%"))
-                .order_by(db_models.AuthoritySubject.usage_count.desc(), db_models.AuthoritySubject.canonical_form.asc())
+                .filter(
+                    func.lower(db_models.AuthoritySubject.canonical_form).like(f"%{q}%")
+                )
+                .order_by(
+                    db_models.AuthoritySubject.usage_count.desc(),
+                    db_models.AuthoritySubject.canonical_form.asc(),
+                )
                 .limit(10)
                 .all()
             )
@@ -182,7 +191,7 @@ class AuthorityControl:
 
         def smart_title_token(token: str) -> str:
             # Preserve short acronyms (<=4) in all caps
-            alphas = ''.join(ch for ch in token if ch.isalpha())
+            alphas = "".join(ch for ch in token if ch.isalpha())
             if len(alphas) <= 4 and alphas.isupper():
                 return token.upper()
             # Title-case within token across separators like ' and -
@@ -198,7 +207,7 @@ class AuthorityControl:
                 else:
                     result_chars.append(ch)
                     start_of_word = True
-            return ''.join(result_chars)
+            return "".join(result_chars)
 
         tokens = s.split(" ")
         norm_tokens = [smart_title_token(t) for t in tokens if t]
@@ -210,7 +219,9 @@ class AuthorityControl:
         # Exact match by canonical_form (case-insensitive)
         row = (
             self.db.query(db_models.AuthoritySubject)
-            .filter(func.lower(db_models.AuthoritySubject.canonical_form) == lower_value)
+            .filter(
+                func.lower(db_models.AuthoritySubject.canonical_form) == lower_value
+            )
             .first()
         )
         if row:
@@ -220,7 +231,11 @@ class AuthorityControl:
         # Portable approach: fetch candidates where variants text contains token, then verify in Python
         candidates = (
             self.db.query(db_models.AuthoritySubject)
-            .filter(func.lower(cast(db_models.AuthoritySubject.variants, String)).like(f"%{lower_value}%"))
+            .filter(
+                func.lower(cast(db_models.AuthoritySubject.variants, String)).like(
+                    f"%{lower_value}%"
+                )
+            )
             .all()
         )
         for c in candidates:
@@ -233,12 +248,17 @@ class AuthorityControl:
         try:
             row = (
                 self.db.query(db_models.AuthoritySubject)
-                .filter(func.lower(db_models.AuthoritySubject.canonical_form) == canonical.lower())
+                .filter(
+                    func.lower(db_models.AuthoritySubject.canonical_form)
+                    == canonical.lower()
+                )
                 .first()
             )
             if row:
                 return row
-            row = db_models.AuthoritySubject(canonical_form=canonical, variants=[], usage_count=0)
+            row = db_models.AuthoritySubject(
+                canonical_form=canonical, variants=[], usage_count=0
+            )
             self.db.add(row)
             self.db.commit()
             self.db.refresh(row)
@@ -246,19 +266,26 @@ class AuthorityControl:
         except Exception:
             # In test environments or when database operations fail, return a mock object
             self.db.rollback()
-            mock_row = db_models.AuthoritySubject(canonical_form=canonical, variants=[], usage_count=0)
+            mock_row = db_models.AuthoritySubject(
+                canonical_form=canonical, variants=[], usage_count=0
+            )
             mock_row.id = 1  # Mock ID
             return mock_row
 
     def _get_or_create_creator(self, canonical: str) -> db_models.AuthorityCreator:
         row = (
             self.db.query(db_models.AuthorityCreator)
-            .filter(func.lower(db_models.AuthorityCreator.canonical_form) == canonical.lower())
+            .filter(
+                func.lower(db_models.AuthorityCreator.canonical_form)
+                == canonical.lower()
+            )
             .first()
         )
         if row:
             return row
-        row = db_models.AuthorityCreator(canonical_form=canonical, variants=[], usage_count=0)
+        row = db_models.AuthorityCreator(
+            canonical_form=canonical, variants=[], usage_count=0
+        )
         self.db.add(row)
         self.db.commit()
         self.db.refresh(row)
@@ -267,12 +294,17 @@ class AuthorityControl:
     def _get_or_create_publisher(self, canonical: str) -> db_models.AuthorityPublisher:
         row = (
             self.db.query(db_models.AuthorityPublisher)
-            .filter(func.lower(db_models.AuthorityPublisher.canonical_form) == canonical.lower())
+            .filter(
+                func.lower(db_models.AuthorityPublisher.canonical_form)
+                == canonical.lower()
+            )
             .first()
         )
         if row:
             return row
-        row = db_models.AuthorityPublisher(canonical_form=canonical, variants=[], usage_count=0)
+        row = db_models.AuthorityPublisher(
+            canonical_form=canonical, variants=[], usage_count=0
+        )
         self.db.add(row)
         self.db.commit()
         self.db.refresh(row)
@@ -388,7 +420,10 @@ class PersonalClassification:
     ]
 
     def auto_classify(
-        self, title: Optional[str], description: Optional[str], tags: Optional[List[str]]
+        self,
+        title: Optional[str],
+        description: Optional[str],
+        tags: Optional[List[str]],
     ) -> str:
         """Return best-fit top-level code (000, 400, 500, 900).
 
@@ -401,7 +436,9 @@ class PersonalClassification:
 
         scores: Dict[str, int] = {"000": 0, "400": 0, "500": 0, "900": 0}
 
-        def score_for_keywords(text: str, keywords: List[str], code: str, weight: int) -> None:
+        def score_for_keywords(
+            text: str, keywords: List[str], code: str, weight: int
+        ) -> None:
             if not text:
                 return
             for kw in keywords:
@@ -445,7 +482,9 @@ class PersonalClassification:
     def get_classification_tree(self, db: Session) -> Dict[str, Any]:
         """Return classification hierarchy for UI. Ensures seed exists."""
         self._ensure_seed(db)
-        rows: List[db_models.ClassificationCode] = db.query(db_models.ClassificationCode).all()
+        rows: List[db_models.ClassificationCode] = db.query(
+            db_models.ClassificationCode
+        ).all()
         nodes: Dict[str, Dict[str, Any]] = {}
         children_map: Dict[str | None, List[str]] = {}
 
@@ -478,7 +517,10 @@ class PersonalClassification:
         Uses rule scores to rank codes; returns ordered list of codes.
         """
         from ...database.models import Resource
-        res: Resource | None = db.query(Resource).filter(Resource.id == resource_id).first()
+
+        res: Resource | None = (
+            db.query(Resource).filter(Resource.id == resource_id).first()
+        )
         if res is None:
             return []
         candidates = self._score_all(
@@ -488,10 +530,16 @@ class PersonalClassification:
         )
         # Sort by score desc, then precedence
         precedence = ["000", "400", "500", "900"]
-        ordered = sorted(candidates.items(), key=lambda kv: (kv[1], -precedence.index(kv[0])), reverse=True)
+        ordered = sorted(
+            candidates.items(),
+            key=lambda kv: (kv[1], -precedence.index(kv[0])),
+            reverse=True,
+        )
         return [code for code, score in ordered if score > 0][:5]
 
-    def _score_all(self, title: str, description: str, tags: List[str]) -> Dict[str, int]:
+    def _score_all(
+        self, title: str, description: str, tags: List[str]
+    ) -> Dict[str, int]:
         title_lower = (title or "").lower()
         description_lower = (description or "").lower()
         tags_lower = " ".join([t.strip().lower() for t in (tags or [])])
@@ -552,11 +600,34 @@ class PersonalClassification:
                 "title": "Computer Science, Information & General Works",
                 "description": "General knowledge, computing, information science",
                 "parent_code": None,
-                "keywords": list(set(self.PROGRAMMING_KEYWORDS + ["computer", "computing", "information"]))
+                "keywords": list(
+                    set(
+                        self.PROGRAMMING_KEYWORDS
+                        + ["computer", "computing", "information"]
+                    )
+                ),
             },
-            {"code": "100", "title": "Philosophy & Psychology", "description": None, "parent_code": None, "keywords": []},
-            {"code": "200", "title": "Religion & Theology", "description": None, "parent_code": None, "keywords": []},
-            {"code": "300", "title": "Social Sciences", "description": None, "parent_code": None, "keywords": []},
+            {
+                "code": "100",
+                "title": "Philosophy & Psychology",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
+            {
+                "code": "200",
+                "title": "Religion & Theology",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
+            {
+                "code": "300",
+                "title": "Social Sciences",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
             {
                 "code": "400",
                 "title": "Language & Linguistics",
@@ -571,15 +642,33 @@ class PersonalClassification:
                 "parent_code": None,
                 "keywords": self.SCIENCE_KEYWORDS,
             },
-            {"code": "600", "title": "Technology & Applied Sciences", "description": None, "parent_code": None, "keywords": []},
-            {"code": "700", "title": "Arts & Recreation", "description": None, "parent_code": None, "keywords": []},
-            {"code": "800", "title": "Literature", "description": None, "parent_code": None, "keywords": []},
+            {
+                "code": "600",
+                "title": "Technology & Applied Sciences",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
+            {
+                "code": "700",
+                "title": "Arts & Recreation",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
+            {
+                "code": "800",
+                "title": "Literature",
+                "description": None,
+                "parent_code": None,
+                "keywords": [],
+            },
             {
                 "code": "900",
                 "title": "History & Geography",
                 "description": "Historical events, figures, and geography",
                 "parent_code": None,
-                "keywords": list(set(self.HISTORY_KEYWORDS + ["geography"]))
+                "keywords": list(set(self.HISTORY_KEYWORDS + ["geography"])),
             },
         ]
         for row in seeds:

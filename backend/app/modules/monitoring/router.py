@@ -29,7 +29,7 @@ from .schema import (
     EventBusMetrics,
     CacheStats,
     WorkerStatus,
-    HealthCheckResponse
+    HealthCheckResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ router = APIRouter(prefix="/api/monitoring", tags=["monitoring"])
 async def get_performance_metrics() -> Dict[str, Any]:
     """
     Get performance metrics summary.
-    
+
     Returns:
         Dictionary with performance metrics including:
         - Cache hit rate
@@ -55,16 +55,15 @@ async def get_performance_metrics() -> Dict[str, Any]:
 
 @router.get("/recommendation-quality", response_model=RecommendationQualityMetrics)
 async def get_recommendation_quality_metrics(
-    time_window_days: int = Query(default=7, ge=1, le=90),
-    db: Session = Depends(get_db)
+    time_window_days: int = Query(default=7, ge=1, le=90), db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get recommendation quality metrics.
-    
+
     Args:
         time_window_days: Time window for metrics calculation (1-90 days)
         db: Database session
-        
+
     Returns:
         Dictionary with quality metrics including:
         - Click-through rate (CTR) by strategy
@@ -78,16 +77,15 @@ async def get_recommendation_quality_metrics(
 
 @router.get("/user-engagement", response_model=UserEngagementMetrics)
 async def get_user_engagement_metrics(
-    time_window_days: int = Query(default=7, ge=1, le=90),
-    db: Session = Depends(get_db)
+    time_window_days: int = Query(default=7, ge=1, le=90), db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get user engagement metrics.
-    
+
     Args:
         time_window_days: Time window for metrics calculation (1-90 days)
         db: Database session
-        
+
     Returns:
         Dictionary with engagement metrics including:
         - Total users
@@ -104,7 +102,7 @@ async def get_user_engagement_metrics(
 async def get_model_health() -> Dict[str, Any]:
     """
     Get NCF model health metrics.
-    
+
     Returns:
         Dictionary with model health information including:
         - Model availability
@@ -120,14 +118,14 @@ async def get_model_health() -> Dict[str, Any]:
 async def ml_model_health_check() -> Dict[str, Any]:
     """
     Health check for ML classification model.
-    
+
     Returns:
         Dictionary with ML model health status including:
         - Model loaded status
         - Checkpoint validity
         - Inference functionality
         - Latency metrics
-    
+
     Returns 200 if healthy, 503 if unhealthy.
     """
     service = MonitoringService()
@@ -139,14 +137,14 @@ async def get_database_metrics(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """
     Get comprehensive database metrics including connection pool status,
     database type, and health information.
-    
+
     This endpoint provides detailed monitoring data for database operations,
     including connection pool utilization, database type detection, and
     PostgreSQL-specific metrics when applicable.
-    
+
     Args:
         db: Database session for connectivity check
-        
+
     Returns:
         Dictionary with database metrics including:
         - database_type: Type of database (sqlite/postgresql)
@@ -162,10 +160,10 @@ async def get_database_metrics(db: Session = Depends(get_db)) -> Dict[str, Any]:
 async def get_db_pool_status() -> Dict[str, Any]:
     """
     Get database connection pool statistics.
-    
+
     Returns detailed metrics about the current state of the database
     connection pool for monitoring and capacity planning.
-    
+
     Returns:
         Dictionary with connection pool statistics including:
         - size: Total pool size (base connections)
@@ -183,16 +181,16 @@ async def get_db_pool_status() -> Dict[str, Any]:
 async def get_event_bus_metrics() -> Dict[str, Any]:
     """
     Get comprehensive event bus metrics for monitoring.
-    
+
     Returns detailed metrics about event bus performance including:
     - Total events emitted and delivered
     - Handler error counts
     - Event type breakdown
     - Handler latency percentiles (p50, p95, p99)
-    
+
     These metrics are essential for monitoring inter-module communication
     health and identifying performance bottlenecks in event-driven flows.
-    
+
     Returns:
         Dictionary with event bus metrics including:
         - events_emitted: Total events emitted
@@ -209,17 +207,19 @@ async def get_event_bus_metrics() -> Dict[str, Any]:
 
 @router.get("/events/history", response_model=Dict[str, Any])
 async def get_event_history(
-    limit: int = Query(default=100, ge=1, le=1000, description="Maximum number of events to return")
+    limit: int = Query(
+        default=100, ge=1, le=1000, description="Maximum number of events to return"
+    ),
 ) -> Dict[str, Any]:
     """
     Get recent event history from the event system.
-    
+
     Returns the most recent events emitted by the system, useful for
     debugging, auditing, and understanding system behavior.
-    
+
     Args:
         limit: Maximum number of events to return (default: 100, max: 1000)
-        
+
     Returns:
         Dictionary with event history including:
         - events: List of recent events with name, data, timestamp, priority
@@ -234,11 +234,11 @@ async def get_event_history(
 async def get_cache_stats() -> Dict[str, Any]:
     """
     Get cache performance statistics.
-    
+
     Returns detailed metrics about cache performance including hit rate,
     miss rate, and invalidation counts. These metrics help evaluate
     caching effectiveness and identify optimization opportunities.
-    
+
     Returns:
         Dictionary with cache statistics including:
         - hit_rate: Percentage of cache hits (0.0 to 1.0)
@@ -256,11 +256,11 @@ async def get_cache_stats() -> Dict[str, Any]:
 async def get_worker_status() -> Dict[str, Any]:
     """
     Get Celery worker status and task information.
-    
+
     Returns information about active Celery workers, their current tasks,
     scheduled tasks, and worker statistics. Useful for monitoring
     distributed task processing and worker health.
-    
+
     Returns:
         Dictionary with worker information including:
         - active: Currently executing tasks by worker
@@ -276,7 +276,7 @@ async def get_worker_status() -> Dict[str, Any]:
 async def health_check(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """
     Overall health check for the system.
-    
+
     Returns:
         Dictionary with overall system health status
     """
@@ -288,10 +288,10 @@ async def health_check(db: Session = Depends(get_db)) -> Dict[str, Any]:
 async def get_module_health(module_name: str) -> Dict[str, Any]:
     """
     Get health status for a specific module.
-    
+
     Args:
         module_name: Name of the module to check
-        
+
     Returns:
         Dictionary with module health status including:
         - status: Module health status

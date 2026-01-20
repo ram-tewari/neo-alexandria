@@ -24,20 +24,32 @@ __domain__ = "resources"
 # from .router import router as resources_router
 # from .service import (...)
 
+
 # Lazy imports to avoid model conflicts
 def __getattr__(name):
     """Lazy import to avoid model conflicts during migration phase."""
     if name == "resources_router":
         from .router import router as resources_router
+
         return resources_router
     elif name == "register_handlers":
         from .handlers import register_handlers
+
         return register_handlers
-    elif name in ["create_pending_resource", "get_resource", "list_resources", 
-                  "update_resource", "delete_resource", "process_ingestion"]:
+    elif name in [
+        "create_pending_resource",
+        "get_resource",
+        "list_resources",
+        "update_resource",
+        "delete_resource",
+        "process_ingestion",
+    ]:
         from . import service
+
         return getattr(service, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 from .schema import (
     ResourceBase,
     ResourceCreate,
@@ -54,7 +66,6 @@ from .schema import (
 __all__ = [
     # Router
     "resources_router",
-    
     # Service functions
     "create_pending_resource",
     "get_resource",
@@ -62,7 +73,6 @@ __all__ = [
     "update_resource",
     "delete_resource",
     "process_ingestion",
-    
     # Schemas
     "ResourceBase",
     "ResourceCreate",
@@ -70,10 +80,8 @@ __all__ = [
     "ResourceRead",
     "ResourceInDB",
     "ResourceStatus",
-    
     # Event handlers
     "register_handlers",
-    
     # Model (commented out during migration)
     # "Resource",
 ]

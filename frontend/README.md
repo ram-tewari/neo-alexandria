@@ -1,163 +1,289 @@
-# Neo Alexandria 2.0 Frontend
+# Neo Alexandria 2.0 - Frontend
 
-A futuristic knowledge management interface built with React, TypeScript, and Vite.
+React-based single-page application (SPA) for Neo Alexandria 2.0, an advanced knowledge management system.
 
-> **📚 Quick Navigation:**
-> - [Product Vision & Goals](../.kiro/steering/product.md) - What we're building and why
-> - [Tech Stack & Architecture](../.kiro/steering/tech.md) - Full stack overview
-> - [Repository Structure](../.kiro/steering/structure.md) - Where things are located
-> - [Backend API Documentation](../backend/docs/index.md) - API reference
-
-## 🎨 Design Features
-
-- **Glassmorphism UI**: Beautiful frosted glass effects with backdrop blur
-- **Animated Background**: Floating gradient orbs with physics-based movement
-- **Responsive Design**: Mobile-first approach with breakpoints for all devices
-- **Accessibility**: Full ARIA support, keyboard navigation, and reduced motion support
-- **Dark Theme**: Black and white with blue accents (#3b82f6, #06b6d4)
-
-## 🚀 Tech Stack
+## Tech Stack
 
 - **React 18** - UI library
 - **TypeScript 5** - Type safety
 - **Vite 5** - Build tool and dev server
-- **React Router 6** - Client-side routing
-- **Zustand** - State management
-- **CSS Modules** - Component styling
+- **TanStack Router 6** - Type-safe routing
+- **TanStack Query** - Server state management
+- **Zustand** - Client state management
+- **Axios** - HTTP client with interceptors
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - Component library
+- **Lucide React** - Icon library
 
-## 📦 Installation
+## Project Structure
 
-```bash
-npm install
+```
+frontend/
+├── src/
+│   ├── app/                    # Application-level code
+│   │   └── providers/          # React context providers
+│   │       ├── QueryProvider.tsx
+│   │       └── AuthProvider.tsx
+│   ├── components/             # Reusable components
+│   │   ├── layout/             # Layout components
+│   │   │   ├── Header.tsx
+│   │   │   └── Sidebar.tsx
+│   │   └── ui/                 # shadcn/ui components
+│   ├── core/                   # Core utilities
+│   │   ├── api/                # API client configuration
+│   │   │   └── client.ts       # Axios instance with interceptors
+│   │   └── types/              # TypeScript type definitions
+│   │       ├── auth.ts
+│   │       └── api.ts
+│   ├── features/               # Feature modules
+│   │   └── auth/               # Authentication feature
+│   │       ├── components/     # Auth-specific components
+│   │       ├── hooks/          # Auth hooks
+│   │       └── store.ts        # Auth state management
+│   ├── lib/                    # Utility functions
+│   │   └── utils.ts
+│   ├── routes/                 # TanStack Router routes
+│   │   ├── __root.tsx          # Root layout
+│   │   ├── index.tsx           # Home page (redirects)
+│   │   ├── login.tsx           # Login page
+│   │   ├── auth.callback.tsx   # OAuth callback handler
+│   │   ├── _auth.tsx           # Protected layout
+│   │   └── _auth.dashboard.tsx # Dashboard page
+│   ├── App.tsx                 # App component (legacy)
+│   ├── main.tsx                # Application entry point
+│   └── index.css               # Global styles
+├── components.json             # shadcn/ui configuration
+├── package.json                # Dependencies and scripts
+├── tsconfig.json               # TypeScript configuration
+├── vite.config.ts              # Vite configuration
+└── tailwind.config.js          # Tailwind CSS configuration
 ```
 
-## 🛠️ Development
+## Available Scripts
+
+### Development
 
 ```bash
+# Start development server (http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run linter
+npm run lint
+```
+
+### Testing
+
+```bash
+# Run tests (when implemented)
+npm test
+```
+
+## Environment Variables
+
+Create a `.env` file in the `frontend/` directory:
+
+```env
+# Backend API base URL
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+**Note:** Vite requires environment variables to be prefixed with `VITE_` to be exposed to the client.
+
+## Development Workflow
+
+### 1. Initial Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Create .env file
+cp .env.example .env
+
+# Update VITE_API_BASE_URL if needed
+```
+
+### 2. Start Development
+
+```bash
+# Start backend server (in separate terminal)
+cd ../backend
+uvicorn app.main:app --reload
+
+# Start frontend dev server
 npm run dev
 ```
 
-Runs the app at [http://localhost:3000](http://localhost:3000)
+### 3. Access Application
 
-## 🏗️ Build
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-```bash
-npm run build
-```
+## Authentication Flow
 
-Builds the app for production to the `dist` folder.
+### OAuth2 Login
 
-## 📁 Project Structure
+1. User clicks "Continue with Google" or "Continue with GitHub"
+2. Frontend redirects to backend OAuth endpoint (`/auth/google` or `/auth/github`)
+3. Backend redirects to OAuth provider (Google/GitHub)
+4. User authorizes application
+5. OAuth provider redirects back to backend with authorization code
+6. Backend exchanges code for tokens and user info
+7. Backend redirects to frontend callback (`/auth/callback?access_token=...&refresh_token=...`)
+8. Frontend stores tokens and fetches user profile
+9. Frontend redirects to dashboard
 
-```
-src/
-├── components/
-│   ├── layout/          # Navbar, Sidebar, MainLayout, FAB
-│   ├── background/      # AnimatedOrbs, GridPattern
-│   ├── cards/           # StatCard, ResourceCard, ActivityCard
-│   ├── common/          # Button, SearchInput, Tag, Avatar, LoadingSpinner
-│   └── pages/           # Dashboard, Library, KnowledgeGraph
-├── styles/
-│   ├── globals.css      # Global styles and resets
-│   ├── variables.css    # CSS custom properties
-│   └── animations.css   # Keyframe animations
-├── hooks/
-│   ├── useScrollPosition.ts
-│   ├── useMediaQuery.ts
-│   └── useReducedMotion.ts
-├── store/
-│   └── navigationStore.ts
-├── types/
-│   └── index.ts
-├── App.tsx
-└── main.tsx
-```
+### Token Management
 
-## 🎯 Key Components
+- **Access Token**: Short-lived JWT stored in localStorage and Axios headers
+- **Refresh Token**: Long-lived token for obtaining new access tokens
+- **Automatic Refresh**: Axios interceptor detects 401 errors and refreshes tokens automatically
+- **Token Storage**: Tokens persisted in localStorage and Zustand store
 
-### Layout Components
+### Route Protection
 
-- **Navbar**: Fixed top navigation with logo, links, notifications, and user avatar
-- **Sidebar**: Fixed left sidebar with main navigation and collections
-- **MainLayout**: Wrapper component with background effects
-- **FAB**: Floating Action Button for quick actions
+- Protected routes use `_auth.tsx` layout route
+- Layout checks authentication status
+- Unauthenticated users redirected to `/login`
+- Authenticated users can access protected routes
 
-### Card Components
+## Key Features
 
-- **StatCard**: Display key metrics with color-coded icons
-- **ResourceCard**: Rich resource display with tags, ratings, and metadata
-- **ActivityCard**: Timeline-style activity feed items
+### Implemented (Phase 0)
 
-### Common Components
+- ✅ OAuth2 authentication (Google, GitHub)
+- ✅ Automatic token refresh on 401 errors
+- ✅ Protected routes with auth guard
+- ✅ Persistent authentication state
+- ✅ User profile display
+- ✅ Responsive layout with sidebar and header
+- ✅ Toast notifications
+- ✅ Rate limit error handling (429)
 
-- **Button**: Primary and secondary variants with icon support
-- **SearchInput**: Glassmorphic search input with focus states
-- **Tag**: Color-coded tags with hover effects
-- **Avatar**: User avatar with size variants
-- **LoadingSpinner**: Loading indicator with size options
+### Planned
 
-## 🎨 Design System
+- 📋 Resource library UI
+- 📋 Search interface
+- 📋 Collection management
+- 📋 Knowledge graph visualization
+- 📋 Annotations and highlights
+- 📋 Recommendations
 
-### Colors
+## Troubleshooting
 
-```css
---primary-black: #0a0a0a
---primary-white: #ffffff
---accent-blue: #3b82f6
---accent-blue-light: #60a5fa
---accent-cyan: #06b6d4
---glass-bg: rgba(255, 255, 255, 0.03)
---glass-border: rgba(255, 255, 255, 0.08)
-```
+### "Cannot connect to backend"
 
-### Spacing Scale
+**Problem:** Frontend cannot reach backend API
 
-```css
---spacing-xs: 0.5rem   (8px)
---spacing-sm: 0.75rem  (12px)
---spacing-md: 1rem     (16px)
---spacing-lg: 1.5rem   (24px)
---spacing-xl: 2rem     (32px)
---spacing-2xl: 3rem    (48px)
-```
+**Solutions:**
+1. Verify backend is running: `curl http://localhost:8000/health`
+2. Check `VITE_API_BASE_URL` in `.env` file
+3. Ensure no CORS issues (backend should allow `http://localhost:5173`)
+4. Check browser console for network errors
 
-### Typography
+### "OAuth redirect not working"
 
-- Font Stack: `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter'`
-- Base Size: 16px
-- Line Height: 1.5
+**Problem:** OAuth flow fails or redirects to wrong URL
 
-## ♿ Accessibility
+**Solutions:**
+1. Verify OAuth credentials configured in backend `.env`
+2. Check OAuth callback URL matches backend configuration
+3. Ensure backend redirect URL includes frontend callback: `http://localhost:5173/auth/callback`
+4. Check browser console for errors during redirect
 
-- Full keyboard navigation support
-- ARIA labels on all interactive elements
-- Focus indicators with 2px blue outline
-- Color contrast ratio of 4.5:1 minimum
-- Respects `prefers-reduced-motion` setting
-- Semantic HTML structure
+### "Token refresh not working"
 
-## 📱 Responsive Breakpoints
+**Problem:** Token refresh fails or causes infinite loops
 
-- Mobile: < 768px
-- Tablet: 768px - 1024px
-- Desktop: 1024px - 1280px
-- Wide: > 1280px
+**Solutions:**
+1. Check refresh token exists in localStorage: `localStorage.getItem('refresh_token')`
+2. Verify backend `/auth/refresh` endpoint is working
+3. Check Axios interceptor logic in `src/core/api/client.ts`
+4. Look for `_retry` flag to prevent infinite loops
+5. Test with "Test Token Refresh" button on dashboard
 
-## ⚡ Performance
+### "Protected routes not working"
 
-- Code splitting with React.lazy
-- Memoized components with React.memo
-- Optimized animations with CSS transforms
-- Bundle size: ~57KB gzipped
-- 60fps animations
+**Problem:** Can access protected routes without authentication
 
-## 🌐 Browser Support
+**Solutions:**
+1. Verify `_auth.tsx` layout route is checking authentication
+2. Check auth state in Zustand store: `useAuthStore.getState()`
+3. Ensure tokens are stored in localStorage
+4. Check browser console for navigation errors
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+### "Styles not loading"
 
-## 📝 License
+**Problem:** Tailwind CSS or component styles not applied
 
-MIT
+**Solutions:**
+1. Verify Tailwind CSS is configured: `tailwind.config.js`
+2. Check `index.css` imports Tailwind directives
+3. Restart dev server: `npm run dev`
+4. Clear browser cache and hard reload
+
+### "TypeScript errors"
+
+**Problem:** Type errors in IDE or build
+
+**Solutions:**
+1. Ensure all dependencies installed: `npm install`
+2. Check `tsconfig.json` path aliases configured
+3. Restart TypeScript server in IDE
+4. Run type check: `npx tsc --noEmit`
+
+## Testing Token Refresh
+
+The dashboard includes a "Test Token Refresh" button to validate the automatic token refresh flow:
+
+1. Log in successfully
+2. Navigate to `/dashboard`
+3. Open browser DevTools → Network tab
+4. Click "Test Token Refresh" button
+5. Observe the network requests:
+   - Failed `/auth/me` (401 Unauthorized)
+   - `/auth/refresh` (200 OK)
+   - Retry `/auth/me` (200 OK)
+6. Verify success toast appears
+7. Verify dashboard still works after refresh
+
+## Code Style
+
+- Use TypeScript for all new files
+- Follow React hooks best practices
+- Use functional components (no class components)
+- Prefer named exports over default exports
+- Use Tailwind CSS for styling (avoid inline styles)
+- Add JSDoc comments for exported functions
+- Use meaningful variable and function names
+
+## Contributing
+
+1. Create a feature branch: `git checkout -b feature/my-feature`
+2. Make changes and test locally
+3. Run linter: `npm run lint`
+4. Commit changes: `git commit -m "feat: add my feature"`
+5. Push branch: `git push origin feature/my-feature`
+6. Create pull request
+
+## Resources
+
+- [React Documentation](https://react.dev)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+- [Vite Documentation](https://vitejs.dev)
+- [TanStack Router](https://tanstack.com/router)
+- [TanStack Query](https://tanstack.com/query)
+- [Zustand](https://github.com/pmndrs/zustand)
+- [Tailwind CSS](https://tailwindcss.com)
+- [shadcn/ui](https://ui.shadcn.com)
+
+## License
+
+See root LICENSE file.

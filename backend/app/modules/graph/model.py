@@ -11,6 +11,20 @@ Related files:
 """
 
 # Re-export models from central database.models
-from ...database.models import Citation, GraphEdge, GraphEmbedding, DiscoveryHypothesis
+from ...database.models import (
+    Citation,
+    GraphEdge,
+    GraphEmbedding,
+    DiscoveryHypothesis,
+    GraphEntity,
+    GraphRelationship,
+)
 
-__all__ = ["Citation", "GraphEdge", "GraphEmbedding", "DiscoveryHypothesis"]
+__all__ = [
+    "Citation",
+    "GraphEdge",
+    "GraphEmbedding",
+    "DiscoveryHypothesis",
+    "GraphEntity",
+    "GraphRelationship",
+]

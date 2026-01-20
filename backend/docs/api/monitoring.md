@@ -14,29 +14,40 @@ The Monitoring API provides:
 
 ### GET /health
 
-Basic health check endpoint for load balancers and orchestration systems.
+Overall health check for the system. Returns detailed status of all components.
 
 **Response (200 OK):**
 ```json
 {
   "status": "healthy",
-  "timestamp": "2024-01-01T10:00:00Z"
-}
-```
-
-**Response (503 Service Unavailable):**
-```json
-{
-  "status": "unhealthy",
+  "message": "System is healthy",
   "timestamp": "2024-01-01T10:00:00Z",
-  "error": "Database connection failed"
+  "components": {
+    "database": {
+      "status": "healthy",
+      "details": "Connected"
+    },
+    "cache": {
+      "status": "healthy",
+      "details": "Connected"
+    },
+    "event_bus": {
+      "status": "healthy",
+      "details": "Operational"
+    }
+  },
+  "modules": {
+    "auth": "healthy",
+    "resources": "healthy",
+    "search": "healthy"
+  }
 }
 ```
 
 **Use Cases:**
-- Kubernetes liveness probes
+- Kubernetes liveness/readiness probes
 - Load balancer health checks
-- Uptime monitoring
+- System status dashboard
 
 **Example:**
 ```bash
@@ -94,41 +105,25 @@ System metrics and statistics.
 **Response (200 OK):**
 ```json
 {
-  "resources": {
-    "total": 10000,
-    "by_status": {
-      "completed": 9500,
-      "pending": 300,
-      "failed": 200
+  "status": "success",
+  "timestamp": "2024-01-01T10:00:00Z",
+  "metrics": {
+    "resources": {
+      "total": 10000,
+      "by_status": {
+        "completed": 9500,
+        "pending": 300,
+        "failed": 200
+      }
     },
-    "by_type": {
-      "article": 6000,
-      "paper": 3000,
-      "book": 1000
+    "search": {
+      "queries_last_hour": 1500,
+      "avg_latency_ms": 145
+    },
+    "quality": {
+      "avg_score": 0.72
     }
-  },
-  "collections": {
-    "total": 500,
-    "by_visibility": {
-      "private": 300,
-      "public": 150,
-      "shared": 50
-    }
-  },
-  "annotations": {
-    "total": 25000,
-    "by_user_count": 150
-  },
-  "search": {
-    "queries_last_hour": 1500,
-    "avg_latency_ms": 145
-  },
-  "quality": {
-    "avg_score": 0.72,
-    "outliers_count": 42,
-    "review_queue_size": 87
-  },
-  "timestamp": "2024-01-01T10:00:00Z"
+  }
 }
 ```
 
@@ -146,33 +141,61 @@ Database-specific monitoring information.
 **Response (200 OK):**
 ```json
 {
-  "type": "postgresql",
-  "version": "15.2",
-  "connection": {
-    "status": "connected",
-    "pool_size": 10,
-    "active_connections": 3,
-    "idle_connections": 7
+  "status": "healthy",
+  "timestamp": "2024-01-01T10:00:00Z",
+  "database": {
+    "type": "postgresql",
+    "version": "15.2",
+    "connection_status": "connected"
   },
-  "tables": {
-    "resources": {
-      "row_count": 10000,
-      "size_mb": 256
-    },
-    "annotations": {
-      "row_count": 25000,
-      "size_mb": 64
-    },
-    "collections": {
-      "row_count": 500,
-      "size_mb": 8
+  "connection_pool": {
+    "size": 10,
+    "active": 3,
+    "idle": 7,
+    "overflow": 0
+  },
+  "warnings": []
+}
+```
+
+---
+
+### GET /monitoring/performance
+
+Get performance metrics summary.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "timestamp": "2024-01-01T10:00:00Z",
+  "metrics": {
+    "cache_hit_rate": 0.85,
+    "avg_response_time_ms": 120,
+    "slow_query_count": 5
+  }
+}
+```
+
+---
+
+### GET /monitoring/workers/status
+
+Get Celery worker status.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T10:00:00Z",
+  "workers": {
+    "celery@worker1": {
+      "active": [],
+      "stats": {
+        "processed": 150
+      }
     }
-  },
-  "indexes": {
-    "total": 45,
-    "size_mb": 128
-  },
-  "timestamp": "2024-01-01T10:00:00Z"
+  }
 }
 ```
 
@@ -206,57 +229,10 @@ readinessProbe:
   failureThreshold: 3
 ```
 
-### Prometheus Metrics (Planned)
-
-Future releases will expose Prometheus-compatible metrics at `/metrics`:
-
-```
-# HELP neo_alexandria_resources_total Total number of resources
-# TYPE neo_alexandria_resources_total gauge
-neo_alexandria_resources_total 10000
-
-# HELP neo_alexandria_search_latency_seconds Search latency histogram
-# TYPE neo_alexandria_search_latency_seconds histogram
-neo_alexandria_search_latency_seconds_bucket{le="0.1"} 500
-neo_alexandria_search_latency_seconds_bucket{le="0.2"} 1200
-```
-
-### Alerting Rules (Example)
-
-```yaml
-groups:
-  - name: neo-alexandria
-    rules:
-      - alert: HighSearchLatency
-        expr: neo_alexandria_search_latency_seconds > 0.5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High search latency detected"
-          
-      - alert: DatabaseConnectionPoolExhausted
-        expr: neo_alexandria_db_pool_available == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Database connection pool exhausted"
-```
-
-## Health Check Best Practices
-
-1. **Use `/health` for simple checks** - Fast, lightweight, suitable for frequent polling
-2. **Use `/monitoring/status` for detailed checks** - More comprehensive, use for debugging
-3. **Set appropriate timeouts** - Health checks should respond within 5 seconds
-4. **Monitor trends** - Track metrics over time to identify degradation
-
 ## Module Structure
 
-The Monitoring module is implemented as a self-contained vertical slice:
-
 **Module**: `app.modules.monitoring`  
-**Router Prefix**: `/monitoring`, `/health`  
+**Router Prefix**: `/api/monitoring`, `/health`  
 **Version**: 1.0.0
 
 ```python
@@ -268,18 +244,9 @@ from app.modules.monitoring import (
 )
 ```
 
-### Events
-
-**Emitted Events:**
-- None (Monitoring is a read-only aggregation module)
-
-**Subscribed Events:**
-- All events (for metrics aggregation)
-
 ## Related Documentation
 
 - [API Overview](overview.md) - Authentication, errors
 - [Architecture Overview](../architecture/overview.md) - System design
 - [Architecture: Modules](../architecture/modules.md) - Module architecture
-- [Architecture: Events](../architecture/events.md) - Event system
 - [Deployment Guide](../guides/deployment.md) - Production setup

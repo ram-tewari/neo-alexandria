@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def register_handlers():
     """
     Register all event handlers for the monitoring module.
-    
+
     This function should be called during application startup.
     Currently, monitoring module tracks events through the event bus
     metrics system rather than individual handlers.

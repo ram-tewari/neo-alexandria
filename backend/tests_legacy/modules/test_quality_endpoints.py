@@ -16,7 +16,6 @@ Endpoints tested:
 from unittest.mock import patch, MagicMock
 
 
-
 class TestQualityEndpoints:
     def test_get_quality_details(self, client, create_test_resource):
         """Test retrieving quality details for a resource."""
@@ -28,8 +27,10 @@ class TestQualityEndpoints:
         """Test triggering quality recomputation."""
         resource = create_test_resource()
         # Mock celery to avoid import errors
-        with patch.dict('sys.modules', {'celery': MagicMock()}):
-            response = client.post("/quality/recalculate", json={"resource_id": str(resource.id)})
+        with patch.dict("sys.modules", {"celery": MagicMock()}):
+            response = client.post(
+                "/quality/recalculate", json={"resource_id": str(resource.id)}
+            )
             # Accept 200/202 for success, 400 for validation errors, 422 for schema errors
             assert response.status_code in [200, 202, 400, 422]
 

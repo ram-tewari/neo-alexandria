@@ -235,7 +235,8 @@ Full-text search across annotation notes and highlighted text.
       "highlighted_text": "Important passage about neural networks",
       "note": "Key insight on backpropagation",
       "tags": ["important", "neural-networks"],
-      "created_at": "2024-01-01T10:00:00Z"
+      "created_at": "2024-01-01T10:00:00Z",
+      "similarity_score": null
     }
   ],
   "total": 1,
@@ -312,7 +313,8 @@ Search annotations by tags.
       "highlighted_text": "Important passage",
       "note": "Key insight",
       "tags": ["important", "review"],
-      "created_at": "2024-01-01T10:00:00Z"
+      "created_at": "2024-01-01T10:00:00Z",
+      "similarity_score": null
     }
   ],
   "total": 1,
@@ -428,6 +430,21 @@ curl "http://127.0.0.1:8000/annotations/export/json"
   "collection_ids": ["uuid"] (optional),
   "created_at": "datetime (ISO 8601)",
   "updated_at": "datetime (ISO 8601)"
+}
+```
+
+### Annotation Search Result
+
+```json
+{
+  "id": "uuid",
+  "resource_id": "uuid",
+  "resource_title": "string",
+  "highlighted_text": "string",
+  "note": "string",
+  "tags": ["string"],
+  "similarity_score": "float (0.0-1.0, optional)",
+  "created_at": "datetime"
 }
 ```
 

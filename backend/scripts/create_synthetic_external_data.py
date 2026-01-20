@@ -102,19 +102,89 @@ CATEGORY_TEMPLATES = {
 
 # Vocabulary for filling templates
 VOCABULARY = {
-    "method": ["algorithm", "technique", "approach", "framework", "model", "system", "architecture"],
-    "task": ["classification", "prediction", "optimization", "detection", "recognition", "generation"],
-    "problem": ["scalability", "efficiency", "accuracy", "latency", "throughput", "robustness"],
-    "improvement": ["significant improvements", "better performance", "enhanced accuracy", "reduced latency"],
-    "result": ["promising results", "competitive performance", "state-of-the-art accuracy", "improved metrics"],
-    "dataset": ["benchmark datasets", "standard benchmarks", "real-world data", "synthetic datasets"],
-    "metric": ["high accuracy", "low error rate", "fast inference", "efficient computation"],
-    "baseline": ["previous methods", "existing approaches", "traditional techniques", "baseline models"],
-    "conclusion": ["practical applications", "future research directions", "theoretical insights"],
-    "challenge": ["complex scenarios", "edge cases", "noisy data", "large-scale problems"],
-    "feature": ["important patterns", "key characteristics", "semantic information", "structural properties"],
-    "aspect": ["performance characteristics", "computational efficiency", "model behavior", "system properties"],
-    "approach": ["data-driven method", "learning-based technique", "optimization framework"],
+    "method": [
+        "algorithm",
+        "technique",
+        "approach",
+        "framework",
+        "model",
+        "system",
+        "architecture",
+    ],
+    "task": [
+        "classification",
+        "prediction",
+        "optimization",
+        "detection",
+        "recognition",
+        "generation",
+    ],
+    "problem": [
+        "scalability",
+        "efficiency",
+        "accuracy",
+        "latency",
+        "throughput",
+        "robustness",
+    ],
+    "improvement": [
+        "significant improvements",
+        "better performance",
+        "enhanced accuracy",
+        "reduced latency",
+    ],
+    "result": [
+        "promising results",
+        "competitive performance",
+        "state-of-the-art accuracy",
+        "improved metrics",
+    ],
+    "dataset": [
+        "benchmark datasets",
+        "standard benchmarks",
+        "real-world data",
+        "synthetic datasets",
+    ],
+    "metric": [
+        "high accuracy",
+        "low error rate",
+        "fast inference",
+        "efficient computation",
+    ],
+    "baseline": [
+        "previous methods",
+        "existing approaches",
+        "traditional techniques",
+        "baseline models",
+    ],
+    "conclusion": [
+        "practical applications",
+        "future research directions",
+        "theoretical insights",
+    ],
+    "challenge": [
+        "complex scenarios",
+        "edge cases",
+        "noisy data",
+        "large-scale problems",
+    ],
+    "feature": [
+        "important patterns",
+        "key characteristics",
+        "semantic information",
+        "structural properties",
+    ],
+    "aspect": [
+        "performance characteristics",
+        "computational efficiency",
+        "model behavior",
+        "system properties",
+    ],
+    "approach": [
+        "data-driven method",
+        "learning-based technique",
+        "optimization framework",
+    ],
     "threat": ["malicious attacks", "security vulnerabilities", "unauthorized access"],
     "attack": ["injection attacks", "denial of service", "data breaches"],
     "vulnerability": ["security flaws", "system weaknesses", "potential exploits"],
@@ -145,34 +215,36 @@ def generate_text(template: str) -> str:
 def generate_synthetic_data(num_samples: int) -> List[Tuple[str, List[str]]]:
     """
     Generate synthetic external dataset.
-    
+
     Args:
         num_samples: Number of samples to generate
-    
+
     Returns:
         List of (text, [taxonomy_node_ids]) tuples
     """
     data = []
     categories = list(CATEGORY_TEMPLATES.keys())
-    
+
     for i in range(num_samples):
         # Randomly select category (with some bias towards ML/DL/NLP/CV)
-        weights = [2 if cat in ["ml-node-1", "dl-node-1", "nlp-node-1", "cv-node-1"] else 1 
-                   for cat in categories]
+        weights = [
+            2 if cat in ["ml-node-1", "dl-node-1", "nlp-node-1", "cv-node-1"] else 1
+            for cat in categories
+        ]
         category = random.choices(categories, weights=weights)[0]
-        
+
         # Select random template
         template = random.choice(CATEGORY_TEMPLATES[category])
-        
+
         # Generate text
         text = generate_text(template)
-        
+
         # Add some variation in length
         if random.random() < 0.3:
             # Add another sentence
             template2 = random.choice(CATEGORY_TEMPLATES[category])
             text += " " + generate_text(template2)
-        
+
         # Occasionally add multi-label (10% chance)
         taxonomy_ids = [category]
         if random.random() < 0.1:
@@ -188,75 +260,73 @@ def generate_synthetic_data(num_samples: int) -> List[Tuple[str, List[str]]]:
             }
             if category in related:
                 taxonomy_ids.append(random.choice(related[category]))
-        
+
         data.append((text, taxonomy_ids))
-    
+
     return data
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Create synthetic external dataset for pre-training'
+        description="Create synthetic external dataset for pre-training"
     )
-    
+
     parser.add_argument(
-        '--output',
-        required=True,
-        help='Output path for synthetic data'
+        "--output", required=True, help="Output path for synthetic data"
     )
-    
+
     parser.add_argument(
-        '--num-samples',
+        "--num-samples",
         type=int,
         default=5000,
-        help='Number of samples to generate (default: 5000)'
+        help="Number of samples to generate (default: 5000)",
     )
-    
+
     parser.add_argument(
-        '--seed',
+        "--seed",
         type=int,
         default=42,
-        help='Random seed for reproducibility (default: 42)'
+        help="Random seed for reproducibility (default: 42)",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Set random seed
     random.seed(args.seed)
-    
+
     print(f"Generating {args.num_samples} synthetic samples...")
     data = generate_synthetic_data(args.num_samples)
-    
+
     # Convert to JSON format
     json_data = []
     for text, taxonomy_ids in data:
-        json_data.append({
-            "text": text,
-            "taxonomy_node_ids": taxonomy_ids
-        })
-    
+        json_data.append({"text": text, "taxonomy_node_ids": taxonomy_ids})
+
     # Save to file
     output_file = Path(args.output)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(output_file, 'w', encoding='utf-8') as f:
+
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
-    
+
     print(f"Saved {len(json_data)} samples to {output_file}")
-    
+
     # Print statistics
     from collections import Counter
+
     label_counts = Counter()
     for item in json_data:
-        for label in item['taxonomy_node_ids']:
+        for label in item["taxonomy_node_ids"]:
             label_counts[label] += 1
-    
+
     print("\nLabel distribution:")
     for label, count in label_counts.most_common():
         print(f"  {label}: {count} samples")
-    
-    multi_label = sum(1 for item in json_data if len(item['taxonomy_node_ids']) > 1)
-    print(f"\nMulti-label samples: {multi_label} ({multi_label/len(json_data)*100:.1f}%)")
+
+    multi_label = sum(1 for item in json_data if len(item["taxonomy_node_ids"]) > 1)
+    print(
+        f"\nMulti-label samples: {multi_label} ({multi_label / len(json_data) * 100:.1f}%)"
+    )
 
 
 if __name__ == "__main__":

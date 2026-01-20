@@ -14,7 +14,7 @@ print("Verifying Active Learning Implementation")
 print("=" * 80)
 
 # Read the ML classification service file
-with open('app/services/ml_classification_service.py', 'r', encoding='utf-8') as f:
+with open("app/services/ml_classification_service.py", "r", encoding="utf-8") as f:
     source_code = f.read()
 
 # Parse the source code
@@ -23,7 +23,7 @@ tree = ast.parse(source_code)
 # Find the MLClassificationService class
 ml_class = None
 for node in ast.walk(tree):
-    if isinstance(node, ast.ClassDef) and node.name == 'MLClassificationService':
+    if isinstance(node, ast.ClassDef) and node.name == "MLClassificationService":
         ml_class = node
         break
 
@@ -39,9 +39,9 @@ update_method = None
 
 for item in ml_class.body:
     if isinstance(item, ast.FunctionDef):
-        if item.name == 'identify_uncertain_samples':
+        if item.name == "identify_uncertain_samples":
             identify_method = item
-        elif item.name == 'update_from_human_feedback':
+        elif item.name == "update_from_human_feedback":
             update_method = item
 
 # Verify identify_uncertain_samples
@@ -51,17 +51,17 @@ print("=" * 80)
 
 if identify_method:
     print("✓ Method exists")
-    
+
     # Check parameters
     args = [arg.arg for arg in identify_method.args.args]
     print(f"✓ Parameters: {', '.join(args)}")
-    
-    expected_params = ['self', 'resource_ids', 'limit']
+
+    expected_params = ["self", "resource_ids", "limit"]
     if all(param in args for param in expected_params):
         print(f"✓ All expected parameters present: {expected_params}")
     else:
         print(f"✗ Missing parameters. Expected: {expected_params}, Got: {args}")
-    
+
     # Check docstring
     docstring = ast.get_docstring(identify_method)
     if docstring:
@@ -76,7 +76,7 @@ if identify_method:
             print("✓ Docstring mentions confidence metric")
     else:
         print("✗ No docstring found")
-    
+
     # Check for key operations in the code
     method_source = ast.get_source_segment(source_code, identify_method)
     if method_source:
@@ -102,17 +102,17 @@ print("=" * 80)
 
 if update_method:
     print("✓ Method exists")
-    
+
     # Check parameters
     args = [arg.arg for arg in update_method.args.args]
     print(f"✓ Parameters: {', '.join(args)}")
-    
-    expected_params = ['self', 'resource_id', 'correct_taxonomy_ids']
+
+    expected_params = ["self", "resource_id", "correct_taxonomy_ids"]
     if all(param in args for param in expected_params):
         print(f"✓ All expected parameters present: {expected_params}")
     else:
         print(f"✗ Missing parameters. Expected: {expected_params}, Got: {args}")
-    
+
     # Check docstring
     docstring = ast.get_docstring(update_method)
     if docstring:
@@ -125,7 +125,7 @@ if update_method:
             print("✓ Docstring mentions retraining")
     else:
         print("✗ No docstring found")
-    
+
     # Check for key operations in the code
     method_source = ast.get_source_segment(source_code, update_method)
     if method_source:
@@ -133,7 +133,10 @@ if update_method:
             print("✓ Removes predicted classifications")
         if "confidence=1.0" in method_source or "confidence = 1.0" in method_source:
             print("✓ Sets confidence to 1.0 for manual labels")
-        if "is_predicted=False" in method_source or "is_predicted = False" in method_source:
+        if (
+            "is_predicted=False" in method_source
+            or "is_predicted = False" in method_source
+        ):
             print("✓ Sets is_predicted to False for manual labels")
         if "predicted_by" in method_source and "manual" in method_source:
             print("✓ Sets predicted_by to 'manual'")

@@ -2,21 +2,22 @@
 
 Module architecture, service layer, and class hierarchies for Neo Alexandria 2.0.
 
-> **Last Updated**: Phase 14 - Complete Vertical Slice Refactor
+> **Last Updated**: Phase 17 - Production Hardening
 
-## Modular Architecture Overview (Phase 14 - Complete)
+## Modular Architecture Overview (Phase 17 - Complete)
 
-Phase 14 completes the vertical slice architecture transformation with 13 self-contained modules.
+Phase 17 adds authentication and rate limiting, completing the production-ready architecture with 14 self-contained modules.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                    NEO ALEXANDRIA 2.0 - COMPLETE MODULAR ARCHITECTURE                   │
-│                              (13 Vertical Slice Modules)                                │
+│                              (14 Vertical Slice Modules)                                │
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
 │  │                         FastAPI Application (main.py)                            │   │
 │  │                    Registers all module routers & event handlers                 │   │
+│  │                    Global Authentication & Rate Limiting Middleware              │   │
 │  └────────────────────────────────────┬─────────────────────────────────────────────┘   │
 │                                       │                                                 │
 │                                       │ Module Registration                             │
@@ -25,14 +26,14 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 │       │                               │                                   │             │
 │       ▼                               ▼                                   ▼             │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│  │ Authority│   │
+│  │   Auth   │  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│   │
 │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │   │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
 │       │             │             │             │             │             │          │
 │       │             │             │             │             │             │          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│  │Monitoring│   │
-│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │  │  Module  │   │
+│  │ Authority│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│   │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │   │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
 │       │             │             │             │             │             │          │
 │       │             │             │             │             │             │          │
@@ -50,29 +51,32 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 │          │  │  • EmbeddingService (dense & sparse embeddings)          │   │           │
 │          │  │  • AICore (summarization, entity extraction)             │   │           │
 │          │  │  • CacheService (Redis caching with TTL)                 │   │           │
+│          │  │  • Security (JWT, password hashing, OAuth2)              │   │           │
+│          │  │  • RateLimiter (tiered rate limiting with Redis)         │   │           │
 │          │  └──────────────────────────────────────────────────────────┘   │           │
 │          └─────────────────────────────────────────────────────────────────┘           │
 │                                                                                         │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### All 13 Modules
+### All 14 Modules
 
 | # | Module | Domain | Events Emitted | Events Consumed |
 |---|--------|--------|----------------|-----------------|
-| 1 | **Resources** | Content management | resource.created, resource.updated, resource.deleted | - |
-| 2 | **Collections** | Organization | collection.created, collection.updated, collection.resource_added | resource.deleted |
-| 3 | **Search** | Discovery | search.executed | resource.created, resource.updated, resource.deleted |
-| 4 | **Annotations** | Highlights & notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
-| 5 | **Scholarly** | Academic metadata | metadata.extracted, equations.parsed, tables.extracted | resource.created |
-| 6 | **Authority** | Subject authority | - | - |
-| 7 | **Curation** | Content review | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
-| 8 | **Quality** | Quality assessment | quality.computed, quality.outlier_detected, quality.degradation_detected | resource.created, resource.updated |
-| 9 | **Taxonomy** | ML classification | resource.classified, taxonomy.node_created, taxonomy.model_trained | resource.created |
-| 10 | **Graph** | Knowledge graph | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
-| 11 | **Recommendations** | Personalization | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |
-| 12 | **Monitoring** | System health | - | All events (metrics) |
-| 13 | **Total** | **13 Modules** | **25+ event types** | **Event-driven architecture** |
+| 1 | **Auth** | Authentication | - | - |
+| 2 | **Resources** | Content management | resource.created, resource.updated, resource.deleted | - |
+| 3 | **Collections** | Organization | collection.created, collection.updated, collection.resource_added | resource.deleted |
+| 4 | **Search** | Discovery | search.executed | resource.created, resource.updated, resource.deleted |
+| 5 | **Annotations** | Highlights & notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
+| 6 | **Scholarly** | Academic metadata | metadata.extracted, equations.parsed, tables.extracted | resource.created |
+| 7 | **Authority** | Subject authority | - | - |
+| 8 | **Curation** | Content review | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
+| 9 | **Quality** | Quality assessment | quality.computed, quality.outlier_detected, quality.degradation_detected | resource.created, resource.updated |
+| 10 | **Taxonomy** | ML classification | resource.classified, taxonomy.node_created, taxonomy.model_trained | resource.created |
+| 11 | **Graph** | Knowledge graph | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
+| 12 | **Recommendations** | Personalization | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |
+| 13 | **Monitoring** | System health | - | All events (metrics) |
+| 14 | **Total** | **14 Modules** | **25+ event types** | **Event-driven architecture** |
 
 ---
 
@@ -133,6 +137,153 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 
 ---
 
+## Code Intelligence Pipeline (Phase 18)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                    CODE INTELLIGENCE PIPELINE ARCHITECTURE                              │
+│                              (Phase 18 - Repository Analysis)                           │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         API Layer (Resources Module)                             │   │
+│  │                    POST /resources/ingest-repo                                   │   │
+│  │                    GET /resources/ingest-repo/{task_id}/status                   │   │
+│  └────────────────────────────────┬─────────────────────────────────────────────────┘   │
+│                                   │                                                     │
+│                                   │ Triggers Celery Task                                │
+│                                   │                                                     │
+│                                   ▼                                                     │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         Async Task Layer (Celery)                                │   │
+│  │                         ingest_repo_task()                                       │   │
+│  │                    • Progress tracking (files_processed, total_files)            │   │
+│  │                    • Error handling and retry logic                              │   │
+│  │                    • Batch processing (50 files per transaction)                 │   │
+│  └────────────────────────────────┬─────────────────────────────────────────────────┘   │
+│                                   │                                                     │
+│                                   │ Calls                                               │
+│                                   │                                                     │
+│                                   ▼                                                     │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                    Repository Ingestion Service                                  │   │
+│  │                    (app/modules/resources/logic/repo_ingestion.py)               │   │
+│  │                                                                                  │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 1. Repository Access                                                       │  │   │
+│  │  │    • Local directory: crawl_directory(path)                                │  │   │
+│  │  │    • Git repository: clone_and_ingest(git_url)                             │  │   │
+│  │  │    • Parse .gitignore with pathspec library                                │  │   │
+│  │  │    • Detect binary files (null byte check)                                 │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 2. File Classification                                                     │  │   │
+│  │  │    (app/modules/resources/logic/classification.py)                         │  │   │
+│  │  │    • PRACTICE: Code files (.py, .js, .ts, .rs, .go, .java)                │  │   │
+│  │  │    • THEORY: Academic docs (.pdf, .md with keywords)                       │  │   │
+│  │  │    • GOVERNANCE: Config files (.eslintrc, CONTRIBUTING.md)                 │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 3. Resource Creation                                                       │  │   │
+│  │  │    • Create Resource with metadata (repo_root, commit_hash, branch)        │  │   │
+│  │  │    • Store file path and classification                                    │  │   │
+│  │  │    • Emit resource.created event                                           │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  └──────────────────────────────────┬───────────────────────────────────────────────┘   │
+│                                     │                                                   │
+│                                     │ For code files                                    │
+│                                     │                                                   │
+│                                     ▼                                                   │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                    AST-Based Code Chunking Service                               │   │
+│  │                    (app/modules/resources/logic/chunking.py)                     │   │
+│  │                                                                                  │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 1. Tree-Sitter Parsing                                                     │  │   │
+│  │  │    • Initialize parser for language (Python, JS, TS, Rust, Go, Java)      │  │   │
+│  │  │    • Parse code into Abstract Syntax Tree (AST)                            │  │   │
+│  │  │    • Fallback to character-based chunking on parse errors                  │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 2. Logical Unit Extraction                                                 │  │   │
+│  │  │    • Extract functions, classes, methods from AST                          │  │   │
+│  │  │    • Capture function_name, class_name, start_line, end_line              │  │   │
+│  │  │    • Store language and type (function/class/method) in metadata           │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 3. Chunk Creation                                                          │  │   │
+│  │  │    • Create DocumentChunk with populated chunk_metadata JSON               │  │   │
+│  │  │    • Generate embeddings for each chunk                                    │  │   │
+│  │  │    • Emit resource.chunked event                                           │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  └──────────────────────────────────┬───────────────────────────────────────────────┘   │
+│                                     │                                                   │
+│                                     │ Triggers                                          │
+│                                     │                                                   │
+│                                     ▼                                                   │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                    Static Analysis Service                                       │   │
+│  │                    (app/modules/graph/logic/static_analysis.py)                  │   │
+│  │                                                                                  │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 1. Import Extraction                                                       │  │   │
+│  │  │    • Find import statements in AST                                         │  │   │
+│  │  │    • Create IMPORTS relationships                                          │  │   │
+│  │  │    • Metadata: source_file, target_module, line_number                     │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 2. Definition Extraction                                                   │  │   │
+│  │  │    • Find function, class, variable definitions                            │  │   │
+│  │  │    • Create DEFINES relationships                                          │  │   │
+│  │  │    • Metadata: source_file, symbol_name, symbol_type, line_number         │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 3. Call Extraction                                                         │  │   │
+│  │  │    • Detect function calls in AST                                          │  │   │
+│  │  │    • Create CALLS relationships with confidence scoring                    │  │   │
+│  │  │    • Metadata: source_function, target_function, line_number, confidence   │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  │                                   │                                              │   │
+│  │                                   ▼                                              │   │
+│  │  ┌────────────────────────────────────────────────────────────────────────────┐  │   │
+│  │  │ 4. Graph Relationship Creation                                             │  │   │
+│  │  │    • Store relationships in graph_relationships table                      │  │   │
+│  │  │    • Link to source chunks via provenance                                  │  │   │
+│  │  │    • Enable graph traversal and dependency analysis                        │  │   │
+│  │  └────────────────────────────────────────────────────────────────────────────┘  │   │
+│  └──────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                         │
+│  Performance Targets:                                                                   │
+│  • AST Parsing: <2s per file (P95)                                                      │
+│  • Static Analysis: <1s per file (P95)                                                  │
+│  • Batch Processing: 50 files per transaction                                           │
+│  • Concurrent Tasks: 3 per user                                                         │
+│                                                                                         │
+│  Supported Languages:                                                                   │
+│  • Python (.py)                                                                         │
+│  • JavaScript (.js)                                                                     │
+│  • TypeScript (.ts)                                                                     │
+│  • Rust (.rs)                                                                           │
+│  • Go (.go)                                                                             │
+│  • Java (.java)                                                                         │
+│                                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Current Modules
 
 ### Resources Module
@@ -145,12 +296,40 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 - AI-powered summarization and tagging
 - Quality score computation
 - Classification assignment
+- **[Phase 18]** Code repository ingestion (local directories and Git repositories)
+- **[Phase 18]** AST-based code chunking with Tree-Sitter
+- **[Phase 18]** File classification (PRACTICE, THEORY, GOVERNANCE)
+- **[Phase 18]** Binary file detection and exclusion
+- **[Phase 18]** .gitignore parsing and compliance
+
+**Services:**
+- `ResourceService` - Core CRUD operations
+- **[Phase 18]** `RepoIngestionService` - Repository crawling and Git cloning
+- **[Phase 18]** `CodeChunkingStrategy` - AST-based code chunking
+- **[Phase 18]** File classification logic
+
+**Code Intelligence Features (Phase 18):**
+- **Repository Ingestion**: Scan local directories or clone Git repositories
+- **AST Parsing**: Tree-Sitter parsing for 6 languages (Python, JS, TS, Rust, Go, Java)
+- **Logical Unit Extraction**: Chunk code by functions, classes, and methods
+- **Chunk Metadata**: Includes function_name, class_name, start_line, end_line, language
+- **Fallback Strategy**: Character-based chunking on parse errors
+- **Performance**: <2s per file (P95) for AST parsing
+
+**Supported Languages:**
+- Python (.py)
+- JavaScript (.js)
+- TypeScript (.ts)
+- Rust (.rs)
+- Go (.go)
+- Java (.java)
 
 **Events Published:**
 - `resource.created`
 - `resource.updated`
 - `resource.deleted`
 - `resource.classified`
+- **[Phase 18]** `resource.chunked` - When code is chunked into logical units
 
 **Location:** `app/modules/resources/`
 
@@ -186,6 +365,25 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 - Three-way search with RRF fusion
 - Faceted search results
 - Search quality evaluation
+- **[Phase 17.5]** Parent-child retrieval (chunk-level search with parent context)
+- **[Phase 17.5]** GraphRAG retrieval (entity-based search with graph traversal)
+- **[Phase 17.5]** Question-based retrieval (Reverse HyDE with synthetic questions)
+- **[Phase 17.5]** Synthetic question generation for chunks
+
+**Services:**
+- `AdvancedSearchService` - Hybrid and vector search
+- **[Phase 17.5]** `SyntheticQuestionService` - Generate questions for chunks
+- **[Phase 17.5]** Parent-child retrieval methods
+- **[Phase 17.5]** GraphRAG retrieval methods
+- **[Phase 17.5]** Question-based retrieval methods
+
+**Advanced RAG Features (Phase 17.5):**
+- **Parent-Child Retrieval**: Search at chunk level, return parent resources with surrounding context
+- **GraphRAG Retrieval**: Extract entities from query, traverse knowledge graph, retrieve chunks via provenance
+- **Reverse HyDE**: Match user query against synthetic question embeddings, retrieve associated chunks
+- **Hybrid Strategies**: Combine multiple retrieval methods with configurable weights
+- **Context Window**: Include surrounding chunks for better context
+- **Contradiction Discovery**: Find contradictory information in knowledge graph
 
 **Events Published:**
 - `search.executed`
@@ -363,21 +561,52 @@ Phase 14 completes the vertical slice architecture transformation with 13 self-c
 - Literature-Based Discovery (LBD) for hypothesis generation
 - Semantic graph embeddings
 - Citation context extraction
+- **[Phase 17.5]** Semantic triple storage (entity-relationship-entity)
+- **[Phase 17.5]** Entity extraction from document chunks
+- **[Phase 17.5]** Relationship extraction with provenance tracking
+- **[Phase 17.5]** GraphRAG retrieval with entity-based search
+- **[Phase 18]** Static analysis for code relationships
+- **[Phase 18]** Import/definition/call extraction from code
 
 **Services:**
 - `GraphService` - Graph operations and queries
 - `CitationExtractor` - Citation parsing and extraction
 - `LBDService` - Hypothesis discovery (ABC pattern)
 - `GraphEmbeddingService` - Node embedding generation
+- **[Phase 17.5]** `GraphExtractionService` - Entity and relationship extraction from chunks
+- **[Phase 18]** `StaticAnalysisService` - Code relationship extraction
+
+**Advanced RAG Features (Phase 17.5):**
+- **Entity Extraction**: Extract named entities (Concept, Person, Organization, Method) from document chunks using NLP or LLM
+- **Relationship Extraction**: Identify relationships between entities (CONTRADICTS, SUPPORTS, EXTENDS, CITES)
+- **Provenance Tracking**: Link relationships back to source chunks for explainability
+- **GraphRAG Retrieval**: Traverse knowledge graph to find related entities and retrieve associated chunks
+- **Contradiction Discovery**: Find contradictory relationships in the knowledge graph
+- **Code Support**: Relationship types include code-specific relations (CALLS, IMPORTS, DEFINES) for Phase 18
+
+**Code Intelligence Features (Phase 18):**
+- **Static Analysis**: AST-based relationship extraction without code execution
+- **Import Extraction**: Detect module/file imports with source and target
+- **Definition Extraction**: Find function, class, and variable definitions
+- **Call Extraction**: Detect function calls with confidence scoring
+- **Relationship Types**:
+  - `IMPORTS`: Module/file imports another module/file
+  - `DEFINES`: File defines a function, class, or variable
+  - `CALLS`: Function calls another function
+- **Metadata**: source_file, target_symbol, line_number, confidence
+- **Performance**: <1s per file (P95) for static analysis
 
 **Events Published:**
 - `citation.extracted` - Citations parsed from resource
 - `graph.updated` - Graph structure changed
 - `hypothesis.discovered` - LBD found new connection
+- **[Phase 17.5]** `graph.entity_extracted` - Entity extracted from chunk
+- **[Phase 17.5]** `graph.relationship_extracted` - Relationship extracted from chunk
 
 **Events Subscribed:**
 - `resource.created` → Extract citations and update graph
 - `resource.deleted` → Remove from graph
+- **[Phase 17.5]** `resource.chunked` → Extract entities and relationships from chunks
 
 **Location:** `app/modules/graph/`
 

@@ -21,13 +21,13 @@ def emit_search_executed(
     result_count: int,
     execution_time: float,
     user_id: str = None,
-    filters: Dict[str, Any] = None
+    filters: Dict[str, Any] = None,
 ):
     """
     Emit search.executed event.
-    
+
     This should be called by the search service after executing a search query.
-    
+
     Args:
         query: Search query text
         search_type: Type of search (fulltext, semantic, hybrid, three_way_hybrid)
@@ -38,23 +38,19 @@ def emit_search_executed(
     """
     try:
         payload = {
-            'query': query,
-            'search_type': search_type,
-            'result_count': result_count,
-            'execution_time': execution_time
+            "query": query,
+            "search_type": search_type,
+            "result_count": result_count,
+            "execution_time": execution_time,
         }
-        
+
         if user_id:
-            payload['user_id'] = user_id
-        
+            payload["user_id"] = user_id
+
         if filters:
-            payload['filters'] = filters
-        
-        event_bus.emit(
-            'search.executed',
-            payload,
-            priority=EventPriority.LOW
-        )
+            payload["filters"] = filters
+
+        event_bus.emit("search.executed", payload, priority=EventPriority.LOW)
         logger.debug(f"Emitted search.executed event for query: {query[:50]}...")
     except Exception as e:
         logger.error(f"Error emitting search.executed event: {str(e)}", exc_info=True)
@@ -63,7 +59,7 @@ def emit_search_executed(
 def register_handlers():
     """
     Register all event handlers for the search module.
-    
+
     This function should be called during application startup.
     Currently, search module only emits events and doesn't subscribe to any.
     """

@@ -259,6 +259,180 @@ curl -X POST "http://127.0.0.1:8000/api/graph/discover?concept_a=machine+learnin
 
 ---
 
+### POST /api/graph/extract/{chunk_id}
+
+**Phase 17.5** - Extract entities and relationships from a document chunk.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "chunk_id": "chunk-uuid-1",
+  "extraction_method": "hybrid",
+  "entities": [
+    {
+      "id": "entity-uuid-1",
+      "name": "Gradient Descent",
+      "type": "Concept"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-uuid-1",
+      "source_entity": "Stochastic Gradient Descent",
+      "target_entity": "Gradient Descent",
+      "relation_type": "EXTENDS",
+      "weight": 0.9
+    }
+  ],
+  "counts": {
+    "entities": 1,
+    "relationships": 1
+  }
+}
+```
+
+**Example:**
+```bash
+curl -X POST "http://127.0.0.1:8000/api/graph/extract/chunk-uuid-1"
+```
+
+---
+
+### GET /api/graph/entities
+
+**Phase 17.5** - List all entities in the knowledge graph.
+
+**Query Parameters:**
+- `entity_type` (optional): Filter by entity type (Concept, Person, Organization, Method)
+- `name_contains` (optional): Filter by entity name (partial match)
+- `limit` (optional): Number of results (default: 50)
+- `skip` (optional): Number of results to skip (default: 0)
+
+**Response:**
+```json
+{
+  "entities": [
+    {
+      "id": "entity-uuid-1",
+      "name": "Gradient Descent",
+      "type": "Concept",
+      "description": "An optimization algorithm",
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total_count": 150,
+  "skip": 0,
+  "limit": 50
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/entities?entity_type=Concept&limit=10"
+```
+
+---
+
+### GET /api/graph/entities/{entity_id}/relationships
+
+**Phase 17.5** - Get all relationships for an entity.
+
+**Query Parameters:**
+- `relation_type` (optional): Filter by relation type (CONTRADICTS, SUPPORTS, EXTENDS, CITES, CALLS, IMPORTS, DEFINES)
+- `direction` (optional): Filter by direction (outgoing, incoming, both) (default: both)
+
+**Response:**
+```json
+{
+  "entity": {
+    "id": "entity-uuid-1",
+    "name": "Gradient Descent",
+    "type": "Concept"
+  },
+  "outgoing_relationships": [
+    {
+      "id": "rel-uuid-1",
+      "target_entity": {
+        "id": "entity-uuid-2",
+        "name": "Optimization",
+        "type": "Concept"
+      },
+      "relation_type": "EXTENDS",
+      "weight": 0.9,
+      "provenance_chunk_id": "chunk-uuid-1",
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "incoming_relationships": [],
+  "counts": {
+    "outgoing": 1,
+    "incoming": 0,
+    "total": 1
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/entities/entity-uuid-1/relationships?relation_type=EXTENDS"
+```
+
+---
+
+### GET /api/graph/traverse
+
+**Phase 17.5** - Traverse the knowledge graph from a starting entity.
+
+**Query Parameters:**
+- `start_entity_id` (required): Starting entity ID
+- `relation_types` (optional): Comma-separated relation types to follow
+- `max_hops` (optional): Maximum traversal depth (default: 2)
+
+**Response:**
+```json
+{
+  "start_entity": {
+    "id": "entity-uuid-1",
+    "name": "Gradient Descent",
+    "type": "Concept"
+  },
+  "entities": [
+    {
+      "id": "entity-uuid-2",
+      "name": "Stochastic Gradient Descent",
+      "type": "Method",
+      "description": "A variant of gradient descent"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "rel-uuid-1",
+      "source_entity_id": "entity-uuid-2",
+      "target_entity_id": "entity-uuid-1",
+      "relation_type": "EXTENDS",
+      "weight": 0.9
+    }
+  ],
+  "traversal_info": {
+    "max_hops": 2,
+    "entities_by_hop": {
+      "0": ["entity-uuid-1"],
+      "1": ["entity-uuid-2"]
+    },
+    "total_entities": 2,
+    "total_relationships": 1
+  }
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/traverse?start_entity_id=entity-uuid-1&max_hops=2&relation_types=EXTENDS,SUPPORTS"
+```
+
+---
+
 ### GET /api/graph/hypotheses/{hypothesis_id}
 
 Get details for a specific hypothesis.
@@ -380,10 +554,77 @@ from app.modules.graph import (
 - `citation.extracted` - When citations are extracted from a resource
 - `graph.updated` - When the knowledge graph is updated
 - `hypothesis.discovered` - When a new hypothesis is discovered
+- `graph.entity_extracted` - When an entity is extracted from content
+- `graph.relationship_extracted` - When a relationship is extracted
 
 **Subscribed Events:**
 - `resource.created` - Triggers citation extraction
 - `resource.deleted` - Removes nodes and edges from graph
+- `resource.chunked` - Triggers entity and relationship extraction (Phase 17.5)
+
+## Code Graph Features (Phase 18)
+
+The Graph module supports code repository analysis with specialized relationship types:
+
+**Code Relationship Types:**
+- `IMPORTS` - Module/file imports another module/file
+  - Example: `main.py IMPORTS utils.py`
+  - Metadata: source_file, target_module, line_number
+- `DEFINES` - File defines a function, class, or variable
+  - Example: `utils.py DEFINES calculate_score`
+  - Metadata: source_file, symbol_name, symbol_type, line_number
+- `CALLS` - Function calls another function
+  - Example: `main() CALLS calculate_score()`
+  - Metadata: source_function, target_function, line_number, confidence
+
+**Static Analysis:**
+- AST-based relationship extraction using Tree-Sitter
+- No code execution (static analysis only)
+- Confidence scoring for ambiguous relationships
+- Provenance tracking to source code chunks
+
+**Code Graph Queries:**
+- Find all imports for a module
+- Find all definitions in a file
+- Find all call sites for a function
+- Traverse dependency graph
+- Detect circular dependencies
+- Find unused imports/definitions
+
+**Example Queries:**
+
+**Find all imports in a file:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/entities/file-entity-id/relationships?relation_type=IMPORTS&direction=outgoing"
+```
+
+**Find all functions defined in a file:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/entities/file-entity-id/relationships?relation_type=DEFINES&direction=outgoing"
+```
+
+**Find all callers of a function:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/entities/function-entity-id/relationships?relation_type=CALLS&direction=incoming"
+```
+
+**Traverse dependency graph:**
+```bash
+curl "http://127.0.0.1:8000/api/graph/traverse?start_entity_id=file-entity-id&relation_types=IMPORTS&max_hops=3"
+```
+
+**Performance:**
+- Static analysis: <1s per file (P95)
+- Relationship extraction: <500ms per file (P95)
+- Graph traversal: <200ms for 3 hops (P95)
+
+**Supported Languages:**
+- Python (.py)
+- JavaScript (.js)
+- TypeScript (.ts)
+- Rust (.rs)
+- Go (.go)
+- Java (.java)
 
 ## Related Documentation
 

@@ -58,7 +58,7 @@ def review_queue_endpoint(
 ):
     """
     Get items in the review queue based on quality threshold.
-    
+
     Returns resources with quality scores below the threshold,
     sorted by quality score (ascending) and updated_at.
     """
@@ -70,7 +70,7 @@ def review_queue_endpoint(
     )
     service = CurationService(db, settings)
     items, total = service.review_queue(params)
-    
+
     # Convert Resource objects to dictionaries
     items_dict = [
         {
@@ -83,7 +83,7 @@ def review_queue_endpoint(
         }
         for item in items
     ]
-    
+
     return ReviewQueueResponse(items=items_dict, total=total)
 
 
@@ -94,7 +94,7 @@ def batch_update_endpoint(
 ):
     """
     Apply batch updates to multiple resources.
-    
+
     Updates are applied in a single transaction. Failed updates
     are tracked and returned in the response.
     """
@@ -113,13 +113,15 @@ def quality_analysis_endpoint(
 ):
     """
     Get detailed quality analysis for a specific resource.
-    
+
     Returns quality dimensions, overall score, and improvement suggestions.
     """
     try:
         rid = uuid.UUID(resource_id)
     except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resource id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resource id"
+        )
 
     try:
         service = CurationService(db)
@@ -140,7 +142,7 @@ def low_quality_endpoint(
 ):
     """
     Get list of low-quality resources.
-    
+
     Returns resources with quality scores below the threshold.
     """
     params = ReviewQueueParams(
@@ -151,7 +153,7 @@ def low_quality_endpoint(
     )
     service = CurationService(db, settings)
     items, total = service.review_queue(params)
-    
+
     # Convert Resource objects to dictionaries
     items_dict = [
         {
@@ -164,7 +166,7 @@ def low_quality_endpoint(
         }
         for item in items
     ]
-    
+
     return LowQualityResponse(items=items_dict, total=total)
 
 
@@ -175,16 +177,21 @@ def bulk_quality_check_endpoint(
 ):
     """
     Perform bulk quality check on multiple resources.
-    
+
     Recalculates quality scores for all specified resources.
     """
     if not payload.resource_ids:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No resource ids provided")
-    
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No resource ids provided"
+        )
+
     try:
         ids = [uuid.UUID(rid) for rid in payload.resource_ids]
     except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resource id in list")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid resource id in list",
+        )
 
     service = CurationService(db)
     result = service.bulk_quality_check(ids)
@@ -198,7 +205,7 @@ def batch_review_endpoint(
 ):
     """
     Perform batch review operations on multiple resources.
-    
+
     Applies review action (approve/reject/flag) to all specified resources
     and tracks review records for audit trail.
     """
@@ -208,7 +215,7 @@ def batch_review_endpoint(
             resource_ids=payload.resource_ids,
             action=payload.action,
             curator_id=payload.curator_id,
-            comment=payload.comment
+            comment=payload.comment,
         )
         return result
     except ValueError as ve:
@@ -222,18 +229,17 @@ def batch_tag_endpoint(
 ):
     """
     Add tags to multiple resources in batch.
-    
+
     Tags are deduplicated and merged with existing tags.
     """
     try:
         service = CurationService(db)
-        result = service.batch_tag(
-            resource_ids=payload.resource_ids,
-            tags=payload.tags
-        )
+        result = service.batch_tag(resource_ids=payload.resource_ids, tags=payload.tags)
         return result
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.post("/batch/assign", response_model=BatchUpdateResult)
@@ -243,18 +249,19 @@ def batch_assign_endpoint(
 ):
     """
     Assign multiple resources to a curator for review.
-    
+
     Updates curation status to 'assigned' and sets assigned curator.
     """
     try:
         service = CurationService(db)
         result = service.assign_curator(
-            resource_ids=payload.resource_ids,
-            curator_id=payload.curator_id
+            resource_ids=payload.resource_ids, curator_id=payload.curator_id
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.get("/queue", response_model=ReviewQueueResponse)
@@ -271,7 +278,7 @@ def enhanced_review_queue_endpoint(
 ):
     """
     Get items in the review queue with enhanced filtering.
-    
+
     Supports filtering by:
     - Quality threshold
     - Curation status (pending/approved/rejected/assigned)
@@ -291,7 +298,7 @@ def enhanced_review_queue_endpoint(
     )
     service = CurationService(db)
     items, total = service.review_queue_enhanced(params)
-    
+
     # Convert Resource objects to dictionaries
     items_dict = [
         {
@@ -306,7 +313,7 @@ def enhanced_review_queue_endpoint(
         }
         for item in items
     ]
-    
+
     return ReviewQueueResponse(items=items_dict, total=total)
 
 

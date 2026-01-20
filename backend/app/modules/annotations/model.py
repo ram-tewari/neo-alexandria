@@ -14,4 +14,3 @@ Related files:
 from ...database.models import Annotation
 
 __all__ = ["Annotation"]
-

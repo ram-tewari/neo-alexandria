@@ -19,17 +19,18 @@ High-level system architecture for Neo Alexandria 2.0.
 
 ## Modular Architecture Overview
 
-### High-Level Modular Structure (Phase 14 - Complete)
+### High-Level Modular Structure (Phase 17 - Complete)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                    NEO ALEXANDRIA 2.0 - COMPLETE MODULAR ARCHITECTURE                   │
-│                              (13 Vertical Slice Modules)                                │
+│                              (14 Vertical Slice Modules)                                │
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────────────────────┐   │
 │  │                         FastAPI Application (main.py)                            │   │
 │  │                    Registers all module routers & event handlers                 │   │
+│  │                    Global Authentication & Rate Limiting Middleware              │   │
 │  └────────────────────────────────────┬─────────────────────────────────────────────┘   │
 │                                       │                                                 │
 │                                       │ Module Registration                             │
@@ -38,14 +39,14 @@ High-level system architecture for Neo Alexandria 2.0.
 │       │                               │                                   │             │
 │       ▼                               ▼                                   ▼             │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
-│  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│  │ Authority│     │
+│  │   Auth   │  │Resources │  │Collections│ │  Search  │  │Annotations│ │ Scholarly│     │
 │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │     │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘     │
 │       │             │             │             │             │             │           │
 │       │             │             │             │             │             │           │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
-│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│  │Monitoring│     │
-│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │  │  Module  │     │
+│  │ Authority│  │ Curation │  │  Quality │  │ Taxonomy │  │  Graph   │  │Recommend-│     │
+│  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │  Module  │  │ ations   │     │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘     │
 │       │             │             │             │             │             │           │
 │       │             │             │             │             │             │           │
@@ -63,6 +64,8 @@ High-level system architecture for Neo Alexandria 2.0.
 │          │  │  • EmbeddingService (dense & sparse embeddings)          │   │            │
 │          │  │  • AICore (summarization, entity extraction)             │   │            │
 │          │  │  • CacheService (Redis caching with TTL)                 │   │            │
+│          │  │  • Security (JWT, password hashing, OAuth2)              │   │            │
+│          │  │  • RateLimiter (tiered rate limiting with Redis)         │   │            │
 │          │  └──────────────────────────────────────────────────────────┘   │            │
 │          └─────────────────────────────────────────────────────────────────┘            │
 │                                                                                         │
@@ -82,10 +85,11 @@ High-level system architecture for Neo Alexandria 2.0.
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Module Summary (13 Modules)
+### Module Summary (14 Modules)
 
 | Module | Purpose | Key Events Emitted | Key Events Consumed |
 |--------|---------|-------------------|---------------------|
+| **Auth** | JWT authentication and OAuth2 | - | - |
 | **Resources** | Resource CRUD operations | resource.created, resource.updated, resource.deleted | - |
 | **Collections** | Collection management | collection.created, collection.updated, collection.resource_added | resource.created, resource.updated, resource.deleted |
 | **Search** | Hybrid search (keyword + semantic + sparse) | search.executed | resource.created, resource.updated |
@@ -98,6 +102,46 @@ High-level system architecture for Neo Alexandria 2.0.
 | **Graph** | Knowledge graph, citations, discovery | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
 | **Recommendations** | Hybrid recommendation engine | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |
 | **Monitoring** | System health and metrics aggregation | - | All events (for metrics) |
+
+### Phase 17: Production Hardening
+
+Phase 17 adds production-ready authentication, rate limiting, and infrastructure improvements.
+
+**New Features:**
+
+1. **Auth Module** - JWT authentication with OAuth2 support
+   - JWT access and refresh tokens
+   - OAuth2 integration (Google, GitHub)
+   - Token revocation with Redis
+   - User management and authentication service
+   - Public endpoints: `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/google`, `/auth/github`
+
+2. **Global Authentication Middleware** - Protect all endpoints
+   - JWT Bearer token validation
+   - Automatic token extraction from Authorization header
+   - Excluded endpoints: `/auth/*`, `/docs`, `/openapi.json`, `/monitoring/health`
+   - TEST_MODE for development bypass
+
+3. **Rate Limiting** - Tiered rate limiting with Redis
+   - Free tier: 100 requests/hour
+   - Premium tier: 1,000 requests/hour
+   - Admin tier: 10,000 requests/hour
+   - Sliding window algorithm
+   - Rate limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+   - Graceful degradation when Redis unavailable
+
+4. **Shared Kernel Enhancements** - Security and rate limiting services
+   - `Security` - Password hashing, JWT creation/validation, token revocation
+   - `RateLimiter` - Tiered rate limiting with sliding window
+   - `OAuth2` - OAuth2 provider integration (Google, GitHub)
+
+**Architecture Benefits:**
+
+- **Production Ready**: JWT authentication and rate limiting for production deployments
+- **Secure**: Password hashing with bcrypt, JWT token signing, OAuth2 integration
+- **Scalable**: Redis-backed rate limiting and token revocation
+- **Flexible**: Tiered rate limits, OAuth2 providers, TEST_MODE for development
+- **Resilient**: Graceful degradation when Redis unavailable
 
 ### Phase 14: Complete Vertical Slice Refactor
 
@@ -562,13 +606,33 @@ Search Indexing → Graph Relationship Detection → Recommendation Learning
 ```
 ╔═════════════════════════════════════════════════════════════════════════════╗
 ║                          LAYER 1: PRESENTATION                              ║
-║                  (FastAPI Routers)                                          ║
+║                  (FastAPI Routers + Middleware)                             ║
 ╠═════════════════════════════════════════════════════════════════════════════╣
 ║                                                                             ║
-║  /api/resources      /api/search         /api/collections                   ║
-║  /api/taxonomy       /api/annotations    /api/recommendations               ║
-║  /api/quality        /api/classification /api/monitoring                    ║
-║  /api/scholarly      /api/graph          /api/citations                     ║
+║  Authentication Middleware (Phase 17):                                      ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • JWT Bearer token validation                                   │        ║
+║  │ • Token extraction from Authorization header                    │        ║
+║  │ • Token revocation check (Redis)                                │        ║
+║  │ • User context injection                                        │        ║
+║  │ • Excluded: /auth/*, /docs, /openapi.json, /monitoring/health   │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  Rate Limiting Middleware (Phase 17):                                       ║
+║  ┌─────────────────────────────────────────────────────────────────┐        ║
+║  │ • Tiered rate limiting (free, premium, admin)                   │        ║
+║  │ • Sliding window algorithm with Redis                           │        ║
+║  │ • Rate limit headers: X-RateLimit-*                             │        ║
+║  │ • HTTP 429 when limit exceeded                                  │        ║
+║  │ • Excluded: /monitoring/health                                  │        ║
+║  └─────────────────────────────────────────────────────────────────┘        ║
+║                                                                             ║
+║  API Endpoints:                                                             ║
+║  /api/auth           /api/resources      /api/search                        ║
+║  /api/collections    /api/taxonomy       /api/annotations                   ║
+║  /api/recommendations /api/quality       /api/classification                ║
+║  /api/monitoring     /api/scholarly      /api/graph                         ║
+║  /api/citations                                                             ║
 ║                                                                             ║
 ║  • Request validation (Pydantic)                                            ║
 ║  • Authentication & authorization                                           ║
@@ -731,11 +795,14 @@ Search Indexing → Graph Relationship Detection → Recommendation Learning
 ║                                                                             ║
 ║  Security & Authentication:                                                 ║
 ║  ┌─────────────────────────────────────────────────────────────────┐        ║
-║  │ • API key authentication                                        │        ║
+║  │ • JWT authentication with OAuth2 (Phase 17)                     │        ║
+║  │ • Password hashing with bcrypt                                  │        ║
+║  │ • Token revocation with Redis                                   │        ║
+║  │ • OAuth2 providers (Google, GitHub)                             │        ║
+║  │ • Tiered rate limiting (free, premium, admin)                   │        ║
 ║  │ • Role-based access control (RBAC)                              │        ║
 ║  │ • Input validation and sanitization                             │        ║
 ║  │ • SQL injection prevention (ORM)                                │        ║
-║  │ • Rate limiting                                                 │        ║
 ║  │ • CORS configuration                                            │        ║
 ║  └─────────────────────────────────────────────────────────────────┘        ║
 ║                                                                             ║

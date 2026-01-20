@@ -23,6 +23,7 @@ from .service import get_graph_based_recommendations
 from .user_profile import UserProfileService
 from .hybrid_service import HybridRecommendationService
 from .strategies import RecommendationStrategyFactory
+
 # Import models from database to avoid duplicate table definitions
 from ...database.models import UserProfile, UserInteraction, RecommendationFeedback
 from .schema import (
@@ -42,18 +43,15 @@ from .handlers import register_handlers
 __all__ = [
     # Router
     "recommendations_router",
-    
     # Services
     "get_graph_based_recommendations",
     "UserProfileService",
     "HybridRecommendationService",
     "RecommendationStrategyFactory",
-    
     # Models
     "UserProfile",
     "UserInteraction",
     "RecommendationFeedback",
-    
     # Schemas
     "RecommendedResource",
     "RecommendationResponse",
@@ -65,7 +63,6 @@ __all__ = [
     "RecommendationsResponse",
     "FeedbackRequest",
     "FeedbackResponse",
-    
     # Event handlers
     "register_handlers",
 ]

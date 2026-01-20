@@ -9,18 +9,16 @@ from sqlalchemy.orm import Session
 
 
 def pure_vector_search(
-    db: Session,
-    query: Any,
-    service: Any = None
+    db: Session, query: Any, service: Any = None
 ) -> Tuple[List[Any], int, Any, Any]:
     """
     Pure vector search implementation.
-    
+
     Args:
         db: Database session
         query: Search query object
         service: Optional service instance
-        
+
     Returns:
         Tuple of (resources, total, facets, snippets)
     """

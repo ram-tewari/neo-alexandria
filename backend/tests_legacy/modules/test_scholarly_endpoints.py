@@ -13,7 +13,6 @@ Endpoints tested:
 from unittest.mock import patch, MagicMock
 
 
-
 class TestMetadataExtraction:
     def test_get_metadata(self, client, create_test_resource):
         """Test getting scholarly metadata for a resource."""
@@ -25,10 +24,10 @@ class TestMetadataExtraction:
         """Test triggering metadata extraction."""
         resource = create_test_resource()
         # Mock celery to avoid import errors
-        with patch.dict('sys.modules', {'celery': MagicMock()}):
+        with patch.dict("sys.modules", {"celery": MagicMock()}):
             response = client.post(
                 f"/scholarly/resources/{str(resource.id)}/metadata/extract",
-                json={"force": False}
+                json={"force": False},
             )
             # Accept various status codes
             assert response.status_code in [200, 202, 404]

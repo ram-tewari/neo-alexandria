@@ -13,10 +13,10 @@ from backend.app.services.quality_service import QualityService
 def quality_service(db_session: Session):
     """
     Create a QualityService instance for performance testing.
-    
+
     Args:
         db_session: Database session fixture
-        
+
     Returns:
         QualityService instance configured for performance testing
     """

@@ -1,97 +1,60 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
       colors: {
-        // Map CSS custom properties to Tailwind
-        background: {
-          DEFAULT: 'var(--background)',
-          secondary: 'var(--background-secondary)',
-          tertiary: 'var(--background-tertiary)',
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
-        surface: {
-          base: 'var(--surface-base)',
-          raised: 'var(--surface-raised)',
-          overlay: 'var(--surface-overlay)',
-          accent: 'var(--surface-accent)',
-        },
-        text: {
-          primary: 'var(--text-primary)',
-          secondary: 'var(--text-secondary)',
-          tertiary: 'var(--text-tertiary)',
-          disabled: 'var(--text-disabled)',
-          accent: 'var(--text-accent)',
-        },
-        border: {
-          subtle: 'var(--border-subtle)',
-          medium: 'var(--border-medium)',
-          strong: 'var(--border-strong)',
-          accent: 'var(--border-accent)',
-        },
-        accent: {
-          deep: 'var(--accent-deep)',
-          medium: 'var(--accent-medium)',
-          bright: 'var(--accent-bright)',
-          light: 'var(--accent-light)',
-          glow: 'var(--accent-glow)',
-          subtle: 'var(--accent-subtle)',
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
         primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
-      },
-      borderRadius: {
-        sm: 'var(--radius-sm)',
-        md: 'var(--radius-md)',
-        lg: 'var(--radius-lg)',
-        full: 'var(--radius-full)',
-      },
-      spacing: {
-        xs: 'var(--spacing-xs)',
-        sm: 'var(--spacing-sm)',
-        md: 'var(--spacing-md)',
-        lg: 'var(--spacing-lg)',
-        xl: 'var(--spacing-xl)',
-        '2xl': 'var(--spacing-2xl)',
-      },
-      fontSize: {
-        xs: 'var(--font-size-xs)',
-        sm: 'var(--font-size-sm)',
-        base: 'var(--font-size-base)',
-        h3: 'var(--font-size-h3)',
-        h2: 'var(--font-size-h2)',
-        h1: 'var(--font-size-h1)',
-      },
-      fontWeight: {
-        normal: 'var(--font-weight-normal)',
-        medium: 'var(--font-weight-medium)',
-        semibold: 'var(--font-weight-semibold)',
-        bold: 'var(--font-weight-bold)',
-      },
-      boxShadow: {
-        sm: 'var(--shadow-sm)',
-        md: 'var(--shadow-md)',
-        lg: 'var(--shadow-lg)',
-      },
-      transitionDuration: {
-        fast: '150ms',
-        base: '250ms',
-        slow: '350ms',
-      },
-      transitionTimingFunction: {
-        'ease-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
-      },
-      animation: {
-        'pulse-skeleton': 'pulse 1.5s ease-in-out infinite',
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        chart: {
+          "1": "hsl(var(--chart-1))",
+          "2": "hsl(var(--chart-2))",
+          "3": "hsl(var(--chart-3))",
+          "4": "hsl(var(--chart-4))",
+          "5": "hsl(var(--chart-5))",
+        },
       },
     },
   },
   plugins: [],
 }
-

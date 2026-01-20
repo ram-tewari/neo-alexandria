@@ -18,8 +18,10 @@ from pydantic import BaseModel, Field, validator
 # Basic Recommendation Schemas (Phase 5.5)
 # ============================================================================
 
+
 class RecommendedResource(BaseModel):
     """Individual recommendation item with metadata."""
+
     url: str
     title: str
     snippet: str
@@ -29,6 +31,7 @@ class RecommendedResource(BaseModel):
 
 class RecommendationResponse(BaseModel):
     """Container for multiple recommendations."""
+
     items: List[RecommendedResource] = Field(default_factory=list)
 
 
@@ -36,16 +39,25 @@ class RecommendationResponse(BaseModel):
 # Hybrid Recommendation Schemas (Phase 11)
 # ============================================================================
 
+
 class InteractionRequest(BaseModel):
     """Request schema for tracking user interactions."""
+
     resource_id: str = Field(..., description="Resource UUID")
-    interaction_type: str = Field(..., description="Type of interaction: view, annotation, collection_add, export, rating")
-    dwell_time: Optional[int] = Field(None, description="Time spent on resource in seconds")
-    scroll_depth: Optional[float] = Field(None, ge=0.0, le=1.0, description="Scroll depth (0.0-1.0)")
+    interaction_type: str = Field(
+        ...,
+        description="Type of interaction: view, annotation, collection_add, export, rating",
+    )
+    dwell_time: Optional[int] = Field(
+        None, description="Time spent on resource in seconds"
+    )
+    scroll_depth: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Scroll depth (0.0-1.0)"
+    )
     session_id: Optional[str] = Field(None, description="Session identifier")
     rating: Optional[int] = Field(None, ge=1, le=5, description="Rating (1-5 stars)")
-    
-    @validator('interaction_type')
+
+    @validator("interaction_type")
     def validate_interaction_type(cls, v):
         allowed_types = ["view", "annotation", "collection_add", "export", "rating"]
         if v not in allowed_types:
@@ -55,6 +67,7 @@ class InteractionRequest(BaseModel):
 
 class InteractionResponse(BaseModel):
     """Response schema for interaction tracking."""
+
     interaction_id: str
     user_id: str
     resource_id: str
@@ -62,23 +75,37 @@ class InteractionResponse(BaseModel):
     interaction_strength: float
     is_positive: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class ProfileUpdateRequest(BaseModel):
     """Request schema for updating user profile."""
-    diversity_preference: Optional[float] = Field(None, ge=0.0, le=1.0, description="Diversity preference (0.0-1.0)")
-    novelty_preference: Optional[float] = Field(None, ge=0.0, le=1.0, description="Novelty preference (0.0-1.0)")
-    recency_bias: Optional[float] = Field(None, ge=0.0, le=1.0, description="Recency bias (0.0-1.0)")
-    excluded_sources: Optional[List[str]] = Field(None, description="List of excluded source domains")
-    research_domains: Optional[List[str]] = Field(None, description="List of research domains")
-    active_domain: Optional[str] = Field(None, description="Currently active research domain")
+
+    diversity_preference: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Diversity preference (0.0-1.0)"
+    )
+    novelty_preference: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Novelty preference (0.0-1.0)"
+    )
+    recency_bias: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Recency bias (0.0-1.0)"
+    )
+    excluded_sources: Optional[List[str]] = Field(
+        None, description="List of excluded source domains"
+    )
+    research_domains: Optional[List[str]] = Field(
+        None, description="List of research domains"
+    )
+    active_domain: Optional[str] = Field(
+        None, description="Currently active research domain"
+    )
 
 
 class ProfileResponse(BaseModel):
     """Response schema for user profile."""
+
     user_id: str
     diversity_preference: float
     novelty_preference: float
@@ -88,13 +115,14 @@ class ProfileResponse(BaseModel):
     excluded_sources: Optional[List[str]]
     total_interactions: int
     last_active_at: Optional[datetime]
-    
+
     class Config:
         from_attributes = True
 
 
 class RecommendationScores(BaseModel):
     """Breakdown of recommendation scores."""
+
     collaborative: float
     content: float
     graph: float
@@ -104,6 +132,7 @@ class RecommendationScores(BaseModel):
 
 class RecommendationItem(BaseModel):
     """Individual recommendation item with detailed scoring."""
+
     resource_id: str
     title: str
     score: float
@@ -116,6 +145,7 @@ class RecommendationItem(BaseModel):
 
 class RecommendationMetadata(BaseModel):
     """Metadata about the recommendation process."""
+
     total: int
     strategy: str
     is_cold_start: Optional[bool] = None
@@ -129,26 +159,31 @@ class RecommendationMetadata(BaseModel):
 
 class RecommendationsResponse(BaseModel):
     """Response schema for hybrid recommendations."""
+
     recommendations: List[RecommendationItem]
     metadata: RecommendationMetadata
 
 
 class FeedbackRequest(BaseModel):
     """Request schema for recommendation feedback."""
+
     resource_id: str = Field(..., description="Resource UUID")
     was_clicked: bool = Field(..., description="Whether the recommendation was clicked")
-    was_useful: Optional[bool] = Field(None, description="Whether the recommendation was useful (explicit feedback)")
+    was_useful: Optional[bool] = Field(
+        None, description="Whether the recommendation was useful (explicit feedback)"
+    )
     feedback_notes: Optional[str] = Field(None, description="Optional feedback notes")
 
 
 class FeedbackResponse(BaseModel):
     """Response schema for recommendation feedback."""
+
     feedback_id: str
     user_id: str
     resource_id: str
     was_clicked: bool
     was_useful: Optional[bool]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True

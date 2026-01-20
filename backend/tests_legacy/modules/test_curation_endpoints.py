@@ -10,8 +10,6 @@ Endpoints tested:
 """
 
 
-
-
 class TestCurationEndpoints:
     def test_get_review_queue(self, client, create_test_resource):
         """Test getting the review queue."""
@@ -31,10 +29,13 @@ class TestCurationEndpoints:
     def test_batch_update(self, client, create_test_resource):
         """Test batch update operation."""
         resource = create_test_resource()
-        response = client.post("/curation/batch-update", json={
-            "resource_ids": [str(resource.id)],
-            "updates": {"read_status": "read"}
-        })
+        response = client.post(
+            "/curation/batch-update",
+            json={
+                "resource_ids": [str(resource.id)],
+                "updates": {"read_status": "read"},
+            },
+        )
         # Accept 200 for success, 400 for validation errors, 422 for schema errors
         assert response.status_code in [200, 400, 422]
 
@@ -50,7 +51,7 @@ class TestCurationEndpoints:
     def test_bulk_quality_check(self, client, create_test_resource):
         """Test bulk quality check."""
         resource = create_test_resource()
-        response = client.post("/curation/bulk-quality-check", json={
-            "resource_ids": [str(resource.id)]
-        })
+        response = client.post(
+            "/curation/bulk-quality-check", json={"resource_ids": [str(resource.id)]}
+        )
         assert response.status_code in [200, 202, 400]

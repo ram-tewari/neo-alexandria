@@ -23,34 +23,28 @@ def example_basic_usage():
     print("=" * 70)
     print("Example 1: Basic Usage")
     print("=" * 70)
-    
+
     # Create individual predictions
     pred1 = ClassificationPrediction(
-        taxonomy_id="science/physics",
-        confidence=0.95,
-        rank=1
+        taxonomy_id="science/physics", confidence=0.95, rank=1
     )
-    
+
     pred2 = ClassificationPrediction(
-        taxonomy_id="science/astronomy",
-        confidence=0.87,
-        rank=2
+        taxonomy_id="science/astronomy", confidence=0.87, rank=2
     )
-    
+
     pred3 = ClassificationPrediction(
-        taxonomy_id="science/mathematics",
-        confidence=0.65,
-        rank=3
+        taxonomy_id="science/mathematics", confidence=0.65, rank=3
     )
-    
+
     # Create classification result
     result = ClassificationResult(
         predictions=[pred1, pred2, pred3],
         model_version="bert-base-v1.0.0",
         inference_time_ms=42.5,
-        resource_id="resource_12345"
+        resource_id="resource_12345",
     )
-    
+
     print(f"Total predictions: {len(result.predictions)}")
     print(f"Model version: {result.model_version}")
     print(f"Inference time: {result.inference_time_ms}ms")
@@ -62,7 +56,7 @@ def example_filtering():
     print("=" * 70)
     print("Example 2: Filtering by Confidence")
     print("=" * 70)
-    
+
     predictions = [
         ClassificationPrediction("category_1", 0.95, 1),
         ClassificationPrediction("category_2", 0.87, 2),
@@ -70,31 +64,29 @@ def example_filtering():
         ClassificationPrediction("category_4", 0.45, 4),
         ClassificationPrediction("category_5", 0.30, 5),
     ]
-    
+
     result = ClassificationResult(
-        predictions=predictions,
-        model_version="v1.0.0",
-        inference_time_ms=50.0
+        predictions=predictions, model_version="v1.0.0", inference_time_ms=50.0
     )
-    
+
     # Get high confidence predictions
     high_conf = result.get_high_confidence()
     print(f"High confidence predictions (≥0.8): {len(high_conf)}")
     for pred in high_conf:
         print(f"  - {pred.taxonomy_id}: {pred.confidence:.2f}")
-    
+
     # Get medium confidence predictions
     medium_conf = result.get_medium_confidence()
     print(f"\nMedium confidence predictions (0.5-0.8): {len(medium_conf)}")
     for pred in medium_conf:
         print(f"  - {pred.taxonomy_id}: {pred.confidence:.2f}")
-    
+
     # Get low confidence predictions
     low_conf = result.get_low_confidence()
     print(f"\nLow confidence predictions (<0.5): {len(low_conf)}")
     for pred in low_conf:
         print(f"  - {pred.taxonomy_id}: {pred.confidence:.2f}")
-    
+
     print()
 
 
@@ -103,26 +95,24 @@ def example_top_k():
     print("=" * 70)
     print("Example 3: Top K Predictions")
     print("=" * 70)
-    
+
     predictions = [
         ClassificationPrediction("physics", 0.75, 1),
         ClassificationPrediction("chemistry", 0.95, 2),
         ClassificationPrediction("biology", 0.85, 3),
         ClassificationPrediction("mathematics", 0.65, 4),
     ]
-    
+
     result = ClassificationResult(
-        predictions=predictions,
-        model_version="v1.0.0",
-        inference_time_ms=50.0
+        predictions=predictions, model_version="v1.0.0", inference_time_ms=50.0
     )
-    
+
     # Get top 3 by confidence
     top_3 = result.get_top_k(3)
     print("Top 3 predictions by confidence:")
     for i, pred in enumerate(top_3, 1):
         print(f"  {i}. {pred.taxonomy_id}: {pred.confidence:.2f}")
-    
+
     # Get best prediction
     best = result.get_best_prediction()
     print(f"\nBest prediction: {best.taxonomy_id} ({best.confidence:.2f})")
@@ -134,7 +124,7 @@ def example_analysis():
     print("=" * 70)
     print("Example 4: Result Analysis")
     print("=" * 70)
-    
+
     predictions = [
         ClassificationPrediction("cat_1", 0.95, 1),
         ClassificationPrediction("cat_2", 0.88, 2),
@@ -142,17 +132,15 @@ def example_analysis():
         ClassificationPrediction("cat_4", 0.55, 4),
         ClassificationPrediction("cat_5", 0.40, 5),
     ]
-    
+
     result = ClassificationResult(
-        predictions=predictions,
-        model_version="v1.0.0",
-        inference_time_ms=50.0
+        predictions=predictions, model_version="v1.0.0", inference_time_ms=50.0
     )
-    
+
     # Check if we have high confidence predictions
     has_high = result.has_high_confidence_predictions()
     print(f"Has high confidence predictions: {has_high}")
-    
+
     # Count by confidence level
     counts = result.count_by_confidence_level()
     print("\nConfidence distribution:")
@@ -167,20 +155,20 @@ def example_api_compatibility():
     print("=" * 70)
     print("Example 5: API Compatibility")
     print("=" * 70)
-    
+
     # Create result
     predictions = [
         ClassificationPrediction("science", 0.95, 1),
         ClassificationPrediction("technology", 0.85, 2),
     ]
-    
+
     result = ClassificationResult(
         predictions=predictions,
         model_version="v1.0.0",
         inference_time_ms=45.2,
-        resource_id="res_123"
+        resource_id="res_123",
     )
-    
+
     # Convert to dictionary (for API response)
     api_response = result.to_dict()
     print("API Response:")
@@ -188,8 +176,10 @@ def example_api_compatibility():
     print(f"  Inference time: {api_response['inference_time_ms']}ms")
     print(f"  Total predictions: {api_response['metadata']['total_predictions']}")
     print(f"  Best confidence: {api_response['metadata']['best_confidence']:.2f}")
-    print(f"  Confidence distribution: {api_response['metadata']['confidence_distribution']}")
-    
+    print(
+        f"  Confidence distribution: {api_response['metadata']['confidence_distribution']}"
+    )
+
     # Convert back from dictionary
     restored = ClassificationResult.from_dict(api_response)
     print(f"\nRestored result has {len(restored.predictions)} predictions")
@@ -201,7 +191,7 @@ def example_before_after():
     print("=" * 70)
     print("Example 6: Before/After Comparison")
     print("=" * 70)
-    
+
     print("BEFORE (Primitive Obsession):")
     print("-" * 70)
     print("""
@@ -221,7 +211,7 @@ def example_before_after():
     # No business logic - must implement everywhere
     high_conf = [p for p in result['predictions'] if p['confidence'] >= 0.8]
     """)
-    
+
     print("\nAFTER (Domain Objects):")
     print("-" * 70)
     print("""
@@ -254,7 +244,7 @@ def main():
     example_analysis()
     example_api_compatibility()
     example_before_after()
-    
+
     print("=" * 70)
     print("All examples completed successfully!")
     print("=" * 70)

@@ -24,18 +24,18 @@ from datetime import datetime
 
 def verify_quality_endpoints():
     """Verify all quality API endpoints are implemented."""
-    
+
     print("=" * 80)
     print("Phase 9 Quality API Endpoints Verification")
     print("=" * 80)
-    
+
     # Create test client
     app = create_app()
     client = TestClient(app)
-    
+
     # Create test database session
     db = SessionLocal()
-    
+
     try:
         # Create test resource with quality scores
         print("\n1. Creating test resource with quality scores...")
@@ -62,7 +62,7 @@ def verify_quality_endpoints():
         db.add(test_resource)
         db.commit()
         print(f"✓ Created test resource: {test_resource.id}")
-        
+
         # Test 1: GET /resources/{id}/quality-details
         print("\n2. Testing GET /resources/{id}/quality-details...")
         response = client.get(f"/resources/{test_resource.id}/quality-details")
@@ -74,12 +74,11 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Quality details endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 2: POST /quality/recalculate
         print("\n3. Testing POST /quality/recalculate...")
         response = client.post(
-            "/quality/recalculate",
-            json={"resource_id": str(test_resource.id)}
+            "/quality/recalculate", json={"resource_id": str(test_resource.id)}
         )
         if response.status_code == 202:
             print("✓ Quality recalculation endpoint working")
@@ -87,7 +86,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Quality recalculation endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 3: GET /quality/outliers
         print("\n4. Testing GET /quality/outliers...")
         response = client.get("/quality/outliers?page=1&limit=10")
@@ -99,7 +98,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Outliers endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 4: GET /quality/degradation
         print("\n5. Testing GET /quality/degradation...")
         response = client.get("/quality/degradation?time_window_days=30")
@@ -111,7 +110,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Degradation endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 5: POST /summaries/{id}/evaluate
         print("\n6. Testing POST /summaries/{id}/evaluate...")
         response = client.post(
@@ -123,7 +122,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Summary evaluation endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 6: GET /quality/distribution
         print("\n7. Testing GET /quality/distribution...")
         response = client.get("/quality/distribution?bins=10&dimension=overall")
@@ -136,7 +135,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Distribution endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 7: GET /quality/trends
         print("\n8. Testing GET /quality/trends...")
         response = client.get("/quality/trends?granularity=weekly&dimension=overall")
@@ -149,7 +148,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Trends endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 8: GET /quality/dimensions
         print("\n9. Testing GET /quality/dimensions...")
         response = client.get("/quality/dimensions")
@@ -162,10 +161,12 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Dimensions endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         # Test 9: GET /quality/review-queue
         print("\n10. Testing GET /quality/review-queue...")
-        response = client.get("/quality/review-queue?page=1&limit=10&sort_by=quality_overall")
+        response = client.get(
+            "/quality/review-queue?page=1&limit=10&sort_by=quality_overall"
+        )
         if response.status_code == 200:
             data = response.json()
             print("✓ Review queue endpoint working")
@@ -174,7 +175,7 @@ def verify_quality_endpoints():
         else:
             print(f"✗ Review queue endpoint failed: {response.status_code}")
             print(f"  Response: {response.text}")
-        
+
         print("\n" + "=" * 80)
         print("Verification Complete!")
         print("=" * 80)
@@ -188,7 +189,7 @@ def verify_quality_endpoints():
         print("  7. GET /quality/trends")
         print("  8. GET /quality/dimensions")
         print("  9. GET /quality/review-queue")
-        
+
     finally:
         # Cleanup
         db.query(Resource).filter(Resource.id == test_resource.id).delete()

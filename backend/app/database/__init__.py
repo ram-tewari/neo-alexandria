@@ -8,4 +8,3 @@ Modules:
 - base: Database engine configuration and session management
 - models: SQLAlchemy models for all database entities
 """
-

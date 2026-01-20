@@ -145,14 +145,42 @@ DATABASE_URL=postgresql://neo_user:password@staging-db.example.com:5432/neo_alex
 
 # Production (.env.production)
 DATABASE_URL=postgresql://neo_user:password@prod-db.example.com:5432/neo_alexandria?sslmode=require
+
+# Phase 17: Authentication and Rate Limiting
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# OAuth2 Providers (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=https://your-domain.com/auth/google/callback
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_REDIRECT_URI=https://your-domain.com/auth/github/callback
+
+# Rate Limiting (Redis required)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+RATE_LIMIT_FREE_TIER=100
+RATE_LIMIT_PREMIUM_TIER=1000
+RATE_LIMIT_ADMIN_TIER=10000
+
+# Testing Mode (Development only)
+TEST_MODE=false
 ```
 
 **Security Best Practices:**
 - Use strong passwords (16+ characters, mixed case, numbers, symbols)
+- Generate secure JWT secret: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 - Enable SSL/TLS for production connections (`sslmode=require`)
 - Store credentials in secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
 - Restrict database access by IP address
 - Use read-only replicas for reporting queries
+- Never commit `.env` files to version control
+- Rotate JWT secrets periodically in production
 
 ### Step 3: Run Schema Migration
 
@@ -164,12 +192,12 @@ cd backend
 # Verify current migration status
 alembic current
 
-# Run migrations
+# Run migrations (includes Phase 17 authentication tables)
 alembic upgrade head
 
 # Verify migration success
 alembic current
-# Should show: 20250120_postgresql_compatibility (head)
+# Should show: 20260101_add_auth_tables_phase17 (head)
 ```
 
 **What This Does:**
@@ -180,6 +208,7 @@ alembic current
 - Sets up full-text search with tsvector columns
 - Creates triggers for automatic search vector updates
 - Adds optimized indexes for common query patterns
+- **Phase 17**: Creates users and oauth_accounts tables for authentication
 
 ### Step 4: Validate Schema
 

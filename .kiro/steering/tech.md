@@ -41,15 +41,16 @@
 **Event Bus**: In-memory, async, <1ms latency (p95)
 
 **Event Categories**:
-- Resource lifecycle: `resource.created`, `resource.updated`, `resource.deleted`
+- Resource lifecycle: `resource.created`, `resource.updated`, `resource.deleted`, `resource.chunked`
 - Collections: `collection.created`, `collection.resource_added`
 - Annotations: `annotation.created`, `annotation.updated`, `annotation.deleted`
 - Quality: `quality.computed`, `quality.outlier_detected`
 - Classification: `resource.classified`, `taxonomy.model_trained`
-- Graph: `citation.extracted`, `graph.updated`, `hypothesis.discovered`
+- Graph: `citation.extracted`, `graph.updated`, `hypothesis.discovered`, `graph.entity_extracted`, `graph.relationship_extracted`
 - Recommendations: `recommendation.generated`, `user.profile_updated`
 - Curation: `curation.reviewed`, `curation.approved`
 - Metadata: `metadata.extracted`, `equations.parsed`, `tables.extracted`
+- Advanced RAG: `resource.chunked`, `resource.chunking_failed`
 
 **Event Flow Example**:
 ```

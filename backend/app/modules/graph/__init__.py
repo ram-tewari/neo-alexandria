@@ -92,31 +92,26 @@ __all__ = [
     # Version and metadata
     "__version__",
     "__domain__",
-    
     # Routers
     "graph_router",
     "citations_router",
     "discovery_router",
-    
     # Services
     "GraphService",
     "AdvancedGraphService",
     "GraphEmbeddingsService",
     "CitationService",
     "LBDService",
-    
     # Service functions
     "find_hybrid_neighbors",
     "generate_global_overview",
     "cosine_similarity",
     "compute_hybrid_weight",
-    
     # Schemas - Graph
     "GraphNode",
     "GraphEdge",
     "GraphEdgeDetails",
     "KnowledgeGraph",
-    
     # Schemas - Citations
     "CitationBase",
     "CitationCreate",
@@ -128,7 +123,6 @@ __all__ = [
     "CitationExtractionResponse",
     "CitationResolutionResponse",
     "ImportanceComputationResponse",
-    
     # Schemas - Discovery
     "OpenDiscoveryHypothesis",
     "OpenDiscoveryResponse",
@@ -140,13 +134,11 @@ __all__ = [
     "HypothesisValidation",
     "HypothesisResponse",
     "HypothesesListResponse",
-    
     # Models
     "Citation",
     "GraphEdgeModel",
     "GraphEmbedding",
     "DiscoveryHypothesis",
-    
     # Event handlers
     "register_handlers",
 ]

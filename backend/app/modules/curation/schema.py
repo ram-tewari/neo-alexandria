@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field
 
 class ReviewQueueParams(BaseModel):
     """Parameters for review queue queries."""
-    
+
     threshold: Optional[float] = None
     include_unread_only: bool = False
     limit: int = Field(default=25, ge=1, le=100)
@@ -37,28 +37,28 @@ class ReviewQueueParams(BaseModel):
 
 class ReviewQueueResponse(BaseModel):
     """Response containing review queue items."""
-    
+
     items: List[Dict[str, Any]]  # Generic resource data
     total: int
 
 
 class BatchUpdateRequest(BaseModel):
     """Request for batch updating resources."""
-    
+
     resource_ids: List[uuid.UUID] = Field(min_length=1)
     updates: Dict[str, Any]  # Generic update data
 
 
 class BatchUpdateResult(BaseModel):
     """Result of batch update operation."""
-    
+
     updated_count: int
     failed_ids: List[uuid.UUID] = Field(default_factory=list)
 
 
 class QualityAnalysisResponse(BaseModel):
     """Detailed quality analysis for a resource."""
-    
+
     resource_id: str
     metadata_completeness: float
     readability: dict
@@ -71,20 +71,20 @@ class QualityAnalysisResponse(BaseModel):
 
 class LowQualityResponse(BaseModel):
     """Response containing low-quality resources."""
-    
+
     items: List[Dict[str, Any]]  # Generic resource data
     total: int
 
 
 class BulkQualityCheckRequest(BaseModel):
     """Request for bulk quality checking."""
-    
+
     resource_ids: List[str]
 
 
 class BatchReviewRequest(BaseModel):
     """Request for batch review operations."""
-    
+
     resource_ids: List[uuid.UUID] = Field(min_length=1)
     action: str = Field(pattern="^(approve|reject|flag)$")
     curator_id: str
@@ -93,21 +93,21 @@ class BatchReviewRequest(BaseModel):
 
 class BatchTagRequest(BaseModel):
     """Request for batch tagging operations."""
-    
+
     resource_ids: List[uuid.UUID] = Field(min_length=1)
     tags: List[str] = Field(min_length=1)
 
 
 class AssignCuratorRequest(BaseModel):
     """Request for curator assignment."""
-    
+
     resource_ids: List[uuid.UUID] = Field(min_length=1)
     curator_id: str
 
 
 class EnhancedReviewQueueParams(BaseModel):
     """Enhanced parameters for review queue queries."""
-    
+
     threshold: Optional[float] = None
     status: Optional[str] = None  # pending, approved, rejected, assigned
     assigned_curator: Optional[str] = None

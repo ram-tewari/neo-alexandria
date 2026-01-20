@@ -8,13 +8,13 @@ Can be invoked manually or via cron/scheduler.
 Usage:
     # Run all scheduled tasks
     python scripts/run_scheduled_tasks.py all
-    
+
     # Run outlier detection only
     python scripts/run_scheduled_tasks.py outlier-detection
-    
+
     # Run degradation monitoring only
     python scripts/run_scheduled_tasks.py degradation-monitoring
-    
+
     # Run with custom parameters
     python scripts/run_scheduled_tasks.py outlier-detection --batch-size 500
     python scripts/run_scheduled_tasks.py degradation-monitoring --time-window 60
@@ -22,7 +22,7 @@ Usage:
 Cron Examples:
     # Daily outlier detection at 2 AM
     0 2 * * * cd /path/to/backend && python scripts/run_scheduled_tasks.py outlier-detection
-    
+
     # Weekly degradation monitoring on Sundays at 3 AM
     0 3 * * 0 cd /path/to/backend && python scripts/run_scheduled_tasks.py degradation-monitoring
 """
@@ -48,33 +48,29 @@ def main():
     parser = argparse.ArgumentParser(
         description="Run Neo Alexandria scheduled quality monitoring tasks"
     )
-    
+
     parser.add_argument(
         "task",
         choices=["all", "outlier-detection", "degradation-monitoring"],
-        help="Task to run"
+        help="Task to run",
     )
-    
+
     parser.add_argument(
         "--batch-size",
         type=int,
-        help="Batch size for outlier detection (default: 1000)"
+        help="Batch size for outlier detection (default: 1000)",
     )
-    
+
     parser.add_argument(
         "--time-window",
         type=int,
-        help="Time window in days for degradation monitoring (default: 30)"
+        help="Time window in days for degradation monitoring (default: 30)",
     )
-    
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output results as JSON"
-    )
-    
+
+    parser.add_argument("--json", action="store_true", help="Output results as JSON")
+
     args = parser.parse_args()
-    
+
     # Run the requested task
     if args.task == "all":
         results = run_all_scheduled_tasks()
@@ -85,7 +81,7 @@ def main():
     else:
         print(f"Unknown task: {args.task}", file=sys.stderr)
         sys.exit(1)
-    
+
     # Output results
     if args.json:
         print(json.dumps(results, indent=2))

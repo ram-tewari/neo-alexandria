@@ -18,18 +18,20 @@ from ...shared.database import get_sync_db
 from .service import AuthorityControl, PersonalClassification
 
 
-router = APIRouter(prefix="/authority", tags=["authority"]) 
+router = APIRouter(prefix="/authority", tags=["authority"])
 
 
 @router.get("/subjects/suggest", response_model=list[str])
-def suggest_subjects(q: str = Query(..., min_length=1), db: Session = Depends(get_sync_db)):
+def suggest_subjects(
+    q: str = Query(..., min_length=1), db: Session = Depends(get_sync_db)
+):
     """
     Get subject suggestions based on partial input.
-    
+
     Args:
         q: Partial subject string (minimum 1 character)
         db: Database session
-        
+
     Returns:
         List of suggested subject strings
     """
@@ -41,10 +43,10 @@ def suggest_subjects(q: str = Query(..., min_length=1), db: Session = Depends(ge
 def get_classification_tree(db: Session = Depends(get_sync_db)):
     """
     Get hierarchical classification tree.
-    
+
     Args:
         db: Database session
-        
+
     Returns:
         Dictionary with classification tree structure
     """

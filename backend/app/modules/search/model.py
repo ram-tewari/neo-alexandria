@@ -1,8 +1,11 @@
 """
 Search Module Models
 
-Search module does not have dedicated database models.
-Search operates on Resource models from other modules.
+This module re-exports Search models from the central database.models module.
+All model definitions are in app/database/models.py to avoid circular imports.
 """
 
-pass
+# Re-export models from central database.models
+from ...database.models import SyntheticQuestion
+
+__all__ = ["SyntheticQuestion"]

@@ -59,7 +59,12 @@ class Summarizer:
         self._ensure_loaded()
         if self._pipe is not None:
             try:
-                result = self._pipe(text, max_length=self.max_length, min_length=self.min_length, do_sample=False)
+                result = self._pipe(
+                    text,
+                    max_length=self.max_length,
+                    min_length=self.min_length,
+                    do_sample=False,
+                )
                 if isinstance(result, list) and result:
                     summary_text = result[0].get("summary_text") or ""
                     return summary_text.strip()
@@ -108,7 +113,9 @@ class ZeroShotTagger:
             "Economics",
             "History",
         ]
-        self.candidate_labels: List[str] = list(candidate_labels) if candidate_labels else default_candidates
+        self.candidate_labels: List[str] = (
+            list(candidate_labels) if candidate_labels else default_candidates
+        )
 
     def _ensure_loaded(self):
         if self._pipe is None:
@@ -164,19 +171,19 @@ class AICore:
     """
 
     def __init__(
-        self, 
-        summarizer: Optional[Summarizer] = None, 
-        tagger: Optional[ZeroShotTagger] = None
+        self,
+        summarizer: Optional[Summarizer] = None,
+        tagger: Optional[ZeroShotTagger] = None,
     ) -> None:
         self.summarizer = summarizer or Summarizer()
         self.tagger = tagger or ZeroShotTagger()
 
     def summarize(self, text: str) -> str:
         """Generate a summary of the given text.
-        
+
         Args:
             text: Input text to summarize
-            
+
         Returns:
             Summary text
         """
@@ -184,24 +191,26 @@ class AICore:
 
     def generate_tags(self, text: str) -> List[str]:
         """Generate tags for the given text using zero-shot classification.
-        
+
         Args:
             text: Input text to tag
-            
+
         Returns:
             List of tag strings
         """
         return self.tagger.generate_tags(text)
-    
-    def classify_text(self, text: str, candidate_labels: Optional[List[str]] = None) -> List[str]:
+
+    def classify_text(
+        self, text: str, candidate_labels: Optional[List[str]] = None
+    ) -> List[str]:
         """Classify text into one or more categories.
-        
+
         This is an alias for generate_tags with optional custom labels.
-        
+
         Args:
             text: Input text to classify
             candidate_labels: Optional list of candidate labels
-            
+
         Returns:
             List of classification labels
         """
@@ -211,19 +220,19 @@ class AICore:
                 model_name=self.tagger.model_name,
                 candidate_labels=candidate_labels,
                 multi_label=self.tagger.multi_label,
-                threshold=self.tagger.threshold
+                threshold=self.tagger.threshold,
             )
             return temp_tagger.generate_tags(text)
         return self.generate_tags(text)
-    
+
     def extract_entities(self, text: str) -> List[dict]:
         """Extract named entities from text.
-        
+
         This is a placeholder for future entity extraction functionality.
-        
+
         Args:
             text: Input text
-            
+
         Returns:
             List of entity dictionaries with 'text', 'type', and 'score' keys
         """

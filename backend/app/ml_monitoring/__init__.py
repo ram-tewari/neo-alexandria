@@ -20,5 +20,5 @@ __all__ = [
     "check_classification_model_health",
     "JSONFormatter",
     "configure_json_logging",
-    "log_with_context"
+    "log_with_context",
 ]

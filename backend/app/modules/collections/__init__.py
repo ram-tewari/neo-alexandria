@@ -31,31 +31,34 @@ from .schema import (
     CollectionResourcesUpdate,
     CollectionRecommendation,
     CollectionRecommendationsResponse,
-    ResourceSummary
+    ResourceSummary,
 )
+
 
 # Lazy imports to avoid model conflicts
 def __getattr__(name):
     """Lazy import to avoid model conflicts during migration phase."""
     if name == "collections_router":
         from .router import router
+
         return router
     elif name == "CollectionService":
         from .service import CollectionService
+
         return CollectionService
     elif name == "register_handlers":
         from .handlers import register_handlers
+
         return register_handlers
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 # Public exports
 __all__ = [
     # Router
     "collections_router",
-    
     # Service
     "CollectionService",
-    
     # Schemas
     "CollectionCreate",
     "CollectionUpdate",
@@ -65,7 +68,6 @@ __all__ = [
     "CollectionRecommendation",
     "CollectionRecommendationsResponse",
     "ResourceSummary",
-    
     # Event handlers
     "register_handlers",
 ]

@@ -15,7 +15,7 @@ def test_test_database_url_optional():
     settings = get_settings()
     # TEST_DATABASE_URL should be None if not set in environment
     # (it may be set in .env file, so we just check it's accessible)
-    assert hasattr(settings, 'TEST_DATABASE_URL')
+    assert hasattr(settings, "TEST_DATABASE_URL")
 
 
 def test_test_db_fixture_uses_test_database_url(test_db, monkeypatch):
@@ -24,26 +24,27 @@ def test_test_db_fixture_uses_test_database_url(test_db, monkeypatch):
     # The actual TEST_DATABASE_URL usage is tested by setting it in environment
     TestingSessionLocal = test_db
     session = TestingSessionLocal()
-    
+
     # Verify we can create a session
     assert session is not None
-    
+
     # Verify the session is connected to a database
     from backend.app.database.models import Resource
+
     result = session.query(Resource).count()
     assert result >= 0  # Should return 0 or more (empty database is fine)
-    
+
     session.close()
 
 
 def test_environment_specific_settings():
     """Test that environment-specific settings are accessible."""
     settings = get_settings()
-    
+
     # Verify all database-related settings are accessible
-    assert hasattr(settings, 'DATABASE_URL')
-    assert hasattr(settings, 'TEST_DATABASE_URL')
-    assert hasattr(settings, 'ENV')
-    
+    assert hasattr(settings, "DATABASE_URL")
+    assert hasattr(settings, "TEST_DATABASE_URL")
+    assert hasattr(settings, "ENV")
+
     # Verify ENV is one of the allowed values
-    assert settings.ENV in ['dev', 'staging', 'prod']
+    assert settings.ENV in ["dev", "staging", "prod"]

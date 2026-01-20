@@ -20,8 +20,9 @@ Neo Alexandria 2.0 is an advanced knowledge management system that combines trad
 
 ### Advanced Discovery
 - Hybrid search combining keyword and semantic approaches
+- Advanced RAG with parent-child chunking and GraphRAG retrieval
 - Knowledge graph for relationship exploration
-- Citation network analysis
+- Citation network analysis and contradiction discovery
 - Personalized recommendations
 
 ### Active Reading & Annotation
@@ -68,13 +69,14 @@ Neo Alexandria 2.0 is an advanced knowledge management system that combines trad
 
 ## Roadmap Themes
 
-### Current Focus (Phase 13-14)
-- PostgreSQL migration for production scalability
-- Test suite stabilization
-- Vertical slice architecture refactoring
-- Frontend-backend integration
+### Current Focus (Phase 17-17.5)
+- Production hardening with authentication and rate limiting
+- Advanced RAG architecture with parent-child chunking
+- Knowledge graph extraction and GraphRAG retrieval
+- RAG evaluation metrics and quality tracking
 
-### Near-term (Next 3-6 months)
+### Near-term (Phase 18+)
+- Code repository analysis and AST-based chunking
 - Enhanced ML classification with active learning
 - Advanced graph intelligence features
 - Improved recommendation algorithms

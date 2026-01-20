@@ -66,29 +66,36 @@ raw_env = [
 # keyfile = "/path/to/keyfile"
 # certfile = "/path/to/certfile"
 
+
 def when_ready(server):
     """Called just after the server is started."""
     server.log.info("Neo Alexandria 2.0 server is ready. Workers: %s", workers)
+
 
 def worker_int(worker):
     """Called just after a worker has been forked."""
     worker.log.info("Worker spawned (pid: %s)", worker.pid)
 
+
 def pre_fork(server, worker):
     """Called just before a worker is forked."""
     server.log.info("Worker will be spawned")
+
 
 def post_fork(server, worker):
     """Called just after a worker has been forked."""
     server.log.info("Worker spawned (pid: %s)", worker.pid)
 
+
 def worker_abort(worker):
     """Called when a worker receives the SIGABRT signal."""
     worker.log.info("Worker received SIGABRT signal")
 
+
 def on_exit(server):
     """Called just before exiting."""
     server.log.info("Neo Alexandria 2.0 server is shutting down")
+
 
 def on_reload(server):
     """Called to recycle workers during a reload via SIGHUP."""

@@ -2,57 +2,44 @@
 Taxonomy Schemas
 
 Pydantic schemas for taxonomy and classification requests/responses.
-Placeholder - will be populated by moving schemas from app/schemas/
 """
 
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
 
-class TaxonomyNodeCreate(BaseModel):
-    """Schema for creating a taxonomy node"""
-    pass
+class CategoryCreate(BaseModel):
+    """Schema for creating a category."""
+
+    name: str
+    description: Optional[str] = None
+    parent_id: Optional[str] = None
+    allow_resources: bool = True
 
 
-class TaxonomyNodeUpdate(BaseModel):
-    """Schema for updating a taxonomy node"""
-    pass
+class CategoryResponse(BaseModel):
+    """Schema for category response."""
+
+    id: str
+    name: str
+    slug: str
+    parent_id: Optional[str] = None
+    level: int
+    path: str
+    description: Optional[str] = None
+    allow_resources: bool
 
 
-class TaxonomyNodeResponse(BaseModel):
-    """Schema for taxonomy node response"""
-    pass
+class ClassifyRequest(BaseModel):
+    """Schema for classification request."""
+
+    resource_id: str
+    text: str
 
 
-class TaxonomyTreeResponse(BaseModel):
-    """Schema for taxonomy tree response"""
-    pass
+class UncertaintyResponse(BaseModel):
+    """Schema for uncertain predictions response."""
 
-
-class ClassificationRequest(BaseModel):
-    """Schema for classification request"""
-    pass
-
-
-class ClassificationResponse(BaseModel):
-    """Schema for classification response"""
-    pass
-
-
-class TrainingRequest(BaseModel):
-    """Schema for model training request"""
-    pass
-
-
-class TrainingResponse(BaseModel):
-    """Schema for model training response"""
-    pass
-
-
-class ActiveLearningRequest(BaseModel):
-    """Schema for active learning request"""
-    pass
-
-
-class ActiveLearningResponse(BaseModel):
-    """Schema for active learning response"""
-    pass
+    threshold: float
+    count: int
+    resource_ids: List[str]

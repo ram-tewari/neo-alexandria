@@ -6,6 +6,6 @@ All model definitions are in app/database/models.py to avoid circular imports.
 """
 
 # Re-export models from central database.models
-from ...database.models import Resource
+from ...database.models import Resource, DocumentChunk
 
-__all__ = ["Resource"]
+__all__ = ["Resource", "DocumentChunk"]

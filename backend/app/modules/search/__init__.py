@@ -33,7 +33,7 @@ from ...modules.search.schema import (
     EvaluationResults,
     EvaluationMetrics,
     BatchSparseEmbeddingRequest,
-    BatchSparseEmbeddingResponse
+    BatchSparseEmbeddingResponse,
 )
 from ...modules.search.handlers import register_handlers
 
@@ -41,10 +41,8 @@ from ...modules.search.handlers import register_handlers
 __all__ = [
     # Router
     "search_router",
-    
     # Service
     "SearchService",
-    
     # Schemas
     "SearchQuery",
     "SearchResults",
@@ -60,11 +58,9 @@ __all__ = [
     "EvaluationMetrics",
     "BatchSparseEmbeddingRequest",
     "BatchSparseEmbeddingResponse",
-    
     # Event handlers
     "register_handlers",
-    
     # Metadata
     "__version__",
-    "__domain__"
+    "__domain__",
 ]

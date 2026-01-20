@@ -9,12 +9,108 @@ Production: https://your-domain.com/api
 
 ## Authentication
 
-Currently, no authentication is required for development and testing.
+**Phase 17 Implementation**: JWT-based authentication with OAuth2 support
 
-**Future Authentication (Planned):**
-- API Key in `Authorization` header: `Authorization: Bearer <api_key>`
-- Rate limiting: 1000 requests/hour per API key
-- Ingestion limits: 100 requests/hour per API key
+### Authentication Methods
+
+#### 1. JWT Bearer Token (Primary)
+
+All protected endpoints require a JWT access token in the `Authorization` header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  http://127.0.0.1:8000/resources
+```
+
+#### 2. OAuth2 Password Flow
+
+Obtain tokens via username/password:
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user@example.com&password=yourpassword"
+```
+
+Response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800
+}
+```
+
+#### 3. OAuth2 Social Login
+
+Authenticate via Google or GitHub:
+
+```bash
+# Initiate Google OAuth2 flow
+GET http://127.0.0.1:8000/auth/google
+
+# Initiate GitHub OAuth2 flow
+GET http://127.0.0.1:8000/auth/github
+```
+
+After authorization, you'll be redirected to the callback URL with tokens.
+
+### Token Management
+
+**Access Token:**
+- Expires in 30 minutes (default)
+- Used for API requests
+- Short-lived for security
+
+**Refresh Token:**
+- Expires in 7 days (default)
+- Used to obtain new access tokens
+- Longer-lived for convenience
+
+**Refresh Access Token:**
+```bash
+curl -X POST http://127.0.0.1:8000/auth/refresh \
+  -H "Authorization: Bearer <refresh_token>"
+```
+
+**Logout (Revoke Token):**
+```bash
+curl -X POST http://127.0.0.1:8000/auth/logout \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### Public Endpoints (No Authentication Required)
+
+The following endpoints are publicly accessible:
+
+- `POST /auth/login` - User login
+- `POST /auth/refresh` - Token refresh
+- `GET /auth/google` - Google OAuth2 initiation
+- `GET /auth/google/callback` - Google OAuth2 callback
+- `GET /auth/github` - GitHub OAuth2 initiation
+- `GET /auth/github/callback` - GitHub OAuth2 callback
+- `GET /docs` - API documentation
+- `GET /openapi.json` - OpenAPI schema
+- `GET /monitoring/health` - Health check
+
+All other endpoints require authentication.
+
+### Test Mode
+
+For development and testing, you can bypass authentication:
+
+```bash
+# In .env file
+TEST_MODE=true
+```
+
+**Warning:** Never enable TEST_MODE in production!
 
 ## Content Types
 
@@ -57,10 +153,40 @@ Content-Type: application/json
 | 202 | Accepted - Request accepted for processing |
 | 204 | No Content - Successful deletion |
 | 400 | Bad Request - Invalid request parameters |
-| 403 | Forbidden - Access denied |
+| 401 | Unauthorized - Missing or invalid authentication token |
+| 403 | Forbidden - Insufficient permissions |
 | 404 | Not Found - Resource not found |
 | 422 | Unprocessable Entity - Validation error |
+| 429 | Too Many Requests - Rate limit exceeded |
 | 500 | Internal Server Error - Server error |
+
+### Authentication Error Responses
+
+**401 Unauthorized:**
+```json
+{
+  "detail": "Invalid authentication credentials",
+  "error_code": "INVALID_TOKEN"
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "detail": "Insufficient permissions for this operation",
+  "error_code": "FORBIDDEN"
+}
+```
+
+**429 Too Many Requests:**
+```json
+{
+  "detail": "Rate limit exceeded. Try again in 3600 seconds.",
+  "error_code": "RATE_LIMIT_EXCEEDED"
+}
+```
+
+Response includes rate limit headers (see Rate Limiting section).
 
 ## Pagination
 
@@ -107,13 +233,65 @@ Common sort fields: `created_at`, `updated_at`, `quality_score`, `title`, `relev
 
 ## Rate Limiting
 
-**Current**: No rate limits enforced
+**Phase 17 Implementation**: Tiered rate limiting with Redis-backed sliding window algorithm
 
-**Planned**:
-- General API: 1000 requests per hour per API key
-- Ingestion: 100 requests per hour per API key
-- Search: 500 requests per hour per API key
-- Burst Allowance: 50 requests per minute for short-term spikes
+### Rate Limit Tiers
+
+| Tier | Requests per Hour | Use Case |
+|------|-------------------|----------|
+| Free | 100 | Development, personal use |
+| Premium | 1,000 | Professional use, small teams |
+| Admin | 10,000 | System administrators, automation |
+
+Rate limits are enforced per user based on the `tier` claim in the JWT token.
+
+### Rate Limit Headers
+
+All API responses include rate limit information:
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 847
+X-RateLimit-Reset: 1704067200
+```
+
+**Header Descriptions:**
+- `X-RateLimit-Limit`: Maximum requests allowed in the current window
+- `X-RateLimit-Remaining`: Requests remaining in the current window
+- `X-RateLimit-Reset`: Unix timestamp when the rate limit resets
+
+### Rate Limit Exceeded
+
+When rate limit is exceeded, the API returns HTTP 429:
+
+```json
+{
+  "detail": "Rate limit exceeded. Try again in 3600 seconds.",
+  "error_code": "RATE_LIMIT_EXCEEDED"
+}
+```
+
+Response includes `Retry-After` header:
+```
+Retry-After: 3600
+```
+
+### Excluded Endpoints
+
+The following endpoints are excluded from rate limiting:
+- `GET /monitoring/health` - Health check
+
+### Graceful Degradation
+
+If Redis is unavailable, rate limiting fails open (allows requests) to maintain service availability. Monitor logs for Redis connectivity issues.
+
+### Best Practices
+
+1. **Monitor Headers**: Check `X-RateLimit-Remaining` to avoid hitting limits
+2. **Implement Backoff**: Use exponential backoff when receiving 429 responses
+3. **Cache Responses**: Cache API responses to reduce request volume
+4. **Batch Operations**: Use batch endpoints when available
+5. **Upgrade Tier**: Contact support for higher rate limits if needed
 
 ## API Endpoints by Domain
 
@@ -121,6 +299,7 @@ Neo Alexandria 2.0 uses a modular architecture where each domain is implemented 
 
 | Module | Description | Documentation |
 |--------|-------------|---------------|
+| Auth | JWT authentication and OAuth2 | [auth.md](auth.md) |
 | Resources | Content management and ingestion | [resources.md](resources.md) |
 | Search | Hybrid search with vector and FTS | [search.md](search.md) |
 | Collections | Collection management and sharing | [collections.md](collections.md) |
@@ -217,10 +396,21 @@ import requests
 from app.modules.resources.schema import ResourceCreate
 from app.modules.search.schema import SearchRequest
 
+# Authenticate and get token
+auth_response = requests.post(
+    "http://127.0.0.1:8000/auth/login",
+    data={"username": "user@example.com", "password": "password"}
+)
+token = auth_response.json()["access_token"]
+
+# Set up headers with authentication
+headers = {"Authorization": f"Bearer {token}"}
+
 # Ingest a resource
 response = requests.post(
     "http://127.0.0.1:8000/resources",
-    json={"url": "https://example.com/article"}
+    json={"url": "https://example.com/article"},
+    headers=headers
 )
 
 # Search resources
@@ -230,8 +420,12 @@ response = requests.post(
         "text": "machine learning",
         "hybrid_weight": 0.7,
         "limit": 10
-    }
+    },
+    headers=headers
 )
+
+# Check rate limit status
+print(f"Remaining requests: {response.headers.get('X-RateLimit-Remaining')}")
 
 # Create a collection
 response = requests.post(
@@ -239,24 +433,42 @@ response = requests.post(
     json={
         "name": "ML Papers",
         "description": "Machine learning research papers"
-    }
+    },
+    headers=headers
 )
 ```
 
 ### JavaScript
 
 ```javascript
+// Authenticate and get token
+const authResponse = await fetch('http://127.0.0.1:8000/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: new URLSearchParams({
+    username: 'user@example.com',
+    password: 'password'
+  })
+});
+const { access_token } = await authResponse.json();
+
+// Set up headers with authentication
+const headers = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${access_token}`
+};
+
 // Ingest a resource
 const response = await fetch('http://127.0.0.1:8000/resources', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers,
   body: JSON.stringify({ url: 'https://example.com/article' })
 });
 
 // Search resources
 const searchResponse = await fetch('http://127.0.0.1:8000/search', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers,
   body: JSON.stringify({
     text: 'machine learning',
     hybrid_weight: 0.7,
@@ -264,10 +476,13 @@ const searchResponse = await fetch('http://127.0.0.1:8000/search', {
   })
 });
 
+// Check rate limit status
+console.log('Remaining requests:', searchResponse.headers.get('X-RateLimit-Remaining'));
+
 // Create a collection
 const collectionResponse = await fetch('http://127.0.0.1:8000/collections', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers,
   body: JSON.stringify({
     name: 'ML Papers',
     description: 'Machine learning research papers'

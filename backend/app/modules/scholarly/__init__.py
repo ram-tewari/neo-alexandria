@@ -28,7 +28,7 @@ from .schema import (
     ScholarlyMetadataResponse,
     MetadataExtractionRequest,
     MetadataExtractionResponse,
-    MetadataCompletenessStats
+    MetadataCompletenessStats,
 )
 from .handlers import register_handlers
 

@@ -23,28 +23,71 @@ import asyncio
 import os
 from typing import Callable, Any
 from functools import wraps
-
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
-from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse
+
+# Lazy imports for prometheus to avoid blocking
+_prometheus_imported = False
+_Counter = None
+_Histogram = None
+_Gauge = None
+_generate_latest = None
+_REGISTRY = None
+_Instrumentator = None
+_metrics = None
+
+
+def _ensure_prometheus_imported():
+    """Lazy import of prometheus_client to avoid blocking on module load."""
+    global \
+        _prometheus_imported, \
+        _Counter, \
+        _Histogram, \
+        _Gauge, \
+        _generate_latest, \
+        _REGISTRY, \
+        _Instrumentator, \
+        _metrics
+
+    if not _prometheus_imported:
+        from prometheus_client import (
+            Counter,
+            Histogram,
+            Gauge,
+            generate_latest,
+            REGISTRY,
+        )
+        from prometheus_fastapi_instrumentator import (
+            Instrumentator,
+            metrics as prom_metrics,
+        )
+
+        _Counter = Counter
+        _Histogram = Histogram
+        _Gauge = Gauge
+        _generate_latest = generate_latest
+        _REGISTRY = REGISTRY
+        _Instrumentator = Instrumentator
+        _metrics = prom_metrics
+        _prometheus_imported = True
 
 
 # ============================================================================
 # Test Environment Detection
 # ============================================================================
 
+
 def is_test_environment() -> bool:
     """
     Check if we're running in a test environment.
-    
+
     Returns:
         True if running tests, False otherwise
     """
     return (
-        os.getenv("TESTING", "false").lower() == "true" or
-        os.getenv("PYTEST_CURRENT_TEST") is not None or
-        "pytest" in os.getenv("_", "")
+        os.getenv("TESTING", "false").lower() == "true"
+        or os.getenv("PYTEST_CURRENT_TEST") is not None
+        or "pytest" in os.getenv("_", "")
     )
 
 
@@ -52,62 +95,71 @@ def is_test_environment() -> bool:
 # NoOp Metrics for Testing
 # ============================================================================
 
+
 class NoOpMetric:
     """No-operation metric that does nothing (for testing)."""
-    
+
     def __init__(self, *args, **kwargs):
         pass
-    
+
     def inc(self, *args, **kwargs):
         """No-op increment."""
         pass
-    
+
     def dec(self, *args, **kwargs):
         """No-op decrement."""
         pass
-    
+
     def observe(self, *args, **kwargs):
         """No-op observe."""
         pass
-    
+
     def labels(self, *args, **kwargs):
         """Return self for chaining."""
         return self
-    
+
     def set(self, *args, **kwargs):
         """No-op set."""
         pass
 
 
 # Custom Prometheus metrics - use NoOp metrics in test environment
-def _get_or_create_metric(metric_class, name, description, labelnames=None):
+def _get_or_create_metric(metric_class_name, name, description, labelnames=None):
     """
     Get existing metric or create new one, preventing duplicates.
-    
+
     In test environments, returns NoOpMetric instead of real Prometheus metrics
     to avoid registration conflicts and improve test performance.
-    
+
     Args:
-        metric_class: Prometheus metric class (Counter, Histogram, Gauge)
+        metric_class_name: Name of metric class ("Counter", "Histogram", "Gauge")
         name: Metric name
         description: Metric description
         labelnames: Optional list of label names
-        
+
     Returns:
         Prometheus metric or NoOpMetric (in test environment)
     """
     # Use NoOp metrics in test environment
     if is_test_environment():
         return NoOpMetric(name, description, labelnames)
-    
+
+    # Lazy import prometheus
+    _ensure_prometheus_imported()
+
+    # Get the metric class
+    metric_class = {"Counter": _Counter, "Histogram": _Histogram, "Gauge": _Gauge}[
+        metric_class_name
+    ]
+
     # Try to get existing metric from registry
     try:
-        existing = REGISTRY._names_to_collectors.get(name)
+        existing = _REGISTRY._names_to_collectors.get(name)
         if existing:
             return existing
     except Exception:
         pass
-    
+
     # Create new metric
     try:
         if labelnames:
@@ -116,7 +168,7 @@ def _get_or_create_metric(metric_class, name, description, labelnames=None):
             return metric_class(name, description)
     except ValueError:
         # Metric already exists, get it from registry
-        existing = REGISTRY._names_to_collectors.get(name)
+        existing = _REGISTRY._names_to_collectors.get(name)
         if existing:
             return existing
         # If still not found, return NoOp to prevent errors
@@ -124,78 +176,79 @@ def _get_or_create_metric(metric_class, name, description, labelnames=None):
 
 
 REQUEST_DURATION = _get_or_create_metric(
-    Histogram,
-    'neo_alexandria_request_duration_seconds',
-    'Request duration in seconds',
-    ['method', 'endpoint', 'status_code']
+    "Histogram",
+    "neo_alexandria_request_duration_seconds",
+    "Request duration in seconds",
+    ["method", "endpoint", "status_code"],
 )
 
 REQUEST_COUNT = _get_or_create_metric(
-    Counter,
-    'neo_alexandria_requests_total',
-    'Total number of requests',
-    ['method', 'endpoint', 'status_code']
+    "Counter",
+    "neo_alexandria_requests_total",
+    "Total number of requests",
+    ["method", "endpoint", "status_code"],
 )
 
 INGESTION_SUCCESS = _get_or_create_metric(
-    Counter,
-    'neo_alexandria_ingestion_success_total',
-    'Total successful resource ingestions'
+    "Counter",
+    "neo_alexandria_ingestion_success_total",
+    "Total successful resource ingestions",
 )
 
 INGESTION_FAILURE = _get_or_create_metric(
-    Counter,
-    'neo_alexandria_ingestion_failure_total',
-    'Total failed resource ingestions',
-    ['error_type']
+    "Counter",
+    "neo_alexandria_ingestion_failure_total",
+    "Total failed resource ingestions",
+    ["error_type"],
 )
 
 AI_PROCESSING_TIME = _get_or_create_metric(
-    Histogram,
-    'neo_alexandria_ai_processing_seconds',
-    'AI processing time in seconds',
-    ['operation']
+    "Histogram",
+    "neo_alexandria_ai_processing_seconds",
+    "AI processing time in seconds",
+    ["operation"],
 )
 
 DATABASE_QUERY_TIME = _get_or_create_metric(
-    Histogram,
-    'neo_alexandria_database_query_seconds',
-    'Database query execution time in seconds',
-    ['operation']
+    "Histogram",
+    "neo_alexandria_database_query_seconds",
+    "Database query execution time in seconds",
+    ["operation"],
 )
 
 ACTIVE_INGESTIONS = _get_or_create_metric(
-    Gauge,
-    'neo_alexandria_active_ingestions',
-    'Number of currently active ingestion processes'
+    "Gauge",
+    "neo_alexandria_active_ingestions",
+    "Number of currently active ingestion processes",
 )
 
 CACHE_HITS = _get_or_create_metric(
-    Counter,
-    'neo_alexandria_cache_hits_total',
-    'Total cache hits',
-    ['cache_type']
+    "Counter", "neo_alexandria_cache_hits_total", "Total cache hits", ["cache_type"]
 )
 
 CACHE_MISSES = _get_or_create_metric(
-    Counter,
-    'neo_alexandria_cache_misses_total',
-    'Total cache misses',
-    ['cache_type']
+    "Counter", "neo_alexandria_cache_misses_total", "Total cache misses", ["cache_type"]
 )
 
 
-def setup_monitoring(app) -> Instrumentator:
+def setup_monitoring(app):
     """
     Set up Prometheus monitoring for the FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
-        
+
     Returns:
-        Instrumentator: Configured Prometheus instrumentator
+        Instrumentator: Configured Prometheus instrumentator or None in test mode
     """
-    instrumentator = Instrumentator(
+    # Skip monitoring setup in test environment
+    if is_test_environment():
+        return None
+
+    # Lazy import prometheus
+    _ensure_prometheus_imported()
+
+    instrumentator = _Instrumentator(
         should_group_status_codes=False,
         should_ignore_untemplated=True,
         should_respect_env_var=True,
@@ -205,32 +258,31 @@ def setup_monitoring(app) -> Instrumentator:
         inprogress_name="neo_alexandria_inprogress",
         inprogress_labels=True,
     )
-    
+
     # Add custom metrics
-    instrumentator.add(metrics.default())
-    
+    instrumentator.add(_metrics.default())
+
     # Add custom business metrics
     instrumentator.add(custom_metrics)
-    
+
     # Instrument the app
     instrumentator.instrument(app)
-    
+
     # Add metrics endpoint
     @app.get("/metrics")
     async def metrics_endpoint():
         """Prometheus metrics endpoint."""
         return PlainTextResponse(
-            generate_latest(),
-            media_type="text/plain; version=0.0.4; charset=utf-8"
+            _generate_latest(), media_type="text/plain; version=0.0.4; charset=utf-8"
         )
-    
+
     return instrumentator
 
 
 def custom_metrics(request: Request, response: Response) -> None:
     """
     Add custom metrics for business logic tracking.
-    
+
     Args:
         request: FastAPI request object
         response: FastAPI response object
@@ -239,23 +291,24 @@ def custom_metrics(request: Request, response: Response) -> None:
     REQUEST_DURATION.labels(
         method=request.method,
         endpoint=request.url.path,
-        status_code=response.status_code
+        status_code=response.status_code,
     ).observe(0)  # Duration is handled by default metrics
-    
+
     REQUEST_COUNT.labels(
         method=request.method,
         endpoint=request.url.path,
-        status_code=response.status_code
+        status_code=response.status_code,
     ).inc()
 
 
 def track_ai_processing(operation: str):
     """
     Decorator to track AI processing time.
-    
+
     Args:
         operation: The AI operation being performed ('summarize', 'tag', 'classify')
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def async_wrapper(*args, **kwargs) -> Any:
@@ -266,7 +319,7 @@ def track_ai_processing(operation: str):
             finally:
                 duration = time.time() - start_time
                 AI_PROCESSING_TIME.labels(operation=operation).observe(duration)
-        
+
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
@@ -276,18 +329,20 @@ def track_ai_processing(operation: str):
             finally:
                 duration = time.time() - start_time
                 AI_PROCESSING_TIME.labels(operation=operation).observe(duration)
-        
+
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
     return decorator
 
 
 def track_database_query(operation: str):
     """
     Decorator to track database query performance.
-    
+
     Args:
         operation: The database operation being performed ('select', 'insert', 'update', 'delete')
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def async_wrapper(*args, **kwargs) -> Any:
@@ -298,7 +353,7 @@ def track_database_query(operation: str):
             finally:
                 duration = time.time() - start_time
                 DATABASE_QUERY_TIME.labels(operation=operation).observe(duration)
-        
+
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
             start_time = time.time()
@@ -308,8 +363,9 @@ def track_database_query(operation: str):
             finally:
                 duration = time.time() - start_time
                 DATABASE_QUERY_TIME.labels(operation=operation).observe(duration)
-        
+
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
     return decorator
 
 
@@ -321,7 +377,7 @@ def track_ingestion_success():
 def track_ingestion_failure(error_type: str):
     """
     Track failed resource ingestion.
-    
+
     Args:
         error_type: Type of error that caused the failure
     """
@@ -331,7 +387,7 @@ def track_ingestion_failure(error_type: str):
 def track_cache_hit(cache_type: str):
     """
     Track cache hit.
-    
+
     Args:
         cache_type: Type of cache ('ai_model', 'classification', 'quality')
     """
@@ -341,7 +397,7 @@ def track_cache_hit(cache_type: str):
 def track_cache_miss(cache_type: str):
     """
     Track cache miss.
-    
+
     Args:
         cache_type: Type of cache ('ai_model', 'classification', 'quality')
     """

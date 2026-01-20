@@ -4,6 +4,302 @@ All notable changes to Neo Alexandria 2.0 are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-05 - Phase 18: Code Intelligence Pipeline
+
+### Added
+- **Code Repository Ingestion**
+  - Local directory scanning with recursive file discovery
+  - Git repository cloning from HTTPS/SSH URLs
+  - .gitignore parsing and compliance using pathspec library
+  - Binary file detection and exclusion (null byte check)
+  - Repository metadata storage (repo_root, commit_hash, branch)
+  - Async ingestion via Celery with progress tracking
+  - Batch processing (50 files per transaction)
+  - API endpoints: POST /resources/ingest-repo, GET /resources/ingest-repo/{task_id}/status
+
+- **File Classification System**
+  - PRACTICE classification for code files (.py, .js, .ts, .rs, .go, .java)
+  - THEORY classification for academic documents (.pdf, .md with keywords)
+  - GOVERNANCE classification for policy files (CONTRIBUTING.md, CODE_OF_CONDUCT.md, .eslintrc)
+  - Automatic classification during ingestion
+
+- **AST-Based Code Chunking**
+  - Tree-Sitter integration for 6 languages (Python, JavaScript, TypeScript, Rust, Go, Java)
+  - Logical unit extraction (functions, classes, methods)
+  - Chunk metadata: function_name, class_name, start_line, end_line, language, type
+  - Fallback to character-based chunking on parse errors
+  - CodeChunkingStrategy in ChunkingService
+  - Performance: <2s per file (P95) for AST parsing
+
+- **Static Analysis Service**
+  - StaticAnalysisService for code relationship extraction
+  - Import statement extraction (IMPORTS relationships)
+  - Function/class definition detection (DEFINES relationships)
+  - Function call detection (CALLS relationships)
+  - Relationship metadata: source_file, target_symbol, line_number, confidence
+  - No code execution (static analysis only)
+  - Performance: <1s per file (P95) for static analysis
+
+- **Code Graph Relationships**
+  - IMPORTS: Module/file imports another module/file
+  - DEFINES: File defines a function, class, or variable
+  - CALLS: Function calls another function
+  - Integration with existing graph infrastructure
+  - Provenance tracking to source code chunks
+  - Graph traversal for dependency analysis
+
+- **Comprehensive Documentation**
+  - `backend/docs/guides/code-ingestion.md` - Complete code ingestion guide
+  - Updated `backend/docs/api/resources.md` with repository ingestion endpoints
+  - Updated `backend/docs/api/graph.md` with code relationship types
+  - Updated `backend/docs/architecture/modules.md` with code intelligence pipeline diagram
+  - Updated `backend/docs/index.md` with code ingestion guide link
+
+### Changed
+- **Resources Module**: Enhanced with repository ingestion and code chunking capabilities
+- **Graph Module**: Enhanced with static analysis and code relationship extraction
+- **ChunkingService**: Added CodeChunkingStrategy for AST-based chunking
+
+### Performance
+- **AST Parsing**: <2s per file (P95)
+- **Static Analysis**: <1s per file (P95)
+- **Batch Processing**: 50 files per transaction
+- **Concurrent Tasks**: 3 per user
+- **Total Ingestion**: ~5-10 seconds per file (including I/O)
+
+### Technical Highlights
+- **Tree-Sitter Integration**: Multi-language AST parsing with fallback strategy
+- **Event-Driven**: Automatic chunking and static analysis via event handlers
+- **Scalable**: Async Celery tasks for large repository processing
+- **Testable**: Property-based tests for AST parsing, static analysis, and graph relationships
+
+### Dependencies
+- tree-sitter==0.20.4
+- tree-sitter-languages==1.10.2
+- gitpython==3.1.40
+- pathspec==0.12.1
+
+### Requirements Validation
+- ✅ All 9 requirements groups implemented (45+ acceptance criteria)
+- ✅ 11 tasks completed with comprehensive test coverage
+- ✅ Performance targets met for all operations
+- ✅ Documentation complete with guides and API reference
+
+## [2.2.0] - 2026-01-04 - Phase 17.5: Advanced RAG Architecture
+
+### Added
+- **Advanced RAG Database Schema**
+  - `document_chunks` table for parent-child chunking strategy
+  - `graph_entities` table for knowledge graph nodes
+  - `graph_relationships` table for semantic triples with provenance
+  - `synthetic_questions` table for reverse HyDE retrieval
+  - `rag_evaluations` table for RAGAS metrics tracking
+  - Flexible chunk_metadata (JSONB) supporting both PDF pages and code line numbers
+  - Code-ready relation types: CALLS, IMPORTS, DEFINES (alongside academic types)
+  - Alembic migration: `20260103_add_advanced_rag_tables.py`
+
+- **Document Chunking Service**
+  - ChunkingService with semantic and fixed-size strategies
+  - Semantic chunking using sentence boundaries (spaCy/NLTK)
+  - Fixed-size chunking with whitespace-aware splitting
+  - Configurable chunk size (default: 500 tokens) and overlap (default: 50 tokens)
+  - Parser type parameter for future AST chunking (code_python, code_javascript, etc.)
+  - Automatic embedding generation for all chunks
+  - Event emission: `resource.chunked` on success
+  - Integration with ingestion pipeline (optional via CHUNK_ON_RESOURCE_CREATE)
+  - Celery task for async chunking of large documents (>10,000 words)
+
+- **Graph Extraction Service**
+  - GraphExtractionService with LLM and spaCy extraction methods
+  - Entity extraction with type classification (Concept, Person, Organization, Method)
+  - Relationship extraction with confidence scoring
+  - Relation types: CONTRADICTS, SUPPORTS, EXTENDS, CITES (academic)
+  - Code-specific relation types: CALLS, IMPORTS, DEFINES (for Phase 18)
+  - Entity deduplication by name and type
+  - Provenance tracking linking relationships to source chunks
+  - Event emission: `graph.entity_extracted`, `graph.relationship_extracted`
+
+- **Synthetic Question Service**
+  - SyntheticQuestionService for reverse HyDE retrieval
+  - Heuristic pattern-based question generation (1-3 questions per chunk)
+  - LLM-based question generation (GPT-3.5-turbo compatible)
+  - Automatic embedding generation for questions
+  - Configuration toggle: SYNTHETIC_QUESTIONS_ENABLED
+  - Question quality validation and relevance scoring
+
+- **Enhanced Search Strategies**
+  - Parent-child retrieval: retrieve chunks, expand to parent resources
+  - Context window parameter for surrounding chunk inclusion
+  - GraphRAG retrieval: entity extraction → graph traversal → chunk retrieval
+  - Hybrid ranking combining embedding similarity and graph weights
+  - Contradiction discovery mode filtering CONTRADICTS relationships
+  - Question-based retrieval (Reverse HyDE) matching against synthetic questions
+  - Result deduplication when multiple chunks from same resource
+
+- **RAG Evaluation System**
+  - RAGEvaluation model for RAGAS metrics storage
+  - Metrics: faithfulness_score, answer_relevance_score, context_precision_score
+  - Retrieved chunk tracking for evaluation
+  - Evaluation history and trend analysis
+  - Metric aggregation endpoints
+
+- **API Endpoints**
+  - **Chunking**: POST/GET `/api/resources/{resource_id}/chunks`, GET `/api/chunks/{chunk_id}`
+  - **Graph**: POST `/api/graph/extract/{chunk_id}`, GET `/api/graph/entities`, GET `/api/graph/entities/{entity_id}/relationships`, GET `/api/graph/traverse`
+  - **Advanced Search**: POST `/api/search/advanced` with strategy parameter (parent-child, graphrag, hybrid)
+  - **Evaluation**: POST `/api/evaluation/submit`, GET `/api/evaluation/metrics`, GET `/api/evaluation/history`
+
+- **Resource Migration Script**
+  - `scripts/migrate_existing_resources.py` for migrating existing resources to chunking system
+  - Batch processing (default: 10 resources per batch)
+  - Progress tracking with JSON persistence (`storage/migration_progress.json`)
+  - Resume capability from last processed resource
+  - Error handling with continue-on-failure
+  - Configurable chunking strategy, chunk size, and overlap
+  - Command-line interface with `--batch-size`, `--strategy`, `--resume` flags
+  - Comprehensive test suite (18 tests, all passing)
+
+- **Configuration Options**
+  - CHUNK_ON_RESOURCE_CREATE: Enable automatic chunking during ingestion
+  - GRAPH_EXTRACT_ON_CHUNK: Enable automatic graph extraction after chunking
+  - SYNTHETIC_QUESTIONS_ENABLED: Enable synthetic question generation
+  - Chunking strategy, chunk size, overlap configuration
+  - Graph extraction method (llm, spacy, hybrid)
+
+- **Event Handlers**
+  - Resource chunking handler subscribing to `resource.created`
+  - Graph extraction handler subscribing to `resource.chunked`
+  - Automatic processing pipeline with configurable triggers
+
+- **Comprehensive Documentation**
+  - `backend/docs/guides/advanced-rag.md` - Parent-child chunking, GraphRAG, HyDE concepts
+  - `backend/docs/guides/rag-evaluation.md` - RAGAS metrics and evaluation procedures
+  - `backend/docs/guides/naive-to-advanced-rag.md` - Migration guide with rollback procedures
+  - Updated `backend/docs/architecture/database.md` with 5 new tables
+  - Updated `backend/docs/api/resources.md` with chunking endpoints
+  - Updated `backend/docs/api/graph.md` with graph endpoints
+  - Updated `backend/docs/api/search.md` with advanced search
+  - Updated `backend/docs/api/quality.md` with evaluation endpoints
+
+### Changed
+- **Database Schema**: Added 5 new tables for Advanced RAG (document_chunks, graph_entities, graph_relationships, synthetic_questions, rag_evaluations)
+- **Resource Module**: Enhanced with chunking service and endpoints
+- **Graph Module**: Enhanced with entity/relationship extraction and semantic triple storage
+- **Search Module**: Enhanced with parent-child, GraphRAG, and question-based retrieval
+- **Quality Module**: Enhanced with RAG evaluation metrics
+
+### Performance
+- **Chunking**: 10,000 words in <5 seconds (semantic strategy)
+- **Graph Extraction**: 100 chunks in <5 minutes (LLM method)
+- **Parent-Child Retrieval**: <200ms for top-k chunks with parent expansion
+- **GraphRAG Retrieval**: <500ms for entity extraction + graph traversal + chunk retrieval
+- **Question Search**: <100ms for synthetic question matching
+
+### Technical Highlights
+- **Code-Ready Design**: Flexible metadata and relation types support future code chunking (Phase 18)
+- **Provenance Tracking**: All graph relationships linked to source chunks
+- **Event-Driven**: Automatic chunking and graph extraction via event handlers
+- **Scalable**: Async Celery tasks for large document processing
+- **Testable**: Property-based tests for chunk preservation, foreign key integrity, graph validity
+
+### Migration Notes
+- Run `alembic upgrade head` to apply new schema
+- Use `scripts/migrate_existing_resources.py` to chunk existing resources
+- Configure CHUNK_ON_RESOURCE_CREATE for automatic chunking of new resources
+- Enable GRAPH_EXTRACT_ON_CHUNK for automatic graph extraction
+
+### Requirements Validation
+- ✅ All 12 requirements groups implemented (60+ acceptance criteria)
+- ✅ 18 tasks completed with comprehensive test coverage
+- ✅ Performance targets met for all operations
+- ✅ Documentation complete with guides and API reference
+
+## [2.1.0] - 2026-01-02 - Phase 17: Production Hardening
+
+### Added
+- **JWT Authentication System**
+  - JWT-based authentication with access and refresh tokens
+  - Access tokens expire in 30 minutes (configurable)
+  - Refresh tokens expire in 7 days (configurable)
+  - Token revocation using Redis blacklist
+  - Password hashing with bcrypt
+  - User management and authentication service
+  - Global authentication middleware protecting all endpoints
+  - Public endpoints: `/auth/*`, `/docs`, `/openapi.json`, `/monitoring/health`
+  - TEST_MODE for development bypass
+
+- **OAuth2 Social Login**
+  - Google OAuth2 integration
+  - GitHub OAuth2 integration
+  - OAuth2 provider abstraction for easy extension
+  - Automatic user account creation/linking
+  - Encrypted OAuth token storage
+
+- **Tiered Rate Limiting**
+  - Free tier: 100 requests/hour
+  - Premium tier: 1,000 requests/hour
+  - Admin tier: 10,000 requests/hour
+  - Sliding window algorithm with Redis
+  - Rate limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+  - HTTP 429 responses when limit exceeded
+  - Graceful degradation when Redis unavailable
+  - Per-user rate limiting based on JWT tier claim
+
+- **Authentication Module (14th Module)**
+  - `POST /auth/login` - Username/password authentication
+  - `POST /auth/refresh` - Token refresh
+  - `POST /auth/logout` - Token revocation
+  - `GET /auth/me` - Current user information
+  - `GET /auth/rate-limit` - Rate limit status
+  - `GET /auth/google` - Google OAuth2 initiation
+  - `GET /auth/google/callback` - Google OAuth2 callback
+  - `GET /auth/github` - GitHub OAuth2 initiation
+  - `GET /auth/github/callback` - GitHub OAuth2 callback
+
+- **Database Schema Updates**
+  - `users` table for user accounts
+  - `oauth_accounts` table for OAuth2 provider linking
+  - Alembic migration: `20260101_add_auth_tables_phase17.py`
+  - Unique indexes on username and email
+  - Composite index on (provider, provider_user_id)
+
+- **Shared Kernel Enhancements**
+  - `app.shared.security` - JWT creation/validation, password hashing
+  - `app.shared.oauth2` - OAuth2 provider integration
+  - `app.shared.rate_limiter` - Tiered rate limiting service
+  - Redis-backed token revocation
+  - Redis-backed rate limiting
+
+- **Comprehensive Documentation**
+  - `backend/docs/api/auth.md` - Authentication API reference
+  - `backend/app/modules/auth/README.md` - Auth module documentation
+  - Updated Docker setup guide with Phase 17 configuration
+  - Updated PostgreSQL migration guide with auth tables
+  - Updated architecture documentation with auth middleware
+  - Updated API overview with authentication and rate limiting
+
+### Changed
+- **Module Count**: Increased from 13 to 14 modules
+- **API Security**: All endpoints now require authentication (except public endpoints)
+- **Error Responses**: Added 401, 403, and 429 status codes
+- **Environment Variables**: Added JWT, OAuth2, and rate limiting configuration
+- **Architecture Diagrams**: Updated to show authentication middleware and rate limiter
+
+### Security
+- Bcrypt password hashing with automatic salt generation
+- JWT token signing with HS256 algorithm
+- Token revocation on logout
+- OAuth2 state parameter for CSRF protection
+- Encrypted OAuth token storage
+- Rate limiting to prevent abuse
+- HTTPS recommended for production
+
+### Performance
+- Redis-backed rate limiting with <1ms overhead
+- JWT validation <5ms (P95)
+- Token revocation check <2ms (P95)
+- Graceful degradation when Redis unavailable
+
 ## [2.0.0] - 2025-01-28 - Phase 14: Complete Vertical Slice Architecture
 
 ### Added

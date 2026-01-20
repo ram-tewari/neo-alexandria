@@ -21,13 +21,13 @@ def emit_resource_classified(
     classification_code: str,
     confidence: float,
     method: str,
-    taxonomy_version: str = None
+    taxonomy_version: str = None,
 ):
     """
     Emit resource.classified event.
-    
+
     This should be called after classifying a resource.
-    
+
     Args:
         resource_id: UUID of the resource
         classification_code: Assigned classification code
@@ -37,23 +37,21 @@ def emit_resource_classified(
     """
     try:
         payload = {
-            'resource_id': resource_id,
-            'classification_code': classification_code,
-            'confidence': confidence,
-            'method': method
+            "resource_id": resource_id,
+            "classification_code": classification_code,
+            "confidence": confidence,
+            "method": method,
         }
-        
+
         if taxonomy_version:
-            payload['taxonomy_version'] = taxonomy_version
-        
-        event_bus.emit(
-            'resource.classified',
-            payload,
-            priority=EventPriority.NORMAL
-        )
+            payload["taxonomy_version"] = taxonomy_version
+
+        event_bus.emit("resource.classified", payload, priority=EventPriority.NORMAL)
         logger.debug(f"Emitted resource.classified event for resource {resource_id}")
     except Exception as e:
-        logger.error(f"Error emitting resource.classified event: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error emitting resource.classified event: {str(e)}", exc_info=True
+        )
 
 
 def emit_taxonomy_model_trained(
@@ -61,13 +59,13 @@ def emit_taxonomy_model_trained(
     training_samples: int,
     accuracy: float,
     model_version: str,
-    features_used: List[str] = None
+    features_used: List[str] = None,
 ):
     """
     Emit taxonomy.model_trained event.
-    
+
     This should be called after training a classification model.
-    
+
     Args:
         model_type: Type of model (random_forest, svm, neural_network, etc.)
         training_samples: Number of training samples used
@@ -77,29 +75,27 @@ def emit_taxonomy_model_trained(
     """
     try:
         payload = {
-            'model_type': model_type,
-            'training_samples': training_samples,
-            'accuracy': accuracy,
-            'model_version': model_version
+            "model_type": model_type,
+            "training_samples": training_samples,
+            "accuracy": accuracy,
+            "model_version": model_version,
         }
-        
+
         if features_used:
-            payload['features_used'] = features_used
-        
-        event_bus.emit(
-            'taxonomy.model_trained',
-            payload,
-            priority=EventPriority.HIGH
-        )
+            payload["features_used"] = features_used
+
+        event_bus.emit("taxonomy.model_trained", payload, priority=EventPriority.HIGH)
         logger.info(f"Emitted taxonomy.model_trained event for {model_type} model")
     except Exception as e:
-        logger.error(f"Error emitting taxonomy.model_trained event: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error emitting taxonomy.model_trained event: {str(e)}", exc_info=True
+        )
 
 
 def register_handlers():
     """
     Register all event handlers for the taxonomy module.
-    
+
     This function should be called during application startup.
     Currently, taxonomy module only emits events and doesn't subscribe to any.
     """

@@ -5,49 +5,48 @@ This script verifies that the integration code is correctly placed in the ingest
 """
 
 
-
 def verify_integration():
     """Verify that quality assessment is integrated into the ingestion pipeline."""
-    
+
     print("Verifying Phase 9 quality assessment integration...")
     print()
-    
+
     # Read the resource service file
-    with open('app/services/resource_service.py', 'r', encoding='utf-8') as f:
+    with open("app/services/resource_service.py", "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     # Check 1: Verify QualityService import is present
     print("✓ Check 1: Verifying QualityService import...")
-    if 'from backend.app.services.quality_service import QualityService' in content:
+    if "from backend.app.services.quality_service import QualityService" in content:
         print("  ✓ QualityService import found in process_ingestion")
     else:
         print("  ✗ QualityService import NOT found")
         return False
     print()
-    
+
     # Check 2: Verify quality service instantiation
     print("✓ Check 2: Verifying QualityService instantiation...")
-    if 'quality_service = QualityService(db=session)' in content:
+    if "quality_service = QualityService(db=session)" in content:
         print("  ✓ QualityService instantiation found")
     else:
         print("  ✗ QualityService instantiation NOT found")
         return False
     print()
-    
+
     # Check 3: Verify compute_quality call
     print("✓ Check 3: Verifying compute_quality method call...")
-    if 'quality_result = quality_service.compute_quality(resource.id)' in content:
+    if "quality_result = quality_service.compute_quality(resource.id)" in content:
         print("  ✓ compute_quality method call found")
     else:
         print("  ✗ compute_quality method call NOT found")
         return False
     print()
-    
+
     # Check 4: Verify error handling
     print("✓ Check 4: Verifying error handling...")
-    if 'except Exception as quality_exc:' in content:
+    if "except Exception as quality_exc:" in content:
         print("  ✓ Error handling found")
-        if 'Quality assessment is optional and should not block ingestion' in content:
+        if "Quality assessment is optional and should not block ingestion" in content:
             print("  ✓ Proper error message found")
         else:
             print("  ⚠ Error message could be improved")
@@ -55,15 +54,17 @@ def verify_integration():
         print("  ✗ Error handling NOT found")
         return False
     print()
-    
+
     # Check 5: Verify placement after ML classification
     print("✓ Check 5: Verifying placement in pipeline...")
-    
+
     # Find the positions of key sections
-    ml_classification_pos = content.find('# Phase 8.5: ML Classification')
-    quality_assessment_pos = content.find('# Phase 9: Multi-dimensional quality assessment')
-    citation_extraction_pos = content.find('# Phase 6: Extract citations')
-    
+    ml_classification_pos = content.find("# Phase 8.5: ML Classification")
+    quality_assessment_pos = content.find(
+        "# Phase 9: Multi-dimensional quality assessment"
+    )
+    citation_extraction_pos = content.find("# Phase 6: Extract citations")
+
     if ml_classification_pos == -1:
         print("  ⚠ ML Classification section not found (might be expected)")
     elif quality_assessment_pos == -1:
@@ -74,40 +75,46 @@ def verify_integration():
     else:
         print("  ✗ Quality assessment is placed BEFORE ML classification")
         return False
-    
+
     if citation_extraction_pos > quality_assessment_pos:
         print("  ✓ Quality assessment is placed BEFORE citation extraction")
     else:
-        print("  ⚠ Quality assessment placement relative to citation extraction unclear")
+        print(
+            "  ⚠ Quality assessment placement relative to citation extraction unclear"
+        )
     print()
-    
+
     # Check 6: Verify it's after resource commit
     print("✓ Check 6: Verifying placement after resource commit...")
-    
+
     # Find the commit before quality assessment
-    quality_section_start = content.find('# Phase 9: Multi-dimensional quality assessment')
+    quality_section_start = content.find(
+        "# Phase 9: Multi-dimensional quality assessment"
+    )
     preceding_content = content[:quality_section_start]
-    
-    if 'session.commit()' in preceding_content[-500:]:  # Check last 500 chars before quality section
+
+    if (
+        "session.commit()" in preceding_content[-500:]
+    ):  # Check last 500 chars before quality section
         print("  ✓ Quality assessment is placed AFTER resource commit")
     else:
         print("  ✗ Quality assessment might not be after resource commit")
         return False
     print()
-    
+
     # Check 7: Verify logging
     print("✓ Check 7: Verifying logging...")
-    if 'Phase 9 quality assessment completed' in content:
+    if "Phase 9 quality assessment completed" in content:
         print("  ✓ Success logging found")
     else:
         print("  ⚠ Success logging not found")
-    
-    if 'Phase 9 quality assessment failed' in content:
+
+    if "Phase 9 quality assessment failed" in content:
         print("  ✓ Error logging found")
     else:
         print("  ⚠ Error logging not found")
     print()
-    
+
     return True
 
 
@@ -142,4 +149,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"✗ Verification error: {e}")
         import traceback
+
         traceback.print_exc()

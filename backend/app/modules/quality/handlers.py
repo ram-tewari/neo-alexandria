@@ -20,13 +20,13 @@ def emit_quality_computed(
     resource_id: str,
     quality_score: float,
     dimensions: Dict[str, float],
-    computation_version: str
+    computation_version: str,
 ):
     """
     Emit quality.computed event.
-    
+
     This should be called by the quality service after computing quality scores.
-    
+
     Args:
         resource_id: UUID of the resource
         quality_score: Overall quality score (0.0-1.0)
@@ -35,14 +35,14 @@ def emit_quality_computed(
     """
     try:
         event_bus.emit(
-            'quality.computed',
+            "quality.computed",
             {
-                'resource_id': resource_id,
-                'quality_score': quality_score,
-                'dimensions': dimensions,
-                'computation_version': computation_version
+                "resource_id": resource_id,
+                "quality_score": quality_score,
+                "dimensions": dimensions,
+                "computation_version": computation_version,
             },
-            priority=EventPriority.LOW
+            priority=EventPriority.LOW,
         )
         logger.debug(f"Emitted quality.computed event for resource {resource_id}")
     except Exception as e:
@@ -54,13 +54,13 @@ def emit_quality_outlier_detected(
     quality_score: float,
     outlier_score: float,
     dimensions: Dict[str, float],
-    reason: str
+    reason: str,
 ):
     """
     Emit quality.outlier_detected event.
-    
+
     This should be called by the quality service when an outlier is detected.
-    
+
     Args:
         resource_id: UUID of the resource
         quality_score: Overall quality score
@@ -70,25 +70,29 @@ def emit_quality_outlier_detected(
     """
     try:
         event_bus.emit(
-            'quality.outlier_detected',
+            "quality.outlier_detected",
             {
-                'resource_id': resource_id,
-                'quality_score': quality_score,
-                'outlier_score': outlier_score,
-                'dimensions': dimensions,
-                'reason': reason
+                "resource_id": resource_id,
+                "quality_score": quality_score,
+                "outlier_score": outlier_score,
+                "dimensions": dimensions,
+                "reason": reason,
             },
-            priority=EventPriority.NORMAL
+            priority=EventPriority.NORMAL,
         )
-        logger.info(f"Emitted quality.outlier_detected event for resource {resource_id}")
+        logger.info(
+            f"Emitted quality.outlier_detected event for resource {resource_id}"
+        )
     except Exception as e:
-        logger.error(f"Error emitting quality.outlier_detected event: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error emitting quality.outlier_detected event: {str(e)}", exc_info=True
+        )
 
 
 def register_handlers():
     """
     Register all event handlers for the quality module.
-    
+
     This function should be called during application startup.
     Currently, quality module only emits events and doesn't subscribe to any.
     """

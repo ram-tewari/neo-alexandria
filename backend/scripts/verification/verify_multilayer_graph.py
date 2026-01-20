@@ -48,7 +48,7 @@ def test_multilayer_graph_construction():
     db = SessionLocal()
     try:
         service = GraphService(db)
-        
+
         # Check if networkx is available
         try:
             import networkx as nx
@@ -56,26 +56,27 @@ def test_multilayer_graph_construction():
             print("⚠ NetworkX not installed - skipping graph construction test")
             print("  Install with: pip install networkx")
             return True
-        
+
         # Build graph
         graph = service.build_multilayer_graph()
-        
+
         assert graph is not None
         assert isinstance(graph, nx.MultiDiGraph)
-        
+
         print("✓ Graph built successfully:")
         print(f"  - Nodes: {graph.number_of_nodes()}")
         print(f"  - Edges: {graph.number_of_edges()}")
-        
+
         # Check cache was set
         assert service._graph_cache is not None
         assert service._cache_timestamp is not None
         print("✓ Graph cache initialized")
-        
+
         return True
     except Exception as e:
         print(f"✗ Failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -93,24 +94,25 @@ def test_edge_types():
         except ImportError:
             print("⚠ NetworkX not installed - skipping edge type test")
             return True
-        
+
         service = GraphService(db)
         graph = service.build_multilayer_graph()
-        
+
         # Count edge types
         edge_types = {}
         for u, v, key, data in graph.edges(keys=True, data=True):
-            edge_type = data.get('edge_type', 'unknown')
+            edge_type = data.get("edge_type", "unknown")
             edge_types[edge_type] = edge_types.get(edge_type, 0) + 1
-        
+
         print("✓ Edge types found:")
         for edge_type, count in edge_types.items():
             print(f"  - {edge_type}: {count} edges")
-        
+
         return True
     except Exception as e:
         print(f"✗ Failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -128,51 +130,58 @@ def test_edge_weights():
         except ImportError:
             print("⚠ NetworkX not installed - skipping edge weight test")
             return True
-        
+
         service = GraphService(db)
         graph = service.build_multilayer_graph()
-        
+
         # Check edge weights by type
         weight_ranges = {}
         for u, v, key, data in graph.edges(keys=True, data=True):
-            edge_type = data.get('edge_type', 'unknown')
-            weight = data.get('weight', 0.0)
-            
+            edge_type = data.get("edge_type", "unknown")
+            weight = data.get("weight", 0.0)
+
             if edge_type not in weight_ranges:
-                weight_ranges[edge_type] = {'min': weight, 'max': weight, 'count': 0}
-            
-            weight_ranges[edge_type]['min'] = min(weight_ranges[edge_type]['min'], weight)
-            weight_ranges[edge_type]['max'] = max(weight_ranges[edge_type]['max'], weight)
-            weight_ranges[edge_type]['count'] += 1
-        
+                weight_ranges[edge_type] = {"min": weight, "max": weight, "count": 0}
+
+            weight_ranges[edge_type]["min"] = min(
+                weight_ranges[edge_type]["min"], weight
+            )
+            weight_ranges[edge_type]["max"] = max(
+                weight_ranges[edge_type]["max"], weight
+            )
+            weight_ranges[edge_type]["count"] += 1
+
         print("✓ Edge weight ranges:")
         for edge_type, ranges in weight_ranges.items():
-            print(f"  - {edge_type}: min={ranges['min']:.2f}, max={ranges['max']:.2f}, count={ranges['count']}")
-        
+            print(
+                f"  - {edge_type}: min={ranges['min']:.2f}, max={ranges['max']:.2f}, count={ranges['count']}"
+            )
+
         # Verify expected weights
-        if 'citation' in weight_ranges:
-            assert weight_ranges['citation']['min'] == 1.0
-            assert weight_ranges['citation']['max'] == 1.0
+        if "citation" in weight_ranges:
+            assert weight_ranges["citation"]["min"] == 1.0
+            assert weight_ranges["citation"]["max"] == 1.0
             print("✓ Citation edges have weight 1.0")
-        
-        if 'subject_similarity' in weight_ranges:
-            assert weight_ranges['subject_similarity']['min'] == 0.5
-            assert weight_ranges['subject_similarity']['max'] == 0.5
+
+        if "subject_similarity" in weight_ranges:
+            assert weight_ranges["subject_similarity"]["min"] == 0.5
+            assert weight_ranges["subject_similarity"]["max"] == 0.5
             print("✓ Subject similarity edges have weight 0.5")
-        
-        if 'temporal' in weight_ranges:
-            assert weight_ranges['temporal']['min'] == 0.3
-            assert weight_ranges['temporal']['max'] == 0.3
+
+        if "temporal" in weight_ranges:
+            assert weight_ranges["temporal"]["min"] == 0.3
+            assert weight_ranges["temporal"]["max"] == 0.3
             print("✓ Temporal edges have weight 0.3")
-        
-        if 'co_authorship' in weight_ranges:
-            assert weight_ranges['co_authorship']['max'] <= 1.0
+
+        if "co_authorship" in weight_ranges:
+            assert weight_ranges["co_authorship"]["max"] <= 1.0
             print("✓ Co-authorship edges have weight <= 1.0")
-        
+
         return True
     except Exception as e:
         print(f"✗ Failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -190,36 +199,37 @@ def test_graph_caching():
         except ImportError:
             print("⚠ NetworkX not installed - skipping caching test")
             return True
-        
+
         service = GraphService(db)
-        
+
         # Build graph first time
         graph1 = service.build_multilayer_graph()
         timestamp1 = service._cache_timestamp
-        
+
         # Build graph second time (should use cache)
         graph2 = service.build_multilayer_graph()
         timestamp2 = service._cache_timestamp
-        
+
         assert graph1 is graph2, "Should return same cached graph object"
         assert timestamp1 == timestamp2, "Cache timestamp should not change"
         print("✓ Graph cache working correctly")
-        
+
         # Invalidate cache
         service.invalidate_cache()
         assert service._graph_cache is None
         assert service._cache_timestamp is None
         print("✓ Cache invalidation working")
-        
+
         # Build graph after invalidation
         graph3 = service.build_multilayer_graph()
         assert graph3 is not graph1, "Should build new graph after invalidation"
         print("✓ Graph rebuilt after cache invalidation")
-        
+
         return True
     except Exception as e:
         print(f"✗ Failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -237,30 +247,34 @@ def test_edge_persistence():
         except ImportError:
             print("⚠ NetworkX not installed - skipping persistence test")
             return True
-        
+
         service = GraphService(db)
-        
+
         # Build graph (this should persist edges)
         service.build_multilayer_graph()
-        
+
         # Query database for edges
         edge_count = db.query(db_models.GraphEdge).count()
         print(f"✓ Edges persisted to database: {edge_count} edges")
-        
+
         # Check edge types in database
-        edge_types = db.query(
-            db_models.GraphEdge.edge_type,
-            db.func.count(db_models.GraphEdge.id)
-        ).group_by(db_models.GraphEdge.edge_type).all()
-        
+        edge_types = (
+            db.query(
+                db_models.GraphEdge.edge_type, db.func.count(db_models.GraphEdge.id)
+            )
+            .group_by(db_models.GraphEdge.edge_type)
+            .all()
+        )
+
         print("✓ Edge types in database:")
         for edge_type, count in edge_types:
             print(f"  - {edge_type}: {count} edges")
-        
+
         return True
     except Exception as e:
         print(f"✗ Failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
@@ -272,7 +286,7 @@ def main():
     print("=" * 70)
     print("Phase 10 Task 2: Multi-layer Graph Construction Verification")
     print("=" * 70)
-    
+
     tests = [
         test_graph_service_initialization,
         test_multilayer_graph_construction,
@@ -281,7 +295,7 @@ def main():
         test_graph_caching,
         test_edge_persistence,
     ]
-    
+
     results = []
     for test in tests:
         try:
@@ -290,13 +304,14 @@ def main():
         except Exception as e:
             print(f"✗ Test failed with exception: {e}")
             import traceback
+
             traceback.print_exc()
             results.append(False)
-    
+
     print("\n" + "=" * 70)
     print(f"Results: {sum(results)}/{len(results)} tests passed")
     print("=" * 70)
-    
+
     if all(results):
         print("\n✓ All tests passed! Task 2 implementation verified.")
         return 0

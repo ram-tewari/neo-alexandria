@@ -21,7 +21,6 @@ Endpoints to be tested (when implemented):
 import pytest
 
 
-
 # Note: This test file uses the shared fixtures from conftest.py
 # The create_test_resource fixture is defined there with correct field names
 
@@ -30,11 +29,14 @@ import pytest
 class TestTaxonomyNodes:
     def test_create_node(self, client):
         """Test creating a taxonomy node."""
-        response = client.post("/taxonomy/nodes", json={
-            "name": "Machine Learning",
-            "description": "ML and AI topics",
-            "keywords": ["ml", "ai", "deep learning"]
-        })
+        response = client.post(
+            "/taxonomy/nodes",
+            json={
+                "name": "Machine Learning",
+                "description": "ML and AI topics",
+                "keywords": ["ml", "ai", "deep learning"],
+            },
+        )
         assert response.status_code in [200, 201, 404]
 
     def test_get_tree(self, client):

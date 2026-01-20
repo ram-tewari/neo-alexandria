@@ -29,7 +29,7 @@ class TestCollectionCreation:
     def test_create_collection_success(self, client, sample_collection_data):
         """Test successful collection creation."""
         response = client.post("/collections", json=sample_collection_data)
-        
+
         assert response.status_code == 201
         data = response.json()
         assert "id" in data
@@ -38,28 +38,25 @@ class TestCollectionCreation:
 
     def test_create_collection_missing_name(self, client):
         """Test creation fails without name."""
-        response = client.post("/collections", json={
-            "description": "No name",
-            "owner_id": "test-user-123"
-        })
-        
+        response = client.post(
+            "/collections", json={"description": "No name", "owner_id": "test-user-123"}
+        )
+
         assert response.status_code == 422
 
     def test_create_collection_missing_owner_id(self, client):
         """Test creation fails without owner_id."""
-        response = client.post("/collections", json={
-            "name": "Test Collection"
-        })
-        
+        response = client.post("/collections", json={"name": "Test Collection"})
+
         assert response.status_code == 422
 
     def test_create_collection_minimal(self, client):
         """Test creation with minimal data."""
-        response = client.post("/collections", json={
-            "name": "Minimal Collection",
-            "owner_id": "test-user-123"
-        })
-        
+        response = client.post(
+            "/collections",
+            json={"name": "Minimal Collection", "owner_id": "test-user-123"},
+        )
+
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Minimal Collection"
@@ -81,9 +78,9 @@ class TestCollectionList:
         """Test listing collections with data."""
         for i in range(3):
             create_test_collection(name=f"Collection {i}")
-        
+
         response = client.get("/collections")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -94,21 +91,23 @@ class TestCollectionList:
         """Test collection list pagination."""
         for i in range(10):
             create_test_collection(name=f"Collection {i}", visibility="public")
-        
+
         response = client.get("/collections?limit=5&offset=0")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) <= 5
 
-    def test_list_collections_filter_by_visibility(self, client, create_test_collection):
+    def test_list_collections_filter_by_visibility(
+        self, client, create_test_collection
+    ):
         """Test filtering collections by visibility."""
         create_test_collection(name="Private", visibility="private")
         create_test_collection(name="Public", visibility="public")
-        
+
         response = client.get("/collections?visibility=public")
-        
+
         assert response.status_code == 200
 
 
@@ -118,9 +117,9 @@ class TestCollectionRetrieval:
     def test_get_collection_success(self, client, create_test_collection):
         """Test successful collection retrieval."""
         collection = create_test_collection(name="Test Collection")
-        
+
         response = client.get(f"/collections/{str(collection.id)}")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(collection.id)
@@ -133,16 +132,18 @@ class TestCollectionRetrieval:
         # Accept 404 or 500 (500 may occur if error handling isn't perfect)
         assert response.status_code in [404, 500]
 
-    def test_get_collection_with_resources(self, client, create_test_collection, create_test_resource):
+    def test_get_collection_with_resources(
+        self, client, create_test_collection, create_test_resource
+    ):
         """Test retrieval includes resource count."""
         collection = create_test_collection()
         create_test_resource()
-        
+
         # Add resource to collection (implementation-specific)
         # This may require additional setup
-        
+
         response = client.get(f"/collections/{collection.id}")
-        
+
         assert response.status_code == 200
 
 
@@ -152,12 +153,11 @@ class TestCollectionUpdate:
     def test_update_collection_name(self, client, create_test_collection):
         """Test updating collection name."""
         collection = create_test_collection(name="Original Name")
-        
+
         response = client.put(
-            f"/collections/{str(collection.id)}",
-            json={"name": "Updated Name"}
+            f"/collections/{str(collection.id)}", json={"name": "Updated Name"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Updated Name"
@@ -165,12 +165,12 @@ class TestCollectionUpdate:
     def test_update_collection_description(self, client, create_test_collection):
         """Test updating collection description."""
         collection = create_test_collection()
-        
+
         response = client.put(
             f"/collections/{str(collection.id)}",
-            json={"description": "New description"}
+            json={"description": "New description"},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["description"] == "New description"
@@ -178,11 +178,8 @@ class TestCollectionUpdate:
     def test_update_collection_not_found(self, client):
         """Test updating non-existent collection."""
         fake_id = str(uuid.uuid4())
-        response = client.put(
-            f"/collections/{fake_id}",
-            json={"name": "New Name"}
-        )
-        
+        response = client.put(f"/collections/{fake_id}", json={"name": "New Name"})
+
         assert response.status_code == 404
 
 
@@ -192,11 +189,11 @@ class TestCollectionDeletion:
     def test_delete_collection_success(self, client, create_test_collection):
         """Test successful collection deletion."""
         collection = create_test_collection()
-        
+
         response = client.delete(f"/collections/{str(collection.id)}")
-        
+
         assert response.status_code in [200, 204]
-        
+
         # Verify collection is deleted
         get_response = client.get(f"/collections/{str(collection.id)}")
         assert get_response.status_code == 404
@@ -205,54 +202,62 @@ class TestCollectionDeletion:
         """Test deletion of non-existent collection."""
         fake_id = str(uuid.uuid4())
         response = client.delete(f"/collections/{fake_id}")
-        
+
         assert response.status_code == 404
 
 
 class TestCollectionResourceManagement:
     """Test collection resource management endpoints."""
 
-    def test_add_resource_to_collection(self, client, create_test_collection, create_test_resource):
+    def test_add_resource_to_collection(
+        self, client, create_test_collection, create_test_resource
+    ):
         """Test adding resource to collection."""
         collection = create_test_collection()
         resource = create_test_resource()
-        
+
         response = client.post(
             f"/collections/{str(collection.id)}/resources",
-            json={"resource_id": str(resource.id)}
+            json={"resource_id": str(resource.id)},
         )
-        
+
         assert response.status_code in [200, 201]
 
-    def test_remove_resource_from_collection(self, client, create_test_collection, create_test_resource):
+    def test_remove_resource_from_collection(
+        self, client, create_test_collection, create_test_resource
+    ):
         """Test removing resource from collection."""
         collection = create_test_collection()
         resource = create_test_resource()
-        
+
         # First add the resource
         client.post(
             f"/collections/{str(collection.id)}/resources",
-            json={"resource_id": str(resource.id)}
+            json={"resource_id": str(resource.id)},
         )
-        
+
         # Then remove it
-        response = client.delete(f"/collections/{str(collection.id)}/resources/{str(resource.id)}")
-        
+        response = client.delete(
+            f"/collections/{str(collection.id)}/resources/{str(resource.id)}"
+        )
+
         assert response.status_code in [200, 204]
 
-    def test_list_collection_resources(self, client, create_test_collection, create_test_resource):
+    def test_list_collection_resources(
+        self, client, create_test_collection, create_test_resource
+    ):
         """Test listing resources in collection."""
         collection = create_test_collection()
         resource = create_test_resource()
-        
+
         # Add resource to collection
         client.post(
             f"/collections/{str(collection.id)}/resources",
-            json={"resource_id": str(resource.id)}
+            json={"resource_id": str(resource.id)},
         )
-        
+
         response = client.get(f"/collections/{str(collection.id)}/resources")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, (list, dict))
@@ -264,23 +269,21 @@ class TestCollectionSharing:
     def test_share_collection(self, client, create_test_collection):
         """Test sharing a collection."""
         collection = create_test_collection()
-        
+
         response = client.put(
-            f"/collections/{str(collection.id)}",
-            json={"visibility": "public"}
+            f"/collections/{str(collection.id)}", json={"visibility": "public"}
         )
-        
+
         assert response.status_code in [200, 201]
 
     def test_unshare_collection(self, client, create_test_collection):
         """Test unsharing a collection."""
         collection = create_test_collection(visibility="public")
-        
+
         response = client.put(
-            f"/collections/{str(collection.id)}",
-            json={"visibility": "private"}
+            f"/collections/{str(collection.id)}", json={"visibility": "private"}
         )
-        
+
         assert response.status_code == 200
 
 
@@ -290,7 +293,7 @@ class TestCollectionHealth:
     def test_health_check_success(self, client):
         """Test successful health check."""
         response = client.get("/collections/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
@@ -307,38 +310,47 @@ class TestCollectionIntegration:
         create_response = client.post("/collections", json=sample_collection_data)
         assert create_response.status_code == 201
         collection_id = create_response.json()["id"]
-        
+
         # Retrieve
         get_response = client.get(f"/collections/{collection_id}")
         assert get_response.status_code == 200
-        
+
         # Update
         update_response = client.put(
-            f"/collections/{collection_id}",
-            json={"name": "Updated Collection"}
+            f"/collections/{collection_id}", json={"name": "Updated Collection"}
         )
         assert update_response.status_code == 200
-        
+
         # Delete
         delete_response = client.delete(f"/collections/{collection_id}")
         assert delete_response.status_code in [200, 204]
 
-    def test_collection_with_resources_workflow(self, client, create_test_collection, create_test_resource):
+    def test_collection_with_resources_workflow(
+        self, client, create_test_collection, create_test_resource
+    ):
         """Test collection with resource management workflow."""
         collection = create_test_collection(visibility="public")
         resource1 = create_test_resource(title="Resource 1")
         resource2 = create_test_resource(title="Resource 2")
-        
+
         # Add resources
-        add1 = client.post(f"/collections/{str(collection.id)}/resources", json={"resource_id": str(resource1.id)})
-        add2 = client.post(f"/collections/{str(collection.id)}/resources", json={"resource_id": str(resource2.id)})
+        add1 = client.post(
+            f"/collections/{str(collection.id)}/resources",
+            json={"resource_id": str(resource1.id)},
+        )
+        add2 = client.post(
+            f"/collections/{str(collection.id)}/resources",
+            json={"resource_id": str(resource2.id)},
+        )
         assert add1.status_code in [200, 201]
         assert add2.status_code in [200, 201]
-        
+
         # List resources
         list_response = client.get(f"/collections/{str(collection.id)}/resources")
         assert list_response.status_code == 200
-        
+
         # Remove one resource
-        remove_response = client.delete(f"/collections/{str(collection.id)}/resources/{str(resource1.id)}")
+        remove_response = client.delete(
+            f"/collections/{str(collection.id)}/resources/{str(resource1.id)}"
+        )
         assert remove_response.status_code in [200, 204]

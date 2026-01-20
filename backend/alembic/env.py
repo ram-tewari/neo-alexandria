@@ -19,10 +19,10 @@ for _p in (_project_root, _pkg_dir):
 from backend.app.config.settings import get_settings  # noqa: E402
 from backend.app.database.base import Base  # noqa: E402
 from backend.app.database.models import (  # noqa: F401, E402
-    Resource, 
-    ClassificationCode, 
-    TaxonomyNode, 
-    ResourceTaxonomy
+    Resource,
+    ClassificationCode,
+    TaxonomyNode,
+    ResourceTaxonomy,
 )
 
 # this is the Alembic Config object, which provides
@@ -57,7 +57,13 @@ def run_migrations_offline() -> None:
     """
     # Use settings for database URL
     settings = get_settings()
-    url = settings.DATABASE_URL
+    url = settings.get_database_url()
+    # Convert async URL to sync for Alembic
+    if url.startswith("postgresql+asyncpg://"):
+        url = url.replace("postgresql+asyncpg://", "postgresql://")
+    elif url.startswith("sqlite+aiosqlite://"):
+        url = url.replace("sqlite+aiosqlite://", "sqlite://")
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -77,14 +83,20 @@ def run_migrations_online() -> None:
 
     """
     # Check if connection is provided (e.g., from tests)
-    connection = config.attributes.get('connection', None)
-    
+    connection = config.attributes.get("connection", None)
+
     if connection is None:
         # Use settings for database URL
         settings = get_settings()
         configuration = config.get_section(config.config_ini_section, {})
-        configuration["sqlalchemy.url"] = settings.DATABASE_URL
-        
+        url = settings.get_database_url()
+        # Convert async URL to sync for Alembic
+        if url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql+asyncpg://", "postgresql://")
+        elif url.startswith("sqlite+aiosqlite://"):
+            url = url.replace("sqlite+aiosqlite://", "sqlite://")
+        configuration["sqlalchemy.url"] = url
+
         connectable = engine_from_config(
             configuration,
             prefix="sqlalchemy.",

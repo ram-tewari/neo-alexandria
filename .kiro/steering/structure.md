@@ -322,19 +322,27 @@ Each module contains:
 - ✅ Test suite stabilization (Phase 14)
 - ✅ Documentation modular migration (20 files migrated)
 - ✅ Legacy code cleanup (Phase 14)
+- ✅ Production hardening (Phase 17) - Authentication, OAuth2, Rate Limiting
+- ✅ Advanced RAG architecture (Phase 17.5) - Parent-child chunking, GraphRAG, Evaluation
 
 ### Architecture Achievements
 - ✅ 13 self-contained modules with event-driven communication
 - ✅ Shared kernel for cross-cutting concerns
 - ✅ Zero circular dependencies between modules
-- ✅ 97 API routes across all modules
+- ✅ 97+ API routes across all modules
 - ✅ Event bus with <1ms latency (p95)
+- ✅ JWT authentication with OAuth2 social login
+- ✅ Tiered rate limiting (Free, Premium, Admin)
+- ✅ Advanced RAG with 5 new database tables
+- ✅ Parent-child chunking and GraphRAG retrieval
+- ✅ Knowledge graph with semantic triples
+- ✅ RAG evaluation metrics (RAGAS)
 
 ### Planned
-- 📋 API versioning
-- 📋 Authentication and authorization
-- 📋 Rate limiting
+- 📋 Code repository analysis (Phase 18)
+- 📋 AST-based chunking for code
 - 📋 Frontend-backend integration completion
+- 📋 API versioning
 
 ## Related Documentation
 

@@ -3,7 +3,6 @@ Basic test to verify fixtures work correctly.
 """
 
 
-
 def test_db_engine_fixture(db_engine):
     """Verify db_engine fixture creates an engine."""
     assert db_engine is not None
@@ -26,6 +25,7 @@ def test_mock_event_bus_fixture(mock_event_bus):
     assert mock_event_bus is not None
     # Verify it's a MagicMock
     from unittest.mock import MagicMock
+
     assert isinstance(mock_event_bus, MagicMock)
 
 
@@ -41,7 +41,7 @@ def test_create_test_resource_fixture(create_test_resource, db_session):
     """Verify create_test_resource factory fixture works."""
     # Create a resource
     resource = create_test_resource(title="Test Resource")
-    
+
     assert resource is not None
     assert resource.title == "Test Resource"
     assert resource.id is not None

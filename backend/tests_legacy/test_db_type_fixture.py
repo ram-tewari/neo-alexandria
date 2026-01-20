@@ -19,9 +19,10 @@ def test_db_type_fixture_with_session(db_session, db_type):
     """Test that db_type fixture works with db_session."""
     assert db_type in ["sqlite", "postgresql"]
     assert db_session is not None
-    
+
     # Verify we can query the database
     from backend.app.database.models import Resource
+
     resources = db_session.query(Resource).all()
     assert isinstance(resources, list)
 

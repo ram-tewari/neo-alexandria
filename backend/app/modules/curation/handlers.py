@@ -20,13 +20,13 @@ def emit_curation_reviewed(
     resource_id: str,
     reviewer_id: str,
     status: str,
-    quality_rating: float = None
+    quality_rating: float = None,
 ):
     """
     Emit curation.reviewed event.
-    
+
     This should be called after a curator reviews a resource.
-    
+
     Args:
         review_id: UUID of the review record
         resource_id: UUID of the reviewed resource
@@ -36,36 +36,29 @@ def emit_curation_reviewed(
     """
     try:
         payload = {
-            'review_id': review_id,
-            'resource_id': resource_id,
-            'reviewer_id': reviewer_id,
-            'status': status
+            "review_id": review_id,
+            "resource_id": resource_id,
+            "reviewer_id": reviewer_id,
+            "status": status,
         }
-        
+
         if quality_rating is not None:
-            payload['quality_rating'] = quality_rating
-        
-        event_bus.emit(
-            'curation.reviewed',
-            payload,
-            priority=EventPriority.NORMAL
-        )
+            payload["quality_rating"] = quality_rating
+
+        event_bus.emit("curation.reviewed", payload, priority=EventPriority.NORMAL)
         logger.debug(f"Emitted curation.reviewed event for resource {resource_id}")
     except Exception as e:
         logger.error(f"Error emitting curation.reviewed event: {str(e)}", exc_info=True)
 
 
 def emit_curation_approved(
-    review_id: str,
-    resource_id: str,
-    reviewer_id: str,
-    approval_notes: str = None
+    review_id: str, resource_id: str, reviewer_id: str, approval_notes: str = None
 ):
     """
     Emit curation.approved event.
-    
+
     This should be called when a resource is approved by a curator.
-    
+
     Args:
         review_id: UUID of the review record
         resource_id: UUID of the approved resource
@@ -74,19 +67,15 @@ def emit_curation_approved(
     """
     try:
         payload = {
-            'review_id': review_id,
-            'resource_id': resource_id,
-            'reviewer_id': reviewer_id
+            "review_id": review_id,
+            "resource_id": resource_id,
+            "reviewer_id": reviewer_id,
         }
-        
+
         if approval_notes:
-            payload['approval_notes'] = approval_notes
-        
-        event_bus.emit(
-            'curation.approved',
-            payload,
-            priority=EventPriority.NORMAL
-        )
+            payload["approval_notes"] = approval_notes
+
+        event_bus.emit("curation.approved", payload, priority=EventPriority.NORMAL)
         logger.info(f"Emitted curation.approved event for resource {resource_id}")
     except Exception as e:
         logger.error(f"Error emitting curation.approved event: {str(e)}", exc_info=True)
@@ -95,7 +84,7 @@ def emit_curation_approved(
 def register_handlers():
     """
     Register all event handlers for the curation module.
-    
+
     This function should be called during application startup.
     Currently, curation module only emits events and doesn't subscribe to any.
     """

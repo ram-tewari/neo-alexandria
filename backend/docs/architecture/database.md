@@ -513,8 +513,323 @@ sqlite3 backend.db ".backup 'backup.db'"
 
 ---
 
+## Phase 17: Authentication Tables
+
+### User Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                            User                                  │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ username: String (unique, indexed)                               │
+│ email: String (unique, indexed)                                  │
+│ hashed_password: String                                          │
+│ tier: Enum (free, premium, admin)                                │
+│ is_active: Boolean (default: True)                               │
+│ created_at: DateTime                                             │
+│ updated_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store user accounts for authentication and authorization
+
+**Indexes**:
+- `username` - Unique index for login
+- `email` - Unique index for OAuth2 linking
+
+**Tier Levels**:
+- `free` - 100 requests/hour
+- `premium` - 1,000 requests/hour
+- `admin` - 10,000 requests/hour
+
+### OAuth Account Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        OAuthAccount                              │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ user_id: UUID (FK → User)                                        │
+│ provider: String (google, github)                                │
+│ provider_user_id: String                                         │
+│ access_token: String (encrypted)                                 │
+│ refresh_token: String (encrypted, nullable)                      │
+│ expires_at: DateTime (nullable)                                  │
+│ created_at: DateTime                                             │
+│ updated_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Link user accounts to OAuth2 providers (Google, GitHub)
+
+**Indexes**:
+- `(provider, provider_user_id)` - Unique composite index
+- `user_id` - Foreign key index
+
+**Relationships**:
+- Many-to-one with User (one user can have multiple OAuth accounts)
+
+### Migration Reference
+
+Phase 17 authentication tables added in migration:
+- `alembic/versions/20260101_add_auth_tables_phase17.py`
+
+---
+
+## Phase 17.5: Advanced RAG Architecture Tables
+
+### DocumentChunk Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                       DocumentChunk                              │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ resource_id: UUID (FK → Resource)                                │
+│ content: Text (chunk content)                                    │
+│ chunk_index: Integer (sequential position)                       │
+│ embedding_id: UUID (FK → Embedding, nullable)                    │
+│ chunk_metadata: JSON (flexible metadata)                         │
+│   • For PDFs: {"page": 1, "coordinates": [x, y]}                │
+│   • For Code: {"start_line": 10, "end_line": 25,                │
+│                "function_name": "calculate_loss",                │
+│                "file_path": "src/model.py"}                      │
+│ created_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store document chunks for parent-child retrieval and fine-grained search
+
+**Indexes**:
+- `resource_id` - Foreign key index for parent lookup
+- `(resource_id, chunk_index)` - Composite index for ordered retrieval
+
+**Relationships**:
+- Many-to-one with Resource (cascade delete)
+- One-to-one with Embedding (optional)
+- One-to-many with SyntheticQuestion
+
+**Chunking Strategies**:
+- Semantic chunking (sentence boundaries)
+- Fixed-size chunking (character-based with overlap)
+- Future: AST-based chunking for code
+
+### GraphEntity Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        GraphEntity                               │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ name: String (entity name)                                       │
+│ type: String (Concept, Person, Organization, Method)             │
+│ description: Text (nullable)                                     │
+│ created_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store entities extracted from documents for knowledge graph construction
+
+**Indexes**:
+- `(name, type)` - Composite unique index for deduplication
+
+**Entity Types**:
+- `Concept` - Abstract ideas, theories, algorithms
+- `Person` - Authors, researchers, historical figures
+- `Organization` - Institutions, companies, research groups
+- `Method` - Techniques, methodologies, approaches
+
+**Relationships**:
+- One-to-many with GraphRelationship (as source)
+- One-to-many with GraphRelationship (as target)
+
+### GraphRelationship Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     GraphRelationship                            │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ source_entity_id: UUID (FK → GraphEntity)                        │
+│ target_entity_id: UUID (FK → GraphEntity)                        │
+│ relation_type: String (enum)                                     │
+│   • Academic: CONTRADICTS, SUPPORTS, EXTENDS, CITES              │
+│   • Code: CALLS, IMPORTS, DEFINES                                │
+│ weight: Float (0.0-1.0, confidence score)                        │
+│ provenance_chunk_id: UUID (FK → DocumentChunk, nullable)         │
+│ created_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store relationships between entities for GraphRAG and knowledge discovery
+
+**Indexes**:
+- `source_entity_id` - Foreign key index
+- `target_entity_id` - Foreign key index
+- `relation_type` - Index for filtering by relationship type
+
+**Relation Types**:
+- **Academic Relations**:
+  - `CONTRADICTS` - Entity A contradicts entity B
+  - `SUPPORTS` - Entity A supports entity B
+  - `EXTENDS` - Entity A extends entity B
+  - `CITES` - Entity A cites entity B
+- **Code Relations** (Phase 18):
+  - `CALLS` - Function A calls function B
+  - `IMPORTS` - Module A imports module B
+  - `DEFINES` - File A defines class/function B
+
+**Provenance**: Links relationships back to source chunks for explainability
+
+### SyntheticQuestion Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    SyntheticQuestion                             │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ chunk_id: UUID (FK → DocumentChunk)                              │
+│ question_text: Text (generated question)                         │
+│ embedding_id: UUID (FK → Embedding, nullable)                    │
+│ created_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store synthetic questions for Reverse HyDE retrieval strategy
+
+**Indexes**:
+- `chunk_id` - Foreign key index for chunk lookup
+
+**Relationships**:
+- Many-to-one with DocumentChunk
+- One-to-one with Embedding (for question similarity search)
+
+**Generation Strategy**:
+- 1-3 questions per chunk
+- Questions the chunk could answer
+- Pattern-based or LLM-generated
+
+### RAGEvaluation Model
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                      RAGEvaluation                               │
+├──────────────────────────────────────────────────────────────────┤
+│ id: UUID (PK)                                                    │
+│ query: Text (user query)                                         │
+│ expected_answer: Text (ground truth, nullable)                   │
+│ generated_answer: Text (system response)                         │
+│ retrieved_chunk_ids: JSON (array of chunk UUIDs)                 │
+│ faithfulness_score: Float (0.0-1.0, nullable)                    │
+│ answer_relevance_score: Float (0.0-1.0, nullable)                │
+│ context_precision_score: Float (0.0-1.0, nullable)               │
+│ created_at: DateTime                                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Purpose**: Store RAG evaluation metrics for quality monitoring and improvement
+
+**Indexes**:
+- `created_at` - Index for time-series analysis
+
+**RAGAS Metrics**:
+- **Faithfulness**: Generated answer is grounded in retrieved context
+- **Answer Relevance**: Answer addresses the query
+- **Context Precision**: Retrieved chunks are relevant to query
+
+**Use Cases**:
+- Track RAG quality over time
+- A/B test retrieval strategies
+- Identify problematic queries
+- Monitor system degradation
+
+### Advanced RAG Entity-Relationship Diagram
+
+```
+┌─────────────┐
+│  Resource   │
+└──────┬──────┘
+       │ 1:N
+       ▼
+┌─────────────────┐         ┌──────────────────┐
+│ DocumentChunk   │◄────────│ SyntheticQuestion│
+└────────┬────────┘  1:N    └──────────────────┘
+         │
+         │ provenance
+         │ (optional)
+         ▼
+┌─────────────────────┐
+│ GraphRelationship   │
+└──────┬──────┬───────┘
+       │      │
+   source  target
+       │      │
+       ▼      ▼
+┌─────────────────┐
+│  GraphEntity    │
+└─────────────────┘
+
+┌─────────────────┐
+│  RAGEvaluation  │ (independent)
+└─────────────────┘
+```
+
+**Key Relationships**:
+1. Resource → DocumentChunk (1:N, cascade delete)
+2. DocumentChunk → SyntheticQuestion (1:N)
+3. DocumentChunk → GraphRelationship (1:N, provenance)
+4. GraphEntity → GraphRelationship (1:N, as source/target)
+5. RAGEvaluation (standalone, references chunks via JSON)
+
+### Advanced RAG Indexes
+
+```sql
+-- DocumentChunk indexes
+CREATE INDEX idx_document_chunks_resource_id ON document_chunks(resource_id);
+CREATE INDEX idx_document_chunks_resource_chunk ON document_chunks(resource_id, chunk_index);
+CREATE INDEX idx_document_chunks_embedding_id ON document_chunks(embedding_id);
+
+-- GraphEntity indexes
+CREATE UNIQUE INDEX idx_graph_entities_name_type ON graph_entities(name, type);
+
+-- GraphRelationship indexes
+CREATE INDEX idx_graph_relationships_source ON graph_relationships(source_entity_id);
+CREATE INDEX idx_graph_relationships_target ON graph_relationships(target_entity_id);
+CREATE INDEX idx_graph_relationships_type ON graph_relationships(relation_type);
+CREATE INDEX idx_graph_relationships_provenance ON graph_relationships(provenance_chunk_id);
+
+-- SyntheticQuestion indexes
+CREATE INDEX idx_synthetic_questions_chunk_id ON synthetic_questions(chunk_id);
+CREATE INDEX idx_synthetic_questions_embedding_id ON synthetic_questions(embedding_id);
+
+-- RAGEvaluation indexes
+CREATE INDEX idx_rag_evaluations_created_at ON rag_evaluations(created_at);
+```
+
+### PostgreSQL-Specific Indexes (Advanced RAG)
+
+```sql
+-- GIN indexes for JSONB columns
+CREATE INDEX idx_document_chunks_metadata_gin ON document_chunks USING GIN (chunk_metadata);
+CREATE INDEX idx_rag_evaluations_chunk_ids_gin ON rag_evaluations USING GIN (retrieved_chunk_ids);
+
+-- Full-text search for chunks
+CREATE INDEX idx_document_chunks_content_fts ON document_chunks USING GIN (to_tsvector('english', content));
+CREATE INDEX idx_synthetic_questions_text_fts ON synthetic_questions USING GIN (to_tsvector('english', question_text));
+```
+
+### Migration Reference
+
+Phase 17.5 Advanced RAG tables added in migration:
+- `alembic/versions/20260103_add_advanced_rag_tables.py`
+
+---
+
 ## Related Documentation
 
 - [Architecture Overview](overview.md) - System design
 - [PostgreSQL Migration Guide](../POSTGRESQL_MIGRATION_GUIDE.md) - Detailed migration
 - [PostgreSQL Backup Guide](../POSTGRESQL_BACKUP_GUIDE.md) - Backup procedures
+- [Authentication API](../api/auth.md) - Authentication endpoints
+- [Advanced RAG Guide](../guides/advanced-rag.md) - Advanced RAG concepts and usage

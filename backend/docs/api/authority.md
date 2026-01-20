@@ -15,26 +15,20 @@ The Authority module manages subject authority files and classification trees, p
 Get subject heading suggestions based on input text.
 
 ```http
-GET /authority/subjects/suggest?q={query}&limit={limit}
+GET /authority/subjects/suggest?q={query}
 ```
 
 **Query Parameters:**
-- `q` (string, required) - Search query
-- `limit` (integer, optional) - Maximum results (default: 10)
+- `q` (string, required) - Search query (minimum 1 character)
 
 **Response:**
 ```json
-{
-  "suggestions": [
-    {
-      "heading": "Machine Learning",
-      "code": "006.31",
-      "confidence": 0.95,
-      "broader_terms": ["Artificial Intelligence"],
-      "narrower_terms": ["Deep Learning", "Neural Networks"]
-    }
-  ]
-}
+[
+  "Machine Learning",
+  "Artificial Intelligence",
+  "Deep Learning",
+  "Neural Networks"
+]
 ```
 
 ### Get Classification Tree
@@ -42,12 +36,8 @@ GET /authority/subjects/suggest?q={query}&limit={limit}
 Get the complete classification tree or a subtree.
 
 ```http
-GET /authority/classification/tree?root={code}&depth={depth}
+GET /authority/classification/tree
 ```
-
-**Query Parameters:**
-- `root` (string, optional) - Root classification code (default: top level)
-- `depth` (integer, optional) - Tree depth (default: unlimited)
 
 **Response:**
 ```json

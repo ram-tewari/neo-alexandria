@@ -24,10 +24,12 @@ Execute standard search with FTS5, filters, and pagination.
   "limit": 20,
   "offset": 0,
   "hybrid_weight": 0.5,
-  "classification_code": "004",
-  "type": "article",
-  "language": "en",
-  "min_quality": 0.7
+  "filters": {
+    "classification_code": "004",
+    "type": "article",
+    "language": "en",
+    "min_quality": 0.7
+  }
 }
 ```
 
@@ -63,7 +65,9 @@ curl -X POST http://127.0.0.1:8000/search \
   -d '{
     "text": "machine learning",
     "limit": 10,
-    "min_quality": 0.7
+    "filters": {
+      "min_quality": 0.7
+    }
   }'
 ```
 
@@ -254,6 +258,124 @@ curl -X POST http://127.0.0.1:8000/search/evaluate \
 
 ---
 
+### POST /search/advanced
+
+**Phase 17.5** - Execute advanced search with multiple retrieval strategies.
+
+This endpoint provides access to advanced RAG retrieval strategies:
+- **parent-child**: Search at chunk level, return parent resources with context
+- **graphrag**: Leverage knowledge graph for relationship-aware search
+- **hybrid**: Combine multiple strategies with weighted fusion
+
+**Request Body:**
+```json
+{
+  "query": "What is gradient descent?",
+  "strategy": "parent-child",
+  "top_k": 5,
+  "context_window": 2,
+  "relation_types": ["EXTENDS", "SUPPORTS"]
+}
+```
+
+**Parameters:**
+- `query` (required): Search query text
+- `strategy` (required): Retrieval strategy - `parent-child`, `graphrag`, or `hybrid`
+- `top_k` (optional): Number of results to return (default: 5)
+- `context_window` (optional): Number of surrounding chunks for parent-child (default: 2)
+- `relation_types` (optional): Relationship types for GraphRAG (default: all)
+
+**Response (Parent-Child Strategy):**
+```json
+{
+  "query": "What is gradient descent?",
+  "strategy": "parent-child",
+  "results": [
+    {
+      "chunk": {
+        "id": "chunk-uuid-1",
+        "resource_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Gradient descent is an iterative optimization algorithm...",
+        "chunk_index": 5
+      },
+      "parent_resource": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "title": "Introduction to Machine Learning"
+      },
+      "surrounding_chunks": [
+        {
+          "chunk_index": 4,
+          "content": "...optimization algorithms are fundamental..."
+        },
+        {
+          "chunk_index": 6,
+          "content": "...converges to a local minimum..."
+        }
+      ],
+      "score": 0.92
+    }
+  ],
+  "total": 5,
+  "latency_ms": 185.3
+}
+```
+
+**Response (GraphRAG Strategy):**
+```json
+{
+  "query": "gradient descent optimization",
+  "strategy": "graphrag",
+  "results": [
+    {
+      "chunk": {
+        "id": "chunk-uuid-1",
+        "content": "Stochastic Gradient Descent (SGD) extends gradient descent..."
+      },
+      "parent_resource": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "title": "Introduction to Machine Learning"
+      },
+      "graph_path": [
+        {
+          "entity_name": "Gradient Descent",
+          "relation_type": "EXTENDS",
+          "entity_name": "Stochastic Gradient Descent",
+          "weight": 0.9
+        }
+      ],
+      "score": 0.88
+    }
+  ],
+  "total": 5,
+  "latency_ms": 425.7
+}
+```
+
+**Example (Parent-Child):**
+```bash
+curl -X POST http://127.0.0.1:8000/search/advanced \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What is gradient descent?",
+    "strategy": "parent-child",
+    "top_k": 5,
+    "context_window": 2
+  }'
+```
+
+**Example (GraphRAG):**
+```bash
+curl -X POST http://127.0.0.1:8000/search/advanced \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "gradient descent optimization",
+    "strategy": "graphrag",
+    "relation_types": ["EXTENDS", "SUPPORTS"]
+  }'
+```
+
+---
+
 ### POST /admin/sparse-embeddings/generate
 
 Queue batch generation of sparse embeddings for existing resources.
@@ -336,46 +458,14 @@ Health check endpoint for Search module.
   "limit": "integer (1-100, default: 20)",
   "offset": "integer (default: 0)",
   "hybrid_weight": "float (0.0-1.0, optional)",
-  "classification_code": "string (optional)",
-  "type": "string (optional)",
-  "language": "string (optional)",
-  "min_quality": "float (0.0-1.0, optional)",
-  "created_from": "datetime (optional)",
-  "created_to": "datetime (optional)"
-}
-```
-
-### Search Results Model
-
-```json
-{
-  "total": "integer",
-  "items": ["Resource[]"],
-  "facets": {
-    "type": {"article": 30, "paper": 12},
-    "language": {"en": 40, "es": 2}
-  },
-  "snippets": {
-    "resource_id": "...highlighted snippet..."
+  "filters": {
+    "classification_code": "string (optional)",
+    "type": "string (optional)",
+    "language": "string (optional)",
+    "min_quality": "float (0.0-1.0, optional)",
+    "created_from": "datetime (optional)",
+    "created_to": "datetime (optional)"
   }
-}
-```
-
-### Three-Way Hybrid Results Model
-
-```json
-{
-  "total": "integer",
-  "items": ["Resource[]"],
-  "facets": "object",
-  "snippets": "object",
-  "latency_ms": "float",
-  "method_contributions": {
-    "fts5": "integer",
-    "dense": "integer",
-    "sparse": "integer"
-  },
-  "weights_used": ["float", "float", "float"]
 }
 ```
 

@@ -7,4 +7,3 @@ It handles environment variables, settings validation, and application configura
 Modules:
 - settings: Pydantic-based configuration management with environment variable support
 """
-

@@ -36,7 +36,7 @@ from .schema import (
     EventBusMetrics,
     CacheStats,
     WorkerStatus,
-    HealthCheckResponse
+    HealthCheckResponse,
 )
 from .handlers import register_handlers
 

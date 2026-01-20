@@ -40,8 +40,8 @@ def clean_text(txt: str) -> str:
     if not txt:
         return ""
     # Replace control characters with spaces
-    normalized = ''.join(ch if ch >= ' ' else ' ' for ch in txt)
-    normalized = _WHITESPACE_RE.sub(' ', normalized)
+    normalized = "".join(ch if ch >= " " else " " for ch in txt)
+    normalized = _WHITESPACE_RE.sub(" ", normalized)
     return normalized.strip()
 
 
@@ -107,5 +107,3 @@ def readability_scores(txt: str) -> Dict[str, float]:
     if math.isnan(fk_grade):
         fk_grade = 0.0
     return {"reading_ease": float(reading_ease), "fk_grade": float(fk_grade)}
-
-

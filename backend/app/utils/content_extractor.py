@@ -9,6 +9,7 @@ Related files:
 - app/services/resource_service.py: Uses content extraction during URL ingestion
 - app/utils/text_processor.py: Processes extracted text for quality analysis
 - app/config/settings.py: Configuration for content extraction settings
+- app/shared/circuit_breaker.py: Circuit breaker for resilience
 
 Features:
 - Web content extraction with readability processing
@@ -16,6 +17,7 @@ Features:
 - Content archiving with metadata preservation
 - Intelligent content cleaning and normalization
 - Error handling and fallback mechanisms
+- Circuit breaker protection for external URL fetching
 - Support for various content types and formats
 """
 
@@ -32,6 +34,15 @@ import logging
 import httpx
 from bs4 import BeautifulSoup
 from slugify import slugify
+
+# Circuit breaker for resilience
+try:
+    import pybreaker
+    from ..shared.circuit_breaker import http_content_breaker
+    CIRCUIT_BREAKER_AVAILABLE = True
+except ImportError:
+    CIRCUIT_BREAKER_AVAILABLE = False
+    http_content_breaker = None
 
 try:
     from readability import Document  # type: ignore
@@ -56,49 +67,73 @@ DESKTOP_UA = (
 )
 
 
+def _do_fetch_url(url: str, timeout: float = 10.0) -> Dict[str, Any]:
+    """Internal fetch implementation without circuit breaker."""
+    with httpx.Client(
+        headers={"User-Agent": DESKTOP_UA},
+        follow_redirects=True,
+        timeout=timeout,
+    ) as client:
+        resp = client.get(url)
+        # Raise for status, but let tests capture original message
+        try:
+            resp.raise_for_status()
+        except Exception as exc:
+            raise ValueError(f"Failed to fetch URL: {exc}") from exc
+        # Normalize headers to a plain dict for robustness in tests
+        raw_headers = getattr(resp, "headers", None)
+        if isinstance(raw_headers, dict):
+            headers_norm: Dict[str, Any] = raw_headers
+        else:
+            try:
+                headers_norm = (
+                    dict(raw_headers.items())
+                    if hasattr(raw_headers, "items")
+                    else {}
+                )
+            except Exception:
+                headers_norm = {}
+        content_type = (headers_norm.get("Content-Type") or "").lower()
+        data: Dict[str, Any] = {
+            "url": str(resp.url),
+            "status": resp.status_code,
+            "headers": headers_norm,
+            "content_bytes": resp.content,
+            "content_type": content_type,
+        }
+        # Back-compat: expose html field for HTML responses and always include for tests
+        if "text/html" in content_type or content_type.startswith("text/"):
+            data["html"] = resp.text
+        else:
+            # Always include html field even for non-HTML to avoid KeyError in tests
+            data["html"] = resp.text if hasattr(resp, "text") else ""
+        return data
+
+
 def fetch_url(url: str, timeout: float = 10.0) -> Dict[str, Any]:
-    """Fetch a URL using httpx with sane defaults.
+    """Fetch a URL using httpx with sane defaults and circuit breaker protection.
 
     Returns a dict with final URL, status code, headers, raw content bytes, and HTML text when applicable.
     Raises ValueError on network or HTTP errors.
+    
+    The circuit breaker opens after 3 consecutive failures and attempts
+    recovery after 60 seconds to prevent cascading failures.
     """
     try:
-        with httpx.Client(
-            headers={"User-Agent": DESKTOP_UA},
-            follow_redirects=True,
-            timeout=timeout,
-        ) as client:
-            resp = client.get(url)
-            # Raise for status, but let tests capture original message
-            try:
-                resp.raise_for_status()
-            except Exception as exc:
-                raise ValueError(f"Failed to fetch URL: {exc}") from exc
-            # Normalize headers to a plain dict for robustness in tests
-            raw_headers = getattr(resp, "headers", None)
-            if isinstance(raw_headers, dict):
-                headers_norm: Dict[str, Any] = raw_headers
-            else:
-                try:
-                    headers_norm = dict(raw_headers.items()) if hasattr(raw_headers, "items") else {}
-                except Exception:
-                    headers_norm = {}
-            content_type = (headers_norm.get("Content-Type") or "").lower()
-            data: Dict[str, Any] = {
-                "url": str(resp.url),
-                "status": resp.status_code,
-                "headers": headers_norm,
-                "content_bytes": resp.content,
-                "content_type": content_type,
-            }
-            # Back-compat: expose html field for HTML responses and always include for tests
-            if "text/html" in content_type or content_type.startswith("text/"):
-                data["html"] = resp.text
-            else:
-                # Always include html field even for non-HTML to avoid KeyError in tests
-                data["html"] = resp.text if hasattr(resp, "text") else ""
-            return data
-    except (httpx.HTTPError, httpx.RequestError, Exception) as exc:  # pragma: no cover - error path
+        if CIRCUIT_BREAKER_AVAILABLE and http_content_breaker is not None:
+            # Use circuit breaker protection
+            return http_content_breaker.call(_do_fetch_url, url, timeout)
+        else:
+            # No circuit breaker available, call directly
+            return _do_fetch_url(url, timeout)
+    except pybreaker.CircuitBreakerError if CIRCUIT_BREAKER_AVAILABLE else Exception as e:
+        logger.error(f"Circuit breaker open for URL fetching, failing fast: {url}")
+        raise ValueError(f"Service temporarily unavailable (circuit breaker open): {url}") from e
+    except (
+        httpx.HTTPError,
+        httpx.RequestError,
+        Exception,
+    ) as exc:  # pragma: no cover - error path
         logger.warning("Fetch failed for %s: %s", url, exc)
         # Preserve message for tests expecting specific substrings
         raise ValueError(f"Failed to fetch URL: {exc}")
@@ -114,9 +149,13 @@ def extract_text(html: str) -> Dict[str, Any]:
 
     Prefer readability-lxml if available; fallback to BeautifulSoup-only.
     Always strip scripts/styles and return plain text.
+    
+    If readability extracts too little content (< 500 words), fall back to
+    full BeautifulSoup extraction to capture more complete content.
     """
     title: str | None = None
     text: str = ""
+    readability_text: str = ""
 
     if Document is not None:
         try:
@@ -125,20 +164,52 @@ def extract_text(html: str) -> Dict[str, Any]:
             summary_html = doc.summary(html_partial=True)
             soup = BeautifulSoup(summary_html, "html.parser")
             _strip_scripts_and_styles(soup)
-            text = soup.get_text("\n", strip=True)
-        except Exception:
-            # Fallback to plain BeautifulSoup
-            pass
+            readability_text = soup.get_text("\n", strip=True)
+            
+            # Check if readability extracted enough content
+            # If less than 500 words, it might be too aggressive
+            word_count = len(readability_text.split())
+            if word_count >= 500:
+                text = readability_text
+            else:
+                logger.info(
+                    "Readability extracted only %d words, falling back to full extraction",
+                    word_count
+                )
+        except Exception as exc:
+            logger.debug("Readability extraction failed: %s", exc)
 
+    # Fallback to full BeautifulSoup extraction if:
+    # - Readability is not available
+    # - Readability failed
+    # - Readability extracted too little content
     if not text:
         soup = BeautifulSoup(html, "html.parser")
         _strip_scripts_and_styles(soup)
+        
         # Best-effort title
         if title is None:
             t = soup.find("title")
             if t and t.text:
                 title = t.text.strip() or None
-        text = soup.get_text("\n", strip=True)
+        
+        # Extract text from main content areas
+        # Try to find main content containers first
+        main_content = None
+        for selector in ["main", "article", '[role="main"]', ".content", "#content"]:
+            main_content = soup.select_one(selector)
+            if main_content:
+                break
+        
+        # If we found a main content area, extract from there
+        # Otherwise, extract from body
+        if main_content:
+            text = main_content.get_text("\n", strip=True)
+        else:
+            # Remove common non-content elements
+            for tag in soup(["nav", "header", "footer", "aside", "form"]):
+                tag.decompose()
+            text = soup.get_text("\n", strip=True)
 
     return {"title": title, "text": text}
 
@@ -231,7 +302,9 @@ def _build_archive_folder(url: str, root: Path) -> Path:
     return folder
 
 
-def archive_local(url: str, html: str, text: str, meta: Dict[str, Any], root: Path) -> Dict[str, Any]:
+def archive_local(
+    url: str, html: str, text: str, meta: Dict[str, Any], root: Path
+) -> Dict[str, Any]:
     """Archive raw HTML, extracted text, and metadata to a deterministic folder.
 
     Writes UTF-8 files: raw.html, text.txt, meta.json
@@ -252,7 +325,9 @@ def archive_local(url: str, html: str, text: str, meta: Dict[str, Any], root: Pa
     # Binary-safe, explicit UTF-8
     raw_path.write_text(html, encoding="utf-8")
     text_path.write_text(text, encoding="utf-8")
-    meta_path.write_text(json.dumps(meta_to_write, ensure_ascii=False, indent=2), encoding="utf-8")
+    meta_path.write_text(
+        json.dumps(meta_to_write, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     return {
         "archive_path": str(folder),
@@ -262,5 +337,3 @@ def archive_local(url: str, html: str, text: str, meta: Dict[str, Any], root: Pa
             "meta": str(meta_path),
         },
     }
-
-

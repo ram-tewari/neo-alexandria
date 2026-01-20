@@ -14,6 +14,7 @@ from datetime import datetime
 
 class SmellType(Enum):
     """Types of code smells (Fowler's taxonomy)."""
+
     DUPLICATED_CODE = "duplicated_code"
     LONG_FUNCTION = "long_function"
     LARGE_CLASS = "large_class"
@@ -28,13 +29,15 @@ class SmellType(Enum):
 
 class Severity(Enum):
     """Severity levels for code smells."""
-    HIGH = "high"      # Must fix (blocks production)
+
+    HIGH = "high"  # Must fix (blocks production)
     MEDIUM = "medium"  # Should fix (technical debt)
-    LOW = "low"        # Nice to fix (minor improvement)
+    LOW = "low"  # Nice to fix (minor improvement)
 
 
 class RefactoringTechnique(Enum):
     """Fowler refactoring techniques."""
+
     EXTRACT_FUNCTION = "extract_function"
     EXTRACT_CLASS = "extract_class"
     REPLACE_PRIMITIVE_WITH_OBJECT = "replace_primitive_with_object"
@@ -50,12 +53,13 @@ class RefactoringTechnique(Enum):
 @dataclass
 class Location:
     """Code location information."""
+
     file_path: Path
     start_line: int
     end_line: int
     function_name: Optional[str] = None
     class_name: Optional[str] = None
-    
+
     def __str__(self) -> str:
         """Human-readable location string."""
         location = f"{self.file_path}:{self.start_line}-{self.end_line}"
@@ -71,13 +75,14 @@ class Location:
 @dataclass
 class CodeSmell:
     """Individual code smell instance."""
+
     smell_type: SmellType
     severity: Severity
     location: Location
     description: str
     suggested_technique: RefactoringTechnique
     metrics: Dict[str, Any] = field(default_factory=dict)
-    
+
     def __str__(self) -> str:
         """Human-readable smell description."""
         return (
@@ -90,26 +95,27 @@ class CodeSmell:
 @dataclass
 class SmellReport:
     """Report of code smells found in a file."""
+
     file_path: Path
     smells: List[CodeSmell]
     total_lines: int
     complexity_score: float
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    
+
     def high_priority_smells(self) -> List[CodeSmell]:
         """Get high severity smells."""
         return [s for s in self.smells if s.severity == Severity.HIGH]
-    
+
     def smells_by_type(self, smell_type: SmellType) -> List[CodeSmell]:
         """Filter smells by type."""
         return [s for s in self.smells if s.smell_type == smell_type]
-    
+
     def summary(self) -> str:
         """Generate human-readable summary."""
         high = len(self.high_priority_smells())
         medium = len([s for s in self.smells if s.severity == Severity.MEDIUM])
         low = len([s for s in self.smells if s.severity == Severity.LOW])
-        
+
         return (
             f"File: {self.file_path}\n"
             f"Total Lines: {self.total_lines}\n"
@@ -121,13 +127,14 @@ class SmellReport:
 @dataclass
 class RefactoringResult:
     """Result of applying refactoring."""
+
     success: bool
     original_code: str
     refactored_code: str
     technique_applied: RefactoringTechnique
     changes_made: List[str]
-    test_results: Optional['TestResults'] = None
-    
+    test_results: Optional["TestResults"] = None
+
     def summary(self) -> str:
         """Generate human-readable summary."""
         status = "SUCCESS" if self.success else "FAILED"
@@ -140,21 +147,22 @@ class RefactoringResult:
 @dataclass
 class TestResults:
     """Results from running test suite."""
+
     total_tests: int
     passed: int
     failed: int
     errors: List[str]
     coverage_percentage: float
     execution_time_seconds: float = 0.0
-    
+
     def all_passed(self) -> bool:
         """Check if all tests passed."""
         return self.failed == 0 and self.passed == self.total_tests
-    
+
     def coverage_acceptable(self, threshold: float = 0.85) -> bool:
         """Check if coverage meets threshold."""
         return self.coverage_percentage >= threshold
-    
+
     def summary(self) -> str:
         """Generate human-readable summary."""
         return (
@@ -167,6 +175,7 @@ class TestResults:
 @dataclass
 class ServiceRefactoringStatus:
     """Track refactoring status for a service module."""
+
     service_name: str
     file_path: Path
     status: str  # "not_started", "in_progress", "completed"
@@ -179,7 +188,7 @@ class ServiceRefactoringStatus:
     lines_after: int
     functions_before: int
     functions_after: int
-    
+
     def improvement_percentage(self) -> float:
         """Calculate improvement in code quality."""
         if self.smells_detected == 0:

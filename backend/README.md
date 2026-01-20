@@ -14,6 +14,14 @@ Neo Alexandria 2.0 is a comprehensive knowledge management system that provides 
 
 ## Key Features
 
+### Authentication and Security (Phase 17)
+- **JWT Authentication**: Secure token-based authentication with access and refresh tokens
+- **OAuth2 Integration**: Social login via Google and GitHub
+- **Tiered Rate Limiting**: Free (100/hr), Premium (1,000/hr), and Admin (10,000/hr) tiers
+- **Token Revocation**: Redis-backed token blacklist for secure logout
+- **Password Security**: Bcrypt password hashing with automatic salt generation
+- **User Management**: User registration, authentication, and profile management
+
 ### Content Ingestion and Processing
 - **Asynchronous URL Ingestion**: Submit web content for intelligent processing
 - **AI-Powered Analysis**: Automatic summarization, tagging, and classification
@@ -23,8 +31,45 @@ Neo Alexandria 2.0 is a comprehensive knowledge management system that provides 
 ### Advanced Search and Discovery
 - **Hybrid Search**: Combines keyword and semantic search with configurable weighting
 - **Vector Embeddings**: Semantic similarity search using state-of-the-art embedding models
+- **Advanced RAG (Phase 17.5)**: Parent-child chunking, GraphRAG retrieval, and question-based search
 - **Faceted Search**: Advanced filtering by classification, language, quality, and subjects
 - **Full-Text Search**: SQLite FTS5 integration with graceful fallbacks
+
+### Advanced RAG Architecture (Phase 17.5)
+- **Parent-Child Chunking**: Split documents into searchable chunks while maintaining parent context
+- **GraphRAG Retrieval**: Entity extraction, graph traversal, and chunk retrieval
+- **Synthetic Questions**: Reverse HyDE retrieval using generated questions
+- **Knowledge Graph**: Semantic triple storage with provenance tracking
+- **Contradiction Discovery**: Identify conflicting information across resources
+- **RAG Evaluation**: RAGAS metrics for faithfulness, relevance, and precision
+- **Migration Tools**: Batch migration script for existing resources
+
+### Code Intelligence Pipeline (Phase 18)
+- **Repository Ingestion**: Scan local directories or clone Git repositories (HTTPS/SSH)
+- **AST-Based Chunking**: Parse code into logical units (functions, classes, methods) using Tree-Sitter
+- **Multi-Language Support**: Python, JavaScript, TypeScript, Rust, Go, and Java
+
+## Quick Start with Docker
+
+```bash
+cd backend
+cp .env.production .env
+# Edit .env: Set JWT_SECRET_KEY and POSTGRES_PASSWORD
+docker-compose up -d
+```
+
+**Build Times:**
+- First build: 10-15 minutes (downloads ~1GB ML libraries)
+- Subsequent starts: 10-30 seconds (cached)
+- After code changes: 30-60 seconds
+
+See [Quick Start Guide](QUICK_START.md) or [Deployment Guide](docs/guides/deployment.md) for details.
+- **Static Analysis**: Extract imports, definitions, and function calls without code execution
+- **Code Graph**: Build dependency graphs with IMPORTS, DEFINES, and CALLS relationships
+- **Gitignore Support**: Automatically respect .gitignore patterns during ingestion
+- **Binary Detection**: Exclude binary files from analysis
+- **File Classification**: Automatic categorization (PRACTICE, THEORY, GOVERNANCE)
+- **Performance**: <2s per file for AST parsing, <1s for static analysis (P95)
 
 ### Knowledge Graph and Relationships
 - **Hybrid Graph Scoring**: Multi-signal relationship detection combining vector similarity, shared subjects, and classification matches
@@ -89,9 +134,49 @@ Neo Alexandria 2.0 is built with an API-first approach, enabling seamless integr
 
 - Python 3.8 or higher
 - SQLite (default) or PostgreSQL database
+- Docker Desktop (for PostgreSQL and Redis)
 - 4GB RAM minimum (8GB recommended for AI features)
 
-### Installation
+### Option 1: Docker Development Setup (Recommended)
+
+Use Docker for backing services (PostgreSQL and Redis) while running the application locally:
+
+1. **Start backing services**
+```bash
+cd backend
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+2. **Create virtual environment and install dependencies**
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+3. **Configure environment**
+```bash
+# Create .env file with:
+DATABASE_URL=postgresql+asyncpg://postgres:devpassword@localhost:5432/neo_alexandria_dev
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+4. **Run database migrations**
+```bash
+alembic upgrade head
+```
+
+5. **Start the API server**
+```bash
+uvicorn app.main:app --reload
+```
+
+📖 **See [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md) for detailed Docker setup instructions**
+
+### Option 2: SQLite Setup (Simple)
+
+Use SQLite for a zero-configuration setup:
 
 1. **Clone the repository and navigate to the project directory**
 
@@ -459,6 +544,31 @@ curl http://localhost:8000/monitoring/database
 DATABASE_URL=sqlite:///backend.db
 TEST_DATABASE_URL=sqlite:///:memory:
 
+# Phase 17: Authentication and Security
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# OAuth2 Providers (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_REDIRECT_URI=http://localhost:8000/auth/github/callback
+
+# Rate Limiting
+REDIS_HOST=localhost
+REDIS_PORT=6379
+RATE_LIMIT_FREE_TIER=100
+RATE_LIMIT_PREMIUM_TIER=1000
+RATE_LIMIT_ADMIN_TIER=10000
+
+# Testing Mode (Development only)
+TEST_MODE=false
+
 # AI Model Configuration
 EMBEDDING_MODEL_NAME=nomic-ai/nomic-embed-text-v1
 SUMMARIZER_MODEL=facebook/bart-large-cnn
@@ -482,6 +592,11 @@ GRAPH_WEIGHT_CLASSIFICATION=0.1
 GRAPH_VECTOR_MIN_SIM_THRESHOLD=0.85
 ```
 
+**Generate Secure JWT Secret:**
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
 ## Error Handling
 
 The API uses standard HTTP status codes and returns structured error responses:
@@ -498,8 +613,11 @@ The API uses standard HTTP status codes and returns structured error responses:
 - `200 OK` - Successful request
 - `202 Accepted` - Request accepted for processing
 - `400 Bad Request` - Invalid request parameters
+- `401 Unauthorized` - Missing or invalid authentication token
+- `403 Forbidden` - Insufficient permissions
 - `404 Not Found` - Resource not found
 - `422 Unprocessable Entity` - Validation error
+- `429 Too Many Requests` - Rate limit exceeded
 - `500 Internal Server Error` - Server error
 
 ## Rate Limits

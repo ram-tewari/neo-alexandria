@@ -122,7 +122,6 @@ class TestAnnotationHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "scholarly": """\"\"\"
 Test suite for Scholarly module endpoints.
 
@@ -195,7 +194,6 @@ class TestScholarlyHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "authority": """\"\"\"
 Test suite for Authority module endpoints.
 
@@ -233,7 +231,6 @@ class TestAuthorityHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "curation": """\"\"\"
 Test suite for Curation module endpoints.
 
@@ -308,7 +305,6 @@ class TestCurationHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "quality": """\"\"\"
 Test suite for Quality module endpoints.
 
@@ -379,7 +375,6 @@ class TestQualityHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "taxonomy": """\"\"\"
 Test suite for Taxonomy module endpoints.
 
@@ -467,7 +462,6 @@ class TestTaxonomyHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "graph": """\"\"\"
 Test suite for Graph module endpoints.
 
@@ -553,7 +547,6 @@ class TestGraphHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "recommendations": """\"\"\"
 Test suite for Recommendations module endpoints.
 
@@ -635,7 +628,6 @@ class TestRecommendationsHealth:
         data = response.json()
         assert "status" in data
 """,
-
     "monitoring": """\"\"\"
 Test suite for Monitoring module endpoints.
 
@@ -694,7 +686,7 @@ class TestModuleHealth:
             response = client.get(f"/{module}/health")
             # Module may or may not exist, but endpoint should be valid
             assert response.status_code in [200, 404]
-"""
+""",
 }
 
 
@@ -702,13 +694,13 @@ def generate_test_files():
     """Generate all module test files."""
     test_dir = Path("backend/tests/modules")
     test_dir.mkdir(parents=True, exist_ok=True)
-    
+
     for module_name, template in TEST_TEMPLATES.items():
         file_path = test_dir / f"test_{module_name}_endpoints.py"
         with open(file_path, "w") as f:
             f.write(template)
         print(f"✓ Created {file_path}")
-    
+
     print(f"\n✅ Generated {len(TEST_TEMPLATES)} test files")
 
 

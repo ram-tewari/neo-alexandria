@@ -17,6 +17,7 @@ backend/docs/
 ├── index.md                    # This file
 ├── api/                        # API Reference (split by domain/module)
 │   ├── overview.md             # Auth, errors, base URLs, module architecture
+│   ├── auth.md                 # Authentication & authorization (Phase 17)
 │   ├── resources.md            # Resource management endpoints
 │   ├── search.md               # Search endpoints (hybrid, vector, FTS)
 │   ├── collections.md          # Collection management
@@ -49,6 +50,7 @@ backend/docs/
 Complete REST API documentation organized by module:
 
 - [API Overview](api/overview.md) - Authentication, errors, pagination, module architecture
+- [Authentication API](api/auth.md) - JWT authentication, OAuth2, rate limiting (Phase 17)
 - [Resources API](api/resources.md) - Content management and ingestion
 - [Search API](api/search.md) - Hybrid search, three-way fusion
 - [Collections API](api/collections.md) - Collection management
@@ -77,11 +79,18 @@ System design and technical decisions:
 
 Getting started and development workflows:
 
+- [Setup Guide](guides/setup.md) - Installation and environment setup
+- [Deployment Guide](guides/deployment.md) - **Docker deployment and Swagger testing**
+- [Development Workflows](guides/workflows.md) - Common development tasks
+- [Testing Guide](guides/testing.md) - Testing strategies and patterns
+- [Troubleshooting](guides/troubleshooting.md) - Common issues and solutions
+
 - [Setup Guide](guides/setup.md) - Installation and configuration
 - [Development Workflows](guides/workflows.md) - Common tasks
 - [Testing Guide](guides/testing.md) - Running and writing tests
 - [Deployment Guide](guides/deployment.md) - Docker and production
 - [Troubleshooting](guides/troubleshooting.md) - Common issues
+- [Code Ingestion Guide](guides/code-ingestion.md) - Repository analysis and code intelligence
 
 ## Interactive Documentation
 

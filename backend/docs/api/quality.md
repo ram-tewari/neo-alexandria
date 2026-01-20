@@ -391,6 +391,139 @@ Health check endpoint for Quality module.
 }
 ```
 
+---
+
+### POST /evaluation/submit
+
+**Phase 17.5** - Submit RAG evaluation data with RAGAS metrics.
+
+**Request Body:**
+```json
+{
+  "query": "What is gradient descent?",
+  "expected_answer": "An optimization algorithm that minimizes loss functions.",
+  "generated_answer": "Gradient descent is an iterative optimization algorithm...",
+  "retrieved_chunk_ids": ["chunk-uuid-1", "chunk-uuid-2", "chunk-uuid-3"],
+  "faithfulness_score": 0.92,
+  "answer_relevance_score": 0.88,
+  "context_precision_score": 0.75
+}
+```
+
+**Parameters:**
+- `query` (required): User's original query
+- `expected_answer` (optional): Ground truth answer
+- `generated_answer` (required): LLM's generated answer
+- `retrieved_chunk_ids` (required): IDs of retrieved chunks
+- `faithfulness_score` (optional): Faithfulness score (0.0-1.0)
+- `answer_relevance_score` (optional): Answer relevance score (0.0-1.0)
+- `context_precision_score` (optional): Context precision score (0.0-1.0)
+- `context_recall_score` (optional): Context recall score (0.0-1.0)
+
+**Response:**
+```json
+{
+  "evaluation_id": "eval-uuid-1",
+  "created_at": "2024-01-01T10:00:00Z",
+  "status": "success"
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://127.0.0.1:8000/evaluation/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What is gradient descent?",
+    "generated_answer": "Gradient descent is an optimization algorithm...",
+    "retrieved_chunk_ids": ["chunk-uuid-1", "chunk-uuid-2"],
+    "faithfulness_score": 0.92,
+    "answer_relevance_score": 0.88,
+    "context_precision_score": 0.75
+  }'
+```
+
+---
+
+### GET /evaluation/metrics
+
+**Phase 17.5** - Get aggregate RAG evaluation metrics.
+
+**Query Parameters:**
+- `days` (optional): Number of days to include (default: 7)
+- `min_date` (optional): Minimum date (ISO 8601)
+- `max_date` (optional): Maximum date (ISO 8601)
+
+**Response:**
+```json
+{
+  "period": "7 days",
+  "total_evaluations": 150,
+  "average_scores": {
+    "faithfulness": 0.87,
+    "answer_relevance": 0.82,
+    "context_precision": 0.71
+  },
+  "score_distribution": {
+    "excellent": 45,
+    "good": 68,
+    "fair": 30,
+    "poor": 7
+  },
+  "daily_metrics": [
+    {
+      "date": "2024-01-01",
+      "avg_faithfulness": 0.88,
+      "avg_relevance": 0.83,
+      "avg_precision": 0.72,
+      "count": 25
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/evaluation/metrics?days=30"
+```
+
+---
+
+### GET /evaluation/history
+
+**Phase 17.5** - Get RAG evaluation history with pagination.
+
+**Query Parameters:**
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Number of results to skip (default: 0)
+- `min_faithfulness` (optional): Filter by minimum faithfulness score
+- `min_relevance` (optional): Filter by minimum relevance score
+- `min_precision` (optional): Filter by minimum precision score
+
+**Response:**
+```json
+{
+  "evaluations": [
+    {
+      "id": "eval-uuid-1",
+      "query": "What is gradient descent?",
+      "faithfulness_score": 0.92,
+      "answer_relevance_score": 0.88,
+      "context_precision_score": 0.75,
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "per_page": 50
+}
+```
+
+**Example:**
+```bash
+curl "http://127.0.0.1:8000/evaluation/history?limit=20&min_faithfulness=0.8"
+```
+
 ## Data Models
 
 ### Quality Dimensions

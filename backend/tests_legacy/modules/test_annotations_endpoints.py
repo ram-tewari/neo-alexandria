@@ -1,4 +1,5 @@
-﻿"""Test suite for Annotations API endpoints - Rewritten from scratch."""
+"""Test suite for Annotations API endpoints - Rewritten from scratch."""
+
 
 class TestAnnotationEndpoints:
     def test_create_annotation_success(self, client, create_test_resource, db):
@@ -9,7 +10,10 @@ class TestAnnotationEndpoints:
             "highlighted_text": "Test text",
             "note": "Test annotation",
             "tags": ["test"],
-            "color": "#FFFF00"
+            "color": "#FFFF00",
         }
-        response = client.post(f"/annotations/resources/{str(resource.id)}/annotations", json=annotation_data)
+        response = client.post(
+            f"/annotations/resources/{str(resource.id)}/annotations",
+            json=annotation_data,
+        )
         assert response.status_code == 201

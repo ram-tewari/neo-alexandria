@@ -452,6 +452,18 @@ Health check endpoint for Collections module.
 }
 ```
 
+### Collection Recommendation Model
+
+```json
+{
+  "resource_id": "uuid",
+  "title": "string",
+  "description": "string",
+  "similarity_score": "float (0.0-1.0)",
+  "reason": "string"
+}
+```
+
 ## Module Structure
 
 The Collections module is implemented as a self-contained vertical slice:

@@ -12,6 +12,7 @@ python-dotenv==1.0.1
 # Database
 sqlalchemy[asyncio]==2.0.36
 alembic==1.14.0
+asyncpg==0.30.0
 
 # Monitoring
 prometheus-client==0.21.1

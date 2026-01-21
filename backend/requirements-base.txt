@@ -26,3 +26,26 @@ gitpython==3.1.40
 
 # HTTP Client
 httpx==0.25.2
+
+# HTML/Content Processing
+beautifulsoup4==4.12.3
+python-slugify==8.0.4
+
+# Security & Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Data Processing
+numpy==2.2.3
+
+# HTML/Text Processing
+beautifulsoup4==4.12.3
+python-slugify==8.0.4
+
+# Security & Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.20
+
+# Utilities
+numpy==2.2.3

@@ -9,6 +9,7 @@
 - ✅ Qdrant Cloud configured and tested
 - ✅ `render.yaml` configuration file ready
 - ✅ `requirements-cloud.txt` dependencies defined
+- ✅ `runtime.txt` specifies Python 3.11.9 (compatible with all dependencies)
 
 ## Deployment Steps
 
@@ -145,6 +146,10 @@ Invoke-RestMethod -Method Post `
 ## Troubleshooting
 
 ### Build Fails
+
+**Error**: "Could not find a version that satisfies the requirement qdrant-client==1.7.0"
+- **Fix**: Python version mismatch. Ensure `runtime.txt` exists with `python-3.11.9`
+- Render will automatically use this version instead of defaulting to 3.13
 
 **Error**: "Could not find requirements-cloud.txt"
 - **Fix**: Make sure you're in the `backend` directory in your repo

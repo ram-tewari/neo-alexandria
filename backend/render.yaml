@@ -23,8 +23,6 @@ services:
         sync: false
       - key: PHAROS_ADMIN_TOKEN
         sync: false
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: MAX_QUEUE_SIZE
         value: 10
       - key: TASK_TTL_SECONDS

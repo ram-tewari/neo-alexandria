@@ -15,6 +15,7 @@ alembic==1.14.0
 
 # Monitoring
 prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0
 
 # Task Queue & Communication
 upstash-redis==0.15.0

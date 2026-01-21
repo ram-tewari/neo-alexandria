@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: neo-alexandria-cloud-api
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements-cloud.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MODE
+        value: CLOUD
+      - key: DATABASE_URL
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: PHAROS_ADMIN_TOKEN
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MAX_QUEUE_SIZE
+        value: 10
+      - key: TASK_TTL_SECONDS
+        value: 3600
+    healthCheckPath: /health
+    autoDeploy: true

@@ -136,10 +136,70 @@ class Settings(BaseSettings):
     PARENT_CHILD_CONTEXT_WINDOW: int = 2  # Number of surrounding chunks to include
     GRAPHRAG_MAX_HOPS: int = 2  # Maximum graph traversal depth
 
+    # Phase 19 - Hybrid Edge-Cloud Orchestration
+    MODE: Literal["CLOUD", "EDGE"] = "CLOUD"  # Deployment mode
+    
+    # Upstash Redis (for task queue and status tracking)
+    UPSTASH_REDIS_REST_URL: str | None = None
+    UPSTASH_REDIS_REST_TOKEN: SecretStr | None = None
+    
+    # Neon Database (serverless PostgreSQL)
+    NEON_DATABASE_URL: str | None = None
+    
+    # Qdrant Cloud (vector database)
+    QDRANT_URL: str | None = None
+    QDRANT_API_KEY: SecretStr | None = None
+    
+    # API Authentication
+    PHAROS_ADMIN_TOKEN: SecretStr | None = None  # Bearer token for /ingest endpoint
+    
+    # Task Queue Configuration
+    MAX_QUEUE_SIZE: int = 10  # Maximum pending tasks to prevent zombie queue
+    TASK_TTL_SECONDS: int = 86400  # 24 hours - tasks older than this are skipped
+    
+    # Edge Worker Configuration
+    WORKER_POLL_INTERVAL: int = 2  # Seconds between queue polls
+    DEVICE: str | None = None  # Set automatically based on CUDA availability
+
     class Config:
         env_file = "config/.env"
         env_file_encoding = "utf-8"
         extra = "ignore"  # Ignore extra fields in .env file
+
+    def __init__(self, **kwargs):
+        """
+        Initialize settings with MODE-aware configuration.
+        
+        CLOUD mode: Lightweight, no torch imports
+        EDGE mode: Full ML stack with CUDA detection
+        """
+        super().__init__(**kwargs)
+        
+        # MODE-aware initialization
+        if self.MODE == "CLOUD":
+            # Cloud mode: Skip heavy imports
+            pass
+        elif self.MODE == "EDGE":
+            # Edge mode: Verify CUDA and set device
+            try:
+                import torch
+                self.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+                
+                # Log GPU information
+                if self.DEVICE == "cuda":
+                    gpu_name = torch.cuda.get_device_name(0)
+                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1e9
+                    print(f"🔥 Edge Worker GPU Detected:")
+                    print(f"   Device: {gpu_name}")
+                    print(f"   Memory: {gpu_memory:.1f} GB")
+                    print(f"   CUDA Version: {torch.version.cuda}")
+                else:
+                    print("⚠️  CUDA not available, falling back to CPU")
+            except ImportError:
+                raise ImportError(
+                    "MODE=EDGE requires torch to be installed. "
+                    "Install with: pip install -r requirements-edge.txt"
+                )
 
     def get_database_url(self) -> str:
         """
@@ -180,6 +240,8 @@ def get_settings() -> Settings:
     Raises:
         ValueError: If configuration validation fails
     """
+    import os
+    
     settings = Settings()
 
     # Validate graph weights sum to 1.0
@@ -346,5 +408,104 @@ def get_settings() -> Settings:
             f"Configuration validation failed: GRAPHRAG_MAX_HOPS must be positive, "
             f"got {settings.GRAPHRAG_MAX_HOPS}. Expected type: int (> 0)"
         )
+
+    # Validate Phase 19 - Hybrid Edge-Cloud Orchestration configuration
+    if settings.MODE not in ("CLOUD", "EDGE"):
+        raise ValueError(
+            f"Configuration validation failed: MODE must be 'CLOUD' or 'EDGE', "
+            f"got '{settings.MODE}'. Expected type: Literal['CLOUD', 'EDGE']"
+        )
+
+    # Only validate Phase 19 requirements if explicitly enabled
+    # This allows existing tests to run without Phase 19 configuration
+    phase19_enabled = os.getenv("PHASE19_ENABLED", "").lower() in ("true", "1", "yes")
+    
+    if phase19_enabled:
+        # Validate Upstash Redis configuration (required for both modes)
+        if not settings.UPSTASH_REDIS_REST_URL:
+            raise ValueError(
+                "Configuration validation failed: UPSTASH_REDIS_REST_URL must be set. "
+                "Expected type: str (non-empty)"
+            )
+
+        # Enforce HTTPS for Upstash Redis (Requirement 11.3)
+        if not settings.UPSTASH_REDIS_REST_URL.startswith("https://"):
+            raise ValueError(
+                f"Configuration validation failed: UPSTASH_REDIS_REST_URL must use HTTPS, "
+                f"got '{settings.UPSTASH_REDIS_REST_URL}'. Expected: https://..."
+            )
+
+        if not settings.UPSTASH_REDIS_REST_TOKEN:
+            raise ValueError(
+                "Configuration validation failed: UPSTASH_REDIS_REST_TOKEN must be set. "
+                "Expected type: SecretStr (non-empty)"
+            )
+
+        # Validate PHAROS_ADMIN_TOKEN (required for security)
+        if not settings.PHAROS_ADMIN_TOKEN:
+            raise ValueError(
+                "Configuration validation failed: PHAROS_ADMIN_TOKEN must be set for API authentication. "
+                "Expected type: SecretStr (non-empty)"
+            )
+
+        # Validate queue configuration
+        if settings.MAX_QUEUE_SIZE <= 0:
+            raise ValueError(
+                f"Configuration validation failed: MAX_QUEUE_SIZE must be positive, "
+                f"got {settings.MAX_QUEUE_SIZE}. Expected type: int (> 0)"
+            )
+
+        if settings.TASK_TTL_SECONDS <= 0:
+            raise ValueError(
+                f"Configuration validation failed: TASK_TTL_SECONDS must be positive, "
+                f"got {settings.TASK_TTL_SECONDS}. Expected type: int (> 0)"
+            )
+
+        if settings.WORKER_POLL_INTERVAL <= 0:
+            raise ValueError(
+                f"Configuration validation failed: WORKER_POLL_INTERVAL must be positive, "
+                f"got {settings.WORKER_POLL_INTERVAL}. Expected type: int (> 0)"
+            )
+
+        # Mode-specific validation
+        if settings.MODE == "CLOUD":
+            # Cloud mode: Validate cloud-specific requirements
+            # Enforce HTTPS for Qdrant (Requirement 11.3)
+            if settings.QDRANT_URL and not settings.QDRANT_URL.startswith("https://"):
+                raise ValueError(
+                    f"Configuration validation failed: QDRANT_URL must use HTTPS, "
+                    f"got '{settings.QDRANT_URL}'. Expected: https://..."
+                )
+
+            # Enforce HTTPS for Neon (Requirement 11.3)
+            if settings.NEON_DATABASE_URL:
+                if not settings.NEON_DATABASE_URL.startswith("postgresql://"):
+                    raise ValueError(
+                        f"Configuration validation failed: NEON_DATABASE_URL must be a PostgreSQL URL, "
+                        f"got '{settings.NEON_DATABASE_URL}'. Expected: postgresql://..."
+                    )
+                # Check if Neon URL uses SSL (Neon always uses SSL)
+                # Note: PostgreSQL URLs don't show https://, but Neon enforces SSL by default
+
+        elif settings.MODE == "EDGE":
+            # Edge mode: Validate edge-specific requirements
+            if not settings.QDRANT_URL:
+                raise ValueError(
+                    "Configuration validation failed: QDRANT_URL must be set in EDGE mode. "
+                    "Expected type: str (non-empty)"
+                )
+
+            # Enforce HTTPS for Qdrant (Requirement 11.3)
+            if not settings.QDRANT_URL.startswith("https://"):
+                raise ValueError(
+                    f"Configuration validation failed: QDRANT_URL must use HTTPS, "
+                    f"got '{settings.QDRANT_URL}'. Expected: https://..."
+                )
+
+            if not settings.QDRANT_API_KEY:
+                raise ValueError(
+                    "Configuration validation failed: QDRANT_API_KEY must be set in EDGE mode. "
+                    "Expected type: SecretStr (non-empty)"
+                )
 
     return settings

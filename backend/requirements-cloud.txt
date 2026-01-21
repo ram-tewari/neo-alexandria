@@ -1,0 +1,14 @@
+# Cloud API requirements (Render Free Tier - 512MB RAM)
+# Extends base requirements with cloud-specific dependencies
+# DO NOT duplicate base dependencies here - they are inherited automatically
+
+-r requirements-base.txt
+
+# Database
+psycopg2-binary==2.9.9
+
+# Vector Database
+qdrant-client==1.7.0
+
+# Note: NO torch, transformers, or heavy ML libraries
+# Cloud API is lightweight and dispatches ML tasks to Edge Worker

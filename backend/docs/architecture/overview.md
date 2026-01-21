@@ -143,6 +143,50 @@ Phase 17 adds production-ready authentication, rate limiting, and infrastructure
 - **Flexible**: Tiered rate limits, OAuth2 providers, TEST_MODE for development
 - **Resilient**: Graceful degradation when Redis unavailable
 
+### Phase 19: Hybrid Edge-Cloud Orchestration
+
+Phase 19 introduces a hybrid architecture that splits the backend into Cloud API (Render) and Edge Worker (local GPU) for cost-optimized ML processing.
+
+**New Components:**
+
+1. **Cloud API (Control Plane)** - Lightweight FastAPI service on Render Free Tier
+   - POST `/api/v1/ingestion/ingest/{repo_url}` - Queue repository for processing
+   - GET `/api/v1/ingestion/worker/status` - Real-time worker status
+   - GET `/api/v1/ingestion/jobs/history` - Job history and metrics
+   - Bearer token authentication (PHAROS_ADMIN_TOKEN)
+   - Queue cap (10 pending tasks) and TTL (24 hours)
+   - Memory: <512MB (no ML libraries loaded)
+
+2. **Edge Worker (Compute Plane)** - GPU-accelerated Python worker on local hardware
+   - Repository cloning and parsing (GitPython, Tree-sitter)
+   - Dependency graph construction (PyTorch tensors)
+   - Graph neural network training (PyTorch Geometric Node2Vec)
+   - Structural embedding generation (64 dimensions)
+   - Batch upload to Qdrant Cloud
+   - GPU utilization: 70-90% during training
+
+3. **Serverless Infrastructure** - $0/month cloud costs
+   - Upstash Redis - Task queue, worker status, job history
+   - Neon PostgreSQL - Metadata storage (3GB free tier)
+   - Qdrant Cloud - Vector embeddings (1GB free tier)
+
+4. **Configuration Management** - Base + extension strategy
+   - `requirements-base.txt` - Shared dependencies
+   - `requirements-cloud.txt` - Extends base with cloud-specific deps
+   - `requirements-edge.txt` - Extends base with ML dependencies
+   - MODE-aware configuration (CLOUD vs EDGE)
+
+**Architecture Benefits:**
+
+- **Cost Optimized**: $0/month cloud costs, ~$10-20/month edge costs (electricity)
+- **Performance**: Local GPU for 10x faster ML training
+- **Scalable**: Multiple edge workers can share the same queue
+- **Secure**: Bearer token authentication, queue caps, task TTL
+- **Resilient**: Retry logic, graceful degradation, error recovery
+- **Transparent**: Real-time status updates for UI integration
+
+**See Also**: [Phase 19 Hybrid Architecture](phase19-hybrid.md)
+
 ### Phase 14: Complete Vertical Slice Refactor
 
 Phase 14 completes the modular architecture transformation by migrating all remaining domains from the traditional layered structure to self-contained vertical slice modules.

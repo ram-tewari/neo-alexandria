@@ -51,6 +51,7 @@ Complete REST API documentation organized by module:
 
 - [API Overview](api/overview.md) - Authentication, errors, pagination, module architecture
 - [Authentication API](api/auth.md) - JWT authentication, OAuth2, rate limiting (Phase 17)
+- [Ingestion API](api/ingestion.md) - Repository ingestion and processing (Phase 19)
 - [Resources API](api/resources.md) - Content management and ingestion
 - [Search API](api/search.md) - Hybrid search, three-way fusion
 - [Collections API](api/collections.md) - Collection management
@@ -80,17 +81,18 @@ System design and technical decisions:
 Getting started and development workflows:
 
 - [Setup Guide](guides/setup.md) - Installation and environment setup
-- [Deployment Guide](guides/deployment.md) - **Docker deployment and Swagger testing**
+- [Deployment Guide](guides/deployment.md) - Docker deployment and Swagger testing
 - [Development Workflows](guides/workflows.md) - Common development tasks
 - [Testing Guide](guides/testing.md) - Testing strategies and patterns
 - [Troubleshooting](guides/troubleshooting.md) - Common issues and solutions
-
-- [Setup Guide](guides/setup.md) - Installation and configuration
-- [Development Workflows](guides/workflows.md) - Common tasks
-- [Testing Guide](guides/testing.md) - Running and writing tests
-- [Deployment Guide](guides/deployment.md) - Docker and production
-- [Troubleshooting](guides/troubleshooting.md) - Common issues
 - [Code Ingestion Guide](guides/code-ingestion.md) - Repository analysis and code intelligence
+
+### Phase 19: Hybrid Edge-Cloud Architecture
+
+- [Phase 19 Cloud Deployment](guides/phase19-deployment.md) - Deploy Cloud API to Render
+- [Phase 19 Edge Worker Setup](guides/phase19-edge-setup.md) - Set up local GPU worker
+- [Phase 19 Monitoring](guides/phase19-monitoring.md) - Monitor hybrid system health
+- [Phase 19 Architecture](architecture/phase19-hybrid.md) - Hybrid architecture overview
 
 ## Interactive Documentation
 

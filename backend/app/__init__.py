@@ -276,6 +276,9 @@ def create_app() -> FastAPI:
         - /docs - API documentation
         - /openapi.json - OpenAPI schema
         - /monitoring/health - Health check endpoint
+        - /api/v1/ingestion/health - Ingestion health check
+        - /api/v1/ingestion/worker/status - Worker status monitoring
+        - /api/v1/ingestion/jobs/history - Job history monitoring
         - Test mode (TESTING=true environment variable)
         - OPTIONS requests (CORS preflight)
         """
@@ -298,6 +301,9 @@ def create_app() -> FastAPI:
             "/openapi.json",
             "/redoc",
             "/api/monitoring/health",  # Health check endpoint (with /api prefix)
+            "/api/v1/ingestion/health",  # Ingestion health check
+            "/api/v1/ingestion/worker/status",  # Worker status (public for monitoring)
+            "/api/v1/ingestion/jobs/history",  # Job history (public for monitoring)
         ]
 
         # Check if path is excluded
@@ -368,6 +374,9 @@ def create_app() -> FastAPI:
 
         Excluded paths:
         - /monitoring/health - Health check endpoint
+        - /api/v1/ingestion/health - Ingestion health check
+        - /api/v1/ingestion/worker/status - Worker status monitoring
+        - /api/v1/ingestion/jobs/history - Job history monitoring
 
         Rate limit headers are added to all responses.
         """
@@ -377,6 +386,9 @@ def create_app() -> FastAPI:
         # Define excluded paths
         excluded_paths = [
             "/api/monitoring/health",  # Health check endpoint (with /api prefix)
+            "/api/v1/ingestion/health",  # Ingestion health check
+            "/api/v1/ingestion/worker/status",  # Worker status
+            "/api/v1/ingestion/jobs/history",  # Job history
         ]
 
         # Check if path is excluded

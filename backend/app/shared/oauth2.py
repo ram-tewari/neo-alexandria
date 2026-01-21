@@ -20,10 +20,11 @@ try:
     import pybreaker
     from .circuit_breaker import oauth_google_breaker, oauth_github_breaker
     CIRCUIT_BREAKER_AVAILABLE = True
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     CIRCUIT_BREAKER_AVAILABLE = False
     oauth_google_breaker = None
     oauth_github_breaker = None
+    logger.warning("Circuit breaker not available (pybreaker not installed) - OAuth will work without resilience patterns")
 
 
 class OAuth2Provider:

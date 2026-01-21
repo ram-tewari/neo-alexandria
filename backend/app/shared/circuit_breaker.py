@@ -20,7 +20,12 @@ import logging
 from functools import wraps
 from typing import Any, Callable, Optional, TypeVar, ParamSpec
 
-import pybreaker
+try:
+    import pybreaker
+    PYBREAKER_AVAILABLE = True
+except ImportError:
+    PYBREAKER_AVAILABLE = False
+    pybreaker = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +112,7 @@ class CircuitBreakerFactory:
         fail_max: int = CircuitBreakerConfig.DEFAULT_FAIL_MAX,
         reset_timeout: int = CircuitBreakerConfig.DEFAULT_RESET_TIMEOUT,
         exclude: Optional[list] = None
-    ) -> pybreaker.CircuitBreaker:
+    ):
         """
         Get or create a circuit breaker instance.
         
@@ -118,8 +123,12 @@ class CircuitBreakerFactory:
             exclude: Exception types to not count as failures
         
         Returns:
-            Circuit breaker instance
+            Circuit breaker instance or None if pybreaker not available
         """
+        if not PYBREAKER_AVAILABLE:
+            logger.warning(f"Circuit breaker '{name}' requested but pybreaker not available")
+            return None
+            
         if name not in cls._instances:
             listener = CircuitBreakerListener(name)
             cls._instances[name] = pybreaker.CircuitBreaker(
@@ -276,13 +285,23 @@ def with_circuit_breaker_async(
 # Pre-configured Breakers (Singletons)
 # ============================================================================
 
-# HTTP content fetching
-http_content_breaker = CircuitBreakerFactory.get_http_breaker("content")
+if PYBREAKER_AVAILABLE:
+    # HTTP content fetching
+    http_content_breaker = CircuitBreakerFactory.get_http_breaker("content")
 
-# OAuth providers
-oauth_google_breaker = CircuitBreakerFactory.get_oauth_breaker("google")
-oauth_github_breaker = CircuitBreakerFactory.get_oauth_breaker("github")
+    # OAuth providers
+    oauth_google_breaker = CircuitBreakerFactory.get_oauth_breaker("google")
+    oauth_github_breaker = CircuitBreakerFactory.get_oauth_breaker("github")
 
-# AI/ML services
-ai_embedding_breaker = CircuitBreakerFactory.get_ai_breaker("embedding")
-ai_llm_breaker = CircuitBreakerFactory.get_ai_breaker("llm")
+    # AI/ML services
+    ai_embedding_breaker = CircuitBreakerFactory.get_ai_breaker("embedding")
+    ai_llm_breaker = CircuitBreakerFactory.get_ai_breaker("llm")
+else:
+    # Fallback: No circuit breakers available
+    http_content_breaker = None
+    oauth_google_breaker = None
+    oauth_github_breaker = None
+    ai_embedding_breaker = None
+    ai_llm_breaker = None
+    logger.warning("Circuit breakers not available - pybreaker not installed. Services will operate without resilience patterns.")
+

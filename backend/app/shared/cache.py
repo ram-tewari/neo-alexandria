@@ -19,7 +19,13 @@ Related files:
 import json
 import logging
 from typing import Any, Optional
-import redis
+
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    redis = None  # type: ignore
 
 from ..config.settings import get_settings
 
@@ -84,24 +90,34 @@ class CacheService:
         stats: CacheStats instance for tracking performance
     """
 
-    def __init__(self, redis_client: Optional[redis.Redis] = None):
+    def __init__(self, redis_client: Optional["redis.Redis"] = None):
         """Initialize cache service.
 
         Args:
             redis_client: Optional Redis client instance. If not provided,
                          creates a new client using settings.
         """
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available - caching will be disabled")
+            self.redis = None
+            self.stats = CacheStats()
+            return
+            
         if redis_client:
             self.redis = redis_client
         else:
-            self.redis = redis.Redis(
-                host=getattr(settings, "REDIS_HOST", "localhost"),
-                port=getattr(settings, "REDIS_PORT", 6379),
-                db=getattr(settings, "REDIS_CACHE_DB", 2),
-                decode_responses=True,
-                socket_connect_timeout=5,
-                socket_timeout=5,
-            )
+            try:
+                self.redis = redis.Redis(
+                    host=getattr(settings, "REDIS_HOST", "localhost"),
+                    port=getattr(settings, "REDIS_PORT", 6379),
+                    db=getattr(settings, "REDIS_CACHE_DB", 2),
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5,
+                )
+            except Exception as e:
+                logger.error(f"Redis cache initialization failed: {e} - caching will be disabled")
+                self.redis = None
         self.stats = CacheStats()
 
     def get(self, key: str) -> Optional[Any]:
@@ -113,6 +129,10 @@ class CacheService:
         Returns:
             Cached value if found, None otherwise
         """
+        if not self.redis:
+            self.stats.record_miss()
+            return None
+            
         try:
             value = self.redis.get(key)
             if value:
@@ -120,12 +140,8 @@ class CacheService:
                 return json.loads(value)
             self.stats.record_miss()
             return None
-        except redis.RedisError as e:
+        except Exception as e:
             logger.error(f"Redis get error for key {key}: {e}")
-            self.stats.record_miss()
-            return None
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error for key {key}: {e}")
             self.stats.record_miss()
             return None
 
@@ -137,14 +153,15 @@ class CacheService:
             value: Value to cache (will be JSON-serialized)
             ttl: Time-to-live in seconds. If None, uses get_default_ttl()
         """
+        if not self.redis:
+            return
+            
         try:
             ttl_seconds = ttl if ttl is not None else self.get_default_ttl(key)
             serialized_value = json.dumps(value)
             self.redis.setex(key, ttl_seconds, serialized_value)
-        except redis.RedisError as e:
+        except Exception as e:
             logger.error(f"Redis set error for key {key}: {e}")
-        except (TypeError, ValueError) as e:
-            logger.error(f"JSON serialization error for key {key}: {e}")
 
     def delete(self, key: str):
         """Delete single key.
@@ -152,11 +169,14 @@ class CacheService:
         Args:
             key: Cache key to delete
         """
+        if not self.redis:
+            return
+            
         try:
             deleted = self.redis.delete(key)
             if deleted > 0:
                 self.stats.record_invalidation()
-        except redis.RedisError as e:
+        except Exception as e:
             logger.error(f"Redis delete error for key {key}: {e}")
 
     def invalidate(self, key: str):
@@ -175,13 +195,16 @@ class CacheService:
         Args:
             pattern: Redis key pattern (e.g., "search_query:*")
         """
+        if not self.redis:
+            return
+            
         try:
             keys = self.redis.keys(pattern)
             if keys:
                 deleted = self.redis.delete(*keys)
                 self.stats.record_invalidation(deleted)
                 logger.info(f"Deleted {deleted} keys matching pattern: {pattern}")
-        except redis.RedisError as e:
+        except Exception as e:
             logger.error(f"Redis delete_pattern error for pattern {pattern}: {e}")
 
     def get_default_ttl(self, key: str) -> int:
@@ -217,9 +240,12 @@ class CacheService:
         Returns:
             True if connection is alive, False otherwise
         """
+        if not self.redis:
+            return False
+            
         try:
             return self.redis.ping()
-        except redis.RedisError:
+        except Exception:
             return False
 
 

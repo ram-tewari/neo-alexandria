@@ -11,9 +11,9 @@ Architecture:
 - ReLU activations, Sigmoid output
 
 Related files:
-- app/database/models.py: UserInteraction, Resource models
-- app/services/user_profile_service.py: Interaction tracking
-- app/services/hybrid_recommendation_service.py: Uses NCF predictions
+- app.database.models: UserInteraction, Resource models
+- app.services.user_profile_service: Interaction tracking
+- app.services.hybrid_recommendation_service: Uses NCF predictions
 """
 
 import logging
@@ -21,9 +21,18 @@ import os
 from typing import Dict, List, Optional
 
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
+
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None  # type: ignore
+    nn = None  # type: ignore
+    optim = None  # type: ignore
+
 from sqlalchemy.orm import Session
 
 from app.database.models import UserInteraction

@@ -54,11 +54,18 @@ def register_all_modules(app: FastAPI) -> None:
         app: FastAPI application instance
     """
     logger.info("Starting module registration...")
+    
+    # Get deployment mode
+    from app.config.settings import get_settings
+    settings = get_settings()
+    deployment_mode = settings.MODE
+    
+    logger.info(f"Deployment mode: {deployment_mode}")
 
     # Define modules to register: (module_name, import_path, router_names)
     # router_names can be a single string or a list of strings for modules with multiple routers
     # Phase 13.5 modules (completed)
-    modules: List[Tuple[str, str, List[str]]] = [
+    base_modules: List[Tuple[str, str, List[str]]] = [
         ("collections", "app.modules.collections", ["collections_router"]),
         ("resources", "app.modules.resources", ["resources_router"]),
         ("search", "app.modules.search", ["search_router"]),
@@ -74,11 +81,41 @@ def register_all_modules(app: FastAPI) -> None:
             "app.modules.graph",
             ["graph_router", "citations_router", "discovery_router"],
         ),
-        ("recommendations", "app.modules.recommendations", ["recommendations_router"]),
-        ("monitoring", "app.modules.monitoring", ["monitoring_router"]),
         # Phase 17 modules (in progress)
         ("auth", "app.modules.auth", ["router"]),
     ]
+    
+    # Modules that require torch (only load in EDGE mode)
+    edge_only_modules: List[Tuple[str, str, List[str]]] = [
+        ("recommendations", "app.modules.recommendations", ["recommendations_router"]),
+    ]
+    
+    # Modules that require redis (only load in EDGE mode or when redis is available)
+    redis_modules: List[Tuple[str, str, List[str]]] = [
+        ("monitoring", "app.modules.monitoring", ["monitoring_router"]),
+    ]
+    
+    # Build final module list based on deployment mode
+    modules = base_modules.copy()
+    
+    if deployment_mode == "EDGE":
+        # Edge mode: Load all modules including ML-heavy ones
+        modules.extend(edge_only_modules)
+        modules.extend(redis_modules)
+        logger.info("Edge mode: Loading all modules including ML-heavy modules")
+    else:
+        # Cloud mode: Skip torch-dependent modules, add ingestion router
+        logger.info("Cloud mode: Skipping torch-dependent modules (recommendations)")
+        # Try to load redis modules but don't fail if redis unavailable
+        modules.extend(redis_modules)
+        
+        # Add Phase 19 ingestion router for cloud API
+        try:
+            from app.routers.ingestion import router as ingestion_router
+            app.include_router(ingestion_router)
+            logger.info("✓ Registered ingestion router for cloud API")
+        except Exception as e:
+            logger.warning(f"Could not load ingestion router: {e}")
 
     registered_count = 0
     failed_count = 0

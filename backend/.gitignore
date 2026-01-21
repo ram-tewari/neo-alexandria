@@ -107,6 +107,7 @@ celerybeat.pid
 .env.cloud
 .env.edge
 .venv
+.venv_wsl
 env/
 venv/
 ENV/

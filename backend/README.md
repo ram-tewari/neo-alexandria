@@ -8,9 +8,11 @@ Neo Alexandria 2.0 is a comprehensive knowledge management system that provides 
 > - [Product Vision & Goals](../.kiro/steering/product.md) - What we're building and why
 > - [Tech Stack & Architecture](../.kiro/steering/tech.md) - How we're building it
 > - [Repository Structure](../.kiro/steering/structure.md) - Where things are located
+> - [Deployment Guide](docs/guides/deployment.md) - Cloud & edge deployment
 > - [API Documentation](docs/index.md) - Complete API reference
 > - [Architecture Guide](docs/architecture/overview.md) - System architecture details
 > - [Developer Setup](docs/guides/setup.md) - Getting started guide
+> - [Testing History](docs/guides/testing-history.md) - Historical test results
 
 ## Key Features
 

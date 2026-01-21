@@ -1,504 +1,283 @@
-# Neo Alexandria 2.0 - Deployment Guide
+# Deployment Guide
 
-## Quick Start with Docker
+## Overview
 
-### Prerequisites
+Neo Alexandria 2.0 uses a hybrid edge-cloud architecture (Phase 19) that splits the backend into two complementary components:
 
-- Docker and Docker Compose installed
-- PostgreSQL running on host (port 5432)
-- At least 4GB RAM available
-- 10GB disk space
+- **Cloud API (Render)**: Lightweight control plane for orchestration
+- **Edge Worker (Local)**: GPU-accelerated compute plane for ML operations
 
-### Build Time Expectations
+## Quick Start
 
-**First-time build**: 10-15 minutes
-- Downloads ~1GB of ML libraries (PyTorch 797MB, transformers, spaCy, etc.)
-- Installs all Python dependencies
-- Builds Docker image layers
+### Cloud Deployment (Render)
 
-**Subsequent starts**: 10-30 seconds
-- Uses cached Docker image
-- Only starts containers
+1. **Prerequisites**:
+   - GitHub repository connected to Render
+   - Environment variables configured in Render dashboard
+   - Neon Postgres, Qdrant Cloud, Upstash Redis accounts
 
-**Rebuilds after code changes**: 30-60 seconds
-- Only rebuilds changed layers
-- Dependencies remain cached
+2. **Deploy**:
+   ```bash
+   git push origin master
+   # Render auto-deploys from master branch
+   ```
 
-**Note**: The initial build is slow due to large ML libraries. After the first build, Docker's layer caching makes subsequent starts very fast.
+3. **Verify**:
+   ```bash
+   curl https://pharos.onrender.com/health
+   ```
 
-### Step 1: Configure Environment
+### Edge Worker (Local)
 
+1. **Setup**:
+   ```bash
+   cd backend
+   pip install -r requirements-edge.txt
+   cp .env.edge.template .env
+   # Edit .env with your credentials
+   ```
+
+2. **Run**:
+   ```bash
+   python worker.py
+   ```
+
+3. **Verify**:
+   - Check for "Edge Worker Online" message
+   - Verify GPU detection: "Hardware: NVIDIA GeForce RTX 4070"
+
+## Configuration
+
+### Environment Variables
+
+**Cloud API** (`.env.cloud.template`):
 ```bash
-cd backend
-
-# Copy production environment template
-cp .env.production .env
-
-# Edit .env with your actual values
-# IMPORTANT: Change JWT_SECRET_KEY and POSTGRES_PASSWORD
-nano .env
+MODE=CLOUD
+DATABASE_URL=postgresql://...  # Neon Postgres
+QDRANT_URL=https://...         # Qdrant Cloud
+QDRANT_API_KEY=...
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+PHAROS_ADMIN_TOKEN=...         # For ingestion auth
 ```
 
-### Step 2: Build and Start Services
-
+**Edge Worker** (`.env.edge.template`):
 ```bash
-# Build the Docker image
-docker-compose build
-
-# Start all services (Redis, Backend, Celery Worker)
-docker-compose up -d
-
-# Check logs
-docker-compose logs -f backend
+MODE=EDGE
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+QDRANT_URL=https://...
+QDRANT_API_KEY=...
 ```
 
-### Step 3: Run Database Migrations
+### Deployment Modes
 
-```bash
-# Run migrations to create/update database schema
-docker-compose exec backend alembic upgrade head
+The application uses `MODE` environment variable to determine which modules to load:
+
+- **CLOUD**: Lightweight API, skips torch-dependent modules (recommendations)
+- **EDGE**: Full ML stack with torch, transformers, and graph neural networks
+
+## Architecture
+
+### Cloud API (Render Free Tier)
+
+**Resources**:
+- 512MB RAM
+- 0.1 CPU
+- PostgreSQL (Neon)
+- Vector DB (Qdrant Cloud)
+- Redis (Upstash)
+
+**Modules Loaded**:
+- ✓ Core: collections, resources, search
+- ✓ Features: annotations, scholarly, authority, curation
+- ✓ ML: quality, taxonomy, graph
+- ✓ Auth: JWT authentication
+- ✓ Ingestion: Task dispatch
+- ✗ Recommendations: Requires torch (skipped)
+
+**Endpoints**:
+- `GET /health` - Health check
+- `GET /docs` - API documentation
+- `POST /api/v1/ingestion/ingest/{repo_url}` - Dispatch ingestion task
+- `GET /api/v1/ingestion/worker/status` - Worker status
+- All other module endpoints
+
+### Edge Worker (Local GPU)
+
+**Resources**:
+- GPU: NVIDIA RTX 4070 (or any CUDA-capable GPU)
+- RAM: 8GB+ recommended
+- Storage: 10GB+ for models
+
+**Capabilities**:
+- Repository cloning and parsing
+- Dependency graph construction
+- Node2Vec training on GPU
+- Structural embedding generation
+- Batch upload to Qdrant
+
+**Task Flow**:
+1. Poll Redis queue every 2 seconds
+2. Clone repository
+3. Parse source files with Tree-sitter
+4. Build dependency graph
+5. Train Node2Vec on GPU
+6. Upload embeddings to Qdrant
+7. Update job status
+
+## Deployment Fixes (January 2026)
+
+### Issue: Missing Dependencies
+
+**Problem**: Cloud deployment failed with:
+```
+ModuleNotFoundError: No module named 'torch'
+ModuleNotFoundError: No module named 'redis'
 ```
 
-### Step 4: Verify Deployment
+**Root Cause**: Application tried to load ALL modules including torch-dependent ones in cloud environment.
 
-```bash
-# Check service health
-curl http://localhost:8000/health
+**Solution**:
+1. Made redis imports optional with graceful degradation
+2. Added `redis==5.2.1` to `requirements-base.txt`
+3. Made torch imports optional in recommendations module
+4. Implemented conditional module loading based on MODE
 
-# Expected response:
-# {"status":"healthy","database":"connected","redis":"connected"}
-```
-
-### Step 5: Access Swagger Documentation
-
-Open your browser and navigate to:
-```
-http://localhost:8000/docs
-```
-
-This will show the interactive API documentation where you can test all endpoints.
-
----
-
-## Configuration Details
-
-### Database Connection
-
-The backend connects to your existing PostgreSQL database on the host machine:
-
-```yaml
-POSTGRES_SERVER: host.docker.internal  # Docker's host gateway
-POSTGRES_PORT: 5432
-POSTGRES_USER: neo_user
-POSTGRES_PASSWORD: your_password
-POSTGRES_DB: neo_alexandria
-```
-
-**Note**: `host.docker.internal` allows Docker containers to access services running on the host machine.
-
-### Advanced RAG Features
-
-Chunking is **enabled by default** for automatic processing:
-
-```yaml
-CHUNK_ON_RESOURCE_CREATE: true        # Auto-chunk on upload
-CHUNKING_STRATEGY: semantic           # Semantic chunking
-CHUNK_SIZE: 500                       # 500 words per chunk
-CHUNK_OVERLAP: 50                     # 50 words overlap
-GRAPH_EXTRACTION_ENABLED: true        # Extract knowledge graph
-GRAPH_EXTRACT_ON_CHUNK: true          # Auto-extract after chunking
-```
-
-### Rate Limiting
-
-Three tiers configured:
-
-- **Free**: 100 requests/minute
-- **Premium**: 1000 requests/minute
-- **Admin**: Unlimited (0 = no limit)
-
----
-
-## Service Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Docker Network                        │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │   Backend    │  │    Redis     │  │    Celery    │ │
-│  │   (FastAPI)  │  │   (Cache)    │  │   (Worker)   │ │
-│  │   Port 8000  │  │   Port 6379  │  │              │ │
-│  └──────┬───────┘  └──────────────┘  └──────────────┘ │
-│         │                                               │
-└─────────┼───────────────────────────────────────────────┘
-          │
-          ▼
-   ┌──────────────┐
-   │  PostgreSQL  │
-   │  (Host DB)   │
-   │  Port 5432   │
-   └──────────────┘
-```
-
----
-
-## Common Commands
-
-### Start/Stop Services
-
-```bash
-# Start all services
-docker-compose up -d
-
-# Stop all services
-docker-compose down
-
-# Restart a specific service
-docker-compose restart backend
-
-# View logs
-docker-compose logs -f backend
-docker-compose logs -f celery-worker
-docker-compose logs -f redis
-```
-
-### Database Operations
-
-```bash
-# Run migrations
-docker-compose exec backend alembic upgrade head
-
-# Rollback one migration
-docker-compose exec backend alembic downgrade -1
-
-# Check current migration version
-docker-compose exec backend alembic current
-
-# Create new migration
-docker-compose exec backend alembic revision --autogenerate -m "description"
-```
-
-### Maintenance
-
-```bash
-# Rebuild after code changes
-docker-compose build backend
-docker-compose up -d backend
-
-# Clear Redis cache
-docker-compose exec redis redis-cli FLUSHALL
-
-# Access backend shell
-docker-compose exec backend bash
-
-# Access Python shell
-docker-compose exec backend python
-```
-
----
-
-## Testing the Deployment
-
-### 1. Health Check
-
-```bash
-curl http://localhost:8000/health
-```
-
-Expected response:
-```json
-{
-  "status": "healthy",
-  "database": "connected",
-  "redis": "connected",
-  "modules": {
-    "resources": "healthy",
-    "search": "healthy",
-    "auth": "healthy"
-  }
-}
-```
-
-### 2. Register a User
-
-```bash
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "username": "testuser",
-    "password": "SecurePassword123!"
-  }'
-```
-
-### 3. Login
-
-```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "password": "SecurePassword123!"
-  }'
-```
-
-Save the `access_token` from the response.
-
-### 4. Create a Resource
-
-```bash
-curl -X POST http://localhost:8000/resources \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -d '{
-    "title": "Test Document",
-    "content": "This is a test document for Neo Alexandria.",
-    "resource_type": "article"
-  }'
-```
-
-### 5. Search Resources
-
-```bash
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -d '{
-    "query": "test document",
-    "search_type": "hybrid"
-  }'
-```
-
----
-
-## Swagger UI Testing
-
-### Access Swagger
-
-Navigate to: `http://localhost:8000/docs`
-
-### Using Swagger
-
-1. **Authorize**: Click the "Authorize" button (top right)
-2. **Login**: Use `/auth/login` endpoint to get a token
-3. **Copy Token**: Copy the `access_token` from the response
-4. **Paste Token**: Paste into the authorization dialog
-5. **Test Endpoints**: Try any endpoint with the "Try it out" button
-
-### Recommended Test Flow
-
-1. **POST /auth/register** - Create a user
-2. **POST /auth/login** - Get access token
-3. **Authorize** - Add token to Swagger
-4. **POST /resources** - Create a resource
-5. **GET /resources** - List resources
-6. **POST /search** - Search resources
-7. **POST /collections** - Create a collection
-8. **POST /annotations** - Add an annotation
-
----
+**Files Modified**:
+- `app/shared/cache.py` - Optional redis import
+- `app/__init__.py` - MODE-based module loading
+- `app/modules/recommendations/collaborative.py` - Optional torch
+- `requirements-base.txt` - Added redis dependency
 
 ## Monitoring
 
-### View Logs
+### Health Checks
 
+**Cloud API**:
 ```bash
-# All services
-docker-compose logs -f
+# Basic health
+curl https://pharos.onrender.com/health
 
-# Backend only
-docker-compose logs -f backend
-
-# Last 100 lines
-docker-compose logs --tail=100 backend
-
-# Follow new logs
-docker-compose logs -f --tail=0 backend
+# Worker status
+curl https://pharos.onrender.com/api/v1/ingestion/worker/status
 ```
 
-### Check Resource Usage
+**Edge Worker**:
+- Check console output for status messages
+- Monitor Redis `worker_status` key
+- Check `job_history` list for completed jobs
 
-```bash
-# Container stats
-docker stats
+### Logs
 
-# Disk usage
-docker system df
+**Cloud API**:
+- View in Render dashboard: https://dashboard.render.com/
+- Look for: "Deployment mode: CLOUD"
+- Verify: No torch import errors
 
-# Network info
-docker network inspect backend_neo-network
-```
-
-### Health Monitoring
-
-```bash
-# Check all services
-docker-compose ps
-
-# Check backend health
-curl http://localhost:8000/health
-
-# Check Redis
-docker-compose exec redis redis-cli ping
-```
-
----
+**Edge Worker**:
+- Console output shows real-time progress
+- Status updates: "Training Graph on {repo_url}"
+- Completion: "Job Complete (X.XXs)"
 
 ## Troubleshooting
 
-### Backend Won't Start
+### Cloud API Won't Start
 
-**Check logs**:
-```bash
-docker-compose logs backend
-```
+1. Check Render logs for import errors
+2. Verify MODE=CLOUD in environment variables
+3. Ensure all cloud services (Neon, Qdrant, Upstash) are accessible
+4. Check that torch-dependent modules are being skipped
 
-**Common issues**:
-1. Database connection failed
-   - Verify PostgreSQL is running on host
-   - Check credentials in `.env`
-   - Ensure port 5432 is accessible
+### Edge Worker Can't Connect
 
-2. Redis connection failed
-   - Check Redis container: `docker-compose ps redis`
-   - Restart Redis: `docker-compose restart redis`
+1. Verify Redis credentials in `.env`
+2. Check network connectivity to Upstash
+3. Ensure CUDA is available: `python -c "import torch; print(torch.cuda.is_available())"`
+4. Verify Qdrant credentials
 
-3. Port 8000 already in use
-   - Change port in `docker-compose.yml`: `"8001:8000"`
+### Tasks Not Processing
 
-### Database Migration Errors
+1. Check Redis queue: `redis-cli LLEN ingest_queue`
+2. Verify worker is running and polling
+3. Check worker status: `GET /api/v1/ingestion/worker/status`
+4. Review job history: `GET /api/v1/ingestion/jobs/history`
 
-```bash
-# Check current version
-docker-compose exec backend alembic current
+### GPU Not Detected
 
-# Try manual migration
-docker-compose exec backend alembic upgrade head
+1. Install CUDA toolkit: https://developer.nvidia.com/cuda-downloads
+2. Install PyTorch with CUDA: `pip install torch --index-url https://download.pytorch.org/whl/cu118`
+3. Verify: `nvidia-smi` shows GPU
+4. Test: `python -c "import torch; print(torch.cuda.get_device_name(0))"`
 
-# If stuck, rollback and retry
-docker-compose exec backend alembic downgrade -1
-docker-compose exec backend alembic upgrade head
-```
+## Security
 
-### Celery Worker Not Processing Tasks
+### Authentication
 
-```bash
-# Check worker logs
-docker-compose logs celery-worker
+**Ingestion Endpoint**:
+- Requires Bearer token authentication
+- Set `PHAROS_ADMIN_TOKEN` in environment
+- Include in requests: `Authorization: Bearer $PHAROS_ADMIN_TOKEN`
 
-# Restart worker
-docker-compose restart celery-worker
+**Rate Limiting**:
+- Queue cap: 10 pending tasks maximum
+- Task TTL: 24 hours
+- Prevents zombie queue problem
 
-# Check Redis connection
-docker-compose exec celery-worker python -c "import redis; r=redis.Redis(host='redis'); print(r.ping())"
-```
+### Best Practices
 
-### Out of Memory
+1. **Never commit** `.env` files to git
+2. **Rotate tokens** regularly
+3. **Use HTTPS** for all external services
+4. **Monitor logs** for authentication failures
+5. **Limit queue size** to prevent abuse
 
-```bash
-# Check memory usage
-docker stats
+## Performance
 
-# Increase Docker memory limit (Docker Desktop)
-# Settings > Resources > Memory > Increase to 8GB
+### Cloud API
 
-# Or limit container memory in docker-compose.yml:
-# mem_limit: 2g
-```
+- Response time: P95 < 200ms
+- Concurrent requests: 100+ req/sec
+- Database queries: < 100ms
+- Memory usage: < 400MB
 
----
+### Edge Worker
 
-## Production Hardening
-
-### Security Checklist
-
-- [ ] Change `JWT_SECRET_KEY` to a strong random value
-- [ ] Use strong `POSTGRES_PASSWORD`
-- [ ] Enable HTTPS (use nginx reverse proxy)
-- [ ] Configure CORS properly
-- [ ] Set up firewall rules
-- [ ] Enable rate limiting
-- [ ] Configure OAuth2 (optional)
-- [ ] Set up monitoring and alerting
-
-### Performance Optimization
-
-- [ ] Use PostgreSQL connection pooling
-- [ ] Configure Redis persistence
-- [ ] Set up Celery autoscaling
-- [ ] Enable gzip compression
-- [ ] Configure CDN for static files
-- [ ] Set up database indexes
-- [ ] Monitor query performance
-
-### Backup Strategy
-
-```bash
-# Backup PostgreSQL database
-docker-compose exec backend pg_dump -U neo_user neo_alexandria > backup.sql
-
-# Backup Redis data
-docker-compose exec redis redis-cli SAVE
-
-# Backup uploaded files
-tar -czf storage_backup.tar.gz storage/
-```
-
----
+- Training time: ~30-60s per repository
+- GPU utilization: 80-90% during training
+- Memory usage: 2-4GB
+- Embeddings: 64-dimensional vectors
 
 ## Scaling
 
 ### Horizontal Scaling
 
-```yaml
-# Scale Celery workers
-docker-compose up -d --scale celery-worker=3
+**Edge Workers**:
+- Run multiple workers on different machines
+- Each polls the same Redis queue
+- Automatic load distribution
 
-# Scale backend (requires load balancer)
-docker-compose up -d --scale backend=2
-```
+**Cloud API**:
+- Render handles auto-scaling
+- Free tier: Single instance
+- Paid tiers: Multiple instances with load balancing
 
-### Load Balancer (nginx)
+### Vertical Scaling
 
-```nginx
-upstream backend {
-    server localhost:8000;
-    server localhost:8001;
-    server localhost:8002;
-}
+**Edge Workers**:
+- Upgrade GPU for faster training
+- Increase RAM for larger repositories
+- Add SSD for faster cloning
 
-server {
-    listen 80;
-    location / {
-        proxy_pass http://backend;
-    }
-}
-```
+**Cloud API**:
+- Upgrade Render plan for more resources
+- Scale database (Neon) for more connections
+- Scale Qdrant for more vectors
 
----
+## Related Documentation
 
-## Next Steps
-
-1. **Test all endpoints** using Swagger UI
-2. **Monitor logs** for any errors
-3. **Set up backups** for database and files
-4. **Configure OAuth2** if needed
-5. **Enable HTTPS** for production
-6. **Set up monitoring** (Sentry, Prometheus)
-7. **Load test** with realistic traffic
-
----
-
-## Support
-
-- **Documentation**: `http://localhost:8000/docs`
-- **Health Check**: `http://localhost:8000/health`
-- **Logs**: `docker-compose logs -f backend`
-- **Issues**: Check GitHub repository
-
----
-
-**Deployment Status**: ✅ Ready for Staging  
-**Production Ready**: ⚠️ Needs hardening (see checklist above)  
-**Last Updated**: January 6, 2026
+- [Phase 19 Architecture](../architecture/phase19-hybrid.md)
+- [Edge Setup Guide](phase19-edge-setup.md)
+- [Monitoring Guide](phase19-monitoring.md)
+- [API Reference](../api/ingestion.md)
+- [Requirements Strategy](../../REQUIREMENTS_STRATEGY.md)

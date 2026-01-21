@@ -5,7 +5,7 @@
 -r requirements-base.txt
 
 # Database
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 
 # Vector Database
 qdrant-client==1.12.1

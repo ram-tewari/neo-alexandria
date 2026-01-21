@@ -3,11 +3,11 @@
 # Update shared dependencies here once, both environments inherit automatically
 
 # Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
 
 # Task Queue & Communication
 upstash-redis==0.15.0

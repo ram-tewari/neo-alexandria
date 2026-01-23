@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  edge-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: neo-alexandria-edge-worker
+    environment:
+      - MODE=EDGE
+      - UPSTASH_REDIS_URL=${UPSTASH_REDIS_URL}
+      - UPSTASH_REDIS_TOKEN=${UPSTASH_REDIS_TOKEN}
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - WORKER_POLL_INTERVAL=2
+      - WORKER_MAX_RETRIES=3
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./logs:/app/logs
+      - /tmp:/tmp
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - neo-alexandria
+
+networks:
+  neo-alexandria:
+    driver: bridge

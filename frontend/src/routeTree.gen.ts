@@ -13,9 +13,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AuthSearchRouteImport } from './routes/_auth.search'
-import { Route as AuthResourcesRouteImport } from './routes/_auth.resources'
-import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
+import { Route as AuthWikiRouteImport } from './routes/_auth.wiki'
+import { Route as AuthRepositoriesRouteImport } from './routes/_auth.repositories'
+import { Route as AuthPlannerRouteImport } from './routes/_auth.planner'
+import { Route as AuthOpsRouteImport } from './routes/_auth.ops'
+import { Route as AuthLibraryRouteImport } from './routes/_auth.library'
+import { Route as AuthCortexRouteImport } from './routes/_auth.cortex'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -36,36 +39,57 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthSearchRoute = AuthSearchRouteImport.update({
-  id: '/search',
-  path: '/search',
+const AuthWikiRoute = AuthWikiRouteImport.update({
+  id: '/wiki',
+  path: '/wiki',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthResourcesRoute = AuthResourcesRouteImport.update({
-  id: '/resources',
-  path: '/resources',
+const AuthRepositoriesRoute = AuthRepositoriesRouteImport.update({
+  id: '/repositories',
+  path: '/repositories',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthDashboardRoute = AuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthPlannerRoute = AuthPlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthOpsRoute = AuthOpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLibraryRoute = AuthLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCortexRoute = AuthCortexRouteImport.update({
+  id: '/cortex',
+  path: '/cortex',
   getParentRoute: () => AuthRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/dashboard': typeof AuthDashboardRoute
-  '/resources': typeof AuthResourcesRoute
-  '/search': typeof AuthSearchRoute
+  '/cortex': typeof AuthCortexRoute
+  '/library': typeof AuthLibraryRoute
+  '/ops': typeof AuthOpsRoute
+  '/planner': typeof AuthPlannerRoute
+  '/repositories': typeof AuthRepositoriesRoute
+  '/wiki': typeof AuthWikiRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/dashboard': typeof AuthDashboardRoute
-  '/resources': typeof AuthResourcesRoute
-  '/search': typeof AuthSearchRoute
+  '/cortex': typeof AuthCortexRoute
+  '/library': typeof AuthLibraryRoute
+  '/ops': typeof AuthOpsRoute
+  '/planner': typeof AuthPlannerRoute
+  '/repositories': typeof AuthRepositoriesRoute
+  '/wiki': typeof AuthWikiRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRoutesById {
@@ -73,9 +97,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
-  '/_auth/dashboard': typeof AuthDashboardRoute
-  '/_auth/resources': typeof AuthResourcesRoute
-  '/_auth/search': typeof AuthSearchRoute
+  '/_auth/cortex': typeof AuthCortexRoute
+  '/_auth/library': typeof AuthLibraryRoute
+  '/_auth/ops': typeof AuthOpsRoute
+  '/_auth/planner': typeof AuthPlannerRoute
+  '/_auth/repositories': typeof AuthRepositoriesRoute
+  '/_auth/wiki': typeof AuthWikiRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
 export interface FileRouteTypes {
@@ -83,26 +110,35 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/dashboard'
-    | '/resources'
-    | '/search'
+    | '/cortex'
+    | '/library'
+    | '/ops'
+    | '/planner'
+    | '/repositories'
+    | '/wiki'
     | '/auth/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/dashboard'
-    | '/resources'
-    | '/search'
+    | '/cortex'
+    | '/library'
+    | '/ops'
+    | '/planner'
+    | '/repositories'
+    | '/wiki'
     | '/auth/callback'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/login'
-    | '/_auth/dashboard'
-    | '/_auth/resources'
-    | '/_auth/search'
+    | '/_auth/cortex'
+    | '/_auth/library'
+    | '/_auth/ops'
+    | '/_auth/planner'
+    | '/_auth/repositories'
+    | '/_auth/wiki'
     | '/auth/callback'
   fileRoutesById: FileRoutesById
 }
@@ -143,40 +179,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/search': {
-      id: '/_auth/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof AuthSearchRouteImport
+    '/_auth/wiki': {
+      id: '/_auth/wiki'
+      path: '/wiki'
+      fullPath: '/wiki'
+      preLoaderRoute: typeof AuthWikiRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/resources': {
-      id: '/_auth/resources'
-      path: '/resources'
-      fullPath: '/resources'
-      preLoaderRoute: typeof AuthResourcesRouteImport
+    '/_auth/repositories': {
+      id: '/_auth/repositories'
+      path: '/repositories'
+      fullPath: '/repositories'
+      preLoaderRoute: typeof AuthRepositoriesRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/dashboard': {
-      id: '/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthDashboardRouteImport
+    '/_auth/planner': {
+      id: '/_auth/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof AuthPlannerRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/ops': {
+      id: '/_auth/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof AuthOpsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/library': {
+      id: '/_auth/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AuthLibraryRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/cortex': {
+      id: '/_auth/cortex'
+      path: '/cortex'
+      fullPath: '/cortex'
+      preLoaderRoute: typeof AuthCortexRouteImport
       parentRoute: typeof AuthRoute
     }
   }
 }
 
 interface AuthRouteChildren {
-  AuthDashboardRoute: typeof AuthDashboardRoute
-  AuthResourcesRoute: typeof AuthResourcesRoute
-  AuthSearchRoute: typeof AuthSearchRoute
+  AuthCortexRoute: typeof AuthCortexRoute
+  AuthLibraryRoute: typeof AuthLibraryRoute
+  AuthOpsRoute: typeof AuthOpsRoute
+  AuthPlannerRoute: typeof AuthPlannerRoute
+  AuthRepositoriesRoute: typeof AuthRepositoriesRoute
+  AuthWikiRoute: typeof AuthWikiRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthDashboardRoute: AuthDashboardRoute,
-  AuthResourcesRoute: AuthResourcesRoute,
-  AuthSearchRoute: AuthSearchRoute,
+  AuthCortexRoute: AuthCortexRoute,
+  AuthLibraryRoute: AuthLibraryRoute,
+  AuthOpsRoute: AuthOpsRoute,
+  AuthPlannerRoute: AuthPlannerRoute,
+  AuthRepositoriesRoute: AuthRepositoriesRoute,
+  AuthWikiRoute: AuthWikiRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

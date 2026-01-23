@@ -50,7 +50,7 @@ export const LoginForm = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Sign in to Neo Alexandria
+            Sign in to Pharos
           </CardTitle>
           <CardDescription className="text-center">
             Choose your preferred authentication method

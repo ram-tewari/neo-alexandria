@@ -1,0 +1,236 @@
+/**
+ * Monaco Editor custom styles
+ * 
+ * Styles for semantic chunks, quality badges, annotations, and references
+ */
+
+/* ============================================================================
+   Semantic Chunk Boundaries
+   ============================================================================ */
+
+.semantic-chunk-boundary {
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 4px;
+  background-color: hsl(var(--accent) / 0.05);
+  transition: all 0.2s ease;
+}
+
+.semantic-chunk-boundary:hover {
+  border-color: hsl(var(--border) / 0.6);
+  background-color: hsl(var(--accent) / 0.1);
+}
+
+.semantic-chunk-boundary-selected {
+  border: 2px solid hsl(var(--primary));
+  border-radius: 4px;
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+.chunk-glyph {
+  width: 16px !important;
+  height: 16px !important;
+  margin-left: 4px;
+  background-color: hsl(var(--muted));
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.chunk-glyph:hover {
+  opacity: 1;
+}
+
+/* ============================================================================
+   Quality Badges
+   ============================================================================ */
+
+.quality-badge {
+  width: 16px !important;
+  height: 16px !important;
+  margin-left: 4px;
+  border-radius: 50%;
+  border: 2px solid;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.quality-badge:hover {
+  transform: scale(1.1);
+}
+
+.quality-badge-high {
+  background-color: hsl(142, 76%, 36%);
+  border-color: hsl(142, 76%, 36%);
+}
+
+.quality-badge-medium {
+  background-color: hsl(48, 96%, 53%);
+  border-color: hsl(48, 96%, 53%);
+}
+
+.quality-badge-low {
+  background-color: hsl(0, 84%, 60%);
+  border-color: hsl(0, 84%, 60%);
+  box-shadow: 0 0 8px hsl(0, 84%, 60% / 0.5);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px hsl(0, 84%, 60% / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px hsl(0, 84%, 60% / 0.8);
+  }
+}
+
+/* ============================================================================
+   Annotation Chips
+   ============================================================================ */
+
+.annotation-chip {
+  width: 12px !important;
+  height: 12px !important;
+  margin-left: 4px;
+  border-radius: 50%;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.annotation-chip:hover {
+  transform: scale(1.3);
+  z-index: 10;
+}
+
+.annotation-chip-selected {
+  border-width: 3px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Chip stacking - offset chips vertically when multiple on same line */
+.annotation-chip-stack-0 {
+  margin-top: 0;
+}
+
+.annotation-chip-stack-1 {
+  margin-top: 16px;
+}
+
+.annotation-chip-stack-2 {
+  margin-top: 32px;
+}
+
+.annotation-chip-stack-3 {
+  margin-top: 48px;
+}
+
+/* Default chip color (blue) */
+.annotation-chip {
+  background-color: hsl(221, 83%, 53%);
+  border-color: hsl(221, 83%, 53%);
+}
+
+/* Annotation color variants - using data attributes for dynamic colors */
+.annotation-chip[style*="--chip-color"] {
+  background-color: var(--chip-color);
+  border-color: var(--chip-color);
+}
+
+/* ============================================================================
+   Annotation Highlights
+   ============================================================================ */
+
+.annotation-highlight {
+  background-color: hsl(221, 83%, 53% / 0.15);
+  border-bottom: 2px solid hsl(221, 83%, 53%);
+  border-radius: 2px;
+  padding-bottom: 1px;
+  transition: all 0.2s ease;
+}
+
+.annotation-highlight-hover {
+  background-color: hsl(221, 83%, 53% / 0.3);
+  border-bottom-width: 3px;
+}
+
+/* Dynamic color support using CSS variables */
+.annotation-highlight[style*="--highlight-color"] {
+  background-color: var(--highlight-color);
+  border-bottom-color: var(--highlight-border-color);
+}
+
+/* ============================================================================
+   Reference Icons
+   ============================================================================ */
+
+.reference-icon {
+  width: 16px !important;
+  height: 16px !important;
+  margin-left: 4px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.reference-icon:hover {
+  opacity: 1;
+}
+
+.reference-icon-paper {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+}
+
+.reference-icon-documentation {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3C/svg%3E");
+}
+
+.reference-icon-external {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E");
+}
+
+/* ============================================================================
+   Monaco Editor Container
+   ============================================================================ */
+
+.monaco-editor-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.monaco-editor-container .monaco-editor {
+  border-radius: 8px;
+}
+
+/* ============================================================================
+   Loading States
+   ============================================================================ */
+
+.editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: hsl(var(--background));
+}
+
+.editor-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid hsl(var(--muted));
+  border-top-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

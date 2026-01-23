@@ -2,9 +2,10 @@
 
 ## Architecture
 
-**Type**: Modular Monolith with Event-Driven Communication
+**Type**: Hybrid Edge-Cloud with Modular Monolith
 **Pattern**: Vertical slices with shared kernel
-**Deployment**: Self-hosted, containerized
+**Deployment**: Cloud API (Render) + Edge Worker (Local GPU)
+**Status**: Production (Phase 19 Complete)
 
 ### Architectural Principles
 

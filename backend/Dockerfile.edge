@@ -1,0 +1,37 @@
+# Dockerfile for Phase 19 Edge Worker
+# This provides a complete environment with torch-cluster pre-built wheels
+
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements files
+COPY requirements-base.txt .
+COPY requirements-edge.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-edge.txt
+
+# Install torch-cluster with pre-built wheels
+RUN pip install torch-cluster -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV MODE=EDGE
+ENV PYTHONUNBUFFERED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import torch; print('OK')" || exit 1
+
+# Run worker
+CMD ["python", "worker.py"]

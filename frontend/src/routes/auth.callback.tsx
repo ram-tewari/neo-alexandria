@@ -45,8 +45,8 @@ const AuthCallbackComponent = () => {
           response.data
         );
 
-        // Redirect to dashboard
-        navigate({ to: '/dashboard' });
+        // Redirect to repositories page
+        navigate({ to: '/repositories' });
       } catch (error) {
         console.error('OAuth callback error:', error);
         navigate({ to: '/login', search: { error: 'authentication_failed' } });

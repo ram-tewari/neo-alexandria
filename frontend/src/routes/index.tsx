@@ -1,26 +1,11 @@
 import { createFileRoute, Navigate } from '@tanstack/react-router';
-import { useAuth } from '@/features/auth/hooks/useAuth';
 
 /**
- * Index route component
+ * Index route - redirects to /repositories
  * 
- * Root route that redirects based on authentication status.
- * Authenticated users go to /dashboard, unauthenticated users go to /login.
- */
-const IndexRoute = () => {
-  const { isAuthenticated } = useAuth();
-
-  // Redirect based on authentication status
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" />;
-  }
-
-  return <Navigate to="/login" />;
-};
-
-/**
- * Index route definition
+ * Note: TanStack Router will automatically resolve this to /_auth/repositories
+ * since repositories is a child route of _auth
  */
 export const Route = createFileRoute('/')({
-  component: IndexRoute,
+  component: () => <Navigate to="/repositories" />,
 });

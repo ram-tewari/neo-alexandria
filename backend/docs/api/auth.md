@@ -6,13 +6,13 @@ The Authentication module provides JWT-based authentication with OAuth2 support 
 
 ## Endpoints
 
-### POST /auth/login
+### POST /api/auth/login
 
 Authenticate with username and password using OAuth2 password flow.
 
 **Request:**
 ```http
-POST /auth/login HTTP/1.1
+POST /api/auth/login HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 username=user@example.com&password=yourpassword&scopes=read
@@ -33,7 +33,7 @@ username=user@example.com&password=yourpassword&scopes=read
 
 **Example (curl):**
 ```bash
-curl -X POST http://127.0.0.1:8000/auth/login \
+curl -X POST http://127.0.0.1:8000/api/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=user@example.com&password=yourpassword"
 ```
@@ -43,7 +43,7 @@ curl -X POST http://127.0.0.1:8000/auth/login \
 import requests
 
 response = requests.post(
-    "http://127.0.0.1:8000/auth/login",
+    "http://127.0.0.1:8000/api/auth/login",
     data={
         "username": "user@example.com",
         "password": "yourpassword"

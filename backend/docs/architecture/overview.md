@@ -85,12 +85,14 @@ High-level system architecture for Neo Alexandria 2.0.
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Module Summary (14 Modules)
+### Module Summary (13 Modules: 11 Base + 2 Conditional)
+
+**Base Modules (Always Loaded)**:
 
 | Module | Purpose | Key Events Emitted | Key Events Consumed |
 |--------|---------|-------------------|---------------------|
 | **Auth** | JWT authentication and OAuth2 | - | - |
-| **Resources** | Resource CRUD operations | resource.created, resource.updated, resource.deleted | - |
+| **Resources** | Resource CRUD operations | resource.created, resource.updated, resource.deleted, resource.chunked, resource.chunking_failed | - |
 | **Collections** | Collection management | collection.created, collection.updated, collection.resource_added | resource.created, resource.updated, resource.deleted |
 | **Search** | Hybrid search (keyword + semantic + sparse) | search.executed | resource.created, resource.updated |
 | **Annotations** | Text highlights and notes | annotation.created, annotation.updated, annotation.deleted | resource.deleted |
@@ -98,6 +100,15 @@ High-level system architecture for Neo Alexandria 2.0.
 | **Authority** | Subject authority and classification trees | - | - |
 | **Curation** | Content review and batch operations | curation.reviewed, curation.approved, curation.rejected | quality.outlier_detected |
 | **Quality** | Multi-dimensional quality assessment | quality.computed, quality.outlier_detected, quality.degradation_detected | resource.created, resource.updated |
+| **Taxonomy** | ML-based classification | resource.classified, taxonomy.model_trained | resource.created |
+| **Graph** | Knowledge graph and citations | citation.extracted, graph.updated, hypothesis.discovered, graph.entity_extracted, graph.relationship_extracted | resource.created |
+
+**Conditional Modules (Deployment-Specific)**:
+
+| Module | Purpose | Load Condition | Key Events |
+|--------|---------|----------------|------------|
+| **Recommendations** | Hybrid recommendation engine (NCF, content, graph) | EDGE mode only (requires PyTorch) | recommendation.generated, user.profile_updated |
+| **Monitoring** | System health and metrics | Redis available | - |
 | **Taxonomy** | ML classification and taxonomy management | resource.classified, taxonomy.node_created, taxonomy.model_trained | resource.created |
 | **Graph** | Knowledge graph, citations, discovery | citation.extracted, graph.updated, hypothesis.discovered | resource.created, resource.deleted |
 | **Recommendations** | Hybrid recommendation engine | recommendation.generated, user.profile_updated, interaction.recorded | annotation.created, collection.resource_added |

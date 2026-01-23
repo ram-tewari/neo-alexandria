@@ -817,3 +817,114 @@ async def get_ingestion_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve task status: {str(exc)}",
         )
+
+
+
+# ============================================================================
+# Auto-Linking Endpoints - Phase 20
+# ============================================================================
+
+
+class AutoLinkResponse(BaseModel):
+    """Response schema for auto-linking endpoint."""
+    
+    resource_id: str
+    link_count: int
+    threshold: float
+    message: str
+
+
+@router.post("/resources/{resource_id}/auto-link", response_model=AutoLinkResponse)
+async def auto_link_resource(
+    resource_id: uuid.UUID,
+    similarity_threshold: Optional[float] = 0.7,
+    db: Session = Depends(get_sync_db)
+) -> AutoLinkResponse:
+    """
+    Automatically link resource chunks to related chunks based on semantic similarity.
+    
+    This endpoint computes vector similarity between chunks of the specified resource
+    and chunks from other resources, creating bidirectional links when similarity
+    exceeds the threshold (default 0.7).
+    
+    **Use Cases**:
+    - Link PDF documentation to code implementations
+    - Link code files to related documentation
+    - Discover semantic relationships between resources
+    
+    **Performance**: <5s for 100 chunks (Requirement 3.5)
+    
+    Args:
+        resource_id: Resource ID to link
+        similarity_threshold: Minimum similarity score for creating links (0.0-1.0)
+        db: Database session
+        
+    Returns:
+        AutoLinkResponse with link count and status
+        
+    Raises:
+        404: Resource not found
+        400: Invalid similarity threshold
+        500: Auto-linking failed
+    """
+    from .service import AutoLinkingService
+    
+    try:
+        # Validate similarity threshold
+        if not 0.0 <= similarity_threshold <= 1.0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Similarity threshold must be between 0.0 and 1.0"
+            )
+        
+        # Check if resource exists
+        from .service import get_resource
+        resource = get_resource(db, str(resource_id))
+        if not resource:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Resource not found: {resource_id}"
+            )
+        
+        # Initialize auto-linking service
+        auto_linking_service = AutoLinkingService(
+            db=db,
+            similarity_threshold=similarity_threshold
+        )
+        
+        # Determine resource type and call appropriate linking method
+        # For now, we'll try both directions (PDF to code and code to PDF)
+        # In production, this would check resource format/type
+        
+        # Try linking as PDF to code
+        links = await auto_linking_service.link_pdf_to_code(
+            str(resource_id),
+            similarity_threshold=similarity_threshold
+        )
+        
+        # If no links created, try linking as code to PDF
+        if not links:
+            links = await auto_linking_service.link_code_to_pdfs(
+                str(resource_id),
+                similarity_threshold=similarity_threshold
+            )
+        
+        logger.info(
+            f"Auto-linking completed for resource {resource_id}: {len(links)} links created"
+        )
+        
+        return AutoLinkResponse(
+            resource_id=str(resource_id),
+            link_count=len(links),
+            threshold=similarity_threshold,
+            message=f"Successfully created {len(links)} links"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auto-linking failed for resource {resource_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Auto-linking failed: {str(e)}"
+        )

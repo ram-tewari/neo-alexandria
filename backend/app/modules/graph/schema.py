@@ -619,3 +619,206 @@ class GraphRelationshipResponse(BaseModel):
     weight: float = Field(..., description="Relationship strength (0.0 to 1.0)")
     provenance_chunk_id: Optional[str] = Field(None, description="Source chunk UUID")
     created_at: datetime = Field(..., description="Creation timestamp")
+
+
+# ============================================================================
+# HOVER INFORMATION SCHEMAS (Phase 20)
+# ============================================================================
+
+
+class LocationInfo(BaseModel):
+    """Location information for a symbol definition."""
+
+    file_path: str = Field(..., description="File path of the definition")
+    line: int = Field(..., description="Line number of the definition")
+    column: Optional[int] = Field(None, description="Column number of the definition")
+
+
+class ChunkReference(BaseModel):
+    """Reference to a related document chunk."""
+
+    chunk_id: str = Field(..., description="Document chunk UUID")
+    content_preview: str = Field(
+        ..., description="Preview of chunk content (first 200 chars)"
+    )
+    similarity_score: Optional[float] = Field(
+        None, description="Similarity score if available"
+    )
+
+
+class HoverInformationResponse(BaseModel):
+    """Response schema for hover information API.
+
+    Provides contextual information about code at a specific position,
+    including symbol information, documentation, and related chunks.
+    """
+
+    symbol_name: Optional[str] = Field(None, description="Name of the symbol at position")
+    symbol_type: Optional[str] = Field(
+        None,
+        description="Type of symbol (function, class, variable, method, etc.)",
+    )
+    definition_location: Optional[LocationInfo] = Field(
+        None, description="Location where symbol is defined"
+    )
+    documentation: Optional[str] = Field(
+        None, description="Documentation string for the symbol"
+    )
+    related_chunks: List[ChunkReference] = Field(
+        default_factory=list,
+        description="Related document chunks with similar content",
+    )
+    context_lines: List[str] = Field(
+        default_factory=list, description="Surrounding code lines for context"
+    )
+
+
+class CentralityMetrics(BaseModel):
+    """Centrality metrics for a graph node.
+
+    Provides multiple centrality measures to identify important nodes:
+    - Degree centrality: Number of direct connections
+    - Betweenness centrality: How often node appears on shortest paths
+    - PageRank: Importance based on incoming link structure
+    """
+
+    resource_id: UUID = Field(..., description="Resource UUID")
+    in_degree: int = Field(..., description="Number of incoming edges")
+    out_degree: int = Field(..., description="Number of outgoing edges")
+    total_degree: int = Field(..., description="Total number of edges (in + out)")
+    betweenness: float = Field(
+        ..., description="Betweenness centrality score (0-1)"
+    )
+    pagerank: float = Field(..., description="PageRank score")
+    computed_at: Optional[str] = Field(
+        None, description="Timestamp when metrics were computed"
+    )
+
+
+class CentralityResponse(BaseModel):
+    """Response schema for centrality metrics API.
+
+    Returns centrality metrics for requested resources.
+    """
+
+    metrics: dict[UUID, CentralityMetrics] = Field(
+        ..., description="Centrality metrics by resource ID"
+    )
+    computation_time_ms: float = Field(
+        ..., description="Time taken to compute metrics (milliseconds)"
+    )
+    cached: bool = Field(
+        ..., description="Whether results were retrieved from cache"
+    )
+
+
+class CommunityDetectionResult(BaseModel):
+    """Result of community detection algorithm.
+    
+    Contains community assignments, modularity score, and community statistics.
+    """
+    
+    communities: dict[int, int] = Field(
+        ..., description="Mapping of resource_id to community_id"
+    )
+    modularity: float = Field(
+        ..., description="Modularity score of the partition (-1 to 1)"
+    )
+    num_communities: int = Field(
+        ..., description="Number of communities detected"
+    )
+    community_sizes: dict[int, int] = Field(
+        ..., description="Mapping of community_id to number of members"
+    )
+
+
+class CommunityDetectionResponse(BaseModel):
+    """Response schema for community detection API.
+    
+    Returns community assignments and statistics for the graph.
+    """
+    
+    result: CommunityDetectionResult = Field(
+        ..., description="Community detection results"
+    )
+    computation_time_ms: float = Field(
+        ..., description="Time taken to detect communities (milliseconds)"
+    )
+    cached: bool = Field(
+        ..., description="Whether results were retrieved from cache"
+    )
+    resolution: float = Field(
+        ..., description="Resolution parameter used for detection"
+    )
+
+
+# ============================================================================
+# GRAPH VISUALIZATION SCHEMAS (Phase 20)
+# ============================================================================
+
+
+class NodePosition(BaseModel):
+    """2D position of a node in graph layout."""
+    
+    x: float = Field(..., description="X coordinate (0-1000)")
+    y: float = Field(..., description="Y coordinate (0-1000)")
+
+
+class EdgeRouting(BaseModel):
+    """Edge routing information for visualization."""
+    
+    source: UUID = Field(..., description="Source node UUID")
+    target: UUID = Field(..., description="Target node UUID")
+    weight: float = Field(..., description="Edge weight")
+
+
+class BoundingBox(BaseModel):
+    """Bounding box for graph layout."""
+    
+    min_x: float = Field(..., description="Minimum X coordinate")
+    max_x: float = Field(..., description="Maximum X coordinate")
+    min_y: float = Field(..., description="Minimum Y coordinate")
+    max_y: float = Field(..., description="Maximum Y coordinate")
+
+
+class GraphLayoutResult(BaseModel):
+    """Result of graph layout computation.
+    
+    Contains node positions, edge routing, and bounding box.
+    """
+    
+    nodes: dict[UUID, NodePosition] = Field(
+        ..., description="Node positions by resource UUID"
+    )
+    edges: List[EdgeRouting] = Field(
+        ..., description="Edge routing information"
+    )
+    bounds: BoundingBox = Field(
+        ..., description="Bounding box of the layout"
+    )
+    layout_type: str = Field(
+        ..., description="Layout algorithm used (force, hierarchical, circular)"
+    )
+
+
+class GraphLayoutResponse(BaseModel):
+    """Response schema for graph layout API.
+    
+    Returns layout information for visualization.
+    """
+    
+    layout: GraphLayoutResult = Field(
+        ..., description="Graph layout result"
+    )
+    computation_time_ms: float = Field(
+        ..., description="Time taken to compute layout (milliseconds)"
+    )
+    cached: bool = Field(
+        ..., description="Whether results were retrieved from cache"
+    )
+    node_count: int = Field(
+        ..., description="Number of nodes in the layout"
+    )
+    edge_count: int = Field(
+        ..., description="Number of edges in the layout"
+    )

@@ -937,3 +937,247 @@ class StaticAnalysisService:
 
         traverse(root_node)
         return calls
+
+    def get_symbol_at_position(
+        self, code: str, language: str, line: int, column: int
+    ) -> Dict[str, Any]:
+        """
+        Extract symbol information at a specific position in code.
+
+        Uses Tree-Sitter AST parsing to identify the symbol at the given
+        line and column position, including its type, definition location,
+        and documentation.
+
+        Args:
+            code: Source code content
+            language: Programming language (python, javascript, typescript, etc.)
+            line: Line number (1-indexed)
+            column: Column number (0-indexed)
+
+        Returns:
+            Dictionary with symbol information:
+            - symbol_name: Name of the symbol
+            - symbol_type: Type (function, class, variable, method, etc.)
+            - definition_location: Dict with file_path, line, column
+            - documentation: Docstring or comment if available
+            Returns empty dict if no symbol found at position.
+        """
+        if not TREE_SITTER_AVAILABLE:
+            logger.warning("Tree-Sitter not available for symbol extraction")
+            return {}
+
+        parser = self._get_parser(language)
+        if not parser:
+            logger.warning(f"No parser available for language: {language}")
+            return {}
+
+        try:
+            # Parse the code
+            tree = parser.parse(bytes(code, "utf8"))
+            root_node = tree.root_node
+
+            # Convert 1-indexed line to 0-indexed for Tree-Sitter
+            target_line = line - 1
+            target_column = column
+
+            # Find the node at the target position
+            node = root_node.descendant_for_point_range(
+                (target_line, target_column), (target_line, target_column)
+            )
+
+            if not node:
+                return {}
+
+            # Walk up the tree to find a meaningful symbol node
+            symbol_info = self._extract_symbol_info(node, language)
+
+            return symbol_info
+
+        except Exception as e:
+            logger.error(f"Error extracting symbol at position: {e}")
+            return {}
+
+    def _extract_symbol_info(self, node, language: str) -> Dict[str, Any]:
+        """
+        Extract symbol information from a Tree-Sitter node.
+
+        Walks up the AST from the given node to find the nearest
+        meaningful symbol (function, class, variable, etc.).
+
+        Args:
+            node: Tree-Sitter node at target position
+            language: Programming language
+
+        Returns:
+            Dictionary with symbol information
+        """
+        result = {}
+
+        # Walk up the tree to find a definition node
+        current = node
+        while current:
+            node_type = current.type
+
+            # Python symbol extraction
+            if language == "python":
+                if node_type == "function_definition":
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "function"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        # Try to extract docstring
+                        result["documentation"] = self._extract_python_docstring(
+                            current
+                        )
+                        break
+
+                elif node_type == "class_definition":
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "class"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        result["documentation"] = self._extract_python_docstring(
+                            current
+                        )
+                        break
+
+                elif node_type == "identifier":
+                    # Check if this is a variable assignment
+                    parent = current.parent
+                    if parent and parent.type == "assignment":
+                        result["symbol_name"] = current.text.decode("utf8")
+                        result["symbol_type"] = "variable"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        break
+
+            # JavaScript/TypeScript symbol extraction
+            elif language in ["javascript", "typescript", "tsx", "jsx"]:
+                if node_type in ["function_declaration", "function"]:
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "function"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        result["documentation"] = self._extract_js_jsdoc(current)
+                        break
+
+                elif node_type == "class_declaration":
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "class"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        result["documentation"] = self._extract_js_jsdoc(current)
+                        break
+
+                elif node_type == "method_definition":
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "method"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        result["documentation"] = self._extract_js_jsdoc(current)
+                        break
+
+                elif node_type == "variable_declarator":
+                    name_node = current.child_by_field_name("name")
+                    if name_node:
+                        result["symbol_name"] = name_node.text.decode("utf8")
+                        result["symbol_type"] = "variable"
+                        result["definition_location"] = {
+                            "line": current.start_point[0] + 1,
+                            "column": current.start_point[1],
+                        }
+                        break
+
+            # Move to parent node
+            current = current.parent
+
+        return result
+
+    def _extract_python_docstring(self, node) -> Optional[str]:
+        """
+        Extract docstring from a Python function or class definition.
+
+        Args:
+            node: Tree-Sitter node for function_definition or class_definition
+
+        Returns:
+            Docstring text or None
+        """
+        try:
+            # Look for the first string in the body
+            body = node.child_by_field_name("body")
+            if body:
+                for child in body.children:
+                    if child.type == "expression_statement":
+                        for expr_child in child.children:
+                            if expr_child.type == "string":
+                                # Extract string content, removing quotes
+                                docstring = expr_child.text.decode("utf8")
+                                # Remove triple quotes and clean up
+                                docstring = docstring.strip('"""').strip("'''")
+                                docstring = docstring.strip('"').strip("'")
+                                return docstring.strip()
+        except Exception as e:
+            logger.debug(f"Error extracting Python docstring: {e}")
+
+        return None
+
+    def _extract_js_jsdoc(self, node) -> Optional[str]:
+        """
+        Extract JSDoc comment from a JavaScript/TypeScript function or class.
+
+        Args:
+            node: Tree-Sitter node for function or class definition
+
+        Returns:
+            JSDoc text or None
+        """
+        try:
+            # Look for a comment node immediately before this node
+            parent = node.parent
+            if parent:
+                node_index = None
+                for i, child in enumerate(parent.children):
+                    if child == node:
+                        node_index = i
+                        break
+
+                if node_index and node_index > 0:
+                    prev_node = parent.children[node_index - 1]
+                    if prev_node.type == "comment":
+                        comment_text = prev_node.text.decode("utf8")
+                        # Clean up JSDoc formatting
+                        if comment_text.startswith("/**"):
+                            comment_text = comment_text.strip("/*").strip("*/")
+                            # Remove leading asterisks from each line
+                            lines = [
+                                line.strip().lstrip("*").strip()
+                                for line in comment_text.split("\n")
+                            ]
+                            return "\n".join(lines).strip()
+        except Exception as e:
+            logger.debug(f"Error extracting JSDoc: {e}")
+
+        return None

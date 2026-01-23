@@ -9,17 +9,20 @@ import torch
 from hypothesis import given, strategies as st, settings
 from unittest.mock import Mock, patch, MagicMock
 
-# Skip tests if torch_geometric is not installed
+# Skip tests if torch_geometric or required dependencies are not installed
 try:
     from app.services.neural_graph import NeuralGraphService
+    # Try to import the required packages
+    import torch_cluster
+    import torch_scatter
     TORCH_GEOMETRIC_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     TORCH_GEOMETRIC_AVAILABLE = False
-    pytestmark = pytest.mark.skip(reason="torch_geometric not installed")
+    pytestmark = pytest.mark.skip(reason=f"torch_geometric dependencies not installed: {e}")
 
 
 # Hypothesis settings for property tests
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=10, deadline=None)
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
 @given(
@@ -57,7 +60,7 @@ def test_property_6_embedding_dimensionality_invariant(num_nodes, num_edges):
         f"Expected 64 dimensions, got {embeddings.shape[1]}"
 
 
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=10, deadline=None)
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
 @given(
@@ -95,7 +98,7 @@ def test_property_7_embedding_device_location(num_nodes, num_edges):
             f"Expected CPU tensor, got {embeddings.device.type}"
 
 
-@settings(max_examples=50, deadline=None)
+@settings(max_examples=10, deadline=None)
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
 @given(

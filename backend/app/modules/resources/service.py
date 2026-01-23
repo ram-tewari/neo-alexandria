@@ -218,9 +218,18 @@ def _fetch_and_extract_content(
     logger.info(f"Fetching content from {target_url}")
     fetched = ce.fetch_url(target_url)
     logger.info("Content fetched successfully, extracting text")
-    extracted = ce.extract_from_fetched(fetched)
+    
+    # Extract metadata for PDFs
+    content_type = (fetched.get("content_type") or "").lower()
+    is_pdf = "application/pdf" in content_type or target_url.lower().endswith(".pdf")
+    
+    extracted = ce.extract_from_fetched(fetched, extract_metadata=is_pdf)
     text_clean = clean_text(extracted.get("text", ""))
     logger.info(f"Text extracted and cleaned, length: {len(text_clean)} characters")
+    
+    if is_pdf and extracted.get("page_boundaries"):
+        logger.info(f"Extracted {len(extracted.get('page_boundaries', []))} page boundaries from PDF")
+    
     return fetched, extracted, text_clean
 
 
@@ -655,11 +664,17 @@ def process_ingestion(
                         embedding_service=ai_core,  # Reuse AI core for embeddings
                     )
 
+                    # Prepare chunk metadata with page boundaries for PDFs
+                    base_chunk_metadata = {"source": "ingestion_pipeline"}
+                    if is_pdf and extracted.get("page_boundaries"):
+                        base_chunk_metadata["page_boundaries"] = extracted.get("page_boundaries")
+                        logger.info(f"Including {len(extracted.get('page_boundaries', []))} page boundaries in chunk metadata")
+
                     # Chunk the content
                     chunks = chunking_service.chunk_resource(
                         resource_id=str(resource.id),
                         content=text_clean,
-                        chunk_metadata={"source": "ingestion_pipeline"},
+                        chunk_metadata=base_chunk_metadata,
                     )
                     logger.info(
                         f"[INGESTION] {resource_id} - Successfully chunked: {len(chunks)} chunks created"
@@ -710,6 +725,37 @@ def process_ingestion(
         resource.quality_score = float(quality)
         resource.date_modified = resource.date_modified or datetime.now(timezone.utc)
         resource.format = fetched.get("content_type")
+        
+        # Store PDF structured metadata in existing scholarly fields
+        if is_pdf and extracted.get("structured_metadata"):
+            pdf_metadata = extracted.get("structured_metadata", {})
+            
+            # Store title if not already set and available in PDF metadata
+            if pdf_metadata.get("title") and (not resource.title or resource.title == "Untitled"):
+                resource.title = pdf_metadata["title"]
+                logger.info(f"Set resource title from PDF metadata: {pdf_metadata['title']}")
+            
+            # Store authors in the authors field
+            if pdf_metadata.get("authors"):
+                resource.authors = pdf_metadata["authors"]
+                logger.info(f"Set resource authors from PDF metadata: {pdf_metadata['authors']}")
+            
+            # Store abstract in description if not already set
+            if pdf_metadata.get("abstract") and not resource.description:
+                resource.description = pdf_metadata["abstract"]
+                logger.info(f"Set resource description from PDF abstract")
+            
+            # Store subject/keywords if available
+            if pdf_metadata.get("keywords"):
+                keywords = pdf_metadata["keywords"].split(",") if isinstance(pdf_metadata["keywords"], str) else []
+                keywords = [k.strip() for k in keywords if k.strip()]
+                if keywords:
+                    # Merge with existing tags
+                    existing_tags = set(resource.subject or [])
+                    existing_tags.update(keywords)
+                    resource.subject = list(existing_tags)
+                    logger.info(f"Added {len(keywords)} keywords from PDF metadata")
+        
         session.add(resource)
         
         # Modifier: Mark ingestion completed BEFORE commit
@@ -1856,4 +1902,391 @@ class ChunkingService:
             logger.error(
                 f"Chunking failed for resource {resource_id}: {e}", exc_info=True
             )
+            raise
+
+
+
+# ============================================================================
+# Auto-Linking Service - Phase 20
+# ============================================================================
+
+
+class AutoLinkingService:
+    """
+    Service for automatically linking PDF chunks to code chunks based on semantic similarity.
+    
+    Uses existing embedding infrastructure to compute cosine similarity between chunks
+    and creates bidirectional links when similarity exceeds threshold (default 0.7).
+    
+    Attributes:
+        db: Database session
+        embedding_generator: EmbeddingGenerator instance from shared.embeddings
+        similarity_threshold: Minimum similarity score for creating links (default 0.7)
+    """
+    
+    def __init__(
+        self,
+        db: Session,
+        embedding_generator: Optional[Any] = None,
+        similarity_threshold: float = 0.7
+    ):
+        """
+        Initialize auto-linking service.
+        
+        Args:
+            db: Database session
+            embedding_generator: Optional EmbeddingGenerator instance
+            similarity_threshold: Minimum similarity for creating links (0.0-1.0)
+        """
+        self.db = db
+        self.similarity_threshold = similarity_threshold
+        
+        # Use existing EmbeddingGenerator from shared kernel
+        if embedding_generator is None:
+            from ...shared.embeddings import EmbeddingGenerator
+            self.embedding_generator = EmbeddingGenerator()
+        else:
+            self.embedding_generator = embedding_generator
+    
+    def _compute_cosine_similarity(
+        self,
+        embedding1: List[float],
+        embedding2: List[float]
+    ) -> float:
+        """
+        Compute cosine similarity between two embedding vectors.
+        
+        Args:
+            embedding1: First embedding vector
+            embedding2: Second embedding vector
+            
+        Returns:
+            Cosine similarity score (0.0-1.0)
+        """
+        import numpy as np
+        
+        # Convert to numpy arrays
+        vec1 = np.array(embedding1)
+        vec2 = np.array(embedding2)
+        
+        # Compute cosine similarity
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        
+        similarity = dot_product / (norm1 * norm2)
+        return float(similarity)
+    
+    def _get_chunk_embedding(self, chunk: db_models.DocumentChunk) -> Optional[List[float]]:
+        """
+        Get embedding for a chunk from metadata or generate if missing.
+        
+        Args:
+            chunk: DocumentChunk instance
+            
+        Returns:
+            Embedding vector as list of floats, or None if unavailable
+        """
+        # Check if embedding exists in chunk metadata
+        if chunk.chunk_metadata and "embedding_vector" in chunk.chunk_metadata:
+            return chunk.chunk_metadata["embedding_vector"]
+        
+        # Generate embedding if missing
+        try:
+            embedding = self.embedding_generator.generate_embedding(chunk.content)
+            if embedding:
+                # Store in metadata for future use
+                if chunk.chunk_metadata is None:
+                    chunk.chunk_metadata = {}
+                chunk.chunk_metadata["embedding_vector"] = embedding
+                chunk.chunk_metadata["embedding_generated"] = True
+                self.db.add(chunk)
+                self.db.commit()
+                return embedding
+        except Exception as e:
+            logger.warning(f"Failed to generate embedding for chunk {chunk.id}: {e}")
+        
+        return None
+    
+    def _create_link(
+        self,
+        source_chunk_id: uuid.UUID,
+        target_chunk_id: uuid.UUID,
+        similarity_score: float,
+        link_type: str
+    ) -> db_models.ChunkLink:
+        """
+        Create a chunk link in the database.
+        
+        Args:
+            source_chunk_id: Source chunk ID
+            target_chunk_id: Target chunk ID
+            similarity_score: Similarity score
+            link_type: Link type ("pdf_to_code", "code_to_pdf", "bidirectional")
+            
+        Returns:
+            Created ChunkLink instance
+        """
+        link = db_models.ChunkLink(
+            source_chunk_id=source_chunk_id,
+            target_chunk_id=target_chunk_id,
+            similarity_score=similarity_score,
+            link_type=link_type,
+        )
+        self.db.add(link)
+        return link
+    
+    async def link_pdf_to_code(
+        self,
+        pdf_resource_id: str,
+        similarity_threshold: Optional[float] = None
+    ) -> List[db_models.ChunkLink]:
+        """
+        Link PDF chunks to code chunks based on semantic similarity.
+        
+        Computes cosine similarity between all PDF chunks and existing code chunks,
+        creating bidirectional links when similarity exceeds threshold.
+        
+        Args:
+            pdf_resource_id: PDF resource ID
+            similarity_threshold: Optional override for similarity threshold
+            
+        Returns:
+            List of created ChunkLink instances
+        """
+        threshold = similarity_threshold or self.similarity_threshold
+        created_links = []
+        
+        try:
+            # Convert resource_id to UUID
+            import uuid as uuid_module
+            try:
+                resource_uuid = uuid_module.UUID(pdf_resource_id)
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid resource_id format: {pdf_resource_id}")
+            
+            # Get PDF resource
+            pdf_resource = (
+                self.db.query(db_models.Resource)
+                .filter(db_models.Resource.id == resource_uuid)
+                .first()
+            )
+            
+            if not pdf_resource:
+                logger.warning(f"PDF resource not found: {pdf_resource_id}")
+                return []
+            
+            # Get all chunks for PDF resource
+            pdf_chunks = (
+                self.db.query(db_models.DocumentChunk)
+                .filter(db_models.DocumentChunk.resource_id == resource_uuid)
+                .all()
+            )
+            
+            if not pdf_chunks:
+                logger.info(f"No chunks found for PDF resource: {pdf_resource_id}")
+                return []
+            
+            # Get all code chunks (chunks from resources with code-related formats)
+            # For now, we'll get all chunks from other resources
+            # In production, this would filter by resource type/format
+            code_chunks = (
+                self.db.query(db_models.DocumentChunk)
+                .filter(db_models.DocumentChunk.resource_id != resource_uuid)
+                .all()
+            )
+            
+            if not code_chunks:
+                logger.info("No code chunks found for linking")
+                return []
+            
+            logger.info(
+                f"Linking {len(pdf_chunks)} PDF chunks to {len(code_chunks)} code chunks"
+            )
+            
+            # Compute similarities and create links
+            for pdf_chunk in pdf_chunks:
+                pdf_embedding = self._get_chunk_embedding(pdf_chunk)
+                if not pdf_embedding:
+                    continue
+                
+                for code_chunk in code_chunks:
+                    code_embedding = self._get_chunk_embedding(code_chunk)
+                    if not code_embedding:
+                        continue
+                    
+                    # Compute similarity
+                    similarity = self._compute_cosine_similarity(
+                        pdf_embedding, code_embedding
+                    )
+                    
+                    # Create link if above threshold
+                    if similarity >= threshold:
+                        # Create bidirectional links
+                        link1 = self._create_link(
+                            pdf_chunk.id,
+                            code_chunk.id,
+                            similarity,
+                            "pdf_to_code"
+                        )
+                        link2 = self._create_link(
+                            code_chunk.id,
+                            pdf_chunk.id,
+                            similarity,
+                            "code_to_pdf"
+                        )
+                        created_links.extend([link1, link2])
+            
+            # Commit all links
+            self.db.commit()
+            
+            logger.info(
+                f"Created {len(created_links)} links for PDF resource {pdf_resource_id}"
+            )
+            
+            # Emit chunk.linked event
+            event_bus.emit(
+                "chunk.linked",
+                {
+                    "resource_id": pdf_resource_id,
+                    "link_count": len(created_links),
+                    "threshold": threshold,
+                },
+                priority=EventPriority.NORMAL,
+            )
+            
+            return created_links
+            
+        except Exception as e:
+            logger.error(f"Auto-linking failed for PDF {pdf_resource_id}: {e}", exc_info=True)
+            self.db.rollback()
+            raise
+    
+    async def link_code_to_pdfs(
+        self,
+        code_resource_id: str,
+        similarity_threshold: Optional[float] = None
+    ) -> List[db_models.ChunkLink]:
+        """
+        Link code chunks to PDF chunks based on semantic similarity.
+        
+        Computes cosine similarity between all code chunks and existing PDF chunks,
+        creating bidirectional links when similarity exceeds threshold.
+        
+        Args:
+            code_resource_id: Code resource ID
+            similarity_threshold: Optional override for similarity threshold
+            
+        Returns:
+            List of created ChunkLink instances
+        """
+        threshold = similarity_threshold or self.similarity_threshold
+        created_links = []
+        
+        try:
+            # Convert resource_id to UUID
+            import uuid as uuid_module
+            try:
+                resource_uuid = uuid_module.UUID(code_resource_id)
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid resource_id format: {code_resource_id}")
+            
+            # Get code resource
+            code_resource = (
+                self.db.query(db_models.Resource)
+                .filter(db_models.Resource.id == resource_uuid)
+                .first()
+            )
+            
+            if not code_resource:
+                logger.warning(f"Code resource not found: {code_resource_id}")
+                return []
+            
+            # Get all chunks for code resource
+            code_chunks = (
+                self.db.query(db_models.DocumentChunk)
+                .filter(db_models.DocumentChunk.resource_id == resource_uuid)
+                .all()
+            )
+            
+            if not code_chunks:
+                logger.info(f"No chunks found for code resource: {code_resource_id}")
+                return []
+            
+            # Get all PDF chunks (chunks from resources with PDF format)
+            # For now, we'll get all chunks from other resources
+            # In production, this would filter by resource type/format
+            pdf_chunks = (
+                self.db.query(db_models.DocumentChunk)
+                .filter(db_models.DocumentChunk.resource_id != resource_uuid)
+                .all()
+            )
+            
+            if not pdf_chunks:
+                logger.info("No PDF chunks found for linking")
+                return []
+            
+            logger.info(
+                f"Linking {len(code_chunks)} code chunks to {len(pdf_chunks)} PDF chunks"
+            )
+            
+            # Compute similarities and create links
+            for code_chunk in code_chunks:
+                code_embedding = self._get_chunk_embedding(code_chunk)
+                if not code_embedding:
+                    continue
+                
+                for pdf_chunk in pdf_chunks:
+                    pdf_embedding = self._get_chunk_embedding(pdf_chunk)
+                    if not pdf_embedding:
+                        continue
+                    
+                    # Compute similarity
+                    similarity = self._compute_cosine_similarity(
+                        code_embedding, pdf_embedding
+                    )
+                    
+                    # Create link if above threshold
+                    if similarity >= threshold:
+                        # Create bidirectional links
+                        link1 = self._create_link(
+                            code_chunk.id,
+                            pdf_chunk.id,
+                            similarity,
+                            "code_to_pdf"
+                        )
+                        link2 = self._create_link(
+                            pdf_chunk.id,
+                            code_chunk.id,
+                            similarity,
+                            "pdf_to_code"
+                        )
+                        created_links.extend([link1, link2])
+            
+            # Commit all links
+            self.db.commit()
+            
+            logger.info(
+                f"Created {len(created_links)} links for code resource {code_resource_id}"
+            )
+            
+            # Emit chunk.linked event
+            event_bus.emit(
+                "chunk.linked",
+                {
+                    "resource_id": code_resource_id,
+                    "link_count": len(created_links),
+                    "threshold": threshold,
+                },
+                priority=EventPriority.NORMAL,
+            )
+            
+            return created_links
+            
+        except Exception as e:
+            logger.error(f"Auto-linking failed for code {code_resource_id}: {e}", exc_info=True)
+            self.db.rollback()
             raise

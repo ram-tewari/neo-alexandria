@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SemanticChunk } from '@/features/editor/types';
+import { editorApi } from '@/lib/api/editor';
 
 interface ChunkState {
   // Chunk data
@@ -14,20 +15,63 @@ interface ChunkState {
   chunkVisibility: boolean;
   isLoading: boolean;
   error: string | null;
+  usingFallback: boolean; // Indicates if using line-based fallback
   
   // Actions
   setChunks: (chunks: SemanticChunk[]) => void;
   selectChunk: (id: string | null) => void;
   toggleChunkVisibility: () => void;
   setChunkVisibility: (visible: boolean) => void;
+  clearError: () => void;
   
-  // Data fetching
-  fetchChunks: (resourceId: string) => Promise<void>;
+  // Data fetching with fallback
+  fetchChunks: (resourceId: string, fileContent?: string, language?: string) => Promise<void>;
+  
+  // Retry failed operations
+  retryLastOperation: () => Promise<void>;
   
   // Cache management
   getCachedChunks: (resourceId: string) => SemanticChunk[] | null;
   setCachedChunks: (resourceId: string, chunks: SemanticChunk[]) => void;
   clearCache: () => void;
+}
+
+// Store last operation for retry functionality
+let lastChunkOperation: (() => Promise<void>) | null = null;
+
+/**
+ * Generate line-based fallback chunks when AST chunking fails
+ * This provides a basic chunking strategy based on line numbers
+ */
+function generateLineBasedChunks(
+  resourceId: string,
+  fileContent: string,
+  language: string
+): SemanticChunk[] {
+  const lines = fileContent.split('\n');
+  const chunks: SemanticChunk[] = [];
+  const chunkSize = 50; // Lines per chunk
+  
+  for (let i = 0; i < lines.length; i += chunkSize) {
+    const endLine = Math.min(i + chunkSize, lines.length);
+    const chunkLines = lines.slice(i, endLine);
+    const content = chunkLines.join('\n');
+    
+    chunks.push({
+      id: `fallback-${resourceId}-${i}`,
+      resource_id: resourceId,
+      content,
+      chunk_index: Math.floor(i / chunkSize),
+      chunk_metadata: {
+        start_line: i + 1,
+        end_line: endLine,
+        language,
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
+  
+  return chunks;
 }
 
 export const useChunkStore = create<ChunkState>()(
@@ -40,6 +84,7 @@ export const useChunkStore = create<ChunkState>()(
       chunkVisibility: true,
       isLoading: false,
       error: null,
+      usingFallback: false,
       
       // Set chunks
       setChunks: (chunks: SemanticChunk[]) =>
@@ -63,36 +108,73 @@ export const useChunkStore = create<ChunkState>()(
       setChunkVisibility: (visible: boolean) =>
         set({ chunkVisibility: visible }),
       
-      // Fetch chunks for a resource
-      fetchChunks: async (resourceId: string) => {
-        // Check cache first
-        const cached = get().getCachedChunks(resourceId);
-        if (cached) {
-          set({ chunks: cached, isLoading: false });
-          return;
-        }
+      // Clear error
+      clearError: () =>
+        set({ error: null, usingFallback: false }),
+      
+      // Fetch chunks for a resource with line-based fallback
+      fetchChunks: async (resourceId: string, fileContent?: string, language?: string) => {
+        const operation = async () => {
+          // Check cache first
+          const cached = get().getCachedChunks(resourceId);
+          if (cached) {
+            set({ chunks: cached, isLoading: false, usingFallback: false });
+            return;
+          }
+          
+          set({ isLoading: true, error: null, usingFallback: false });
+          
+          try {
+            const response = await editorApi.getChunks(resourceId);
+            const chunks = response.data;
+            
+            // Update state and cache
+            set({ 
+              chunks, 
+              isLoading: false,
+              usingFallback: false,
+            });
+            get().setCachedChunks(resourceId, chunks);
+          } catch (error) {
+            // Try line-based fallback if file content is available
+            if (fileContent && language) {
+              const fallbackChunks = generateLineBasedChunks(
+                resourceId,
+                fileContent,
+                language
+              );
+              
+              set({
+                chunks: fallbackChunks,
+                error: 'AST chunking unavailable. Using line-based display.',
+                usingFallback: true,
+                isLoading: false,
+              });
+              
+              // Cache fallback chunks
+              get().setCachedChunks(resourceId, fallbackChunks);
+            } else {
+              // No fallback available
+              set({
+                chunks: [],
+                error: error instanceof Error 
+                  ? error.message 
+                  : 'Failed to fetch chunks. No fallback available.',
+                usingFallback: false,
+                isLoading: false,
+              });
+            }
+          }
+        };
         
-        set({ isLoading: true, error: null });
-        
-        try {
-          // TODO: Replace with actual API call in Task 3
-          // const response = await editorApi.getChunks(resourceId);
-          // const chunks = response.data;
-          
-          // Simulate API delay
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          
-          // Mock data for now
-          const chunks: SemanticChunk[] = [];
-          
-          // Update state and cache
-          set({ chunks, isLoading: false });
-          get().setCachedChunks(resourceId, chunks);
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to fetch chunks',
-            isLoading: false,
-          });
+        lastChunkOperation = operation;
+        await operation();
+      },
+      
+      // Retry last failed operation
+      retryLastOperation: async () => {
+        if (lastChunkOperation) {
+          await lastChunkOperation();
         }
       },
       

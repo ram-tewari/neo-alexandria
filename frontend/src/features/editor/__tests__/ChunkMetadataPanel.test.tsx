@@ -131,6 +131,9 @@ describe('ChunkMetadataPanel', () => {
       const collapseButton = screen.getByRole('button');
       await user.click(collapseButton);
       
+      // Wait for animation to complete
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
       expect(screen.queryByText('Function')).not.toBeInTheDocument();
       expect(screen.queryByText('Line Range')).not.toBeInTheDocument();
     });
@@ -141,7 +144,14 @@ describe('ChunkMetadataPanel', () => {
       
       const collapseButton = screen.getByRole('button');
       await user.click(collapseButton); // Collapse
+      
+      // Wait for collapse animation
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
       await user.click(collapseButton); // Expand
+      
+      // Wait for expand animation
+      await new Promise(resolve => setTimeout(resolve, 400));
       
       expect(screen.getByText('Function')).toBeInTheDocument();
       expect(screen.getByText('Line Range')).toBeInTheDocument();

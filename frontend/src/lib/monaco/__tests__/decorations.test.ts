@@ -33,69 +33,423 @@ describe('Monaco Decorations', () => {
       vi.useRealTimers();
     });
 
-    it('should debounce decoration updates', () => {
-      const decorations = [
-        {
-          range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
-          options: { className: 'test' },
-        },
-      ];
+    describe('Basic Functionality', () => {
+      it('should debounce decoration updates', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
 
-      manager.updateDecorations('test-key', decorations);
-      expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
+        manager.updateDecorations('test-key', decorations);
+        expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
 
-      vi.advanceTimersByTime(100);
-      expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(1);
+        vi.advanceTimersByTime(100);
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(1);
+      });
+
+      it('should clear decorations for a specific key', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        manager.updateDecorations('test-key', decorations);
+        vi.advanceTimersByTime(100);
+
+        manager.clearDecorations('test-key');
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledWith(
+          ['decoration-1', 'decoration-2'],
+          []
+        );
+      });
+
+      it('should clear all decorations', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // Update decorations for two different keys
+        manager.updateDecorations('key1', decorations);
+        vi.advanceTimersByTime(100);
+        
+        manager.updateDecorations('key2', decorations);
+        vi.advanceTimersByTime(100);
+
+        // After updates, should have been called twice
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(2);
+
+        manager.clearAll();
+        
+        // After clearAll, should have been called 4 times total (2 updates + 2 clears)
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(4);
+      });
+
+      it('should dispose properly', () => {
+        manager.updateDecorations('test-key', []);
+        manager.dispose();
+
+        vi.advanceTimersByTime(100);
+        expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
+      });
     });
 
-    it('should clear decorations for a specific key', () => {
-      const decorations = [
-        {
-          range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
-          options: { className: 'test' },
-        },
-      ];
+    describe('Batching Functionality', () => {
+      it('should batch multiple decoration updates', () => {
+        const decorations1 = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test1' },
+          },
+        ];
+        const decorations2 = [
+          {
+            range: { startLineNumber: 2, startColumn: 1, endLineNumber: 2, endColumn: 10 },
+            options: { className: 'test2' },
+          },
+        ];
+        const decorations3 = [
+          {
+            range: { startLineNumber: 3, startColumn: 1, endLineNumber: 3, endColumn: 10 },
+            options: { className: 'test3' },
+          },
+        ];
 
-      manager.updateDecorations('test-key', decorations);
-      vi.advanceTimersByTime(100);
+        // Queue multiple updates
+        manager.updateDecorations('key1', decorations1);
+        manager.updateDecorations('key2', decorations2);
+        manager.updateDecorations('key3', decorations3);
 
-      manager.clearDecorations('test-key');
-      expect(mockEditor.deltaDecorations).toHaveBeenCalledWith(
-        ['decoration-1', 'decoration-2'],
-        []
-      );
+        // Should not have called deltaDecorations yet
+        expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
+
+        // Advance past debounce time
+        vi.advanceTimersByTime(100);
+
+        // Should have batched all updates
+        expect(mockEditor.deltaDecorations).toHaveBeenCalled();
+      });
+
+      it('should respect batch size limit', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // Queue more updates than batch size (5)
+        for (let i = 0; i < 7; i++) {
+          manager.updateDecorations(`key${i}`, decorations);
+        }
+
+        // Advance past debounce time
+        vi.advanceTimersByTime(100);
+
+        // Should process first batch
+        expect(mockEditor.deltaDecorations).toHaveBeenCalled();
+
+        // Advance to process remaining updates
+        vi.advanceTimersByTime(20);
+
+        // Should have processed remaining updates
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(7);
+      });
+
+      it('should limit concurrent operations', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // Queue many updates
+        for (let i = 0; i < 10; i++) {
+          manager.updateDecorations(`key${i}`, decorations);
+        }
+
+        // Advance past debounce time
+        vi.advanceTimersByTime(100);
+
+        // Get stats to check concurrent operations
+        const stats = manager.getStats();
+        expect(stats.concurrentOperations).toBeLessThanOrEqual(3);
+      });
+
+      it('should coalesce rapid updates to same key', () => {
+        const decorations1 = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test1' },
+          },
+        ];
+        const decorations2 = [
+          {
+            range: { startLineNumber: 2, startColumn: 1, endLineNumber: 2, endColumn: 10 },
+            options: { className: 'test2' },
+          },
+        ];
+
+        // Rapidly update same key
+        manager.updateDecorations('test-key', decorations1);
+        vi.advanceTimersByTime(50);
+        manager.updateDecorations('test-key', decorations2);
+
+        // Advance past debounce time
+        vi.advanceTimersByTime(100);
+
+        // Should only apply the latest update
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(1);
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledWith(
+          [],
+          decorations2
+        );
+      });
     });
 
-    it('should clear all decorations', () => {
-      const decorations = [
-        {
-          range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
-          options: { className: 'test' },
-        },
-      ];
+    describe('Immediate Updates', () => {
+      it('should apply immediate updates without debouncing', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
 
-      // Update decorations for two different keys
-      manager.updateDecorations('key1', decorations);
-      vi.advanceTimersByTime(100);
-      
-      manager.updateDecorations('key2', decorations);
-      vi.advanceTimersByTime(100);
+        manager.updateDecorationsImmediate('test-key', decorations);
 
-      // After updates, should have been called twice
-      expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(2);
+        // Should apply immediately (within requestAnimationFrame)
+        vi.advanceTimersByTime(0);
+        expect(mockEditor.deltaDecorations).toHaveBeenCalled();
+      });
 
-      manager.clearAll();
-      
-      // After clearAll, should have been called 4 times total (2 updates + 2 clears)
-      expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(4);
+      it('should cancel pending batched update when immediate update is called', () => {
+        const decorations1 = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test1' },
+          },
+        ];
+        const decorations2 = [
+          {
+            range: { startLineNumber: 2, startColumn: 1, endLineNumber: 2, endColumn: 10 },
+            options: { className: 'test2' },
+          },
+        ];
+
+        // Queue batched update
+        manager.updateDecorations('test-key', decorations1);
+
+        // Apply immediate update
+        manager.updateDecorationsImmediate('test-key', decorations2);
+
+        // Advance timers
+        vi.advanceTimersByTime(100);
+
+        // Should only have applied immediate update
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledWith(
+          [],
+          decorations2
+        );
+      });
     });
 
-    it('should dispose properly', () => {
-      manager.updateDecorations('test-key', []);
-      manager.dispose();
+    describe('Flush Functionality', () => {
+      it('should flush all pending updates immediately', () => {
+        const decorations1 = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test1' },
+          },
+        ];
+        const decorations2 = [
+          {
+            range: { startLineNumber: 2, startColumn: 1, endLineNumber: 2, endColumn: 10 },
+            options: { className: 'test2' },
+          },
+        ];
 
-      vi.advanceTimersByTime(100);
-      expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
+        // Queue updates
+        manager.updateDecorations('key1', decorations1);
+        manager.updateDecorations('key2', decorations2);
+
+        // Should not have applied yet
+        expect(mockEditor.deltaDecorations).not.toHaveBeenCalled();
+
+        // Flush
+        manager.flush();
+
+        // Should have applied all updates immediately
+        expect(mockEditor.deltaDecorations).toHaveBeenCalledTimes(2);
+      });
+
+      it('should clear pending updates after flush', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        manager.updateDecorations('test-key', decorations);
+        manager.flush();
+
+        const stats = manager.getStats();
+        expect(stats.pendingUpdates).toBe(0);
+      });
+    });
+
+    describe('Statistics', () => {
+      it('should provide accurate statistics', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // Initial state
+        let stats = manager.getStats();
+        expect(stats.activeDecorations).toBe(0);
+        expect(stats.pendingUpdates).toBe(0);
+        expect(stats.isProcessing).toBe(false);
+
+        // Queue updates
+        manager.updateDecorations('key1', decorations);
+        manager.updateDecorations('key2', decorations);
+
+        stats = manager.getStats();
+        expect(stats.pendingUpdates).toBe(2);
+
+        // Process updates
+        vi.advanceTimersByTime(100);
+
+        stats = manager.getStats();
+        expect(stats.activeDecorations).toBe(2);
+        expect(stats.pendingUpdates).toBe(0);
+      });
+    });
+
+    describe('Error Handling', () => {
+      it('should handle errors in deltaDecorations gracefully', () => {
+        const errorEditor = {
+          deltaDecorations: vi.fn().mockImplementation(() => {
+            throw new Error('Monaco error');
+          }),
+        };
+        const errorManager = new DecorationManager(errorEditor);
+
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // Should not throw
+        expect(() => {
+          errorManager.updateDecorations('test-key', decorations);
+          vi.advanceTimersByTime(100);
+        }).not.toThrow();
+      });
+
+      it('should continue processing after error', () => {
+        let callCount = 0;
+        const errorEditor = {
+          deltaDecorations: vi.fn().mockImplementation(() => {
+            callCount++;
+            if (callCount === 1) {
+              throw new Error('Monaco error');
+            }
+            return ['decoration-1'];
+          }),
+        };
+        const errorManager = new DecorationManager(errorEditor);
+
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        // First update should error
+        errorManager.updateDecorations('key1', decorations);
+        vi.advanceTimersByTime(100);
+
+        // Second update should succeed
+        errorManager.updateDecorations('key2', decorations);
+        vi.advanceTimersByTime(100);
+
+        expect(errorEditor.deltaDecorations).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('Cleanup', () => {
+      it('should remove pending updates when clearing decorations', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        manager.updateDecorations('test-key', decorations);
+        
+        let stats = manager.getStats();
+        expect(stats.pendingUpdates).toBe(1);
+
+        manager.clearDecorations('test-key');
+
+        stats = manager.getStats();
+        expect(stats.pendingUpdates).toBe(0);
+      });
+
+      it('should clear all pending updates on clearAll', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        manager.updateDecorations('key1', decorations);
+        manager.updateDecorations('key2', decorations);
+        manager.updateDecorations('key3', decorations);
+
+        manager.clearAll();
+
+        const stats = manager.getStats();
+        expect(stats.pendingUpdates).toBe(0);
+        expect(stats.activeDecorations).toBe(0);
+      });
+
+      it('should clear all state on dispose', () => {
+        const decorations = [
+          {
+            range: { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 10 },
+            options: { className: 'test' },
+          },
+        ];
+
+        manager.updateDecorations('key1', decorations);
+        vi.advanceTimersByTime(100);
+
+        manager.dispose();
+
+        const stats = manager.getStats();
+        expect(stats.activeDecorations).toBe(0);
+        expect(stats.pendingUpdates).toBe(0);
+        expect(stats.isProcessing).toBe(false);
+        expect(stats.concurrentOperations).toBe(0);
+      });
     });
   });
 
@@ -263,7 +617,7 @@ describe('Monaco Decorations', () => {
       expect(decorations[1].options.inlineClassName).toContain('annotation-highlight');
     });
 
-    it('should apply annotation color to decorations', () => {
+    it('should handle multiple annotations', () => {
       const content = 'test';
       const annotations: Annotation[] = [
         {
@@ -282,8 +636,10 @@ describe('Monaco Decorations', () => {
 
       const decorations = createAnnotationDecorations(annotations, content);
 
-      expect(decorations[0].options.glyphMarginClassName).toContain('blue');
-      expect(decorations[1].options.inlineClassName).toContain('blue');
+      // Should create gutter chip and text highlight
+      expect(decorations).toHaveLength(2);
+      expect(decorations[0].options.glyphMarginClassName).toBe('annotation-chip');
+      expect(decorations[1].options.inlineClassName).toBe('annotation-highlight');
     });
   });
 

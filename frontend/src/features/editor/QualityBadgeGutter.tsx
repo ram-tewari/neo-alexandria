@@ -15,9 +15,14 @@
  * - Visibility toggle support
  * - Lazy-loading with scroll-based updates
  * - Debounced quality data requests
+ * 
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - Callbacks memoized with useCallback
+ * - Debounced scroll events (300ms)
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, memo } from 'react';
 import type * as Monaco from 'monaco-editor';
 import type { QualityDetails, QualityLevel } from './types';
 import { useQualityStore } from '@/stores/quality';
@@ -109,13 +114,13 @@ function extractQualityBadges(qualityData: QualityDetails): QualityBadge[] {
 // Component
 // ============================================================================
 
-export function QualityBadgeGutter({
+const QualityBadgeGutterComponent = ({
   editor,
   qualityData,
   visible,
   resourceId,
   onBadgeClick,
-}: QualityBadgeGutterProps) {
+}: QualityBadgeGutterProps) => {
   const decorationsRef = useRef<string[]>([]);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedResourceRef = useRef<string | null>(null);
@@ -246,3 +251,17 @@ export function QualityBadgeGutter({
   return null;
 }
 
+// Memoize the component to prevent unnecessary re-renders
+// Requirements: 7.2 - React optimization
+export const QualityBadgeGutter = memo(QualityBadgeGutterComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.editor === nextProps.editor &&
+    prevProps.qualityData === nextProps.qualityData &&
+    prevProps.visible === nextProps.visible &&
+    prevProps.resourceId === nextProps.resourceId &&
+    prevProps.onBadgeClick === nextProps.onBadgeClick
+  );
+});
+
+QualityBadgeGutter.displayName = 'QualityBadgeGutter';

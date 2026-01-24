@@ -7,9 +7,14 @@
  * - Cursor and selection tracking
  * - Scroll position restoration
  * - Custom decorations support
+ * 
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - Callbacks memoized with useCallback
+ * - Expensive computations memoized with useMemo
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
 import { registerThemes, getMonacoTheme } from '@/lib/monaco/themes';
@@ -17,6 +22,9 @@ import { detectLanguage } from '@/lib/monaco/languages';
 import { DecorationManager } from '@/lib/monaco/decorations';
 import { useEditorStore } from '@/stores/editor';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
+import { useEditorKeyboard } from '@/lib/hooks/useEditorKeyboard';
+import { MonacoFallback } from './MonacoFallback';
+import { MonacoEditorSkeleton } from './components/LoadingSkeletons';
 import type { CodeFile, Position, Selection } from './types';
 
 // ============================================================================
@@ -39,13 +47,13 @@ export interface MonacoEditorWrapperProps {
 // Component
 // ============================================================================
 
-export function MonacoEditorWrapper({
+const MonacoEditorWrapperComponent = ({
   file,
   onCursorChange,
   onSelectionChange,
   onEditorReady,
   className = '',
-}: MonacoEditorWrapperProps) {
+}: MonacoEditorWrapperProps) => {
   // ==========================================================================
   // State & Refs
   // ==========================================================================
@@ -55,6 +63,8 @@ export function MonacoEditorWrapper({
   const decorationManagerRef = useRef<DecorationManager | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLargeFile, setIsLargeFile] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // ==========================================================================
   // Store State
@@ -64,11 +74,22 @@ export function MonacoEditorWrapper({
   const preferences = useEditorPreferencesStore();
 
   // ==========================================================================
-  // Derived Values
+  // Keyboard Shortcuts
   // ==========================================================================
 
-  const language = detectLanguage(file.path);
-  const theme = getMonacoTheme(preferences.theme === 'vs-dark' ? 'dark' : 'light');
+  // Register editor-specific keyboard shortcuts
+  // Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
+  useEditorKeyboard();
+
+  // ==========================================================================
+  // Derived Values (Memoized)
+  // ==========================================================================
+
+  const language = useMemo(() => detectLanguage(file.path), [file.path]);
+  const theme = useMemo(
+    () => getMonacoTheme(preferences.theme === 'vs-dark' ? 'dark' : 'light'),
+    [preferences.theme]
+  );
   
   // Check if file is large (>5000 lines)
   useEffect(() => {
@@ -76,38 +97,41 @@ export function MonacoEditorWrapper({
   }, [file.lines]);
 
   // ==========================================================================
-  // Monaco Options
+  // Monaco Options (Memoized)
   // ==========================================================================
 
-  const monacoOptions: Monaco.editor.IStandaloneEditorConstructionOptions = {
-    readOnly: true,
-    minimap: { enabled: preferences.minimap && !isLargeFile }, // Disable minimap for large files
-    lineNumbers: preferences.lineNumbers ? 'on' : 'off',
-    fontSize: preferences.fontSize,
-    wordWrap: preferences.wordWrap ? 'on' : 'off',
-    scrollBeyondLastLine: false,
-    renderLineHighlight: 'line',
-    glyphMargin: true, // Enable gutter for decorations
-    folding: true,
-    automaticLayout: true,
-    scrollbar: {
-      vertical: 'visible',
-      horizontal: 'visible',
-      useShadows: false,
-      verticalScrollbarSize: 10,
-      horizontalScrollbarSize: 10,
-    },
-    overviewRulerLanes: 0,
-    hideCursorInOverviewRuler: true,
-    overviewRulerBorder: false,
-    // Performance optimizations for large files
-    ...(isLargeFile && {
-      renderValidationDecorations: 'off',
-      renderWhitespace: 'none',
-      renderControlCharacters: false,
-      smoothScrolling: false,
+  const monacoOptions: Monaco.editor.IStandaloneEditorConstructionOptions = useMemo(
+    () => ({
+      readOnly: true,
+      minimap: { enabled: preferences.minimap && !isLargeFile }, // Disable minimap for large files
+      lineNumbers: preferences.lineNumbers ? 'on' : 'off',
+      fontSize: preferences.fontSize,
+      wordWrap: preferences.wordWrap ? 'on' : 'off',
+      scrollBeyondLastLine: false,
+      renderLineHighlight: 'line',
+      glyphMargin: true, // Enable gutter for decorations
+      folding: true,
+      automaticLayout: true,
+      scrollbar: {
+        vertical: 'visible',
+        horizontal: 'visible',
+        useShadows: false,
+        verticalScrollbarSize: 10,
+        horizontalScrollbarSize: 10,
+      },
+      overviewRulerLanes: 0,
+      hideCursorInOverviewRuler: true,
+      overviewRulerBorder: false,
+      // Performance optimizations for large files
+      ...(isLargeFile && {
+        renderValidationDecorations: 'off',
+        renderWhitespace: 'none',
+        renderControlCharacters: false,
+        smoothScrolling: false,
+      }),
     }),
-  };
+    [preferences.minimap, preferences.lineNumbers, preferences.fontSize, preferences.wordWrap, isLargeFile]
+  );
 
   // ==========================================================================
   // Editor Mount Handler
@@ -241,25 +265,112 @@ export function MonacoEditorWrapper({
   }, []);
 
   // ==========================================================================
+  // Error Handlers
+  // ==========================================================================
+
+  const handleEditorError = useCallback((error: Error) => {
+    console.error('Monaco Editor failed to load:', error);
+    setLoadError(error);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setLoadError(null);
+    setRetryCount((prev) => prev + 1);
+  }, []);
+
+  // ==========================================================================
+  // Render Fallback
+  // ==========================================================================
+
+  if (loadError) {
+    return (
+      <MonacoFallback
+        file={file}
+        error={loadError}
+        onRetry={handleRetry}
+        className={className}
+      />
+    );
+  }
+
+  // ==========================================================================
   // Render
   // ==========================================================================
 
   return (
-    <div className={`monaco-editor-wrapper ${className}`} data-testid="monaco-editor-wrapper">
+    <div 
+      className={`monaco-editor-wrapper ${className}`} 
+      data-testid="monaco-editor-wrapper"
+      role="region"
+      aria-label="Code editor"
+    >
       <Editor
+        key={retryCount} // Force remount on retry
         height="100%"
         language={language}
         value={file.content}
         theme={theme}
         options={monacoOptions}
         onMount={handleEditorMount}
-        loading={
-          <div className="flex items-center justify-center h-full">
-            <div className="text-muted-foreground">Loading editor...</div>
-          </div>
-        }
+        onValidate={(markers) => {
+          // Monaco validation errors (not load errors)
+          if (markers.length > 0) {
+            console.warn('Monaco validation markers:', markers);
+          }
+        }}
+        loading={<MonacoEditorSkeleton />}
       />
     </div>
   );
+}
+
+// Memoize the component to prevent unnecessary re-renders
+// Requirements: 7.2 - React optimization
+export const MonacoEditorWrapper = memo(MonacoEditorWrapperComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.file.id === nextProps.file.id &&
+    prevProps.file.content === nextProps.file.content &&
+    prevProps.className === nextProps.className &&
+    prevProps.onCursorChange === nextProps.onCursorChange &&
+    prevProps.onSelectionChange === nextProps.onSelectionChange &&
+    prevProps.onEditorReady === nextProps.onEditorReady
+  );
+});
+
+MonacoEditorWrapper.displayName = 'MonacoEditorWrapper';
+
+// Error Boundary Wrapper for Monaco Editor
+export function MonacoEditorWithErrorBoundary(props: MonacoEditorWrapperProps) {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    // Reset error state when file changes
+    setHasError(false);
+    setError(null);
+  }, [props.file.id]);
+
+  if (hasError && error) {
+    return (
+      <MonacoFallback
+        file={props.file}
+        error={error}
+        onRetry={() => {
+          setHasError(false);
+          setError(null);
+        }}
+        className={props.className}
+      />
+    );
+  }
+
+  try {
+    return <MonacoEditorWrapper {...props} />;
+  } catch (err) {
+    setHasError(true);
+    setError(err instanceof Error ? err : new Error(String(err)));
+    return null;
+  }
 }
 

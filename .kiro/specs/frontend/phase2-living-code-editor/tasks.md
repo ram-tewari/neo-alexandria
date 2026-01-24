@@ -263,7 +263,7 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - Test panel open/close
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [-] 11. Implement ChunkMetadataPanel component
+- [x] 11. Implement ChunkMetadataPanel component
 
   - Create ChunkMetadataPanel with shadcn-ui Card
   - Display selected chunk metadata (function name, lines, language)
@@ -271,14 +271,14 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - Use magic-ui expand/collapse animation
   - _Requirements: 2.4_
 
-- [ ] 11.1 Write unit tests for ChunkMetadataPanel
+- [x] 11.1 Write unit tests for ChunkMetadataPanel
   - Test metadata display
   - Test navigation
   - Test expand/collapse
   - _Requirements: 2.4_
 
-- [ ] 12. Implement keyboard navigation system
-  - [ ] 12.1 Add global keyboard shortcuts
+- [x] 12. Implement keyboard navigation system
+  - [x] 12.1 Add global keyboard shortcuts
     - Implement Cmd+/ for annotation mode toggle
     - Implement Cmd+Shift+A for show all annotations
     - Implement Cmd+Shift+Q for quality badge toggle
@@ -287,27 +287,27 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
 
-  - [ ] 12.2 Add annotation mode shortcuts
+  - [x] 12.2 Add annotation mode shortcuts
     - Implement Enter for create annotation
     - Implement Cmd+S for save annotation
     - Implement Cmd+Backspace for delete annotation
     - Implement Tab/Shift+Tab for navigation
     - _Requirements: 8.2, 8.3_
 
-- [ ] 12.3 Write unit tests for keyboard navigation
+- [x] 12.3 Write unit tests for keyboard navigation
   - Test all keyboard shortcuts
   - Test focus management
   - Test shortcut conflicts
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 13. Implement error handling and fallbacks
-  - [ ] 13.1 Add Monaco fallback for load failures
+- [-] 13. Implement error handling and fallbacks
+  - [x] 13.1 Add Monaco fallback for load failures
     - Create fallback text viewer component
     - Show error message with retry button
     - Preserve file content
     - _Requirements: 10.1_
 
-  - [ ] 13.2 Add API error handling
+  - [x] 13.2 Add API error handling
     - Handle annotation API failures with cached data
     - Handle chunk API failures with line-based fallback
     - Handle quality API failures with badge hiding
@@ -315,13 +315,13 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
 
     - _Requirements: 10.2, 10.3, 10.4_
 
-  - [ ] 13.3 Add hover card error handling
+  - [x] 13.3 Add hover card error handling
     - Fall back to Monaco IntelliSense on Node2Vec failure
     - Show "Unable to load summary" message
     - Provide retry button
     - _Requirements: 10.6_
 
-- [ ] 13.4 Write unit tests for error handling
+- [x] 13.4 Write unit tests for error handling
   - Test Monaco fallback
   - Test API error scenarios
   - Test hover card fallback
@@ -329,7 +329,7 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.6_
 
 
-- [ ] 14. Integrate editor into repository detail route
+- [x] 14. Integrate editor into repository detail route
   - Update `_auth.repositories.tsx` route to include code editor view
   - Add file tree navigation (simple list for now)
   - Connect editor to repository store
@@ -337,7 +337,7 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - Implement file switching
   - _Requirements: 1.1_
 
-- [ ] 14.1 Write integration tests for editor route
+- [x] 14.1 Write integration tests for editor route
   - Test file loading
   - Test file switching
   - Test editor initialization
@@ -345,7 +345,7 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - _Requirements: 1.1_
 
 
-- [ ] 15. Implement accessibility features
+- [x] 15. Implement accessibility features
   - Add ARIA labels to all icon-only buttons
   - Implement focus management for modals and popovers
   - Add keyboard navigation for all interactive elements
@@ -354,21 +354,21 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
   - Test with keyboard-only navigation
   - _Requirements: All requirements (accessibility is cross-cutting)_
 
-- [ ] 15.1 Write accessibility tests
+- [x] 15.1 Write accessibility tests
   - Test keyboard navigation
   - Test ARIA labels
   - Test focus management
   - Test color contrast
   - _Requirements: All requirements_
 
-- [ ] 16. Optimize performance
-  - [ ] 16.1 Implement decoration batching
+- [-] 16. Optimize performance
+  - [x] 16.1 Implement decoration batching
     - Batch decoration updates to reduce reflows
     - Debounce decoration updates (100ms)
     - Limit concurrent decoration operations
     - _Requirements: 7.1, 7.2_
 
-  - [ ] 16.2 Add React optimization
+  - [x] 16.2 Add React optimization
     - Memoize MonacoEditorWrapper and overlay components
 
 
@@ -377,34 +377,34 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
     - Debounce scroll events (100ms)
     - _Requirements: 7.2, 7.3_
 
-  - [ ] 16.3 Implement API caching
+  - [x] 16.3 Implement API caching
     - Configure TanStack Query cache times
     - Add prefetching for active file chunks
     - Implement request deduplication
     - _Requirements: 7.3, 7.4_
 
-- [ ] 16.4 Write performance tests
+- [x] 16.4 Write performance tests
   - Test large file rendering (>5000 lines)
   - Test decoration update performance
   - Test scroll performance
   - Test API caching
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 17. Add Monaco theme customization
+- [x] 17. Add Monaco theme customization
   - Create custom Monaco themes for light/dark modes
   - Add syntax highlighting for all supported languages
   - Implement theme switching without editor reload
   - Style gutter decorations to match theme
   - _Requirements: 1.2, 1.5_
 
-- [ ] 17.1 Write tests for theme customization
+- [x] 17.1 Write tests for theme customization
   - Test theme switching
   - Test syntax highlighting
   - Test gutter decoration styling
   - _Requirements: 1.2, 1.5_
 
 - [ ] 18. Final integration and polish
-  - [ ] 18.1 Test all features together
+  - [x] 18.1 Test all features together
     - Open file with all overlays enabled
     - Create, edit, delete annotations
     - Toggle chunk boundaries and quality badges
@@ -413,20 +413,20 @@ This implementation plan breaks down the Phase 2 Living Code Editor into discret
     - _Requirements: All requirements_
 
 
-  - [ ] 18.2 Add loading states and skeletons
+  - [x] 18.2 Add loading states and skeletons
     - Show skeleton for Monaco while loading
     - Show skeleton for hover cards while fetching
     - Show loading indicators for API operations
     - _Requirements: 5.5_
 
-  - [ ] 18.3 Polish animations and transitions
+  - [x] 18.3 Polish animations and transitions
     - Smooth overlay show/hide transitions
     - Smooth panel slide animations
     - Smooth hover card fade-in
     - Smooth badge glow effects
     - _Requirements: All requirements (polish is cross-cutting)_
 
-- [ ] 18.4 Write end-to-end tests
+- [-] 18.4 Write end-to-end tests
   - Test complete user workflows
   - Test error recovery
   - Test performance with realistic data

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { QualityDetails } from '@/features/editor/types';
+import { editorApi } from '@/lib/api/editor';
 
 interface QualityState {
   // Quality data
@@ -13,20 +14,28 @@ interface QualityState {
   badgeVisibility: boolean;
   isLoading: boolean;
   error: string | null;
+  hideBadgesDueToError: boolean; // Auto-hide badges when API fails
   
   // Actions
   setQualityData: (data: QualityDetails | null) => void;
   toggleBadgeVisibility: () => void;
   setBadgeVisibility: (visible: boolean) => void;
+  clearError: () => void;
   
-  // Data fetching
+  // Data fetching with error handling
   fetchQualityData: (resourceId: string) => Promise<void>;
+  
+  // Retry failed operations
+  retryLastOperation: () => Promise<void>;
   
   // Cache management
   getCachedQuality: (resourceId: string) => QualityDetails | null;
   setCachedQuality: (resourceId: string, data: QualityDetails) => void;
   clearCache: () => void;
 }
+
+// Store last operation for retry functionality
+let lastQualityOperation: (() => Promise<void>) | null = null;
 
 export const useQualityStore = create<QualityState>()(
   persist(
@@ -37,6 +46,7 @@ export const useQualityStore = create<QualityState>()(
       badgeVisibility: true,
       isLoading: false,
       error: null,
+      hideBadgesDueToError: false,
       
       // Set quality data
       setQualityData: (data: QualityDetails | null) =>
@@ -44,44 +54,72 @@ export const useQualityStore = create<QualityState>()(
       
       // Toggle badge visibility
       toggleBadgeVisibility: () =>
-        set((state) => ({ badgeVisibility: !state.badgeVisibility })),
+        set((state) => ({ 
+          badgeVisibility: !state.badgeVisibility,
+          // Clear error flag when manually toggling
+          hideBadgesDueToError: false,
+        })),
       
       // Set badge visibility
       setBadgeVisibility: (visible: boolean) =>
-        set({ badgeVisibility: visible }),
+        set({ 
+          badgeVisibility: visible,
+          // Clear error flag when manually setting
+          hideBadgesDueToError: false,
+        }),
       
-      // Fetch quality data for a resource
+      // Clear error
+      clearError: () =>
+        set({ error: null, hideBadgesDueToError: false }),
+      
+      // Fetch quality data for a resource with graceful error handling
       fetchQualityData: async (resourceId: string) => {
-        // Check cache first
-        const cached = get().getCachedQuality(resourceId);
-        if (cached) {
-          set({ qualityData: cached, isLoading: false });
-          return;
-        }
-        
-        set({ isLoading: true, error: null });
-        
-        try {
-          // TODO: Replace with actual API call in Task 3
-          // const response = await editorApi.getQualityDetails(resourceId);
-          // const qualityData = response.data;
-          
-          // Simulate API delay
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          
-          // Mock data for now
-          const qualityData: QualityDetails | null = null;
-          
-          // Update state and cache
-          set({ qualityData, isLoading: false });
-          if (qualityData) {
-            get().setCachedQuality(resourceId, qualityData);
+        const operation = async () => {
+          // Check cache first
+          const cached = get().getCachedQuality(resourceId);
+          if (cached) {
+            set({ 
+              qualityData: cached, 
+              isLoading: false,
+              hideBadgesDueToError: false,
+            });
+            return;
           }
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to fetch quality data',
-            isLoading: false,
-          });
+          
+          set({ isLoading: true, error: null, hideBadgesDueToError: false });
+          
+          try {
+            const response = await editorApi.getQualityDetails(resourceId);
+            const qualityData = response.data;
+            
+            // Update state and cache
+            set({ 
+              qualityData, 
+              isLoading: false,
+              hideBadgesDueToError: false,
+            });
+            get().setCachedQuality(resourceId, qualityData);
+          } catch (error) {
+            // Gracefully handle error by hiding badges
+            set({
+              qualityData: null,
+              error: error instanceof Error 
+                ? error.message 
+                : 'Failed to fetch quality data',
+              hideBadgesDueToError: true, // Auto-hide badges on error
+              isLoading: false,
+            });
+          }
+        };
+        
+        lastQualityOperation = operation;
+        await operation();
+      },
+      
+      // Retry last failed operation
+      retryLastOperation: async () => {
+        if (lastQualityOperation) {
+          await lastQualityOperation();
         }
       },
       

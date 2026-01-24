@@ -5,10 +5,15 @@
  * Implements debounced hover detection (300ms) and fetches symbol information
  * from the backend when available, falling back to Monaco IntelliSense.
  * 
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - Callbacks memoized with useCallback
+ * - Debounced hover events (300ms)
+ * 
  * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 7.4, 10.6
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import * as monaco from 'monaco-editor';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,11 +31,11 @@ interface HoverCardProviderProps {
 
 const HOVER_DEBOUNCE_MS = 300;
 
-export function HoverCardProvider({
+const HoverCardProviderComponent = ({
   editor,
   resourceId,
   onSymbolClick,
-}: HoverCardProviderProps) {
+}: HoverCardProviderProps) => {
   const [hoverData, setHoverData] = useState<HoverCardData | null>(null);
   const [position, setPosition] = useState<Position | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -282,28 +287,32 @@ export function HoverCardProvider({
     };
   }, [editor]);
 
-  if (!isOpen || !hoverData) {
-    return null;
-  }
-
   return (
     <HoverCard open={isOpen} onOpenChange={setIsOpen}>
       <HoverCardTrigger asChild>
         <div className="absolute" style={{ pointerEvents: 'none' }} />
       </HoverCardTrigger>
       <HoverCardContent 
-        className="w-96 p-4 animate-in fade-in-0 zoom-in-95 duration-200"
+        className="w-96 p-4"
         side="top"
         align="start"
+        role="dialog"
+        aria-label="Symbol information"
+        aria-describedby="hover-card-content"
+        style={{
+          animation: 'fadeInScale 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          transformOrigin: 'bottom left',
+        }}
       >
         {hoverData.loading ? (
-          <div className="space-y-3">
+          <div className="space-y-3" role="status" aria-label="Loading symbol information">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
+            <span className="sr-only">Loading symbol information...</span>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3" id="hover-card-content">
             {/* Symbol name */}
             <div className="font-semibold text-sm text-foreground">
               {hoverData.symbol}
@@ -311,8 +320,8 @@ export function HoverCardProvider({
 
             {/* Error message */}
             {hoverData.error && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
+              <Alert variant="destructive" className="py-2" role="alert">
+                <AlertCircle className="h-4 w-4" aria-hidden="true" />
                 <AlertDescription className="text-xs">
                   {hoverData.error}
                 </AlertDescription>
@@ -332,14 +341,16 @@ export function HoverCardProvider({
                 <div className="text-xs font-medium text-muted-foreground">
                   Related Symbols
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1" role="list" aria-label="Related symbols">
                   {hoverData.connections.map((connection, index) => (
                     <button
                       key={index}
                       onClick={() => handleSymbolClick(connection.name, connection.file)}
-                      className="flex items-center gap-2 w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors"
+                      className="flex items-center gap-2 w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                      aria-label={`Navigate to ${connection.name} in ${connection.file}`}
+                      role="listitem"
                     >
-                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
                       <div className="flex-1">
                         <div className="font-medium">{connection.name}</div>
                         <div className="text-muted-foreground">
@@ -359,8 +370,9 @@ export function HoverCardProvider({
                 size="sm"
                 onClick={handleRetry}
                 className="w-full"
+                aria-label="Retry loading symbol information"
               >
-                <RefreshCw className="h-3 w-3 mr-2" />
+                <RefreshCw className="h-3 w-3 mr-2" aria-hidden="true" />
                 Retry
               </Button>
             )}
@@ -370,3 +382,16 @@ export function HoverCardProvider({
     </HoverCard>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+// Requirements: 7.2 - React optimization
+export const HoverCardProvider = memo(HoverCardProviderComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.editor === nextProps.editor &&
+    prevProps.resourceId === nextProps.resourceId &&
+    prevProps.onSymbolClick === nextProps.onSymbolClick
+  );
+});
+
+HoverCardProvider.displayName = 'HoverCardProvider';

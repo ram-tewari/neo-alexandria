@@ -55,3 +55,18 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
+
+// Mock document.queryCommandSupported for Monaco Editor
+Object.defineProperty(document, 'queryCommandSupported', {
+  writable: true,
+  value: vi.fn().mockReturnValue(false),
+});
+
+// Mock navigator.clipboard for Monaco Editor
+Object.defineProperty(navigator, 'clipboard', {
+  writable: true,
+  value: {
+    readText: vi.fn().mockResolvedValue(''),
+    writeText: vi.fn().mockResolvedValue(undefined),
+  },
+});

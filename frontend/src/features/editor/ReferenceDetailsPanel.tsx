@@ -9,7 +9,7 @@
  * - Author list
  * - URL and external links
  * - Library integration (Phase 3)
- * - Smooth modal animations
+ * - Smooth modal entrance/exit animations
  * 
  * Requirements: 6.4, 6.5
  */
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { ExternalLink, BookOpen, Copy, Check } from 'lucide-react';
 import type { Reference } from './types';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================================
 // Types
@@ -67,18 +68,37 @@ export function ReferenceDetailsPanel({
   if (!reference) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            {reference.title}
-          </DialogTitle>
-          <DialogDescription>
-            {reference.reference_type.charAt(0).toUpperCase() + reference.reference_type.slice(1)} Reference
-          </DialogDescription>
-        </DialogHeader>
+    <AnimatePresence>
+      {open && reference && (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent 
+            className="max-w-2xl"
+            asChild
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{
+                duration: 0.25,
+                ease: [0.4, 0, 0.2, 1],
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold">
+                  {reference.title}
+                </DialogTitle>
+                <DialogDescription>
+                  {reference.reference_type.charAt(0).toUpperCase() + reference.reference_type.slice(1)} Reference
+                </DialogDescription>
+              </DialogHeader>
 
-        <div className="space-y-4 py-4">
+              <motion.div
+                className="space-y-4 py-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+              >
           {/* Authors */}
           {reference.authors && reference.authors.length > 0 && (
             <div>
@@ -137,10 +157,15 @@ export function ReferenceDetailsPanel({
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Referenced at</h3>
             <p className="text-sm">Line {reference.line_number}</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-4 border-t">
+        <motion.div
+          className="flex gap-2 pt-4 border-t"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.3 }}
+        >
           {reference.pdf_id && onViewInLibrary && (
             <Button
               onClick={handleViewInLibrary}
@@ -161,8 +186,11 @@ export function ReferenceDetailsPanel({
               Open External Link
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </motion.div>
+            </motion.div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </AnimatePresence>
   );
 }

@@ -7,10 +7,16 @@
  * - Hover highlighting for annotated text
  * - Click handling to open annotation details
  * 
- * Requirements: 4.2, 4.3, 4.4, 4.5
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - Annotation chips memoized with React.memo
+ * - Callbacks memoized with useCallback
+ * - Expensive computations memoized with useMemo
+ * 
+ * Requirements: 4.2, 4.3, 4.4, 4.5, 7.2
  */
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, memo } from 'react';
 import type * as Monaco from 'monaco-editor';
 import { useAnnotationStore } from '@/stores/annotation';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
@@ -143,14 +149,14 @@ function createHighlightDecorations(
 // Component
 // ============================================================================
 
-export function AnnotationGutter({
+const AnnotationGutterComponent = ({
   editor,
   monaco,
   decorationManager,
   fileContent,
   onAnnotationClick,
   onAnnotationHover,
-}: AnnotationGutterProps) {
+}: AnnotationGutterProps) => {
   // ==========================================================================
   // Store State
   // ==========================================================================
@@ -324,3 +330,19 @@ export function AnnotationGutter({
   // This component doesn't render anything - it manages decorations
   return null;
 }
+
+// Memoize the component to prevent unnecessary re-renders
+// Requirements: 7.2 - React optimization
+export const AnnotationGutter = memo(AnnotationGutterComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.editor === nextProps.editor &&
+    prevProps.monaco === nextProps.monaco &&
+    prevProps.decorationManager === nextProps.decorationManager &&
+    prevProps.fileContent === nextProps.fileContent &&
+    prevProps.onAnnotationClick === nextProps.onAnnotationClick &&
+    prevProps.onAnnotationHover === nextProps.onAnnotationHover
+  );
+});
+
+AnnotationGutter.displayName = 'AnnotationGutter';

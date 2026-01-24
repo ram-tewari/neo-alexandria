@@ -6,9 +6,14 @@
  * - Hover highlighting
  * - Click selection
  * - Nested/overlapping chunk handling
+ * 
+ * Performance optimizations:
+ * - Memoized with React.memo to prevent unnecessary re-renders
+ * - Callbacks memoized with useCallback
+ * - Expensive computations memoized with useMemo
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, memo } from 'react';
 import type * as Monaco from 'monaco-editor';
 import { createChunkDecorations } from '@/lib/monaco/decorations';
 import { useChunkStore } from '@/stores/chunk';
@@ -32,14 +37,14 @@ export interface SemanticChunkOverlayProps {
 // Component
 // ============================================================================
 
-export function SemanticChunkOverlay({
+const SemanticChunkOverlayComponent = ({
   editor,
   monaco,
   resourceId,
   visible = true,
   onChunkClick,
   onChunkHover,
-}: SemanticChunkOverlayProps) {
+}: SemanticChunkOverlayProps) => {
   // ==========================================================================
   // Store State
   // ==========================================================================
@@ -221,3 +226,19 @@ export function SemanticChunkOverlay({
   // It doesn't render any DOM elements
   return null;
 }
+
+// Memoize the component to prevent unnecessary re-renders
+// Requirements: 7.2 - React optimization
+export const SemanticChunkOverlay = memo(SemanticChunkOverlayComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.editor === nextProps.editor &&
+    prevProps.monaco === nextProps.monaco &&
+    prevProps.resourceId === nextProps.resourceId &&
+    prevProps.visible === nextProps.visible &&
+    prevProps.onChunkClick === nextProps.onChunkClick &&
+    prevProps.onChunkHover === nextProps.onChunkHover
+  );
+});
+
+SemanticChunkOverlay.displayName = 'SemanticChunkOverlay';

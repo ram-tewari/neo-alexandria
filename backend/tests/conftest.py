@@ -48,6 +48,7 @@ from app.database.models import (  # noqa: F401
     ClassificationCode,
     ModelVersion,
     ABTestExperiment,
+    PlanningSession,  # Phase 20
 )
 from app.modules.auth.model import OAuthAccount  # noqa: F401
 

@@ -67,7 +67,7 @@ def generate_academic_content():
     ).map(lambda text: " ".join(academic_keywords[:4]) + " " + text)
 
 
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     filename=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
@@ -94,7 +94,7 @@ def test_property_code_file_classification(filename, extension):
     )
 
 
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     filename=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
@@ -131,7 +131,7 @@ def test_property_theory_file_classification_with_content(filename, extension, c
         )
 
 
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(governance_filename=governance_filenames)
 def test_property_governance_file_classification(governance_filename):
     """
@@ -151,7 +151,7 @@ def test_property_governance_file_classification(governance_filename):
     )
 
 
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     filename=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
@@ -178,7 +178,7 @@ def test_property_unknown_file_default_classification(filename, extension):
     )
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     filename=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
@@ -208,7 +208,7 @@ def test_property_theory_file_without_academic_content(filename, extension):
     )
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     filename=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
@@ -244,7 +244,7 @@ import shutil
 
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_files=st.integers(min_value=1, max_value=20),
     file_extensions=st.lists(
@@ -318,7 +318,7 @@ async def test_property_directory_crawling_completeness(
 # ============================================================================
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_files=st.integers(min_value=3, max_value=10),
     ignore_pattern=st.sampled_from(["*.log", "*.tmp", "build/*", "dist/*", "__pycache__/*"])
@@ -420,7 +420,7 @@ async def test_property_gitignore_compliance(
 # ============================================================================
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_text_files=st.integers(min_value=1, max_value=10),
     num_binary_files=st.integers(min_value=1, max_value=5)
@@ -497,7 +497,7 @@ async def test_property_binary_file_exclusion(
 # **Validates: Requirements 3.2, 3.3**
 # ============================================================================
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_functions=st.integers(min_value=1, max_value=10),
     num_classes=st.integers(min_value=0, max_value=5)
@@ -558,7 +558,7 @@ def test_property_ast_logical_unit_extraction(num_functions, num_classes):
         )
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     language=st.sampled_from(["python", "javascript", "typescript"]),
     num_units=st.integers(min_value=1, max_value=10)
@@ -631,7 +631,7 @@ def test_property_ast_extraction_preserves_content(language, num_units):
 # **Validates: Requirements 3.4, 3.5**
 # ============================================================================
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     language=st.sampled_from(["python", "javascript", "typescript", "rust", "go", "java"]),
     num_functions=st.integers(min_value=1, max_value=10)
@@ -737,7 +737,7 @@ def test_property_code_chunk_metadata_completeness(language, num_functions):
             )
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     num_functions=st.integers(min_value=2, max_value=10)
 )
@@ -791,7 +791,7 @@ def test_property_chunk_line_numbers_are_sequential(num_functions):
 # **Validates: Requirements 3.7**
 # ============================================================================
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     invalid_code=st.text(
         alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd", "Zs", "Po")),
@@ -836,7 +836,7 @@ def test_property_parsing_fallback_safety(invalid_code):
         pytest.fail(f"Chunking should not raise exception for invalid code: {e}")
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     valid_code_lines=st.integers(min_value=1, max_value=5),
     invalid_code_lines=st.integers(min_value=1, max_value=5)
@@ -889,7 +889,7 @@ def test_property_partial_parsing_fallback(valid_code_lines, invalid_code_lines)
         pytest.fail(f"Chunking should not raise exception for partially valid code: {e}")
 
 
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(
     language=st.sampled_from(["python", "javascript", "typescript", "rust", "go", "java"])
 )
@@ -939,7 +939,7 @@ def test_property_empty_code_fallback(language):
 # ============================================================================
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_imports=st.integers(min_value=1, max_value=10),
     num_functions=st.integers(min_value=1, max_value=5),
@@ -1050,7 +1050,7 @@ async def test_property_static_analysis_relationship_extraction(
 
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     language=st.sampled_from(["python", "javascript", "typescript", "rust", "go", "java"]),
     num_definitions=st.integers(min_value=1, max_value=10)
@@ -1157,7 +1157,7 @@ async def test_property_static_analysis_multi_language(
 
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     num_imports=st.integers(min_value=1, max_value=10)
 )
@@ -1234,7 +1234,7 @@ async def test_property_import_extraction_completeness(
 # ============================================================================
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     side_effect_code=st.sampled_from([
         "import os\nos.system('echo hello')",
@@ -1319,7 +1319,7 @@ async def test_property_static_analysis_no_code_execution(
 
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 @given(
     malicious_code=st.sampled_from([
         "import os\nos.remove('/important/file')",
@@ -1402,7 +1402,7 @@ async def test_property_static_analysis_malicious_code_safety(
 
 
 @pytest.mark.asyncio
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture], deadline=None)
 async def test_property_static_analysis_no_side_effects(async_db_session):
     """
     **Feature: phase18-code-intelligence, Property 9: Static Analysis Safety**

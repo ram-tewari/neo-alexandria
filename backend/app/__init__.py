@@ -83,6 +83,9 @@ def register_all_modules(app: FastAPI) -> None:
         ),
         # Phase 17 modules (in progress)
         ("auth", "app.modules.auth", ["router"]),
+        # Phase 20 modules (in progress)
+        ("planning", "app.modules.planning", ["router"]),
+        ("mcp", "app.modules.mcp", ["router"]),
     ]
     
     # Modules that require torch (only load in EDGE mode)

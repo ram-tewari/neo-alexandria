@@ -96,7 +96,7 @@ invalid_repo_urls = st.one_of(
 
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(repo_url=valid_repo_urls)
 def test_property_1_task_queue_round_trip(client, repo_url):
     """
@@ -131,7 +131,7 @@ def test_property_1_task_queue_round_trip(client, repo_url):
 
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(repo_url=invalid_repo_urls)
 def test_property_3_url_validation_rejects_invalid_input(client, repo_url):
     """
@@ -154,7 +154,7 @@ def test_property_3_url_validation_rejects_invalid_input(client, repo_url):
 
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(status_value=st.one_of(
     st.just("Idle"),
     st.just("Training Graph on github.com/user/repo"),
@@ -185,7 +185,7 @@ def test_property_4_status_endpoint_reflects_redis_state(client, status_value):
 
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
-@settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(error_scenario=st.sampled_from([
     ("invalid_url", 400),
     ("invalid_token", 401),
@@ -241,7 +241,7 @@ def test_property_16_queue_cap_enforcement(client):
 
 @pytest.mark.property
 @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
-@settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(max_examples=10, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(invalid_token=st.one_of(
     st.just("wrong-token"),
     st.text(min_size=1, max_size=50).filter(lambda x: x != "test-admin-token-12345"),

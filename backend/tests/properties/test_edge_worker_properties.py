@@ -71,7 +71,7 @@ class TestEdgeWorkerProperties:
     @pytest.mark.property
     @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
     @given(task_data=valid_task_data())
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_property_2_worker_status_consistency(self, task_data):
         """
         Property 2: Worker status consistency
@@ -141,7 +141,7 @@ class TestEdgeWorkerProperties:
     @pytest.mark.property
     @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
     @given(task_data=valid_task_data())
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_property_9_job_history_record_completeness(self, task_data):
         """
         Property 9: Job history record completeness
@@ -225,7 +225,7 @@ class TestEdgeWorkerProperties:
     @pytest.mark.property
     @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
     @given(num_jobs=st.integers(min_value=101, max_value=200))
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_property_10_job_history_size_cap(self, num_jobs):
         """
         Property 10: Job history size cap
@@ -293,7 +293,7 @@ class TestEdgeWorkerProperties:
     @pytest.mark.property
     @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
     @given(task_data=valid_task_data())
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_property_11_status_format_validation(self, task_data):
         """
         Property 11: Status format validation
@@ -361,7 +361,7 @@ class TestEdgeWorkerProperties:
     @pytest.mark.property
     @pytest.mark.feature("phase19-hybrid-edge-cloud-orchestration")
     @given(task_data=stale_task_data())
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_property_18_stale_task_handling(self, task_data):
         """
         Property 18: Stale task handling

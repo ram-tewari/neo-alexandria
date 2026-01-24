@@ -9,7 +9,7 @@ import os
 import tempfile
 import shutil
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import torch
 from git import Repo
 from tree_sitter import Language, Parser
@@ -333,3 +333,560 @@ class RepositoryParser:
         
         # Could not resolve
         return None
+    
+    def detect_best_practices(self, repo_path: str) -> Dict[str, Any]:
+        """
+        Detect best practices in a repository.
+        
+        Analyzes code patterns, test coverage, documentation, and code quality
+        indicators to identify best practices being followed.
+        
+        Args:
+            repo_path: Path to repository root
+            
+        Returns:
+            Dictionary with:
+            - patterns: List of detected code patterns
+            - quality_indicators: Dict of quality metrics
+            - recommendations: List of improvement suggestions
+        """
+        from pathlib import Path
+        
+        print(f"🔍 Detecting best practices in {repo_path}...")
+        
+        # Find all source files
+        source_files = self._find_source_files(repo_path)
+        
+        if not source_files:
+            return {
+                "patterns": [],
+                "quality_indicators": {},
+                "recommendations": ["No source files found in repository"]
+            }
+        
+        # Initialize results
+        patterns = []
+        quality_indicators = {}
+        recommendations = []
+        
+        # Analyze patterns across all files
+        error_handling_count = 0
+        docstring_count = 0
+        test_file_count = 0
+        total_functions = 0
+        total_classes = 0
+        
+        for file_path in source_files:
+            ext = Path(file_path).suffix
+            
+            # Count test files
+            if 'test' in Path(file_path).name.lower():
+                test_file_count += 1
+            
+            # Parse file for patterns
+            try:
+                with open(file_path, 'rb') as f:
+                    code = f.read()
+                
+                parser = self._parsers.get(ext)
+                if not parser:
+                    continue
+                
+                tree = parser.parse(code)
+                
+                # Analyze based on language
+                if ext == '.py':
+                    file_patterns = self._analyze_python_patterns(tree.root_node, code)
+                    error_handling_count += file_patterns.get('error_handling', 0)
+                    docstring_count += file_patterns.get('docstrings', 0)
+                    total_functions += file_patterns.get('functions', 0)
+                    total_classes += file_patterns.get('classes', 0)
+                elif ext in ['.js', '.ts']:
+                    file_patterns = self._analyze_javascript_patterns(tree.root_node, code)
+                    error_handling_count += file_patterns.get('error_handling', 0)
+                    docstring_count += file_patterns.get('docstrings', 0)
+                    total_functions += file_patterns.get('functions', 0)
+                    total_classes += file_patterns.get('classes', 0)
+                    
+            except Exception as e:
+                print(f"⚠️  Error analyzing {file_path}: {e}")
+                continue
+        
+        # Calculate quality indicators
+        test_coverage_indicator = test_file_count / max(len(source_files), 1)
+        doc_coverage = docstring_count / max(total_functions + total_classes, 1)
+        error_handling_ratio = error_handling_count / max(total_functions, 1)
+        
+        quality_indicators = {
+            "test_file_ratio": round(test_coverage_indicator, 2),
+            "documentation_coverage": round(doc_coverage, 2),
+            "error_handling_ratio": round(error_handling_ratio, 2),
+            "total_files": len(source_files),
+            "test_files": test_file_count,
+            "total_functions": total_functions,
+            "total_classes": total_classes
+        }
+        
+        # Identify patterns
+        if error_handling_count > 0:
+            confidence = min(error_handling_ratio, 1.0)
+            patterns.append({
+                "pattern_type": "error_handling",
+                "pattern_name": "Try-Catch Error Handling",
+                "examples": [f"Found {error_handling_count} error handling blocks"],
+                "confidence": round(confidence, 2)
+            })
+        
+        if docstring_count > 0:
+            confidence = min(doc_coverage, 1.0)
+            patterns.append({
+                "pattern_type": "documentation",
+                "pattern_name": "Function/Class Documentation",
+                "examples": [f"Found {docstring_count} documented functions/classes"],
+                "confidence": round(confidence, 2)
+            })
+        
+        if test_file_count > 0:
+            confidence = min(test_coverage_indicator * 2, 1.0)  # Scale up for visibility
+            patterns.append({
+                "pattern_type": "testing",
+                "pattern_name": "Unit Testing",
+                "examples": [f"Found {test_file_count} test files"],
+                "confidence": round(confidence, 2)
+            })
+        
+        # Generate recommendations
+        if test_coverage_indicator < 0.2:
+            recommendations.append("Consider adding more test files (current ratio: {:.1%})".format(test_coverage_indicator))
+        
+        if doc_coverage < 0.5:
+            recommendations.append("Consider adding documentation to more functions/classes (current coverage: {:.1%})".format(doc_coverage))
+        
+        if error_handling_ratio < 0.3:
+            recommendations.append("Consider adding error handling to more functions (current ratio: {:.1%})".format(error_handling_ratio))
+        
+        print(f"✅ Detected {len(patterns)} patterns, {len(recommendations)} recommendations")
+        
+        return {
+            "patterns": patterns,
+            "quality_indicators": quality_indicators,
+            "recommendations": recommendations
+        }
+    
+    def _analyze_python_patterns(self, root_node, code: bytes) -> Dict[str, int]:
+        """
+        Analyze Python code for best practice patterns.
+        
+        Args:
+            root_node: Tree-sitter root node
+            code: Source code as bytes
+            
+        Returns:
+            Dictionary with pattern counts
+        """
+        patterns = {
+            'error_handling': 0,
+            'docstrings': 0,
+            'functions': 0,
+            'classes': 0
+        }
+        
+        def traverse(node):
+            if node.type == 'try_statement':
+                patterns['error_handling'] += 1
+            
+            elif node.type == 'function_definition':
+                patterns['functions'] += 1
+                # Check for docstring
+                body = node.child_by_field_name('body')
+                if body:
+                    for child in body.children:
+                        if child.type == 'expression_statement':
+                            for expr_child in child.children:
+                                if expr_child.type == 'string':
+                                    patterns['docstrings'] += 1
+                                    break
+                            break
+            
+            elif node.type == 'class_definition':
+                patterns['classes'] += 1
+                # Check for docstring
+                body = node.child_by_field_name('body')
+                if body:
+                    for child in body.children:
+                        if child.type == 'expression_statement':
+                            for expr_child in child.children:
+                                if expr_child.type == 'string':
+                                    patterns['docstrings'] += 1
+                                    break
+                            break
+            
+            # Traverse children
+            for child in node.children:
+                traverse(child)
+        
+        traverse(root_node)
+        return patterns
+    
+    def _analyze_javascript_patterns(self, root_node, code: bytes) -> Dict[str, int]:
+        """
+        Analyze JavaScript/TypeScript code for best practice patterns.
+        
+        Args:
+            root_node: Tree-sitter root node
+            code: Source code as bytes
+            
+        Returns:
+            Dictionary with pattern counts
+        """
+        patterns = {
+            'error_handling': 0,
+            'docstrings': 0,
+            'functions': 0,
+            'classes': 0
+        }
+        
+        def traverse(node):
+            if node.type == 'try_statement':
+                patterns['error_handling'] += 1
+            
+            elif node.type in ['function_declaration', 'function']:
+                patterns['functions'] += 1
+                # Check for JSDoc comment
+                parent = node.parent
+                if parent:
+                    node_index = None
+                    for i, child in enumerate(parent.children):
+                        if child == node:
+                            node_index = i
+                            break
+                    
+                    if node_index and node_index > 0:
+                        prev_node = parent.children[node_index - 1]
+                        if prev_node.type == 'comment' and b'/**' in prev_node.text:
+                            patterns['docstrings'] += 1
+            
+            elif node.type == 'class_declaration':
+                patterns['classes'] += 1
+                # Check for JSDoc comment
+                parent = node.parent
+                if parent:
+                    node_index = None
+                    for i, child in enumerate(parent.children):
+                        if child == node:
+                            node_index = i
+                            break
+                    
+                    if node_index and node_index > 0:
+                        prev_node = parent.children[node_index - 1]
+                        if prev_node.type == 'comment' and b'/**' in prev_node.text:
+                            patterns['docstrings'] += 1
+            
+            # Traverse children
+            for child in node.children:
+                traverse(child)
+        
+        traverse(root_node)
+        return patterns
+
+    def extract_reusable_components(self, repo_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract reusable components from a repository.
+        
+        Identifies utility functions, classes, and interfaces that could be
+        reused in other projects.
+        
+        Args:
+            repo_path: Path to repository root
+            
+        Returns:
+            List of reusable component dictionaries with:
+            - component_name: Name of the component
+            - file_path: Path to file containing component
+            - interface: Function/class signature
+            - usage_examples: List of usage examples
+            - dependencies: List of dependencies
+        """
+        from pathlib import Path
+        
+        print(f"🔍 Extracting reusable components from {repo_path}...")
+        
+        # Find all source files
+        source_files = self._find_source_files(repo_path)
+        
+        if not source_files:
+            return []
+        
+        components = []
+        
+        for file_path in source_files:
+            ext = Path(file_path).suffix
+            
+            # Skip test files
+            if 'test' in Path(file_path).name.lower():
+                continue
+            
+            # Parse file for reusable components
+            try:
+                with open(file_path, 'rb') as f:
+                    code = f.read()
+                
+                parser = self._parsers.get(ext)
+                if not parser:
+                    continue
+                
+                tree = parser.parse(code)
+                
+                # Extract components based on language
+                if ext == '.py':
+                    file_components = self._extract_python_components(tree.root_node, code, file_path)
+                    components.extend(file_components)
+                elif ext in ['.js', '.ts']:
+                    file_components = self._extract_javascript_components(tree.root_node, code, file_path)
+                    components.extend(file_components)
+                    
+            except Exception as e:
+                print(f"⚠️  Error extracting from {file_path}: {e}")
+                continue
+        
+        print(f"✅ Extracted {len(components)} reusable components")
+        
+        return components
+    
+    def _extract_python_components(self, root_node, code: bytes, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract reusable Python components.
+        
+        Args:
+            root_node: Tree-sitter root node
+            code: Source code as bytes
+            file_path: Path to source file
+            
+        Returns:
+            List of component dictionaries
+        """
+        components = []
+        
+        def traverse(node):
+            # Extract utility functions (functions not in classes)
+            if node.type == 'function_definition':
+                # Check if this is a top-level function (not a method)
+                parent = node.parent
+                is_top_level = parent and parent.type == 'module'
+                
+                if is_top_level:
+                    name_node = node.child_by_field_name('name')
+                    if name_node:
+                        func_name = name_node.text.decode('utf8', errors='ignore')
+                        
+                        # Extract function signature
+                        params_node = node.child_by_field_name('parameters')
+                        params = params_node.text.decode('utf8', errors='ignore') if params_node else '()'
+                        
+                        # Extract docstring
+                        docstring = None
+                        body = node.child_by_field_name('body')
+                        if body:
+                            for child in body.children:
+                                if child.type == 'expression_statement':
+                                    for expr_child in child.children:
+                                        if expr_child.type == 'string':
+                                            docstring = expr_child.text.decode('utf8', errors='ignore').strip('"""').strip("'''").strip()
+                                            break
+                                    break
+                        
+                        # Extract dependencies (imports used in function)
+                        dependencies = self._extract_function_dependencies(node, code)
+                        
+                        components.append({
+                            'component_name': func_name,
+                            'file_path': file_path,
+                            'interface': f"def {func_name}{params}",
+                            'usage_examples': [docstring] if docstring else [],
+                            'dependencies': dependencies
+                        })
+            
+            # Extract utility classes
+            elif node.type == 'class_definition':
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    class_name = name_node.text.decode('utf8', errors='ignore')
+                    
+                    # Extract class docstring
+                    docstring = None
+                    body = node.child_by_field_name('body')
+                    if body:
+                        for child in body.children:
+                            if child.type == 'expression_statement':
+                                for expr_child in child.children:
+                                    if expr_child.type == 'string':
+                                        docstring = expr_child.text.decode('utf8', errors='ignore').strip('"""').strip("'''").strip()
+                                        break
+                                break
+                    
+                    # Extract method signatures
+                    methods = []
+                    if body:
+                        for child in body.children:
+                            if child.type == 'function_definition':
+                                method_name_node = child.child_by_field_name('name')
+                                if method_name_node:
+                                    method_name = method_name_node.text.decode('utf8', errors='ignore')
+                                    params_node = child.child_by_field_name('parameters')
+                                    params = params_node.text.decode('utf8', errors='ignore') if params_node else '()'
+                                    methods.append(f"{method_name}{params}")
+                    
+                    # Extract dependencies
+                    dependencies = self._extract_function_dependencies(node, code)
+                    
+                    interface = f"class {class_name}:\n    " + "\n    ".join(methods) if methods else f"class {class_name}"
+                    
+                    components.append({
+                        'component_name': class_name,
+                        'file_path': file_path,
+                        'interface': interface,
+                        'usage_examples': [docstring] if docstring else [],
+                        'dependencies': dependencies
+                    })
+            
+            # Traverse children
+            for child in node.children:
+                traverse(child)
+        
+        traverse(root_node)
+        return components
+    
+    def _extract_javascript_components(self, root_node, code: bytes, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Extract reusable JavaScript/TypeScript components.
+        
+        Args:
+            root_node: Tree-sitter root node
+            code: Source code as bytes
+            file_path: Path to source file
+            
+        Returns:
+            List of component dictionaries
+        """
+        components = []
+        
+        def traverse(node):
+            # Extract exported functions
+            if node.type in ['function_declaration', 'function']:
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    func_name = name_node.text.decode('utf8', errors='ignore')
+                    
+                    # Extract function signature
+                    params_node = node.child_by_field_name('parameters')
+                    params = params_node.text.decode('utf8', errors='ignore') if params_node else '()'
+                    
+                    # Check for JSDoc
+                    jsdoc = None
+                    parent = node.parent
+                    if parent:
+                        node_index = None
+                        for i, child in enumerate(parent.children):
+                            if child == node:
+                                node_index = i
+                                break
+                        
+                        if node_index and node_index > 0:
+                            prev_node = parent.children[node_index - 1]
+                            if prev_node.type == 'comment' and b'/**' in prev_node.text:
+                                jsdoc = prev_node.text.decode('utf8', errors='ignore').strip('/*').strip('*/').strip()
+                    
+                    # Extract dependencies
+                    dependencies = self._extract_function_dependencies(node, code)
+                    
+                    components.append({
+                        'component_name': func_name,
+                        'file_path': file_path,
+                        'interface': f"function {func_name}{params}",
+                        'usage_examples': [jsdoc] if jsdoc else [],
+                        'dependencies': dependencies
+                    })
+            
+            # Extract exported classes
+            elif node.type == 'class_declaration':
+                name_node = node.child_by_field_name('name')
+                if name_node:
+                    class_name = name_node.text.decode('utf8', errors='ignore')
+                    
+                    # Check for JSDoc
+                    jsdoc = None
+                    parent = node.parent
+                    if parent:
+                        node_index = None
+                        for i, child in enumerate(parent.children):
+                            if child == node:
+                                node_index = i
+                                break
+                        
+                        if node_index and node_index > 0:
+                            prev_node = parent.children[node_index - 1]
+                            if prev_node.type == 'comment' and b'/**' in prev_node.text:
+                                jsdoc = prev_node.text.decode('utf8', errors='ignore').strip('/*').strip('*/').strip()
+                    
+                    # Extract method signatures
+                    methods = []
+                    body = node.child_by_field_name('body')
+                    if body:
+                        for child in body.children:
+                            if child.type == 'method_definition':
+                                method_name_node = child.child_by_field_name('name')
+                                if method_name_node:
+                                    method_name = method_name_node.text.decode('utf8', errors='ignore')
+                                    params_node = child.child_by_field_name('parameters')
+                                    params = params_node.text.decode('utf8', errors='ignore') if params_node else '()'
+                                    methods.append(f"{method_name}{params}")
+                    
+                    # Extract dependencies
+                    dependencies = self._extract_function_dependencies(node, code)
+                    
+                    interface = f"class {class_name} {{\n  " + "\n  ".join(methods) + "\n}}" if methods else f"class {class_name}"
+                    
+                    components.append({
+                        'component_name': class_name,
+                        'file_path': file_path,
+                        'interface': interface,
+                        'usage_examples': [jsdoc] if jsdoc else [],
+                        'dependencies': dependencies
+                    })
+            
+            # Traverse children
+            for child in node.children:
+                traverse(child)
+        
+        traverse(root_node)
+        return components
+    
+    def _extract_function_dependencies(self, node, code: bytes) -> List[str]:
+        """
+        Extract dependencies (imports/calls) used within a function or class.
+        
+        Args:
+            node: Tree-sitter node for function or class
+            code: Source code as bytes
+            
+        Returns:
+            List of dependency names
+        """
+        dependencies = set()
+        
+        def traverse(node):
+            # Look for identifiers that might be dependencies
+            if node.type == 'identifier':
+                identifier = node.text.decode('utf8', errors='ignore')
+                # Filter out common keywords and built-ins
+                if identifier not in ['self', 'this', 'return', 'if', 'else', 'for', 'while', 'def', 'class', 'function']:
+                    dependencies.add(identifier)
+            
+            # Traverse children
+            for child in node.children:
+                traverse(child)
+        
+        traverse(node)
+        
+        # Return sorted list (limit to reasonable size)
+        return sorted(list(dependencies))[:10]

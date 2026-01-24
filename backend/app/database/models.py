@@ -256,6 +256,12 @@ class Resource(Base):
     taxonomy_nodes: Mapped[List["TaxonomyNode"]] = relationship(
         "TaxonomyNode", secondary="resource_taxonomy", back_populates="resources"
     )
+    centrality_cache: Mapped["GraphCentralityCache"] = relationship(
+        "GraphCentralityCache", back_populates="resource", uselist=False
+    )
+    community_assignments: Mapped[List["CommunityAssignment"]] = relationship(
+        "CommunityAssignment", back_populates="resource", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("idx_resources_sparse_updated", "sparse_embedding_updated_at"),
@@ -325,6 +331,102 @@ class DocumentChunk(Base):
 
     def __repr__(self) -> str:
         return f"<DocumentChunk(id={self.id!r}, resource_id={self.resource_id!r}, chunk_index={self.chunk_index})>"
+
+
+class ChunkLink(Base):
+    """
+    Bidirectional semantic link between document chunks.
+
+    Stores similarity-based links between PDF chunks and code chunks
+    for auto-linking functionality in Phase 20.
+    """
+
+    __tablename__ = "chunk_links"
+
+    # Primary key
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+
+    # Foreign keys
+    source_chunk_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_chunk_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Link metadata
+    similarity_score: Mapped[float] = mapped_column(Float, nullable=False)
+    link_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # "pdf_to_code", "code_to_pdf", "bidirectional"
+
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.current_timestamp()
+    )
+
+    # Relationships
+    source_chunk: Mapped["DocumentChunk"] = relationship(
+        "DocumentChunk",
+        foreign_keys=[source_chunk_id],
+    )
+    target_chunk: Mapped["DocumentChunk"] = relationship(
+        "DocumentChunk",
+        foreign_keys=[target_chunk_id],
+    )
+
+    # Indexes
+    __table_args__ = (
+        Index("idx_chunk_links_source", "source_chunk_id"),
+        Index("idx_chunk_links_target", "target_chunk_id"),
+        Index("idx_chunk_links_similarity", "similarity_score"),
+        Index("idx_chunk_links_source_target", "source_chunk_id", "target_chunk_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ChunkLink(source={self.source_chunk_id!r}, target={self.target_chunk_id!r}, similarity={self.similarity_score:.3f})>"
+
+
+class PlanningSession(Base):
+    """
+    Stores multi-hop planning sessions for iterative refinement.
+    
+    Part of Phase 20 AI Planning infrastructure.
+    """
+    __tablename__ = "planning_sessions"
+    
+    # Primary key
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # UUID string
+    
+    # Planning data
+    task_description: Mapped[str] = mapped_column(Text, nullable=False)
+    context: Mapped[dict] = mapped_column(JSON, nullable=False)
+    steps: Mapped[list] = mapped_column(JSON, nullable=False)  # List of PlanningStep dicts
+    dependencies: Mapped[list] = mapped_column(JSON, nullable=False)  # List of tuples
+    status: Mapped[str] = mapped_column(String(50), nullable=False)  # "active", "completed", "failed"
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
+    )
+    
+    # Indexes
+    __table_args__ = (
+        Index("idx_planning_status", "status"),
+        Index("idx_planning_created", "created_at"),
+    )
+    
+    def __repr__(self) -> str:
+        return f"<PlanningSession(id={self.id!r}, status={self.status!r}, steps={len(self.steps)})>"
 
 
 # ============================================================================
@@ -717,6 +819,78 @@ class GraphEmbedding(Base):
 
     def __repr__(self) -> str:
         return f"<GraphEmbedding(resource_id={self.resource_id!r}, method={self.embedding_method!r})>"
+
+
+class GraphCentralityCache(Base):
+    """Cache for graph centrality metrics with TTL."""
+
+    __tablename__ = "graph_centrality_cache"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    in_degree: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    out_degree: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    betweenness: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default="0.0"
+    )
+    pagerank: Mapped[float] = mapped_column(Float, nullable=False, server_default="0.0")
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.current_timestamp()
+    )
+
+    # Relationship
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="centrality_cache")
+
+    __table_args__ = (
+        Index("idx_centrality_resource", "resource_id"),
+        Index("idx_centrality_computed", "computed_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<GraphCentralityCache(resource_id={self.resource_id!r}, pagerank={self.pagerank})>"
+
+
+class CommunityAssignment(Base):
+    """Cache for community detection results with TTL (15 minutes)."""
+
+    __tablename__ = "community_assignments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    resource_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        ForeignKey("resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    modularity: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default="0.0"
+    )
+    resolution: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default="1.0"
+    )
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.current_timestamp()
+    )
+
+    # Relationship
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="community_assignments")
+
+    __table_args__ = (
+        Index("idx_community_resource", "resource_id"),
+        Index("idx_community_id", "community_id"),
+        Index("idx_community_computed", "computed_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<CommunityAssignment(resource_id={self.resource_id!r}, community_id={self.community_id})>"
 
 
 class DiscoveryHypothesis(Base):

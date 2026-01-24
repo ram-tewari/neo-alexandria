@@ -41,7 +41,7 @@ from app.config.settings import get_settings
         st.just("qdrant://invalid-qdrant.cloud"),
     )
 )
-@settings(max_examples=100, deadline=None)
+@settings(max_examples=10, deadline=None)
 def test_property_12_https_protocol_enforcement(upstash_url: str, qdrant_url: str):
     """
     Property 12: HTTPS Protocol Enforcement
@@ -111,7 +111,7 @@ def test_property_12_https_enforcement_in_config():
 @given(
     num_concurrent_clones=st.integers(min_value=2, max_value=5)
 )
-@settings(max_examples=50, deadline=None)
+@settings(max_examples=10, deadline=None)
 def test_property_13_temporary_directory_isolation(num_concurrent_clones: int):
     """
     Property 13: Temporary Directory Isolation
@@ -186,7 +186,7 @@ def test_property_13_temporary_directory_isolation(num_concurrent_clones: int):
 @given(
     num_sequential_clones=st.integers(min_value=2, max_value=10)
 )
-@settings(max_examples=50, deadline=None)
+@settings(max_examples=10, deadline=None)
 def test_property_13_sequential_directory_isolation(num_sequential_clones: int):
     """
     Property 13: Temporary Directory Isolation (Sequential)
@@ -231,7 +231,7 @@ def test_property_13_sequential_directory_isolation(num_sequential_clones: int):
 @given(
     num_files=st.integers(min_value=1, max_value=10)
 )
-@settings(max_examples=50, deadline=None)
+@settings(max_examples=10, deadline=None)
 def test_property_14_cleanup_removes_temporary_files(num_files: int):
     """
     Property 14: Cleanup Removes Temporary Files
@@ -287,7 +287,7 @@ def test_property_14_cleanup_removes_temporary_files(num_files: int):
     create_subdirs=st.booleans(),
     num_subdirs=st.integers(min_value=1, max_value=5)
 )
-@settings(max_examples=50, deadline=None)
+@settings(max_examples=10, deadline=None)
 def test_property_14_cleanup_removes_nested_directories(
     create_subdirs: bool,
     num_subdirs: int

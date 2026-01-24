@@ -983,8 +983,8 @@ class GraphService:
         graph_edges = self.db.query(GraphEdge).all()
         for edge in graph_edges:
             G.add_edge(
-                str(edge.source_resource_id),
-                str(edge.target_resource_id),
+                str(edge.source_id),
+                str(edge.target_id),
                 edge_type=edge.edge_type,
                 weight=edge.weight,
                 key=edge.edge_type,
@@ -1176,6 +1176,366 @@ class GraphService:
 
         return collection.get_neighbors()
 
+    async def compute_degree_centrality(
+        self, resource_ids: List[int]
+    ) -> dict[int, dict]:
+        """
+        Compute degree centrality for specified resources.
+
+        Degree centrality measures the number of direct connections a node has.
+        Returns both in-degree (incoming edges) and out-degree (outgoing edges).
+
+        Args:
+            resource_ids: List of resource IDs to compute centrality for
+
+        Returns:
+            Dictionary mapping resource_id to centrality metrics:
+            {
+                resource_id: {
+                    "in_degree": int,
+                    "out_degree": int,
+                    "total_degree": int
+                }
+            }
+        """
+        try:
+            import networkx as nx
+        except ImportError:
+            logger.error("NetworkX not installed, cannot compute centrality")
+            return {}
+
+        # Build graph
+        G = self.build_multilayer_graph()
+
+        # Convert to directed graph for in/out degree calculation
+        DG = nx.DiGraph()
+        for u, v, data in G.edges(data=True):
+            DG.add_edge(u, v, **data)
+
+        results = {}
+        for resource_id in resource_ids:
+            resource_id_str = str(resource_id)
+            if not DG.has_node(resource_id_str):
+                results[resource_id] = {
+                    "in_degree": 0,
+                    "out_degree": 0,
+                    "total_degree": 0,
+                }
+                continue
+
+            in_degree = DG.in_degree(resource_id_str)
+            out_degree = DG.out_degree(resource_id_str)
+
+            results[resource_id] = {
+                "in_degree": in_degree,
+                "out_degree": out_degree,
+                "total_degree": in_degree + out_degree,
+            }
+
+        return results
+
+    async def compute_betweenness_centrality(
+        self, resource_ids: List[int]
+    ) -> dict[int, float]:
+        """
+        Compute betweenness centrality for specified resources.
+
+        Betweenness centrality measures how often a node appears on shortest
+        paths between other nodes. High betweenness indicates a node that
+        bridges different parts of the graph.
+
+        Args:
+            resource_ids: List of resource IDs to compute centrality for
+
+        Returns:
+            Dictionary mapping resource_id to betweenness centrality score (0-1)
+        """
+        try:
+            import networkx as nx
+        except ImportError:
+            logger.error("NetworkX not installed, cannot compute centrality")
+            return {}
+
+        # Build graph
+        G = self.build_multilayer_graph()
+
+        # Compute betweenness centrality for all nodes
+        betweenness = nx.betweenness_centrality(G, weight="weight")
+
+        # Extract results for requested resources
+        results = {}
+        for resource_id in resource_ids:
+            resource_id_str = str(resource_id)
+            results[resource_id] = betweenness.get(resource_id_str, 0.0)
+
+        return results
+
+    async def compute_pagerank(
+        self, resource_ids: List[int], damping_factor: float = 0.85
+    ) -> dict[int, float]:
+        """
+        Compute PageRank centrality for specified resources.
+
+        PageRank measures the importance of nodes based on the structure of
+        incoming links. Originally developed for ranking web pages, it's
+        useful for identifying influential nodes in citation networks.
+
+        Args:
+            resource_ids: List of resource IDs to compute centrality for
+            damping_factor: Probability of following a link (default 0.85)
+
+        Returns:
+            Dictionary mapping resource_id to PageRank score
+        """
+        try:
+            import networkx as nx
+        except ImportError:
+            logger.error("NetworkX not installed, cannot compute centrality")
+            return {}
+
+        # Validate damping factor
+        if not 0 < damping_factor < 1:
+            logger.warning(
+                f"Invalid damping factor {damping_factor}, using default 0.85"
+            )
+            damping_factor = 0.85
+
+        # Build graph
+        G = self.build_multilayer_graph()
+
+        # Convert to directed graph for PageRank
+        DG = nx.DiGraph()
+        for u, v, data in G.edges(data=True):
+            weight = data.get("weight", 1.0)
+            DG.add_edge(u, v, weight=weight)
+
+        # Compute PageRank for all nodes
+        try:
+            pagerank = nx.pagerank(DG, alpha=damping_factor, weight="weight")
+        except Exception as e:
+            logger.error(f"Error computing PageRank: {e}")
+            return {resource_id: 0.0 for resource_id in resource_ids}
+
+        # Extract results for requested resources
+        results = {}
+        for resource_id in resource_ids:
+            resource_id_str = str(resource_id)
+            results[resource_id] = pagerank.get(resource_id_str, 0.0)
+
+        return results
+
+
+# Phase 20: Community Detection Service
+class CommunityDetectionService:
+    """
+    Service for detecting communities in knowledge graphs using Louvain algorithm.
+    
+    Communities are clusters of densely connected nodes that are sparsely connected
+    to other clusters. This service helps identify thematic groups in the knowledge graph.
+    """
+    
+    def __init__(self, db: Session):
+        """
+        Initialize the community detection service.
+        
+        Args:
+            db: Database session
+        """
+        self.db = db
+        logger.info("CommunityDetectionService initialized")
+    
+    async def detect_communities(
+        self,
+        resource_ids: List[int],
+        resolution: float = 1.0
+    ) -> dict:
+        """
+        Detect communities in the graph using Louvain algorithm.
+        
+        The Louvain algorithm is a greedy optimization method that maximizes
+        modularity to find communities. Higher resolution values lead to more
+        (smaller) communities, while lower values lead to fewer (larger) communities.
+        
+        Args:
+            resource_ids: List of resource IDs to include in community detection
+            resolution: Resolution parameter for community granularity (default 1.0)
+                       Higher values = more communities, lower values = fewer communities
+        
+        Returns:
+            Dictionary with:
+            {
+                "communities": {resource_id: community_id, ...},
+                "modularity": float,
+                "num_communities": int,
+                "community_sizes": {community_id: size, ...}
+            }
+        """
+        try:
+            import networkx as nx
+            import community as community_louvain
+        except ImportError as e:
+            logger.error(f"Required library not installed: {e}")
+            logger.error("Install with: pip install python-louvain")
+            return {
+                "communities": {},
+                "modularity": 0.0,
+                "num_communities": 0,
+                "community_sizes": {}
+            }
+        
+        # Build a fresh graph with only the requested resources
+        # This avoids cache issues and ensures we have the latest data
+        from app.database.models import Resource, GraphEdge
+        import uuid
+        
+        # Convert resource_ids to UUID objects
+        resource_uuids = []
+        for rid in resource_ids:
+            if isinstance(rid, uuid.UUID):
+                resource_uuids.append(rid)
+            elif isinstance(rid, str):
+                try:
+                    resource_uuids.append(uuid.UUID(rid))
+                except ValueError:
+                    logger.warning(f"Invalid UUID string: {rid}")
+                    continue
+            elif isinstance(rid, int):
+                # For backwards compatibility with tests that pass ints
+                # We'll just skip these since UUIDs can't be converted from ints
+                logger.warning(f"Cannot convert integer {rid} to UUID, skipping")
+                continue
+            else:
+                logger.warning(f"Unknown resource ID type: {type(rid)}")
+                continue
+        
+        if len(resource_uuids) < 2:
+            logger.warning(
+                f"Not enough valid resource UUIDs: {len(resource_uuids)} of {len(resource_ids)} requested"
+            )
+            return {
+                "communities": {},
+                "modularity": 0.0,
+                "num_communities": 0,
+                "community_sizes": {}
+            }
+        
+        # Query requested resources to ensure they exist
+        resources = (
+            self.db.query(Resource)
+            .filter(Resource.id.in_(resource_uuids))
+            .all()
+        )
+        
+        if len(resources) < 2:
+            logger.warning(
+                f"Not enough resources found in database: {len(resources)} of {len(resource_ids)} requested"
+            )
+            return {
+                "communities": {rid: 0 for rid in resource_ids},
+                "modularity": 0.0,
+                "num_communities": 1 if resources else 0,
+                "community_sizes": {0: len(resources)} if resources else {}
+            }
+        
+        # Create graph with requested resources
+        G = nx.MultiGraph()
+        resource_id_strs = [str(r.id) for r in resources]
+        
+        # Add nodes
+        for resource in resources:
+            G.add_node(
+                str(resource.id),
+                title=resource.title,
+                type=resource.type,
+            )
+        
+        # Add edges between requested resources
+        edges = (
+            self.db.query(GraphEdge)
+            .filter(
+                GraphEdge.source_id.in_(resource_id_strs),
+                GraphEdge.target_id.in_(resource_id_strs),
+            )
+            .all()
+        )
+        
+        for edge in edges:
+            G.add_edge(
+                str(edge.source_id),
+                str(edge.target_id),
+                edge_type=edge.edge_type,
+                weight=edge.weight,
+            )
+        
+        if len(G.nodes()) < 2:
+            logger.warning(f"Not enough nodes in subgraph: {len(G.nodes())}")
+            return {
+                "communities": {n: 0 for n in G.nodes()},
+                "modularity": 0.0,
+                "num_communities": 1 if G.nodes() else 0,
+                "community_sizes": {0: len(G.nodes())} if G.nodes() else {}
+            }
+        
+        # Convert to simple graph (Louvain requires undirected, no multi-edges)
+        simple_graph = nx.Graph()
+        for u, v, data in G.edges(data=True):
+            weight = data.get('weight', 1.0)
+            if simple_graph.has_edge(u, v):
+                # Combine weights for multi-edges
+                simple_graph[u][v]['weight'] += weight
+            else:
+                simple_graph.add_edge(u, v, weight=weight)
+        
+        # Add isolated nodes
+        for node in G.nodes():
+            if node not in simple_graph:
+                simple_graph.add_node(node)
+        
+        # Run Louvain community detection
+        try:
+            partition = community_louvain.best_partition(
+                simple_graph,
+                weight='weight',
+                resolution=resolution
+            )
+            
+            # Compute modularity
+            modularity = community_louvain.modularity(
+                partition,
+                simple_graph,
+                weight='weight'
+            )
+        except Exception as e:
+            logger.error(f"Error in Louvain algorithm: {e}")
+            # Return single community as fallback
+            return {
+                "communities": {n: 0 for n in G.nodes()},
+                "modularity": 0.0,
+                "num_communities": 1,
+                "community_sizes": {0: len(G.nodes())}
+            }
+        
+        # Convert partition - keep node IDs as strings (matching graph node format)
+        communities = {node: comm_id for node, comm_id in partition.items()}
+        
+        # Compute community sizes
+        community_sizes = {}
+        for comm_id in communities.values():
+            community_sizes[comm_id] = community_sizes.get(comm_id, 0) + 1
+        
+        num_communities = len(community_sizes)
+        
+        logger.info(
+            f"Detected {num_communities} communities with modularity {modularity:.3f} "
+            f"(resolution={resolution})"
+        )
+        
+        return {
+            "communities": communities,
+            "modularity": modularity,
+            "num_communities": num_communities,
+            "community_sizes": community_sizes
+        }
 
 # Phase 17.5: Graph Extraction Service for Advanced RAG
 class GraphExtractionService:
@@ -1761,3 +2121,182 @@ class GraphExtractionService:
         # This would use the existing entity and relationship extraction
         # for academic content (CONTRADICTS, SUPPORTS, EXTENDS, CITES)
         return []
+
+
+# Phase 20: Graph Visualization Service
+class GraphVisualizationService:
+    """
+    Service for computing graph layouts for visualization.
+    
+    Provides multiple layout algorithms:
+    - Force-directed (Fruchterman-Reingold)
+    - Hierarchical (Kamada-Kawai)
+    - Circular
+    
+    All layouts normalize coordinates to [0, 1000] range for consistent rendering.
+    """
+    
+    def __init__(self, db: Session):
+        """
+        Initialize the graph visualization service.
+        
+        Args:
+            db: Database session
+        """
+        self.db = db
+        self.graph_service = GraphService(db)
+    
+    async def compute_layout(
+        self,
+        resource_ids: List[UUID],
+        layout_type: str = "force",
+        **layout_params
+    ) -> dict:
+        """
+        Compute graph layout for visualization.
+        
+        Args:
+            resource_ids: List of resource UUIDs to include in layout
+            layout_type: Layout algorithm ("force", "hierarchical", "circular")
+            **layout_params: Additional parameters for layout algorithm
+        
+        Returns:
+            Dictionary with layout result containing:
+            - nodes: Dict mapping resource_id to (x, y) position
+            - edges: List of edge routing information
+            - bounds: Bounding box (min/max x/y)
+            - layout_type: Algorithm used
+        
+        Raises:
+            ValueError: If layout_type is invalid or resource_ids is empty
+        """
+        import time
+        import networkx as nx
+        from app.modules.graph.schema import (
+            NodePosition,
+            EdgeRouting,
+            BoundingBox,
+            GraphLayoutResult,
+        )
+        
+        start_time = time.time()
+        
+        # Validate inputs
+        if not resource_ids:
+            raise ValueError("resource_ids cannot be empty")
+        
+        valid_layouts = {"force", "hierarchical", "circular"}
+        if layout_type not in valid_layouts:
+            raise ValueError(
+                f"Invalid layout_type '{layout_type}'. Must be one of: {valid_layouts}"
+            )
+        
+        # Build NetworkX graph from resource IDs
+        G = nx.DiGraph()
+        
+        # Add nodes
+        for resource_id in resource_ids:
+            G.add_node(str(resource_id))
+        
+        # Query edges between these resources
+        edges = (
+            self.db.query(db_models.GraphEdge)
+            .filter(
+                db_models.GraphEdge.source_id.in_(resource_ids),
+                db_models.GraphEdge.target_id.in_(resource_ids),
+            )
+            .all()
+        )
+        
+        # Add edges to graph
+        for edge in edges:
+            G.add_edge(
+                str(edge.source_id),
+                str(edge.target_id),
+                weight=edge.weight
+            )
+        
+        # Compute layout based on type
+        if layout_type == "force":
+            # Fruchterman-Reingold force-directed layout
+            k = layout_params.get("k", None)  # Optimal distance between nodes
+            iterations = layout_params.get("iterations", 50)
+            pos = nx.spring_layout(G, k=k, iterations=iterations, seed=42)
+        
+        elif layout_type == "hierarchical":
+            # Kamada-Kawai hierarchical layout
+            pos = nx.kamada_kawai_layout(G)
+        
+        elif layout_type == "circular":
+            # Circular layout
+            pos = nx.circular_layout(G)
+        
+        # Normalize coordinates to [0, 1000] range
+        if pos:
+            # Get min/max coordinates
+            x_coords = [p[0] for p in pos.values()]
+            y_coords = [p[1] for p in pos.values()]
+            
+            min_x, max_x = min(x_coords), max(x_coords)
+            min_y, max_y = min(y_coords), max(y_coords)
+            
+            # Special case: single node - place at center
+            if len(pos) == 1:
+                node_id = list(pos.keys())[0]
+                normalized_pos = {
+                    UUID(node_id): NodePosition(x=500.0, y=500.0)
+                }
+            else:
+                # Avoid division by zero
+                x_range = max_x - min_x if max_x != min_x else 1.0
+                y_range = max_y - min_y if max_y != min_y else 1.0
+                
+                # Normalize to [0, 1000]
+                normalized_pos = {}
+                for node_id, (x, y) in pos.items():
+                    norm_x = ((x - min_x) / x_range) * 1000
+                    norm_y = ((y - min_y) / y_range) * 1000
+                    normalized_pos[UUID(node_id)] = NodePosition(x=norm_x, y=norm_y)
+        else:
+            # Empty graph - single node at center
+            normalized_pos = {
+                resource_ids[0]: NodePosition(x=500.0, y=500.0)
+            }
+            min_x, max_x = 0.0, 1000.0
+            min_y, max_y = 0.0, 1000.0
+        
+        # Build edge routing list
+        edge_routing = []
+        for edge in edges:
+            edge_routing.append(
+                EdgeRouting(
+                    source=edge.source_id,
+                    target=edge.target_id,
+                    weight=edge.weight
+                )
+            )
+        
+        # Create bounding box
+        bounds = BoundingBox(
+            min_x=0.0,
+            max_x=1000.0,
+            min_y=0.0,
+            max_y=1000.0
+        )
+        
+        # Build result
+        result = GraphLayoutResult(
+            nodes=normalized_pos,
+            edges=edge_routing,
+            bounds=bounds,
+            layout_type=layout_type
+        )
+        
+        computation_time = (time.time() - start_time) * 1000  # Convert to ms
+        
+        return {
+            "layout": result,
+            "computation_time_ms": computation_time,
+            "node_count": len(normalized_pos),
+            "edge_count": len(edge_routing),
+        }

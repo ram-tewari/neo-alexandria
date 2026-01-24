@@ -224,38 +224,115 @@ def _looks_like_pdf_bytes(b: Optional[bytes]) -> bool:
         return False
 
 
-def extract_pdf(content_bytes: bytes) -> Dict[str, Any]:
+def extract_pdf(content_bytes: bytes, extract_metadata: bool = False) -> Dict[str, Any]:
     """Extract text from a PDF byte stream using PyMuPDF, fallback to pdfminer.
 
-    Returns a dict with keys: title (None) and text.
+    Args:
+        content_bytes: PDF file content as bytes
+        extract_metadata: If True, extract page boundaries and structured metadata
+
+    Returns a dict with keys:
+        - title: Document title (from metadata or None)
+        - text: Extracted text content
+        - page_boundaries: List of (start_char, end_char, page_num) tuples (if extract_metadata=True)
+        - structured_metadata: Dict with title, authors, abstract (if extract_metadata=True)
     """
     text_content = ""
+    page_boundaries = []
+    structured_metadata = {}
+    
     # Primary: PyMuPDF
     if fitz is not None:  # pragma: no cover - depends on optional lib
         try:
             with fitz.open(stream=content_bytes, filetype="pdf") as doc:
                 parts = []
-                for page in doc:
-                    parts.append(page.get_text("text"))
+                current_offset = 0
+                
+                # Extract metadata from PDF info dictionary
+                if extract_metadata and doc.metadata:
+                    metadata = doc.metadata
+                    structured_metadata["title"] = metadata.get("title") or None
+                    structured_metadata["authors"] = metadata.get("author") or None
+                    structured_metadata["subject"] = metadata.get("subject") or None
+                    structured_metadata["keywords"] = metadata.get("keywords") or None
+                
+                # Extract text page by page
+                for page_num, page in enumerate(doc, start=1):
+                    page_text = page.get_text("text")
+                    parts.append(page_text)
+                    
+                    # Track page boundaries if metadata extraction is enabled
+                    if extract_metadata:
+                        page_length = len(page_text)
+                        if page_length > 0:
+                            # Add newline between pages
+                            if page_num > 1:
+                                current_offset += 1  # Account for newline
+                            page_boundaries.append({
+                                "start_char": current_offset,
+                                "end_char": current_offset + page_length,
+                                "page_num": page_num
+                            })
+                            current_offset += page_length
+                
                 text_content = "\n".join(parts).strip()
+                
+                # Try to extract abstract from first page if not in metadata
+                if extract_metadata and not structured_metadata.get("abstract") and len(parts) > 0:
+                    first_page = parts[0].lower()
+                    # Look for abstract section
+                    abstract_markers = ["abstract", "summary"]
+                    for marker in abstract_markers:
+                        if marker in first_page:
+                            # Simple heuristic: extract text after abstract marker
+                            marker_pos = first_page.find(marker)
+                            # Find next section or take next 500 chars
+                            abstract_text = parts[0][marker_pos:marker_pos + 500]
+                            # Clean up
+                            lines = abstract_text.split("\n")
+                            if len(lines) > 1:
+                                # Skip the "Abstract" header line
+                                abstract_text = "\n".join(lines[1:]).strip()
+                                structured_metadata["abstract"] = abstract_text[:500]
+                            break
+                            
         except Exception as exc:
             logger.info("PyMuPDF failed to parse PDF: %s", exc)
-    # Fallback: pdfminer
+    
+    # Fallback: pdfminer (no page boundary support)
     if not text_content and pdfminer_extract_text is not None:  # pragma: no cover
         try:
             buf = io.BytesIO(content_bytes)
             text_content = (pdfminer_extract_text(buf) or "").strip()
+            # pdfminer doesn't provide page boundaries or metadata
+            if extract_metadata:
+                logger.warning("pdfminer fallback: page boundaries and metadata not available")
         except Exception as exc:
             logger.info("pdfminer failed to parse PDF: %s", exc)
-    return {"title": None, "text": text_content or ""}
+    
+    result = {
+        "title": structured_metadata.get("title") if extract_metadata else None,
+        "text": text_content or ""
+    }
+    
+    if extract_metadata:
+        result["page_boundaries"] = page_boundaries
+        result["structured_metadata"] = structured_metadata
+    
+    return result
 
 
-def extract_from_fetched(fetched: Dict[str, Any]) -> Dict[str, Any]:
+def extract_from_fetched(fetched: Dict[str, Any], extract_metadata: bool = False) -> Dict[str, Any]:
     """Extract title/text from fetched response supporting HTML and PDF.
 
-    - For HTML: use extract_text on the HTML string
-    - For PDF: use extract_pdf on the bytes
-    - For others: fallback to text decode if possible
+    Args:
+        fetched: Dict with url, content_type, content_bytes, html
+        extract_metadata: If True, extract additional metadata (page boundaries for PDFs)
+
+    Returns:
+        - For HTML: use extract_text on the HTML string
+        - For PDF: use extract_pdf on the bytes with metadata extraction
+        - For others: fallback to text decode if possible
     """
     content_type = (fetched.get("content_type") or "").lower()
     url = fetched.get("url") or ""
@@ -269,7 +346,7 @@ def extract_from_fetched(fetched: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     if is_pdf and content_bytes:
-        return extract_pdf(content_bytes)
+        return extract_pdf(content_bytes, extract_metadata=extract_metadata)
 
     # HTML path retains compatibility
     html = fetched.get("html")

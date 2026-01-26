@@ -337,10 +337,10 @@ def _setup_event_listeners():
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Async database dependency for FastAPI dependency injection.
+    Async database dependency for FastAPI dependency injection with retry logic.
 
     Provides an async database session that is automatically created and closed
-    for each request.
+    for each request. Includes retry logic for serverless database wake-up.
 
     Yields:
         AsyncSession: SQLAlchemy async database session
@@ -348,14 +348,45 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     if AsyncSessionLocal is None:
         raise RuntimeError("Database not initialized. Call init_database() first.")
 
-    async with AsyncSessionLocal() as session:
-        # Ensure metadata exists for this connection (esp. sqlite in-memory)
+    # Retry configuration for session creation (handles NeonDB auto-suspend)
+    max_retries = 3
+    initial_backoff = 1.0
+    backoff_multiplier = 2.0
+    
+    last_error = None
+    backoff = initial_backoff
+    
+    for attempt in range(max_retries):
         try:
-            async with session.bind.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-        except Exception:
-            pass
-        yield session
+            async with AsyncSessionLocal() as session:
+                # Ensure metadata exists for this connection (esp. sqlite in-memory)
+                try:
+                    async with session.bind.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
+                except Exception:
+                    pass
+                yield session
+                return  # Success!
+                
+        except (OperationalError, DBAPIError) as e:
+            last_error = e
+            
+            # Check if this is a connection refused error (NeonDB auto-suspend)
+            if _is_connection_refused_error(e) and attempt < max_retries - 1:
+                logger.warning(
+                    f"Database session creation failed on attempt {attempt + 1}/{max_retries}. "
+                    f"Retrying after {backoff:.1f}s (serverless database may be waking up)..."
+                )
+                await asyncio.sleep(backoff)
+                backoff *= backoff_multiplier
+                continue
+            
+            # Not a connection refused error, or out of retries
+            raise
+    
+    # If we get here, all retries failed
+    if last_error:
+        raise last_error
 
 
 def get_sync_db() -> Generator[OrmSession, None, None]:

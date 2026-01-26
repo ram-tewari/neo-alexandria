@@ -1,10 +1,29 @@
-# NeonDB Connection Fix Guide
+# NeonDB Connection Fix Guide - UPDATED: Migrated to SQLite
 
 ## Problem
 NeonDB auto-suspends after 5 minutes of inactivity (free tier), causing "Connection refused" errors when Render tries to connect.
 
-## Solution Applied
+## Attempted Solution (Retry Logic - FAILED)
 Added automatic retry logic with exponential backoff to handle NeonDB wake-up delays.
+
+**Why it failed**: The retry logic cannot intercept SQLAlchemy's connection pool internal connection creation (`pool._invoke_creator()`). The error occurs at the pool level before our retry wrapper can catch it.
+
+## Current Solution: SQLite Migration
+
+**Temporarily switched to SQLite** for the cloud deployment while we resolve the NeonDB connection issues.
+
+**See [SQLITE_MIGRATION_GUIDE.md](./SQLITE_MIGRATION_GUIDE.md) for complete migration steps.**
+
+## Quick Migration Steps
+
+1. **Unlink NeonDB in Render Dashboard** (critical!)
+2. **Deploy updated `render.yaml`** (already updated to use SQLite)
+3. **Verify deployment** (check logs for "Database initialized successfully: sqlite")
+4. **Add OAuth environment variables** (see SQLITE_MIGRATION_GUIDE.md)
+
+---
+
+## Original Implementation (Retry Logic - Kept for Reference)
 
 ## Changes Made
 

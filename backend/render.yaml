@@ -12,7 +12,7 @@ services:
       - key: MODE
         value: CLOUD
       - key: DATABASE_URL
-        sync: false
+        value: sqlite:///./backend.db
       - key: QDRANT_URL
         sync: false
       - key: QDRANT_API_KEY

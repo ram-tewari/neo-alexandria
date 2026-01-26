@@ -10,14 +10,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from backend.app.modules.mcp.schema import (
+from .schema import (
     CreateSessionRequest,
     ListToolsResponse,
     SessionResponse,
     ToolInvocationRequest,
     ToolInvocationResult,
 )
-from backend.app.modules.mcp.service import MCPServer
+from .service import MCPServer
 from backend.app.modules.mcp.tools import register_all_tools
 from backend.app.shared.database import get_db
 

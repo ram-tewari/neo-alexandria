@@ -127,9 +127,8 @@ async def get_or_create_oauth_user(
 
         if not user:
             # Create new user
-            # Generate random password and truncate to 72 bytes (bcrypt limit)
-            # Must encode to bytes first, then truncate, then decode back to string
-            random_password = secrets.token_urlsafe(32).encode('utf-8')[:72].decode('utf-8')
+            # Generate random password (24 bytes = 32 chars base64, well under 72 byte limit)
+            random_password = secrets.token_urlsafe(24)
             user = User(
                 username=username,
                 email=email,

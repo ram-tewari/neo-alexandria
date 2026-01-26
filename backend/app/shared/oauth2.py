@@ -148,16 +148,23 @@ class GoogleOAuth2Provider(OAuth2Provider):
                 )
         
         try:
+            # Log the redirect URI being used (for debugging)
+            logger.info(f"Google token exchange - redirect_uri: {self.redirect_uri}")
+            logger.info(f"Google token exchange - client_id: {self.client_id[:20]}...")
+            logger.info(f"Google token exchange - code: {code[:20]}...")
+            
             async with httpx.AsyncClient() as client:
+                request_data = {
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": self.redirect_uri,
+                }
+                
                 response = await client.post(
                     self.TOKEN_URL,
-                    data={
-                        "client_id": self.client_id,
-                        "client_secret": self.client_secret,
-                        "code": code,
-                        "grant_type": "authorization_code",
-                        "redirect_uri": self.redirect_uri,
-                    },
+                    data=request_data,
                     headers={"Accept": "application/json"},
                 )
 
@@ -165,6 +172,7 @@ class GoogleOAuth2Provider(OAuth2Provider):
                     logger.error(
                         f"Google token exchange failed: {response.status_code} - {response.text}"
                     )
+                    logger.error(f"Request redirect_uri was: {self.redirect_uri}")
                     # Record failure for circuit breaker
                     if CIRCUIT_BREAKER_AVAILABLE and oauth_google_breaker:
                         oauth_google_breaker.fail_counter += 1

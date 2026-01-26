@@ -130,10 +130,11 @@ def create_database_engine(
         # PostgreSQL-specific connection pool parameters
         engine_params = {
             **common_params,
-            "pool_size": 20,  # Base connections
-            "max_overflow": 40,  # Additional connections (total: 60)
-            "pool_recycle": 3600,  # Recycle connections after 1 hour
-            "pool_pre_ping": True,  # Health check before using connection
+            "pool_size": 5,  # Reduced for serverless (NeonDB)
+            "max_overflow": 10,  # Reduced for serverless (total: 15)
+            "pool_recycle": 300,  # Recycle connections after 5 minutes (before NeonDB auto-suspend)
+            "pool_pre_ping": True,  # Health check before using connection (critical for NeonDB)
+            "pool_timeout": 30,  # Wait up to 30 seconds for connection from pool
             "isolation_level": "READ COMMITTED",  # Transaction isolation level
         }
         
@@ -143,12 +144,15 @@ def create_database_engine(
             engine_params["connect_args"] = {
                 "server_settings": {
                     "statement_timeout": "30000",  # 30 seconds timeout for queries
-                }
+                },
+                "timeout": 60,  # Connection timeout (60s to allow NeonDB wake-up)
+                "command_timeout": 60,  # Command timeout
             }
         else:
             # psycopg2 uses options parameter
             engine_params["connect_args"] = {
                 "options": "-c statement_timeout=30000",  # 30 seconds timeout for queries
+                "connect_timeout": 60,  # Connection timeout (60s to allow NeonDB wake-up)
             }
     else:  # sqlite
         # SQLite-specific connection parameters
@@ -167,16 +171,42 @@ def create_database_engine(
         return create_engine(database_url, **engine_params)
 
 
+def _is_connection_refused_error(error: Exception) -> bool:
+    """
+    Check if an exception is a connection refused error (e.g., NeonDB auto-suspend).
+
+    Args:
+        error: Exception to check
+
+    Returns:
+        bool: True if error is a connection refused error, False otherwise
+    """
+    error_msg = str(error).lower()
+    
+    connection_refused_indicators = [
+        "connection refused",
+        "could not connect",
+        "connection timed out",
+        "no connection to the server",
+        "server closed the connection",
+        "connection reset",
+    ]
+    
+    return any(indicator in error_msg for indicator in connection_refused_indicators)
+
+
 def init_database(database_url: str | None = None, env: str = "prod") -> None:
     """
-    Initialize database engine and session factory.
+    Initialize database engine and session factory with retry logic for serverless databases.
+
+    Handles NeonDB auto-suspend by retrying connection with exponential backoff.
 
     Args:
         database_url: Database connection URL. If None, uses DATABASE_URL env var or settings
         env: Environment (dev/prod) for echo configuration
 
     Raises:
-        RuntimeError: If database connection fails
+        RuntimeError: If database connection fails after all retries
     """
     global async_engine, AsyncSessionLocal, sync_engine, SessionLocal
 
@@ -189,31 +219,76 @@ def init_database(database_url: str | None = None, env: str = "prod") -> None:
 
             database_url = get_settings().get_database_url()
 
-    try:
-        # Create async engine
-        async_engine = create_database_engine(database_url, is_async=True, env=env)
+    # Retry configuration for serverless databases (e.g., NeonDB auto-suspend)
+    max_retries = 5
+    initial_backoff = 2.0  # Start with 2 seconds
+    backoff_multiplier = 2.0
+    
+    last_error = None
+    backoff = initial_backoff
+    
+    for attempt in range(max_retries):
+        try:
+            # Create async engine
+            async_engine = create_database_engine(database_url, is_async=True, env=env)
 
-        # Create async sessionmaker
-        AsyncSessionLocal = async_sessionmaker(
-            async_engine, class_=AsyncSession, expire_on_commit=False
-        )
+            # Create async sessionmaker
+            AsyncSessionLocal = async_sessionmaker(
+                async_engine, class_=AsyncSession, expire_on_commit=False
+            )
 
-        # Create sync engine for background tasks
-        sync_engine = create_database_engine(database_url, is_async=False, env=env)
+            # Create sync engine for background tasks
+            sync_engine = create_database_engine(database_url, is_async=False, env=env)
 
-        # Create sync sessionmaker
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+            # Create sync sessionmaker
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
-        # Setup event listeners
-        _setup_event_listeners()
+            # Setup event listeners
+            _setup_event_listeners()
 
-        db_type = get_database_type(database_url)
-        logger.info(f"Database initialized successfully: {db_type}")
+            db_type = get_database_type(database_url)
+            
+            if attempt > 0:
+                logger.info(f"Database connection successful after {attempt + 1} attempts: {db_type}")
+            else:
+                logger.info(f"Database initialized successfully: {db_type}")
+            
+            return  # Success!
 
-    except Exception as e:
-        error_msg = f"Failed to initialize database connection: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        raise RuntimeError(error_msg) from e
+        except Exception as e:
+            last_error = e
+            
+            # Check if this is a connection refused error (NeonDB auto-suspend)
+            if _is_connection_refused_error(e) and attempt < max_retries - 1:
+                logger.warning(
+                    f"Database connection refused on attempt {attempt + 1}/{max_retries}. "
+                    f"This may be due to serverless database auto-suspend (e.g., NeonDB). "
+                    f"Retrying after {backoff:.1f}s to allow database wake-up..."
+                )
+                time.sleep(backoff)
+                backoff *= backoff_multiplier
+                continue
+            
+            # Not a connection refused error, or out of retries
+            if attempt < max_retries - 1:
+                logger.warning(
+                    f"Database initialization failed on attempt {attempt + 1}/{max_retries}: {str(e)[:200]}. "
+                    f"Retrying after {backoff:.1f}s..."
+                )
+                time.sleep(backoff)
+                backoff *= backoff_multiplier
+            else:
+                # Final attempt failed
+                error_msg = (
+                    f"Failed to initialize database connection after {max_retries} attempts: {str(e)}\n\n"
+                    f"If using NeonDB or another serverless database:\n"
+                    f"1. Check that the database is not suspended in your dashboard\n"
+                    f"2. Verify the connection string is correct\n"
+                    f"3. Ensure SSL mode is set correctly (?sslmode=require)\n"
+                    f"4. Check firewall/network settings\n"
+                )
+                logger.error(error_msg, exc_info=True)
+                raise RuntimeError(error_msg) from e
 
 
 def _setup_event_listeners():

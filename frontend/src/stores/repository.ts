@@ -1,4 +1,19 @@
 import { create } from 'zustand';
+import type { Resource, IngestionStatus } from '@/types/api';
+
+/**
+ * Repository Store for Neo Alexandria 2.0
+ * 
+ * Manages repository/resource state for the workbench.
+ * Updated in Phase 2.5 to use real backend data via useResources hook.
+ * 
+ * Note: This store maintains UI state (active repository, selection).
+ * Data fetching is handled by TanStack Query hooks in useWorkbenchData.ts.
+ * 
+ * Phase: 2.5 Backend API Integration
+ * Task: 3.3 Update workbench store to use real data
+ * Requirements: 2.2, 2.5, 2.6
+ */
 
 export interface Repository {
   id: string;
@@ -18,104 +33,86 @@ export interface Repository {
 }
 
 interface RepositoryState {
-  repositories: Repository[];
-  activeRepository: Repository | null;
-  isLoading: boolean;
-  error: string | null;
+  // UI State
+  activeRepositoryId: string | null;
   
-  setRepositories: (repositories: Repository[]) => void;
-  setActiveRepository: (id: string) => void;
-  fetchRepositories: () => Promise<void>;
+  // Actions
+  setActiveRepository: (id: string | null) => void;
+  clearActiveRepository: () => void;
 }
 
-// Mock data for development
-const mockRepositories: Repository[] = [
-  {
-    id: '1',
-    name: 'neo-alexandria-2.0',
-    source: 'github',
-    url: 'https://github.com/example/neo-alexandria-2.0',
-    description: 'Advanced knowledge management system',
-    language: 'TypeScript',
-    stars: 42,
-    lastUpdated: new Date('2024-01-15'),
-    status: 'ready',
-    stats: {
-      files: 156,
-      lines: 12450,
-      size: 2048000,
-    },
-  },
-  {
-    id: '2',
-    name: 'react',
-    source: 'github',
-    url: 'https://github.com/facebook/react',
-    description: 'A declarative, efficient, and flexible JavaScript library',
-    language: 'JavaScript',
-    stars: 220000,
-    lastUpdated: new Date('2024-01-20'),
-    status: 'ready',
-    stats: {
-      files: 892,
-      lines: 45230,
-      size: 8192000,
-    },
-  },
-  {
-    id: '3',
-    name: 'local-project',
-    source: 'local',
-    description: 'Local development project',
-    language: 'Python',
-    lastUpdated: new Date('2024-01-22'),
-    status: 'indexing',
-    stats: {
-      files: 45,
-      lines: 3200,
-      size: 512000,
-    },
-  },
-];
+/**
+ * Maps backend Resource to frontend Repository interface
+ * 
+ * @param resource - Backend resource object
+ * @returns Frontend repository object
+ */
+export function mapResourceToRepository(resource: Resource): Repository {
+  // Determine source from URL or file path
+  let source: 'github' | 'gitlab' | 'local' = 'local';
+  if (resource.url) {
+    if (resource.url.includes('github.com')) {
+      source = 'github';
+    } else if (resource.url.includes('gitlab.com')) {
+      source = 'gitlab';
+    }
+  }
+  
+  // Map ingestion status to repository status
+  const statusMap: Record<IngestionStatus, 'ready' | 'indexing' | 'error'> = {
+    completed: 'ready',
+    processing: 'indexing',
+    pending: 'indexing',
+    failed: 'error',
+  };
+  
+  return {
+    id: resource.id,
+    name: resource.title,
+    source,
+    url: resource.url,
+    description: resource.description,
+    language: resource.language,
+    lastUpdated: new Date(resource.updated_at),
+    status: statusMap[resource.ingestion_status],
+    // Note: Backend doesn't provide stars or stats yet
+    // These could be added in future backend updates
+  };
+}
 
-export const useRepositoryStore = create<RepositoryState>((set, get) => ({
-  repositories: [],
-  activeRepository: null,
-  isLoading: false,
-  error: null,
+/**
+ * Repository Store
+ * 
+ * Manages active repository selection for the workbench.
+ * Data fetching is delegated to TanStack Query hooks.
+ * 
+ * @example
+ * ```tsx
+ * function RepositorySwitcher() {
+ *   const { data: resources, isLoading, error } = useResources();
+ *   const { activeRepositoryId, setActiveRepository } = useRepositoryStore();
+ *   
+ *   const repositories = resources?.map(mapResourceToRepository) || [];
+ *   const activeRepo = repositories.find(r => r.id === activeRepositoryId);
+ *   
+ *   return (
+ *     <Select value={activeRepositoryId} onChange={setActiveRepository}>
+ *       {repositories.map(repo => (
+ *         <option key={repo.id} value={repo.id}>{repo.name}</option>
+ *       ))}
+ *     </Select>
+ *   );
+ * }
+ * ```
+ */
+export const useRepositoryStore = create<RepositoryState>((set) => ({
+  activeRepositoryId: null,
   
-  setRepositories: (repositories: Repository[]) =>
-    set({ repositories }),
-  
-  setActiveRepository: (id: string) => {
-    const repository = get().repositories.find((r) => r.id === id);
-    if (repository) {
-      set({ activeRepository: repository });
-    }
+  setActiveRepository: (id: string | null) => {
+    set({ activeRepositoryId: id });
   },
   
-  fetchRepositories: async () => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/repositories');
-      // const data = await response.json();
-      
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Use mock data for now
-      set({
-        repositories: mockRepositories,
-        activeRepository: mockRepositories[0],
-        isLoading: false,
-      });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to fetch repositories',
-        isLoading: false,
-      });
-    }
+  clearActiveRepository: () => {
+    set({ activeRepositoryId: null });
   },
 }));

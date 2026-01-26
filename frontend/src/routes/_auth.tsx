@@ -1,5 +1,5 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
-// import { useAuth } from '@/features/auth/hooks/useAuth';
+import { createFileRoute, Outlet, Navigate } from '@tanstack/react-router';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { WorkbenchLayout } from '@/layouts/WorkbenchLayout';
 
 /**
@@ -8,18 +8,16 @@ import { WorkbenchLayout } from '@/layouts/WorkbenchLayout';
  * Wraps protected routes and ensures user is authenticated.
  * Redirects to login if not authenticated.
  * Renders WorkbenchLayout with sidebar, header, and nested routes.
- * 
- * NOTE: Auth check temporarily disabled for Phase 1 workbench testing
  */
 const AuthLayout = () => {
-  // const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  // // Redirect to login if not authenticated
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" />;
-  // }
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
 
-  // Render protected layout with workbench (auth check disabled for Phase 1)
+  // Render protected layout with workbench
   return (
     <WorkbenchLayout>
       <Outlet />

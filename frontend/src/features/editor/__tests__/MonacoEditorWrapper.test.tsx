@@ -15,6 +15,9 @@ import { MonacoEditorWrapper } from '../MonacoEditorWrapper';
 import type { CodeFile } from '../types';
 import { useEditorStore } from '@/stores/editor';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
+import * as themes from '@/lib/monaco/themes';
+import * as languages from '@/lib/monaco/languages';
+import * as decorations from '@/lib/monaco/decorations';
 
 // Mock Monaco Editor
 vi.mock('@monaco-editor/react', () => ({
@@ -143,11 +146,9 @@ describe('MonacoEditorWrapper', () => {
     });
 
     it('should detect language from file path', () => {
-      const { detectLanguage } = require('@/lib/monaco/languages');
-      
       render(<MonacoEditorWrapper file={mockFile} />);
       
-      expect(detectLanguage).toHaveBeenCalledWith(mockFile.path);
+      expect(languages.detectLanguage).toHaveBeenCalledWith(mockFile.path);
     });
 
     it('should call onEditorReady when editor mounts', async () => {
@@ -161,13 +162,12 @@ describe('MonacoEditorWrapper', () => {
     });
 
     it('should initialize decoration manager', async () => {
-      const { DecorationManager } = require('@/lib/monaco/decorations');
       const onEditorReady = vi.fn();
       
       render(<MonacoEditorWrapper file={mockFile} onEditorReady={onEditorReady} />);
       
       await waitFor(() => {
-        expect(DecorationManager).toHaveBeenCalled();
+        expect(decorations.DecorationManager).toHaveBeenCalled();
         expect(onEditorReady).toHaveBeenCalledWith(
           expect.anything(),
           expect.anything(),

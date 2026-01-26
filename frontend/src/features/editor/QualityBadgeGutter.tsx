@@ -13,19 +13,24 @@
  * - Hover tooltips with detailed metrics
  * - Click events for badge interaction
  * - Visibility toggle support
- * - Lazy-loading with scroll-based updates
- * - Debounced quality data requests
+ * - Real-time quality data from backend via TanStack Query
  * 
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
  * - Callbacks memoized with useCallback
- * - Debounced scroll events (300ms)
+ * - TanStack Query caching (15 min stale time)
+ * 
+ * Phase: 2.5 Backend API Integration
+ * Task: 8.3 Update quality store to use real data
+ * Requirements: 5.1, 5.9, 5.10
  */
 
 import { useEffect, useRef, useCallback, memo } from 'react';
 import type * as Monaco from 'monaco-editor';
-import type { QualityDetails, QualityLevel } from './types';
+import type { QualityLevel } from './types';
 import { useQualityStore } from '@/stores/quality';
+import { useQualityDetails } from '@/lib/hooks/useEditorData';
+import type { Resource } from '@/types/api';
 
 // ============================================================================
 // Types
@@ -33,9 +38,8 @@ import { useQualityStore } from '@/stores/quality';
 
 export interface QualityBadgeGutterProps {
   editor: Monaco.editor.IStandaloneCodeEditor | null;
-  qualityData: QualityDetails | null;
   visible: boolean;
-  resourceId?: string; // For lazy-loading quality data
+  resourceId: string; // Required for fetching quality data
   onBadgeClick?: (line: number) => void;
 }
 
@@ -91,20 +95,22 @@ function generateHoverMessage(badge: QualityBadge): string {
 }
 
 /**
- * Extract quality badges from quality data
+ * Extract quality badges from resource data
  * For now, we place a single badge at line 1 representing overall quality
  * In the future, this could be extended to show per-function or per-chunk quality
  */
-function extractQualityBadges(qualityData: QualityDetails): QualityBadge[] {
-  if (!qualityData) return [];
+function extractQualityBadges(resource: Resource): QualityBadge[] {
+  if (!resource.quality_overall || !resource.quality_dimensions) {
+    return [];
+  }
   
   // For now, show overall quality at line 1
   // TODO: In future, extract per-chunk or per-function quality scores
   const badge: QualityBadge = {
     line: 1,
-    score: qualityData.quality_overall,
-    level: getQualityLevel(qualityData.quality_overall),
-    dimensions: qualityData.quality_dimensions,
+    score: resource.quality_overall,
+    level: getQualityLevel(resource.quality_overall),
+    dimensions: resource.quality_dimensions,
   };
   
   return [badge];
@@ -116,67 +122,30 @@ function extractQualityBadges(qualityData: QualityDetails): QualityBadge[] {
 
 const QualityBadgeGutterComponent = ({
   editor,
-  qualityData,
   visible,
   resourceId,
   onBadgeClick,
 }: QualityBadgeGutterProps) => {
   const decorationsRef = useRef<string[]>([]);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchedResourceRef = useRef<string | null>(null);
   
-  // Get quality store actions
-  const { fetchQualityData, getCachedQuality } = useQualityStore();
+  // Get badge visibility from store
+  const { badgeVisibility } = useQualityStore();
   
-  // Debounced quality data fetch
-  const debouncedFetchQuality = useCallback(
-    (resId: string) => {
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      // Set new timeout for debounced fetch
-      scrollTimeoutRef.current = setTimeout(() => {
-        // Check if we already have cached data
-        const cached = getCachedQuality(resId);
-        if (!cached && resId !== lastFetchedResourceRef.current) {
-          fetchQualityData(resId);
-          lastFetchedResourceRef.current = resId;
-        }
-      }, 300); // 300ms debounce
-    },
-    [fetchQualityData, getCachedQuality]
-  );
+  // Fetch quality data using TanStack Query hook
+  // This automatically handles caching, loading states, and errors
+  const { data: resource, isLoading, isError } = useQualityDetails(resourceId, {
+    enabled: visible && badgeVisibility && !!resourceId,
+  });
   
-  // Lazy-load quality data on scroll
-  useEffect(() => {
-    if (!editor || !visible || !resourceId) return;
-    
-    // Fetch quality data when component mounts or resourceId changes
-    debouncedFetchQuality(resourceId);
-    
-    // Listen for scroll events to trigger lazy-loading
-    const disposable = editor.onDidScrollChange(() => {
-      if (visible && resourceId) {
-        debouncedFetchQuality(resourceId);
-      }
-    });
-    
-    return () => {
-      disposable.dispose();
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [editor, visible, resourceId, debouncedFetchQuality]);
+  // Determine if badges should be shown
+  const shouldShowBadges = visible && badgeVisibility && !isLoading && !isError && !!resource;
   
   // Update decorations when quality data or visibility changes
   useEffect(() => {
     if (!editor) return;
     
     // Clear existing decorations if not visible or no data
-    if (!visible || !qualityData) {
+    if (!shouldShowBadges || !resource) {
       decorationsRef.current = editor.deltaDecorations(
         decorationsRef.current,
         []
@@ -184,8 +153,17 @@ const QualityBadgeGutterComponent = ({
       return;
     }
     
-    // Extract quality badges from quality data
-    const badges = extractQualityBadges(qualityData);
+    // Extract quality badges from resource data
+    const badges = extractQualityBadges(resource);
+    
+    // If no badges, clear decorations
+    if (badges.length === 0) {
+      decorationsRef.current = editor.deltaDecorations(
+        decorationsRef.current,
+        []
+      );
+      return;
+    }
     
     // Create Monaco decorations for each badge
     const newDecorations: Monaco.editor.IModelDeltaDecoration[] = badges.map(
@@ -206,13 +184,25 @@ const QualityBadgeGutterComponent = ({
       decorationsRef.current,
       newDecorations
     );
-  }, [editor, qualityData, visible]);
+  }, [editor, resource, shouldShowBadges]);
   
   // Handle badge clicks
+  const handleBadgeClick = useCallback(
+    (lineNumber: number) => {
+      if (!resource || !onBadgeClick) return;
+      
+      const badges = extractQualityBadges(resource);
+      const badge = badges.find((b) => b.line === lineNumber);
+      
+      if (badge) {
+        onBadgeClick(lineNumber);
+      }
+    },
+    [resource, onBadgeClick]
+  );
+  
   useEffect(() => {
-    if (!editor || !visible || !qualityData || !onBadgeClick) return;
-    
-    const badges = extractQualityBadges(qualityData);
+    if (!editor || !shouldShowBadges || !resource || !onBadgeClick) return;
     
     // Listen for mouse down events in the glyph margin
     const disposable = editor.onMouseDown((e) => {
@@ -223,19 +213,15 @@ const QualityBadgeGutterComponent = ({
       
       // Get the line number that was clicked
       const lineNumber = e.target.position?.lineNumber;
-      if (!lineNumber) return;
-      
-      // Check if there's a badge on this line
-      const badge = badges.find((b) => b.line === lineNumber);
-      if (badge) {
-        onBadgeClick(lineNumber);
+      if (lineNumber) {
+        handleBadgeClick(lineNumber);
       }
     });
     
     return () => {
       disposable.dispose();
     };
-  }, [editor, qualityData, visible, onBadgeClick]);
+  }, [editor, shouldShowBadges, resource, onBadgeClick, handleBadgeClick]);
   
   // Cleanup decorations on unmount
   useEffect(() => {
@@ -257,7 +243,6 @@ export const QualityBadgeGutter = memo(QualityBadgeGutterComponent, (prevProps, 
   // Custom comparison function for better memoization
   return (
     prevProps.editor === nextProps.editor &&
-    prevProps.qualityData === nextProps.qualityData &&
     prevProps.visible === nextProps.visible &&
     prevProps.resourceId === nextProps.resourceId &&
     prevProps.onBadgeClick === nextProps.onBadgeClick

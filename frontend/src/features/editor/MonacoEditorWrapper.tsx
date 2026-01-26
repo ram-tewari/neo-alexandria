@@ -22,6 +22,7 @@ import { detectLanguage } from '@/lib/monaco/languages';
 import { DecorationManager } from '@/lib/monaco/decorations';
 import { useEditorStore } from '@/stores/editor';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
+import { useAnnotationStore } from '@/stores/annotation';
 import { useEditorKeyboard } from '@/lib/hooks/useEditorKeyboard';
 import { MonacoFallback } from './MonacoFallback';
 import { MonacoEditorSkeleton } from './components/LoadingSkeletons';
@@ -72,6 +73,7 @@ const MonacoEditorWrapperComponent = ({
 
   const { scrollPosition, updateCursorPosition, updateSelection } = useEditorStore();
   const preferences = useEditorPreferencesStore();
+  const { setPendingSelection } = useAnnotationStore();
 
   // ==========================================================================
   // Keyboard Shortcuts
@@ -188,6 +190,31 @@ const MonacoEditorWrapperComponent = ({
           };
           updateSelection(selectionData);
           onSelectionChange?.(selectionData);
+          
+          // Get selected text and calculate offsets for annotation
+          const model = editor.getModel();
+          if (model) {
+            const selectedText = model.getValueInRange(selection);
+            
+            // Calculate character offsets from line/column positions
+            const startOffset = model.getOffsetAt({
+              lineNumber: selection.startLineNumber,
+              column: selection.startColumn,
+            });
+            const endOffset = model.getOffsetAt({
+              lineNumber: selection.endLineNumber,
+              column: selection.endColumn,
+            });
+            
+            // Trigger annotation creation with selected text
+            if (selectedText.trim().length > 0) {
+              setPendingSelection({
+                startOffset,
+                endOffset,
+                highlightedText: selectedText,
+              });
+            }
+          }
         } else {
           updateSelection(null);
           onSelectionChange?.(null);

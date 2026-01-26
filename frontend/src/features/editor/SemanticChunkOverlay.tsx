@@ -18,6 +18,7 @@ import type * as Monaco from 'monaco-editor';
 import { createChunkDecorations } from '@/lib/monaco/decorations';
 import { useChunkStore } from '@/stores/chunk';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
+import { useChunks } from '@/lib/hooks/useEditorData';
 import type { SemanticChunk } from './types';
 
 // ============================================================================
@@ -53,18 +54,28 @@ const SemanticChunkOverlayComponent = ({
     chunks,
     selectedChunk,
     chunkVisibility,
-    fetchChunks,
+    setChunks,
     selectChunk,
   } = useChunkStore();
 
   const { chunkBoundaries } = useEditorPreferencesStore();
 
   // ==========================================================================
-  // Refs
+  // Fetch Chunks with TanStack Query
   // ==========================================================================
 
-  const decorationIdsRef = useRef<string[]>([]);
-  const hoverChunkRef = useRef<SemanticChunk | null>(null);
+  const {
+    data: fetchedChunks,
+    isLoading,
+    error,
+  } = useChunks(resourceId);
+
+  // Update store when chunks are fetched
+  useEffect(() => {
+    if (fetchedChunks) {
+      setChunks(fetchedChunks);
+    }
+  }, [fetchedChunks, setChunks]);
 
   // ==========================================================================
   // Derived Values
@@ -74,14 +85,11 @@ const SemanticChunkOverlayComponent = ({
   const shouldShowChunks = visible && chunkVisibility && chunkBoundaries;
 
   // ==========================================================================
-  // Fetch Chunks on Mount
+  // Refs
   // ==========================================================================
 
-  useEffect(() => {
-    if (resourceId) {
-      fetchChunks(resourceId);
-    }
-  }, [resourceId, fetchChunks]);
+  const decorationIdsRef = useRef<string[]>([]);
+  const hoverChunkRef = useRef<SemanticChunk | null>(null);
 
   // ==========================================================================
   // Find Chunk at Position

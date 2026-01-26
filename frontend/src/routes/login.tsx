@@ -1,13 +1,13 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { LoginForm } from '@/features/auth/components/LoginForm';
 
 /**
  * Login route component
  * 
- * TEMPORARY: Redirects to workbench for Phase 1 testing
- * TODO: Restore LoginForm when authentication is needed
+ * Displays OAuth2 login form with Google and GitHub options.
  */
 const LoginRoute = () => {
-  return <Navigate to="/repositories" />;
+  return <LoginForm />;
 };
 
 /**

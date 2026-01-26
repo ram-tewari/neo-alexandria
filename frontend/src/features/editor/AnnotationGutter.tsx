@@ -13,13 +13,17 @@
  * - Callbacks memoized with useCallback
  * - Expensive computations memoized with useMemo
  * 
+ * Phase: 2.5 Backend API Integration
+ * Task: 6.3 - Update annotation store to use real data
  * Requirements: 4.2, 4.3, 4.4, 4.5, 7.2
  */
 
 import { useEffect, useCallback, useMemo, memo } from 'react';
 import type * as Monaco from 'monaco-editor';
 import { useAnnotationStore } from '@/stores/annotation';
+import { useEditorStore } from '@/stores/editor';
 import { useEditorPreferencesStore } from '@/stores/editorPreferences';
+import { useAnnotations } from '@/lib/hooks/useEditorData';
 import type { DecorationManager } from '@/lib/monaco/decorations';
 import { createAnnotationDecorations, offsetToPosition } from '@/lib/monaco/decorations';
 import type { Annotation } from './types';
@@ -158,11 +162,19 @@ const AnnotationGutterComponent = ({
   onAnnotationHover,
 }: AnnotationGutterProps) => {
   // ==========================================================================
-  // Store State
+  // Store State & Data Fetching
   // ==========================================================================
 
-  const { annotations, selectedAnnotation } = useAnnotationStore();
+  const { selectedAnnotationId } = useAnnotationStore();
   const { annotations: annotationsVisible } = useEditorPreferencesStore();
+  
+  // Get resource ID from editor store to fetch annotations
+  const { currentResourceId } = useEditorStore();
+  
+  // Fetch annotations using TanStack Query hook
+  const { data: annotations = [] } = useAnnotations(currentResourceId || '', {
+    enabled: !!currentResourceId && annotationsVisible,
+  });
 
   // ==========================================================================
   // Memoized Values
@@ -175,9 +187,9 @@ const AnnotationGutterComponent = ({
     return createGutterDecorations(
       annotations,
       fileContent,
-      selectedAnnotation?.id
+      selectedAnnotationId || undefined
     );
-  }, [annotations, fileContent, annotationsVisible, selectedAnnotation?.id]);
+  }, [annotations, fileContent, annotationsVisible, selectedAnnotationId]);
 
   const highlightDecorations = useMemo(() => {
     if (!annotationsVisible || annotations.length === 0) {

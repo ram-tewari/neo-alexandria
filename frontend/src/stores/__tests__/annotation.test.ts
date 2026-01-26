@@ -1,105 +1,35 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAnnotationStore } from '../annotation';
-import type { Annotation, AnnotationCreate, AnnotationUpdate } from '@/features/editor/types';
 
 /**
  * Unit Tests for Annotation Store
  * 
- * Feature: phase2-living-code-editor
- * Tests state updates, CRUD operations, and optimistic updates
- * Validates: Requirements 4.1, 4.6, 4.7
+ * Feature: phase2.5-backend-api-integration
+ * Task: 6.3 - Update annotation store to use real data
+ * Tests simplified UI state management (data fetching moved to TanStack Query)
+ * Validates: Requirements 4.1, 4.2, 4.3, 4.4
  */
 
 describe('Annotation Store', () => {
   beforeEach(() => {
     // Reset store to initial state
     useAnnotationStore.setState({
-      annotations: [],
-      selectedAnnotation: null,
+      selectedAnnotationId: null,
       isCreating: false,
-      isLoading: false,
-      error: null,
+      pendingSelection: null,
     });
   });
 
-  describe('Basic State Management', () => {
-    it('should set annotations', () => {
-      const mockAnnotations: Annotation[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 0,
-          end_offset: 10,
-          highlighted_text: 'hello world',
-          note: 'Test note',
-          color: '#3b82f6',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useAnnotationStore.getState().setAnnotations(mockAnnotations);
-
-      expect(useAnnotationStore.getState().annotations).toEqual(mockAnnotations);
-    });
-
+  describe('Selection State Management', () => {
     it('should select annotation by id', () => {
-      const mockAnnotations: Annotation[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 0,
-          end_offset: 10,
-          highlighted_text: 'hello world',
-          color: '#3b82f6',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-        {
-          id: '2',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 20,
-          end_offset: 30,
-          highlighted_text: 'test',
-          color: '#ef4444',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useAnnotationStore.getState().setAnnotations(mockAnnotations);
-      useAnnotationStore.getState().selectAnnotation('1');
-
-      expect(useAnnotationStore.getState().selectedAnnotation).toEqual(mockAnnotations[0]);
+      useAnnotationStore.getState().selectAnnotation('annotation-1');
+      expect(useAnnotationStore.getState().selectedAnnotationId).toBe('annotation-1');
     });
 
     it('should clear selected annotation', () => {
-      const mockAnnotations: Annotation[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 0,
-          end_offset: 10,
-          highlighted_text: 'hello world',
-          color: '#3b82f6',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useAnnotationStore.getState().setAnnotations(mockAnnotations);
-      useAnnotationStore.getState().selectAnnotation('1');
+      useAnnotationStore.getState().selectAnnotation('annotation-1');
       useAnnotationStore.getState().selectAnnotation(null);
-
-      expect(useAnnotationStore.getState().selectedAnnotation).toBeNull();
+      expect(useAnnotationStore.getState().selectedAnnotationId).toBeNull();
     });
 
     it('should set creating state', () => {
@@ -111,178 +41,74 @@ describe('Annotation Store', () => {
     });
   });
 
-  describe('Optimistic Updates', () => {
-    it('should add annotation optimistically', () => {
-      const mockAnnotation: Annotation = {
-        id: '1',
-        resource_id: 'resource-1',
-        user_id: 'user-1',
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        color: '#3b82f6',
-        is_shared: false,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
+  describe('Pending Selection Management', () => {
+    it('should set pending selection', () => {
+      const selection = {
+        startOffset: 0,
+        endOffset: 10,
+        highlightedText: 'hello world',
       };
 
-      useAnnotationStore.getState().addAnnotationOptimistic(mockAnnotation);
+      useAnnotationStore.getState().setPendingSelection(selection);
 
-      expect(useAnnotationStore.getState().annotations).toHaveLength(1);
-      expect(useAnnotationStore.getState().annotations[0]).toEqual(mockAnnotation);
+      expect(useAnnotationStore.getState().pendingSelection).toEqual(selection);
+      expect(useAnnotationStore.getState().isCreating).toBe(true);
     });
 
-    it('should update annotation optimistically', () => {
-      const mockAnnotation: Annotation = {
-        id: '1',
-        resource_id: 'resource-1',
-        user_id: 'user-1',
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        note: 'Original note',
-        color: '#3b82f6',
-        is_shared: false,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
+    it('should clear pending selection', () => {
+      const selection = {
+        startOffset: 0,
+        endOffset: 10,
+        highlightedText: 'hello world',
       };
 
-      useAnnotationStore.getState().addAnnotationOptimistic(mockAnnotation);
-      useAnnotationStore.getState().updateAnnotationOptimistic('1', {
-        note: 'Updated note',
-      });
+      useAnnotationStore.getState().setPendingSelection(selection);
+      useAnnotationStore.getState().setPendingSelection(null);
 
-      const updated = useAnnotationStore.getState().annotations[0];
-      expect(updated.note).toBe('Updated note');
+      expect(useAnnotationStore.getState().pendingSelection).toBeNull();
+      expect(useAnnotationStore.getState().isCreating).toBe(false);
     });
 
-    it('should remove annotation optimistically', () => {
-      const mockAnnotations: Annotation[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 0,
-          end_offset: 10,
-          highlighted_text: 'hello world',
-          color: '#3b82f6',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-        {
-          id: '2',
-          resource_id: 'resource-1',
-          user_id: 'user-1',
-          start_offset: 20,
-          end_offset: 30,
-          highlighted_text: 'test',
-          color: '#ef4444',
-          is_shared: false,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useAnnotationStore.getState().setAnnotations(mockAnnotations);
-      useAnnotationStore.getState().removeAnnotationOptimistic('1');
-
-      expect(useAnnotationStore.getState().annotations).toHaveLength(1);
-      expect(useAnnotationStore.getState().annotations[0].id).toBe('2');
-    });
-
-    it('should clear selected annotation when removed', () => {
-      const mockAnnotation: Annotation = {
-        id: '1',
-        resource_id: 'resource-1',
-        user_id: 'user-1',
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        color: '#3b82f6',
-        is_shared: false,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
+    it('should set isCreating to true when setting pending selection', () => {
+      const selection = {
+        startOffset: 0,
+        endOffset: 10,
+        highlightedText: 'hello world',
       };
 
-      useAnnotationStore.getState().addAnnotationOptimistic(mockAnnotation);
-      useAnnotationStore.getState().selectAnnotation('1');
-      useAnnotationStore.getState().removeAnnotationOptimistic('1');
+      useAnnotationStore.getState().setPendingSelection(selection);
+      expect(useAnnotationStore.getState().isCreating).toBe(true);
+    });
 
-      expect(useAnnotationStore.getState().selectedAnnotation).toBeNull();
+    it('should set isCreating to false when clearing pending selection', () => {
+      const selection = {
+        startOffset: 0,
+        endOffset: 10,
+        highlightedText: 'hello world',
+      };
+
+      useAnnotationStore.getState().setPendingSelection(selection);
+      useAnnotationStore.getState().setPendingSelection(null);
+      expect(useAnnotationStore.getState().isCreating).toBe(false);
     });
   });
 
-  describe('CRUD Operations', () => {
-    it('should create annotation with optimistic update', async () => {
-      const createData: AnnotationCreate = {
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        note: 'Test note',
-        color: '#3b82f6',
+  describe('Clear Selection', () => {
+    it('should clear all selection state', () => {
+      const selection = {
+        startOffset: 0,
+        endOffset: 10,
+        highlightedText: 'hello world',
       };
 
-      await useAnnotationStore.getState().createAnnotation('resource-1', createData);
+      useAnnotationStore.getState().selectAnnotation('annotation-1');
+      useAnnotationStore.getState().setPendingSelection(selection);
 
-      const annotations = useAnnotationStore.getState().annotations;
-      expect(annotations).toHaveLength(1);
-      expect(annotations[0].highlighted_text).toBe('hello world');
-      expect(annotations[0].note).toBe('Test note');
-    });
+      useAnnotationStore.getState().clearSelection();
 
-    it('should update annotation with optimistic update', async () => {
-      const mockAnnotation: Annotation = {
-        id: '1',
-        resource_id: 'resource-1',
-        user_id: 'user-1',
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        note: 'Original note',
-        color: '#3b82f6',
-        is_shared: false,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-
-      useAnnotationStore.getState().addAnnotationOptimistic(mockAnnotation);
-
-      const updateData: AnnotationUpdate = {
-        note: 'Updated note',
-      };
-
-      await useAnnotationStore.getState().updateAnnotation('1', updateData);
-
-      const updated = useAnnotationStore.getState().annotations[0];
-      expect(updated.note).toBe('Updated note');
-    });
-
-    it('should delete annotation with optimistic update', async () => {
-      const mockAnnotation: Annotation = {
-        id: '1',
-        resource_id: 'resource-1',
-        user_id: 'user-1',
-        start_offset: 0,
-        end_offset: 10,
-        highlighted_text: 'hello world',
-        color: '#3b82f6',
-        is_shared: false,
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-      };
-
-      useAnnotationStore.getState().addAnnotationOptimistic(mockAnnotation);
-      await useAnnotationStore.getState().deleteAnnotation('1');
-
-      expect(useAnnotationStore.getState().annotations).toHaveLength(0);
-    });
-
-    it('should fetch annotations', async () => {
-      await useAnnotationStore.getState().fetchAnnotations('resource-1');
-
-      expect(useAnnotationStore.getState().isLoading).toBe(false);
-      expect(useAnnotationStore.getState().annotations).toEqual([]);
+      expect(useAnnotationStore.getState().selectedAnnotationId).toBeNull();
+      expect(useAnnotationStore.getState().isCreating).toBe(false);
+      expect(useAnnotationStore.getState().pendingSelection).toBeNull();
     });
   });
 });

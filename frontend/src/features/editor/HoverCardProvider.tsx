@@ -1,16 +1,17 @@
 /**
  * HoverCardProvider Component
  * 
- * Provides contextual hover cards with Node2Vec summaries and graph connections.
+ * Provides contextual hover cards with symbol information from the backend.
  * Implements debounced hover detection (300ms) and fetches symbol information
- * from the backend when available, falling back to Monaco IntelliSense.
+ * from the backend API using static analysis.
  * 
  * Performance optimizations:
  * - Memoized with React.memo to prevent unnecessary re-renders
  * - Callbacks memoized with useCallback
- * - Debounced hover events (300ms)
+ * - Debounced hover events (300ms) via useHoverInfo hook
+ * - 30-minute cache for hover responses
  * 
- * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 7.4, 10.6
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
  */
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react';
@@ -20,13 +21,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
-import { HoverCardData, Position } from './types';
-import { editorApi } from '@/lib/api/editor';
+import { useHoverInfo } from '@/lib/hooks/useEditorData';
+import type { HoverParams } from '@/types/api';
 
 interface HoverCardProviderProps {
   editor: monaco.editor.IStandaloneCodeEditor | null;
   resourceId: string;
-  onSymbolClick?: (symbol: string, file: string) => void;
+  filePath: string;
+  onSymbolClick?: (symbol: string, file: string, line: number, column: number) => void;
 }
 
 const HOVER_DEBOUNCE_MS = 300;
@@ -34,224 +36,82 @@ const HOVER_DEBOUNCE_MS = 300;
 const HoverCardProviderComponent = ({
   editor,
   resourceId,
+  filePath,
   onSymbolClick,
 }: HoverCardProviderProps) => {
-  const [hoverData, setHoverData] = useState<HoverCardData | null>(null);
-  const [position, setPosition] = useState<Position | null>(null);
+  const [hoverParams, setHoverParams] = useState<HoverParams | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const currentSymbolRef = useRef<string | null>(null);
+  const currentPositionRef = useRef<{ line: number; column: number } | null>(null);
 
-  /**
-   * Detect symbol under cursor using Monaco's language service
-   */
-  const detectSymbol = useCallback(
-    async (pos: monaco.Position): Promise<string | null> => {
-      if (!editor) return null;
-
-      const model = editor.getModel();
-      if (!model) return null;
-
-      // Get word at position
-      const wordAtPosition = model.getWordAtPosition(pos);
-      if (!wordAtPosition) return null;
-
-      return wordAtPosition.word;
-    },
-    [editor]
+  // Use the debounced hover info hook
+  const { data: hoverInfo, isLoading, error, refetch } = useHoverInfo(
+    hoverParams,
+    HOVER_DEBOUNCE_MS
   );
 
   /**
-   * Fetch Node2Vec summary from backend
-   */
-  const fetchNode2VecSummary = useCallback(
-    async (symbol: string): Promise<HoverCardData> => {
-      try {
-        const response = await editorApi.getNode2VecSummary(resourceId, symbol);
-        return {
-          symbol,
-          summary: response.summary,
-          connections: response.connections || [],
-          loading: false,
-        };
-      } catch (error) {
-        console.error('Failed to fetch Node2Vec summary:', error);
-        throw error;
-      }
-    },
-    [resourceId]
-  );
-
-  /**
-   * Get fallback information from Monaco IntelliSense
-   */
-  const getFallbackInfo = useCallback(
-    async (symbol: string, pos: monaco.Position): Promise<HoverCardData> => {
-      if (!editor) {
-        return {
-          symbol,
-          summary: `Symbol: ${symbol}`,
-          connections: [],
-          loading: false,
-        };
-      }
-
-      const model = editor.getModel();
-      if (!model) {
-        return {
-          symbol,
-          summary: `Symbol: ${symbol}`,
-          connections: [],
-          loading: false,
-        };
-      }
-
-      try {
-        // Get hover information from Monaco
-        const hovers = await monaco.languages.getHoverProvider(model.getLanguageId())
-          ? await monaco.languages.getHover(model, pos)
-          : null;
-
-        if (hovers && hovers.contents.length > 0) {
-          const content = hovers.contents[0];
-          const summary = typeof content === 'string' 
-            ? content 
-            : 'value' in content 
-              ? content.value 
-              : `Symbol: ${symbol}`;
-
-          return {
-            symbol,
-            summary,
-            connections: [],
-            loading: false,
-          };
-        }
-      } catch (error) {
-        console.error('Failed to get Monaco hover info:', error);
-      }
-
-      return {
-        symbol,
-        summary: `Symbol: ${symbol}`,
-        connections: [],
-        loading: false,
-      };
-    },
-    [editor]
-  );
-
-  /**
-   * Handle hover event with debouncing
+   * Handle hover event
    */
   const handleHover = useCallback(
-    async (e: monaco.editor.IEditorMouseEvent) => {
-      // Clear existing timeout
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
-
+    (e: monaco.editor.IEditorMouseEvent) => {
       // Only handle hover over text
       if (e.target.type !== monaco.editor.MouseTargetType.CONTENT_TEXT) {
         setIsOpen(false);
-        setHoverData(null);
-        currentSymbolRef.current = null;
+        setHoverParams(null);
+        currentPositionRef.current = null;
         return;
       }
 
       const pos = e.target.position;
       if (!pos) {
         setIsOpen(false);
-        setHoverData(null);
-        currentSymbolRef.current = null;
+        setHoverParams(null);
+        currentPositionRef.current = null;
         return;
       }
 
-      // Debounce hover detection
-      hoverTimeoutRef.current = setTimeout(async () => {
-        const symbol = await detectSymbol(pos);
-        
-        if (!symbol) {
-          setIsOpen(false);
-          setHoverData(null);
-          currentSymbolRef.current = null;
-          return;
-        }
+      // Don't refetch if same position
+      if (
+        currentPositionRef.current &&
+        currentPositionRef.current.line === pos.lineNumber &&
+        currentPositionRef.current.column === pos.column
+      ) {
+        return;
+      }
 
-        // Don't refetch if same symbol
-        if (symbol === currentSymbolRef.current) {
-          return;
-        }
+      currentPositionRef.current = { line: pos.lineNumber, column: pos.column };
 
-        currentSymbolRef.current = symbol;
-        setPosition({ line: pos.lineNumber, column: pos.column });
-
-        // Show loading state
-        setHoverData({
-          symbol,
-          summary: '',
-          connections: [],
-          loading: true,
-        });
-        setIsOpen(true);
-
-        // Try to fetch Node2Vec summary
-        try {
-          const data = await fetchNode2VecSummary(symbol);
-          setHoverData(data);
-        } catch (error) {
-          // Fall back to Monaco IntelliSense
-          const fallbackData = await getFallbackInfo(symbol, pos);
-          setHoverData({
-            ...fallbackData,
-            error: 'Unable to load Node2Vec summary. Showing basic information.',
-          });
-        }
-      }, HOVER_DEBOUNCE_MS);
+      // Set hover params (debouncing happens in the hook)
+      setHoverParams({
+        resource_id: resourceId,
+        file_path: filePath,
+        line: pos.lineNumber,
+        column: pos.column,
+      });
+      setIsOpen(true);
     },
-    [detectSymbol, fetchNode2VecSummary, getFallbackInfo]
+    [resourceId, filePath]
   );
 
   /**
-   * Handle retry for failed Node2Vec fetch
+   * Handle retry for failed hover fetch
    */
-  const handleRetry = useCallback(async () => {
-    if (!hoverData || !position || !editor) return;
-
-    const model = editor.getModel();
-    if (!model) return;
-
-    const pos = new monaco.Position(position.line, position.column);
-
-    setHoverData({
-      ...hoverData,
-      loading: true,
-      error: undefined,
-    });
-
-    try {
-      const data = await fetchNode2VecSummary(hoverData.symbol);
-      setHoverData(data);
-    } catch (error) {
-      const fallbackData = await getFallbackInfo(hoverData.symbol, pos);
-      setHoverData({
-        ...fallbackData,
-        error: 'Unable to load Node2Vec summary. Showing basic information.',
-      });
-    }
-  }, [hoverData, position, editor, fetchNode2VecSummary, getFallbackInfo]);
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   /**
    * Handle symbol click navigation
    */
   const handleSymbolClick = useCallback(
-    (symbol: string, file: string) => {
-      setIsOpen(false);
-      onSymbolClick?.(symbol, file);
+    (file: string, line: number, column: number) => {
+      if (hoverInfo?.symbol_name) {
+        setIsOpen(false);
+        onSymbolClick?.(hoverInfo.symbol_name, file, line, column);
+      }
     },
-    [onSymbolClick]
+    [hoverInfo, onSymbolClick]
   );
 
   /**
@@ -264,9 +124,6 @@ const HoverCardProviderComponent = ({
 
     return () => {
       disposable.dispose();
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
     };
   }, [editor, handleHover]);
 
@@ -278,14 +135,19 @@ const HoverCardProviderComponent = ({
 
     const disposable = editor.onDidBlurEditorText(() => {
       setIsOpen(false);
-      setHoverData(null);
-      currentSymbolRef.current = null;
+      setHoverParams(null);
+      currentPositionRef.current = null;
     });
 
     return () => {
       disposable.dispose();
     };
   }, [editor]);
+
+  // Don't render if no hover params or closed
+  if (!isOpen || !hoverParams) {
+    return null;
+  }
 
   return (
     <HoverCard open={isOpen} onOpenChange={setIsOpen}>
@@ -304,77 +166,115 @@ const HoverCardProviderComponent = ({
           transformOrigin: 'bottom left',
         }}
       >
-        {hoverData.loading ? (
+        {isLoading ? (
           <div className="space-y-3" role="status" aria-label="Loading symbol information">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <span className="sr-only">Loading symbol information...</span>
           </div>
+        ) : error ? (
+          <div className="space-y-3" id="hover-card-content">
+            <Alert variant="destructive" className="py-2" role="alert">
+              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+              <AlertDescription className="text-xs">
+                Unable to load hover information. {error.message}
+              </AlertDescription>
+            </Alert>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetry}
+              className="w-full"
+              aria-label="Retry loading symbol information"
+            >
+              <RefreshCw className="h-3 w-3 mr-2" aria-hidden="true" />
+              Retry
+            </Button>
+          </div>
+        ) : !hoverInfo || !hoverInfo.symbol_name ? (
+          <div className="text-sm text-muted-foreground" id="hover-card-content">
+            No symbol information available
+          </div>
         ) : (
           <div className="space-y-3" id="hover-card-content">
-            {/* Symbol name */}
-            <div className="font-semibold text-sm text-foreground">
-              {hoverData.symbol}
+            {/* Symbol name and type */}
+            <div className="space-y-1">
+              <div className="font-semibold text-sm text-foreground">
+                {hoverInfo.symbol_name}
+              </div>
+              {hoverInfo.symbol_type && (
+                <div className="text-xs text-muted-foreground">
+                  {hoverInfo.symbol_type}
+                </div>
+              )}
             </div>
 
-            {/* Error message */}
-            {hoverData.error && (
-              <Alert variant="destructive" className="py-2" role="alert">
-                <AlertCircle className="h-4 w-4" aria-hidden="true" />
-                <AlertDescription className="text-xs">
-                  {hoverData.error}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Summary */}
-            {hoverData.summary && (
+            {/* Documentation */}
+            {hoverInfo.documentation && (
               <div className="text-sm text-muted-foreground">
-                {hoverData.summary}
+                {hoverInfo.documentation}
               </div>
             )}
 
-            {/* Connections */}
-            {hoverData.connections.length > 0 && (
+            {/* Definition location */}
+            {hoverInfo.definition_location && (
+              <button
+                onClick={() =>
+                  handleSymbolClick(
+                    hoverInfo.definition_location!.file_path,
+                    hoverInfo.definition_location!.line,
+                    hoverInfo.definition_location!.column
+                  )
+                }
+                className="flex items-center gap-2 w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label={`Go to definition at line ${hoverInfo.definition_location.line}`}
+              >
+                <ExternalLink className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                <div className="flex-1">
+                  <div className="font-medium">Go to definition</div>
+                  <div className="text-muted-foreground">
+                    Line {hoverInfo.definition_location.line}, Column {hoverInfo.definition_location.column}
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* Related chunks */}
+            {hoverInfo.related_chunks.length > 0 && (
               <div className="space-y-2">
                 <div className="text-xs font-medium text-muted-foreground">
-                  Related Symbols
+                  Related Code
                 </div>
-                <div className="space-y-1" role="list" aria-label="Related symbols">
-                  {hoverData.connections.map((connection, index) => (
-                    <button
+                <div className="space-y-1" role="list" aria-label="Related code chunks">
+                  {hoverInfo.related_chunks.map((chunk, index) => (
+                    <div
                       key={index}
-                      onClick={() => handleSymbolClick(connection.name, connection.file)}
-                      className="flex items-center gap-2 w-full text-left text-xs p-2 rounded hover:bg-accent transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-                      aria-label={`Navigate to ${connection.name} in ${connection.file}`}
+                      className="text-xs p-2 rounded bg-muted"
                       role="listitem"
                     >
-                      <ExternalLink className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-                      <div className="flex-1">
-                        <div className="font-medium">{connection.name}</div>
-                        <div className="text-muted-foreground">
-                          {connection.relationship} • {connection.file}
-                        </div>
+                      <div className="font-medium mb-1">
+                        Similarity: {(chunk.similarity_score * 100).toFixed(0)}%
                       </div>
-                    </button>
+                      <div className="text-muted-foreground line-clamp-2">
+                        {chunk.preview}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Retry button for errors */}
-            {hoverData.error && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRetry}
-                className="w-full"
-                aria-label="Retry loading symbol information"
-              >
-                <RefreshCw className="h-3 w-3 mr-2" aria-hidden="true" />
-                Retry
-              </Button>
+            {/* Context lines */}
+            {hoverInfo.context_lines.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-muted-foreground">
+                  Context
+                </div>
+                <pre className="text-xs p-2 rounded bg-muted overflow-x-auto">
+                  <code>{hoverInfo.context_lines.join('\n')}</code>
+                </pre>
+              </div>
             )}
           </div>
         )}
@@ -384,12 +284,12 @@ const HoverCardProviderComponent = ({
 }
 
 // Memoize the component to prevent unnecessary re-renders
-// Requirements: 7.2 - React optimization
 export const HoverCardProvider = memo(HoverCardProviderComponent, (prevProps, nextProps) => {
   // Custom comparison function for better memoization
   return (
     prevProps.editor === nextProps.editor &&
     prevProps.resourceId === nextProps.resourceId &&
+    prevProps.filePath === nextProps.filePath &&
     prevProps.onSymbolClick === nextProps.onSymbolClick
   );
 });

@@ -33,7 +33,7 @@ const AuthCallbackComponent = () => {
         delete apiClient.defaults.headers.common['Authorization'];
 
         // Fetch user profile with new token
-        const response = await apiClient.get<UserProfile>('/auth/me', {
+        const response = await apiClient.get<UserProfile>('/api/auth/me', {
           headers: {
             Authorization: `Bearer ${access_token}`,
           },

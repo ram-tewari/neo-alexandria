@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useEditorStore } from '../editor';
+import { useEditorStore, resourceToCodeFile } from '../editor';
 import type { CodeFile } from '@/features/editor/types';
+import type { Resource } from '@/types/api';
 
 /**
  * Unit Tests for Editor Store
  * 
- * Feature: phase2-living-code-editor
- * Tests state updates, actions, and persistence logic
- * Validates: Requirements 9.1, 9.2
+ * Feature: phase2.5-backend-api-integration
+ * Task: 5.3 Update editor store to use real resource data
+ * Tests state updates, actions, loading/error states, and persistence logic
+ * Validates: Requirements 3.1, 3.5, 3.6
  */
 
 describe('Editor Store', () => {
@@ -17,7 +19,10 @@ describe('Editor Store', () => {
     
     // Reset store to initial state
     useEditorStore.setState({
+      activeResourceId: null,
       activeFile: null,
+      isLoading: false,
+      error: null,
       cursorPosition: { line: 1, column: 1 },
       selection: null,
       scrollPosition: 0,
@@ -27,6 +32,89 @@ describe('Editor Store', () => {
 
   afterEach(() => {
     localStorage.clear();
+  });
+
+  describe('Resource to CodeFile Conversion', () => {
+    it('should convert Resource to CodeFile', () => {
+      const mockResource: Resource = {
+        id: 'resource-1',
+        title: 'main.ts',
+        content: 'console.log("hello");',
+        content_type: 'code',
+        language: 'typescript',
+        file_path: '/src/main.ts',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        ingestion_status: 'completed',
+      };
+
+      const codeFile = resourceToCodeFile(mockResource);
+
+      expect(codeFile).toEqual({
+        id: 'resource-1',
+        resource_id: 'resource-1',
+        path: '/src/main.ts',
+        name: 'main.ts',
+        language: 'typescript',
+        content: 'console.log("hello");',
+        size: 21,
+        lines: 1,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      });
+    });
+
+    it('should handle Resource without file_path', () => {
+      const mockResource: Resource = {
+        id: 'resource-1',
+        title: 'Document',
+        content: 'test content',
+        url: 'https://example.com/doc',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        ingestion_status: 'completed',
+      };
+
+      const codeFile = resourceToCodeFile(mockResource);
+
+      expect(codeFile.path).toBe('https://example.com/doc');
+    });
+
+    it('should handle Resource with no content', () => {
+      const mockResource: Resource = {
+        id: 'resource-1',
+        title: 'Empty',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        ingestion_status: 'pending',
+      };
+
+      const codeFile = resourceToCodeFile(mockResource);
+
+      expect(codeFile.content).toBe('');
+      expect(codeFile.size).toBe(0);
+      expect(codeFile.lines).toBe(0);
+    });
+  });
+
+  describe('Active Resource Management', () => {
+    it('should set active resource ID and loading state', () => {
+      useEditorStore.getState().setActiveResource('resource-1');
+
+      const state = useEditorStore.getState();
+      expect(state.activeResourceId).toBe('resource-1');
+      expect(state.isLoading).toBe(true);
+      expect(state.error).toBeNull();
+    });
+
+    it('should clear loading state when resource ID is null', () => {
+      useEditorStore.getState().setActiveResource('resource-1');
+      useEditorStore.getState().setActiveResource(null);
+
+      const state = useEditorStore.getState();
+      expect(state.activeResourceId).toBeNull();
+      expect(state.isLoading).toBe(false);
+    });
   });
 
   describe('Active File Management', () => {
@@ -50,6 +138,8 @@ describe('Editor Store', () => {
       expect(state.activeFile).toEqual(mockFile);
       expect(state.cursorPosition).toEqual({ line: 1, column: 1 });
       expect(state.selection).toBeNull();
+      expect(state.isLoading).toBe(false);
+      expect(state.error).toBeNull();
     });
 
     it('should clear active file', () => {
@@ -71,6 +161,74 @@ describe('Editor Store', () => {
 
       const state = useEditorStore.getState();
       expect(state.activeFile).toBeNull();
+      expect(state.scrollPosition).toBe(0);
+      expect(state.isLoading).toBe(false);
+    });
+  });
+
+  describe('Loading and Error States', () => {
+    it('should set loading state', () => {
+      useEditorStore.getState().setLoading(true);
+      expect(useEditorStore.getState().isLoading).toBe(true);
+
+      useEditorStore.getState().setLoading(false);
+      expect(useEditorStore.getState().isLoading).toBe(false);
+    });
+
+    it('should set error state and clear loading', () => {
+      const error = new Error('Failed to load resource');
+      
+      useEditorStore.getState().setLoading(true);
+      useEditorStore.getState().setError(error);
+
+      const state = useEditorStore.getState();
+      expect(state.error).toBe(error);
+      expect(state.isLoading).toBe(false);
+    });
+
+    it('should clear error state', () => {
+      const error = new Error('Failed to load resource');
+      
+      useEditorStore.getState().setError(error);
+      expect(useEditorStore.getState().error).toBe(error);
+
+      useEditorStore.getState().setError(null);
+      expect(useEditorStore.getState().error).toBeNull();
+    });
+  });
+
+  describe('Clear Editor', () => {
+    it('should clear all editor state', () => {
+      const mockFile: CodeFile = {
+        id: 'file-1',
+        resource_id: 'resource-1',
+        path: '/src/main.ts',
+        name: 'main.ts',
+        language: 'typescript',
+        content: 'console.log("hello");',
+        size: 1024,
+        lines: 10,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      useEditorStore.getState().setActiveResource('resource-1');
+      useEditorStore.getState().setActiveFile(mockFile);
+      useEditorStore.getState().updateCursorPosition({ line: 10, column: 5 });
+      useEditorStore.getState().updateSelection({
+        start: { line: 1, column: 1 },
+        end: { line: 5, column: 10 },
+      });
+
+      useEditorStore.getState().clearEditor();
+
+      const state = useEditorStore.getState();
+      expect(state.activeResourceId).toBeNull();
+      expect(state.activeFile).toBeNull();
+      expect(state.isLoading).toBe(false);
+      expect(state.error).toBeNull();
+      expect(state.cursorPosition).toEqual({ line: 1, column: 1 });
+      expect(state.selection).toBeNull();
       expect(state.scrollPosition).toBe(0);
     });
   });

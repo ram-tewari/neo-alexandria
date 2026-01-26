@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { useRepositoryStore } from '@/stores/repository';
+import { useRepositoryStore, mapResourceToRepository } from '@/stores/repository';
 import { useEditorStore } from '@/stores/editor';
+import { useResources } from '@/lib/hooks/useWorkbenchData';
 import { CodeEditorView } from '@/features/editor/CodeEditorView';
 import type { CodeFile } from '@/features/editor/types';
 import { FileTree } from '@/components/features/repositories/FileTree';
@@ -9,14 +10,24 @@ import { RepositoryHeader } from '@/components/features/repositories/RepositoryH
 import { Loader2 } from 'lucide-react';
 
 const RepositoriesPage = () => {
-  const { repositories, activeRepository, isLoading, fetchRepositories } = useRepositoryStore();
+  // Use TanStack Query hook for data fetching
+  const { data: resources, isLoading, error } = useResources();
+  
+  // Use repository store for UI state
+  const { activeRepositoryId, setActiveRepository } = useRepositoryStore();
   const { activeFile, setActiveFile } = useEditorStore();
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
-  // Fetch repositories on mount
+  // Map resources to repositories
+  const repositories = resources?.map(mapResourceToRepository) || [];
+  const activeRepository = repositories.find(r => r.id === activeRepositoryId);
+
+  // Set first repository as active if none selected
   useEffect(() => {
-    fetchRepositories();
-  }, [fetchRepositories]);
+    if (repositories.length > 0 && !activeRepositoryId) {
+      setActiveRepository(repositories[0].id);
+    }
+  }, [repositories, activeRepositoryId, setActiveRepository]);
 
   // Handle file selection from file tree
   const handleFileSelect = async (fileId: string) => {
@@ -45,6 +56,26 @@ const RepositoriesPage = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Repositories</h1>
+          <p className="text-muted-foreground">
+            Manage and explore your code repositories
+          </p>
+        </div>
+        
+        <div className="rounded-lg border bg-destructive/10 p-8 text-center">
+          <p className="text-destructive">
+            Failed to load repositories. Please try again later.
+          </p>
+        </div>
       </div>
     );
   }

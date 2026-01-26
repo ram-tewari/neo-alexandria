@@ -37,6 +37,12 @@ The frontend had accumulated several partially-implemented features:
 - Auth provider and context
 - Protected route wrapper (`_auth.tsx`)
 - API client with auth headers
+- **OAuth2 Google/GitHub integration** (configured and working)
+
+### Backend Configuration ✅
+- **API Base URL**: `https://pharos.onrender.com` (configured in `frontend/.env`)
+- OAuth2 credentials already set up
+- All auth endpoints working
 
 ### Base Infrastructure ✅
 - Project configuration (Vite, TypeScript, Tailwind)

@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { Check, ChevronsUpDown, Github, GitlabIcon, FolderOpen, Plus } from 'lucide-react';
+import { Check, ChevronsUpDown, Github, GitlabIcon, FolderOpen, Plus, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -9,8 +8,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { useRepositoryStore, type Repository } from '../stores/repository';
+import { useRepositoryStore, mapResourceToRepository, type Repository } from '../stores/repository';
+import { useResources } from '../lib/hooks/useWorkbenchData';
 import { motion } from 'framer-motion';
+import { Alert, AlertDescription } from './ui/alert';
+
+/**
+ * Repository Switcher Component
+ * 
+ * Displays a dropdown menu for switching between repositories/resources.
+ * Updated in Phase 2.5 to use real backend data via TanStack Query.
+ * 
+ * Phase: 2.5 Backend API Integration
+ * Task: 3.3 Update workbench store to use real data
+ * Requirements: 2.2, 2.5, 2.6
+ */
 
 const sourceIcons = {
   github: Github,
@@ -25,22 +37,23 @@ const statusColors = {
 };
 
 export function RepositorySwitcher() {
-  const {
-    repositories,
-    activeRepository,
-    isLoading,
-    setActiveRepository,
-    fetchRepositories,
-  } = useRepositoryStore();
+  // Fetch resources from backend using TanStack Query
+  const { data: resources, isLoading, error, refetch } = useResources({
+    limit: 50, // Show up to 50 repositories in the switcher
+  });
+  
+  // Get active repository ID from store
+  const { activeRepositoryId, setActiveRepository } = useRepositoryStore();
 
-  useEffect(() => {
-    fetchRepositories();
-  }, [fetchRepositories]);
+  // Map backend resources to frontend repositories
+  const repositories = resources?.map(mapResourceToRepository) || [];
+  const activeRepository = repositories.find(r => r.id === activeRepositoryId);
 
   const handleSelect = (repo: Repository) => {
     setActiveRepository(repo.id);
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <Button variant="outline" disabled className="w-[200px] justify-between">
@@ -49,6 +62,42 @@ export function RepositorySwitcher() {
     );
   }
 
+  // Error state
+  if (error) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-[200px] justify-between text-destructive">
+            <div className="flex items-center gap-2 truncate">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span className="truncate">Error loading</span>
+            </div>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-[250px]" align="start">
+          <div className="p-2">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load repositories. {error.message}
+              </AlertDescription>
+            </Alert>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-2"
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  // Empty state
   if (repositories.length === 0) {
     return (
       <Button variant="outline" className="w-[200px] justify-between">

@@ -3,8 +3,10 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
-import { useDebounce } from '../useDebounce';
 import { describe, it, expect, vi } from 'vitest';
+
+// Import from JS file
+import { useDebounce } from '../useDebounce.js';
 
 describe('useDebounce', () => {
   it('should return initial value immediately', () => {

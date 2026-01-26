@@ -5,9 +5,12 @@ import type { SemanticChunk } from '@/features/editor/types';
 /**
  * Unit Tests for Chunk Store
  * 
- * Feature: phase2-living-code-editor
- * Tests state updates, caching logic, and visibility toggles
- * Validates: Requirements 2.1, 2.4
+ * Feature: phase2.5-backend-api-integration
+ * Tests state updates and visibility toggles
+ * Validates: Requirements 3.2, 3.3, 3.5, 3.6
+ * 
+ * Note: Data fetching is now handled by TanStack Query hooks (useChunks)
+ * The store only manages UI state and chunk selection
  */
 
 describe('Chunk Store', () => {
@@ -19,10 +22,7 @@ describe('Chunk Store', () => {
     useChunkStore.setState({
       chunks: [],
       selectedChunk: null,
-      chunkCache: {},
       chunkVisibility: true,
-      isLoading: false,
-      error: null,
     });
   });
 
@@ -112,6 +112,31 @@ describe('Chunk Store', () => {
 
       expect(useChunkStore.getState().selectedChunk).toBeNull();
     });
+
+    it('should clear all chunks', () => {
+      const mockChunks: SemanticChunk[] = [
+        {
+          id: '1',
+          resource_id: 'resource-1',
+          content: 'function hello() { return "world"; }',
+          chunk_index: 0,
+          chunk_metadata: {
+            function_name: 'hello',
+            start_line: 1,
+            end_line: 3,
+            language: 'typescript',
+          },
+          created_at: '2024-01-01T00:00:00Z',
+        },
+      ];
+
+      useChunkStore.getState().setChunks(mockChunks);
+      useChunkStore.getState().selectChunk('1');
+      useChunkStore.getState().clearChunks();
+
+      expect(useChunkStore.getState().chunks).toEqual([]);
+      expect(useChunkStore.getState().selectedChunk).toBeNull();
+    });
   });
 
   describe('Chunk Visibility', () => {
@@ -146,124 +171,6 @@ describe('Chunk Store', () => {
         const parsed = JSON.parse(stored);
         expect(parsed.state.chunkVisibility).toBe(false);
       }
-    });
-  });
-
-  describe('Chunk Caching', () => {
-    it('should cache chunks for a resource', () => {
-      const mockChunks: SemanticChunk[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          content: 'function hello() { return "world"; }',
-          chunk_index: 0,
-          chunk_metadata: {
-            function_name: 'hello',
-            start_line: 1,
-            end_line: 3,
-            language: 'typescript',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useChunkStore.getState().setCachedChunks('resource-1', mockChunks);
-
-      const cached = useChunkStore.getState().getCachedChunks('resource-1');
-      expect(cached).toEqual(mockChunks);
-    });
-
-    it('should return null for uncached resource', () => {
-      const cached = useChunkStore.getState().getCachedChunks('resource-999');
-      expect(cached).toBeNull();
-    });
-
-    it('should clear all cached chunks', () => {
-      const mockChunks: SemanticChunk[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          content: 'function hello() { return "world"; }',
-          chunk_index: 0,
-          chunk_metadata: {
-            function_name: 'hello',
-            start_line: 1,
-            end_line: 3,
-            language: 'typescript',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useChunkStore.getState().setCachedChunks('resource-1', mockChunks);
-      useChunkStore.getState().setCachedChunks('resource-2', mockChunks);
-      useChunkStore.getState().clearCache();
-
-      expect(useChunkStore.getState().chunkCache).toEqual({});
-    });
-
-    it('should persist chunk cache to localStorage', async () => {
-      const mockChunks: SemanticChunk[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          content: 'function hello() { return "world"; }',
-          chunk_index: 0,
-          chunk_metadata: {
-            function_name: 'hello',
-            start_line: 1,
-            end_line: 3,
-            language: 'typescript',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useChunkStore.getState().setCachedChunks('resource-1', mockChunks);
-
-      // Wait for persistence
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const stored = localStorage.getItem('chunk-storage');
-      expect(stored).toBeTruthy();
-      
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        expect(parsed.state.chunkCache['resource-1']).toEqual(mockChunks);
-      }
-    });
-  });
-
-  describe('Fetch Chunks', () => {
-    it('should fetch chunks and update state', async () => {
-      await useChunkStore.getState().fetchChunks('resource-1');
-
-      expect(useChunkStore.getState().isLoading).toBe(false);
-      expect(useChunkStore.getState().chunks).toEqual([]);
-    });
-
-    it('should use cached chunks if available', async () => {
-      const mockChunks: SemanticChunk[] = [
-        {
-          id: '1',
-          resource_id: 'resource-1',
-          content: 'function hello() { return "world"; }',
-          chunk_index: 0,
-          chunk_metadata: {
-            function_name: 'hello',
-            start_line: 1,
-            end_line: 3,
-            language: 'typescript',
-          },
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ];
-
-      useChunkStore.getState().setCachedChunks('resource-1', mockChunks);
-      await useChunkStore.getState().fetchChunks('resource-1');
-
-      expect(useChunkStore.getState().chunks).toEqual(mockChunks);
-      expect(useChunkStore.getState().isLoading).toBe(false);
     });
   });
 });

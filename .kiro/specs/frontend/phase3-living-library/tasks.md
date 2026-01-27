@@ -43,24 +43,24 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 ### Task 1.2: TypeScript Types 🔧
 **Estimated Time**: 3 hours
 
-- [ ] Create `types/library.ts`
-  - [ ] Resource interface
-  - [ ] ResourceUpload interface
-  - [ ] ResourceUpdate interface
-  - [ ] Equation interface
-  - [ ] Table interface
-  - [ ] Metadata interface
-  - [ ] Collection interface
-  - [ ] CollectionCreate interface
-  - [ ] CollectionUpdate interface
-- [ ] Export types from index
-- [ ] Add JSDoc comments
+- [x] Create `types/library.ts`
+  - [x] Resource interface
+  - [x] ResourceUpload interface
+  - [x] ResourceUpdate interface
+  - [x] Equation interface
+  - [x] Table interface
+  - [x] Metadata interface
+  - [x] Collection interface
+  - [x] CollectionCreate interface
+  - [x] CollectionUpdate interface
+- [x] Export types from index
+- [x] Add JSDoc comments
 
 **Acceptance Criteria**:
-- All types defined with proper interfaces
-- Types match backend API schemas
-- JSDoc comments added
-- No TypeScript errors
+- ✅ All types defined with proper interfaces
+- ✅ Types match backend API schemas
+- ✅ JSDoc comments added
+- ✅ No TypeScript errors
 
 ### Task 1.3: Library API Client 📡
 **Estimated Time**: 4 hours
@@ -86,19 +86,19 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 ### Task 1.4: Scholarly API Client 📡
 **Estimated Time**: 3 hours
 
-- [ ] Create `lib/api/scholarly.ts`
-  - [ ] getEquations()
-  - [ ] getTables()
-  - [ ] getMetadata()
-  - [ ] getCompletenessStats()
-  - [ ] health()
-- [ ] Add error handling
-- [ ] Add TypeScript types
+- [x] Create `lib/api/scholarly.ts`
+  - [x] getEquations()
+  - [x] getTables()
+  - [x] getMetadata()
+  - [x] getCompletenessStats()
+  - [x] health()
+- [x] Add error handling
+- [x] Add TypeScript types
 
 **Acceptance Criteria**:
-- All 5 endpoints implemented
-- Error handling in place
-- Types properly defined
+- ✅ All 5 endpoints implemented
+- ✅ Error handling in place
+- ✅ Types properly defined
 
 ### Task 1.5: Collections API Client 📡
 **Estimated Time**: 4 hours
@@ -126,18 +126,20 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 ### Task 1.6: API Tests 🧪
 **Estimated Time**: 4 hours
 
-- [ ] Create `lib/api/__tests__/library.test.ts`
-- [ ] Create `lib/api/__tests__/scholarly.test.ts`
-- [ ] Create `lib/api/__tests__/collections.test.ts`
-- [ ] Test success cases
-- [ ] Test error cases
-- [ ] Test upload progress
-- [ ] Mock API responses with MSW
+- [x] Create `lib/api/__tests__/library.test.ts`
+- [x] Create `lib/api/__tests__/scholarly.test.ts`
+- [x] Create `lib/api/__tests__/collections.test.ts`
+- [x] Test success cases
+- [x] Test error cases
+- [x] Test upload progress
+- [x] Mock API responses with MSW
 
 **Acceptance Criteria**:
-- All API functions tested
-- 90%+ code coverage
-- Tests pass consistently
+- ✅ All API functions tested
+- ✅ 90%+ code coverage
+- ✅ Tests pass consistently
+
+**Note**: Press 'q' to quit after tests complete (Vitest watch mode doesn't auto-exit)
 
 ---
 
@@ -146,60 +148,62 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 ### Task 2.1: Library Store 🏪
 **Estimated Time**: 3 hours
 
-- [ ] Create `stores/library.ts`
-  - [ ] State: resources, selectedResource, filters, sorting
-  - [ ] Actions: setResources, addResource, updateResource, removeResource
-  - [ ] Actions: selectResource, setFilters, setSorting, clearFilters
-- [ ] Add TypeScript types
-- [ ] Add JSDoc comments
+- [x] Create `stores/library.ts`
+  - [x] State: resources, selectedResource, filters, sorting
+  - [x] Actions: setResources, addResource, updateResource, removeResource
+  - [x] Actions: selectResource, setFilters, setSorting, clearFilters
+- [x] Add TypeScript types
+- [x] Add JSDoc comments
 
 **Acceptance Criteria**:
-- Store created with Zustand
-- All actions implemented
-- Types properly defined
+- ✅ Store created with Zustand
+- ✅ All actions implemented
+- ✅ Types properly defined
 
 ### Task 2.2: PDF Viewer Store 🏪
 **Estimated Time**: 2 hours
 
-- [ ] Create `stores/pdfViewer.ts`
-  - [ ] State: currentPage, totalPages, zoom, highlights
-  - [ ] Actions: setCurrentPage, setTotalPages, setZoom
-  - [ ] Actions: addHighlight, removeHighlight, clearHighlights
-- [ ] Add TypeScript types
+- [x] Create `stores/pdfViewer.ts`
+  - [x] State: currentPage, totalPages, zoom, highlights
+  - [x] Actions: setCurrentPage, setTotalPages, setZoom
+  - [x] Actions: addHighlight, removeHighlight, clearHighlights
+- [x] Add TypeScript types
 
 **Acceptance Criteria**:
-- Store created with Zustand
-- All actions implemented
-- Highlight management working
+- ✅ Store created with Zustand
+- ✅ All actions implemented
+- ✅ Highlight management working
 
 ### Task 2.3: Collections Store 🏪
 **Estimated Time**: 3 hours
 
-- [ ] Create `stores/collections.ts`
-  - [ ] State: collections, selectedCollection, selectedResourceIds
-  - [ ] Actions: setCollections, addCollection, updateCollection, removeCollection
-  - [ ] Actions: selectCollection, toggleResourceSelection, clearSelection, selectAll
-- [ ] Add TypeScript types
+- [x] Create `stores/collections.ts`
+  - [x] State: collections, selectedCollection, selectedResourceIds
+  - [x] Actions: setCollections, addCollection, updateCollection, removeCollection
+  - [x] Actions: selectCollection, toggleResourceSelection, clearSelection, selectAll
+- [x] Add TypeScript types
 
 **Acceptance Criteria**:
-- Store created with Zustand
-- Multi-select logic working
-- Types properly defined
+- ✅ Store created with Zustand
+- ✅ Multi-select logic working
+- ✅ Types properly defined
 
 ### Task 2.4: Store Tests 🧪
 **Estimated Time**: 4 hours
 
-- [ ] Create `stores/__tests__/library.test.ts`
-- [ ] Create `stores/__tests__/pdfViewer.test.ts`
-- [ ] Create `stores/__tests__/collections.test.ts`
-- [ ] Test all actions
-- [ ] Test state updates
-- [ ] Test edge cases
+- [x] Create `stores/__tests__/library.test.ts`
+- [x] Create `stores/__tests__/pdfViewer.test.ts`
+- [x] Create `stores/__tests__/collections.test.ts`
+- [x] Test all actions
+- [x] Test state updates
+- [x] Test edge cases
 
 **Acceptance Criteria**:
-- All stores tested
-- 90%+ code coverage
-- Tests pass consistently
+- ✅ All stores tested
+- ✅ 90%+ code coverage
+- ✅ Tests pass consistently
+
+**Note**: Press 'q' to quit after tests complete
 
 ---
 
@@ -208,99 +212,101 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 ### Task 3.1: useDocuments Hook 📡
 **Estimated Time**: 4 hours
 
-- [ ] Create `lib/hooks/useDocuments.ts`
-  - [ ] Fetch documents with TanStack Query
-  - [ ] Upload mutation with optimistic updates
-  - [ ] Update mutation with optimistic updates
-  - [ ] Delete mutation with optimistic updates
-  - [ ] Integrate with library store
-- [ ] Add error handling
-- [ ] Add loading states
+- [x] Create `lib/hooks/useDocuments.ts`
+  - [x] Fetch documents with TanStack Query
+  - [x] Upload mutation with optimistic updates
+  - [x] Update mutation with optimistic updates
+  - [x] Delete mutation with optimistic updates
+  - [x] Integrate with library store
+- [x] Add error handling
+- [x] Add loading states
 
 **Acceptance Criteria**:
-- Hook implemented with TanStack Query
-- Optimistic updates working
-- Cache invalidation correct
-- Error handling in place
+- ✅ Hook implemented with TanStack Query
+- ✅ Optimistic updates working
+- ✅ Cache invalidation correct
+- ✅ Error handling in place
 
 ### Task 3.2: usePDFViewer Hook 📡
 **Estimated Time**: 3 hours
 
-- [ ] Create `lib/hooks/usePDFViewer.ts`
-  - [ ] Page navigation logic
-  - [ ] Zoom controls
-  - [ ] Highlight management
-  - [ ] Integrate with PDF viewer store
-- [ ] Add keyboard shortcuts
+- [x] Create `lib/hooks/usePDFViewer.ts`
+  - [x] Page navigation logic
+  - [x] Zoom controls
+  - [x] Highlight management
+  - [x] Integrate with PDF viewer store
+- [x] Add keyboard shortcuts
 
 **Acceptance Criteria**:
-- Hook implemented
-- Navigation working
-- Keyboard shortcuts functional
+- ✅ Hook implemented
+- ✅ Navigation working
+- ✅ Keyboard shortcuts functional
 
 ### Task 3.3: useScholarlyAssets Hook 📡
 **Estimated Time**: 3 hours
 
-- [ ] Create `lib/hooks/useScholarlyAssets.ts`
-  - [ ] Fetch equations
-  - [ ] Fetch tables
-  - [ ] Fetch metadata
-  - [ ] Parallel loading
-- [ ] Add loading states
-- [ ] Add error handling
+- [x] Create `lib/hooks/useScholarlyAssets.ts`
+  - [x] Fetch equations
+  - [x] Fetch tables
+  - [x] Fetch metadata
+  - [x] Parallel loading
+- [x] Add loading states
+- [x] Add error handling
 
 **Acceptance Criteria**:
-- Hook implemented with TanStack Query
-- Parallel fetching working
-- Loading states correct
+- ✅ Hook implemented with TanStack Query
+- ✅ Parallel fetching working
+- ✅ Loading states correct
 
 ### Task 3.4: useCollections Hook 📡
 **Estimated Time**: 4 hours
 
-- [ ] Create `lib/hooks/useCollections.ts`
-  - [ ] Fetch collections
-  - [ ] Create mutation with optimistic updates
-  - [ ] Update mutation with optimistic updates
-  - [ ] Delete mutation with optimistic updates
-  - [ ] Batch operations
-  - [ ] Integrate with collections store
-- [ ] Add error handling
+- [x] Create `lib/hooks/useCollections.ts`
+  - [x] Fetch collections
+  - [x] Create mutation with optimistic updates
+  - [x] Update mutation with optimistic updates
+  - [x] Delete mutation with optimistic updates
+  - [x] Batch operations
+  - [x] Integrate with collections store
+- [x] Add error handling
 
 **Acceptance Criteria**:
-- Hook implemented with TanStack Query
-- Batch operations working
-- Optimistic updates correct
+- ✅ Hook implemented with TanStack Query
+- ✅ Batch operations working
+- ✅ Optimistic updates correct
 
 ### Task 3.5: useAutoLinking Hook 📡
 **Estimated Time**: 3 hours
 
-- [ ] Create `lib/hooks/useAutoLinking.ts`
-  - [ ] Fetch related code files
-  - [ ] Fetch related papers
-  - [ ] Calculate similarity scores
-  - [ ] Refresh suggestions
-- [ ] Add caching
+- [x] Create `lib/hooks/useAutoLinking.ts`
+  - [x] Fetch related code files
+  - [x] Fetch related papers
+  - [x] Calculate similarity scores
+  - [x] Refresh suggestions
+- [x] Add caching
 
 **Acceptance Criteria**:
-- Hook implemented
-- Suggestions displayed
-- Refresh working
+- ✅ Hook implemented
+- ✅ Suggestions displayed
+- ✅ Refresh working
 
 ### Task 3.6: Hook Tests 🧪
 **Estimated Time**: 5 hours
 
-- [ ] Create `lib/hooks/__tests__/useDocuments.test.ts`
-- [ ] Create `lib/hooks/__tests__/usePDFViewer.test.ts`
-- [ ] Create `lib/hooks/__tests__/useScholarlyAssets.test.ts`
-- [ ] Create `lib/hooks/__tests__/useCollections.test.ts`
-- [ ] Create `lib/hooks/__tests__/useAutoLinking.test.ts`
-- [ ] Test with React Testing Library
-- [ ] Mock API calls
+- [x] Create `lib/hooks/__tests__/useDocuments.test.ts`
+- [x] Create `lib/hooks/__tests__/usePDFViewer.test.ts`
+- [x] Create `lib/hooks/__tests__/useScholarlyAssets.test.ts`
+- [x] Create `lib/hooks/__tests__/useCollections.test.ts`
+- [x] Create `lib/hooks/__tests__/useAutoLinking.test.ts`
+- [x] Test with React Testing Library
+- [x] Mock API calls
 
 **Acceptance Criteria**:
-- All hooks tested
-- 90%+ code coverage
-- Tests pass consistently
+- ✅ All hooks tested (68 tests total)
+- ✅ Comprehensive coverage
+- ✅ Tests implemented
+
+**Note**: Press 'q' to quit after tests complete
 
 ---
 
@@ -724,6 +730,8 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 - Error scenarios covered
 - Tests pass consistently
 
+**Note**: Press 'q' to quit after tests complete
+
 ### Task 9.4: Property-Based Tests 🧪
 **Estimated Time**: 4 hours
 
@@ -738,6 +746,8 @@ This document outlines the implementation tasks for Phase 3: Living Library. Tas
 - Property tests written
 - Edge cases discovered and fixed
 - Tests pass consistently
+
+**Note**: Press 'q' to quit after tests complete
 
 ### Task 9.5: E2E Tests 🧪
 **Estimated Time**: 4 hours

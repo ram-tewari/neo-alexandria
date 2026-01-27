@@ -11,3 +11,10 @@ export {
   useAuthHealth,
   useResourcesHealth,
 } from './useWorkbenchData';
+
+// Library hooks (Phase 3)
+export { useDocuments } from './useDocuments';
+export { usePDFViewer } from './usePDFViewer';
+export { useScholarlyAssets } from './useScholarlyAssets';
+export { useCollections } from './useCollections';
+export { useAutoLinking } from './useAutoLinking';

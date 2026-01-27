@@ -42,6 +42,7 @@ class EmbeddingGenerator:
         self.model_name = model_name
         self._model = None
         self._model_lock = threading.Lock()
+        self._warmed_up = False
 
     def _ensure_loaded(self):
         """Lazy load the embedding model in a thread-safe manner."""
@@ -53,9 +54,37 @@ class EmbeddingGenerator:
                         return
                     try:
                         self._model = SentenceTransformer(self.model_name)
-                    except Exception:  # pragma: no cover - model loading failures
+                        logger.info(f"Loaded embedding model: {self.model_name}")
+                    except Exception as e:  # pragma: no cover - model loading failures
                         # Model loading failed, leave as None for fallback
+                        logger.error(f"Failed to load embedding model: {e}")
                         pass
+
+    def warmup(self) -> bool:
+        """Warmup the model with a dummy encoding to avoid cold start latency.
+        
+        This should be called once during application startup to ensure
+        the first real encoding is fast.
+        
+        Returns:
+            True if warmup successful, False otherwise
+        """
+        if self._warmed_up:
+            logger.debug("Model already warmed up, skipping")
+            return True
+            
+        self._ensure_loaded()
+        if self._model is not None:
+            try:
+                # Perform a dummy encoding to warm up the model
+                _ = self._model.encode("warmup", convert_to_tensor=False)
+                self._warmed_up = True
+                logger.info(f"Embedding model warmed up: {self.model_name}")
+                return True
+            except Exception as e:  # pragma: no cover
+                logger.error(f"Model warmup failed: {e}")
+                return False
+        return False
 
     def generate_embedding(self, text: str) -> List[float]:
         """Generate vector embedding for the given text.
@@ -147,6 +176,16 @@ class EmbeddingService:
         self.db = db
         self.embedding_generator = embedding_generator or EmbeddingGenerator()
         self.cache = cache_service
+
+    def warmup(self) -> bool:
+        """Warmup the embedding model to avoid cold start latency.
+        
+        This should be called once during application startup.
+        
+        Returns:
+            True if warmup successful, False otherwise
+        """
+        return self.embedding_generator.warmup()
 
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding for text.

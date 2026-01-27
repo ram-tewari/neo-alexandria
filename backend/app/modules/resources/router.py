@@ -33,6 +33,8 @@ from fastapi import (
     BackgroundTasks,
     Response,
     Request,
+    UploadFile,
+    File,
 )
 from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 from sqlalchemy.orm import Session
@@ -145,6 +147,7 @@ async def create_resource_endpoint(
     response: Response,
     db: Session = Depends(get_sync_db),
 ):
+    """Create resource from URL (legacy endpoint - use /resources/upload for file upload)"""
     logger.info(f"=== CREATE RESOURCE ENDPOINT CALLED ===")
     logger.info(f"Payload URL: {payload.url}")
     logger.info(f"Payload title: {payload.title}")
@@ -212,6 +215,171 @@ async def create_resource_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to queue ingestion",
         ) from exc
+
+
+@router.post("/resources/upload", response_model=ResourceAccepted)
+async def upload_resource_file(
+    file: UploadFile = File(..., description="File to upload (PDF, HTML, TXT)"),
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    creator: Optional[str] = None,
+    language: Optional[str] = None,
+    type: Optional[str] = None,
+    background: BackgroundTasks = BackgroundTasks(),
+    response: Response = Response(),
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Upload a file directly (multipart/form-data).
+    
+    Accepts PDF, HTML, and TXT files up to 50MB.
+    File is saved to storage and processed asynchronously.
+    
+    Returns 202 Accepted with resource ID and status.
+    """
+    import os
+    import tempfile
+    from pathlib import Path
+    
+    logger.info(f"=== UPLOAD RESOURCE FILE ENDPOINT CALLED ===")
+    logger.info(f"Filename: {file.filename}")
+    logger.info(f"Content type: {file.content_type}")
+    
+    try:
+        # Validate file type
+        allowed_types = ["application/pdf", "text/html", "text/plain"]
+        allowed_extensions = [".pdf", ".html", ".htm", ".txt"]
+        
+        file_ext = Path(file.filename).suffix.lower() if file.filename else ""
+        
+        if file.content_type not in allowed_types and file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid file type. Allowed: PDF, HTML, TXT. Got: {file.content_type}"
+            )
+        
+        # Validate file size (50MB max)
+        max_size = 50 * 1024 * 1024  # 50MB
+        file_content = await file.read()
+        if len(file_content) > max_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File too large. Maximum size: 50MB. Got: {len(file_content) / 1024 / 1024:.2f}MB"
+            )
+        
+        # Save file to temporary location
+        storage_dir = Path("storage/uploads")
+        storage_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        file_id = str(uuid.uuid4())
+        safe_filename = f"{file_id}{file_ext}"
+        file_path = storage_dir / safe_filename
+        
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+        
+        logger.info(f"File saved to: {file_path}")
+        
+        # Create resource record with file path as identifier
+        resource_data = {
+            "url": f"file://{file_path.absolute()}",
+            "title": title or file.filename or "Uploaded Document",
+            "description": description,
+            "creator": creator,
+            "language": language,
+            "type": type or file_ext.lstrip("."),
+            "source": str(file_path.absolute()),
+            "identifier": str(file_path.absolute()),  # Store file path for direct access
+        }
+        
+        resource = create_pending_resource(db, resource_data)
+        logger.info(f"Resource created: {resource.id}, file stored at: {file_path}")
+        
+        # Set response status
+        response.status_code = status.HTTP_202_ACCEPTED
+        
+        # Process file directly instead of using URL fetching
+        # This avoids the need for ce.fetch_url() to handle file:// URLs
+        try:
+            from ...utils.content_extractor import ContentExtractor
+            from ...shared.ai_core import AICore
+            
+            ce_instance = ContentExtractor()
+            ai_instance = AICore()
+            
+            # Read file content
+            with open(file_path, 'rb') as f:
+                file_bytes = f.read()
+            
+            # Process based on file type
+            if file_ext == '.pdf':
+                # Extract from PDF
+                extracted = ce_instance.extract_from_pdf(file_bytes)
+            elif file_ext in ['.html', '.htm']:
+                # Extract from HTML
+                html_content = file_bytes.decode('utf-8', errors='ignore')
+                extracted = ce_instance.extract_from_html(html_content)
+            else:
+                # Plain text
+                text_content = file_bytes.decode('utf-8', errors='ignore')
+                extracted = {"text": text_content, "title": title or file.filename}
+            
+            # Update resource with extracted content
+            resource.title = extracted.get("title") or resource.title
+            resource.format = file_ext.lstrip(".")
+            
+            # Generate summary and tags
+            text_clean = extracted.get("text", "")
+            if text_clean and len(text_clean) > 50:
+                summary = ai_instance.summarize(text_clean[:5000])  # Limit for performance
+                tags = ai_instance.generate_tags(text_clean[:5000])
+                
+                resource.description = summary
+                resource.subject = tags
+            
+            resource.ingestion_status = "completed"
+            resource.ingestion_completed_at = datetime.utcnow()
+            db.commit()
+            
+            logger.info(f"File upload processed successfully for resource {resource.id}")
+            
+        except Exception as process_error:
+            logger.error(f"File processing failed: {process_error}", exc_info=True)
+            # Fall back to background processing
+            engine_url = None
+            try:
+                bind = db.get_bind()
+                if bind is not None and hasattr(bind, "url"):
+                    engine_url = str(bind.url)
+            except Exception:
+                engine_url = get_settings().DATABASE_URL
+            
+            background.add_task(
+                process_ingestion,
+                str(resource.id),
+                archive_root=None,
+                ai=None,
+                engine_url=engine_url,
+            )
+        
+        logger.info(f"Background processing queued for resource {resource.id}")
+        
+        return ResourceAccepted(
+            id=str(resource.id),
+            status="pending",
+            title=resource.title,
+            ingestion_status=resource.ingestion_status,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"File upload failed: {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"File upload failed: {str(exc)}"
+        )
 
 
 @router.get("/resources/{resource_id}", response_model=ResourceRead)

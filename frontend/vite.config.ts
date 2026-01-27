@@ -36,9 +36,14 @@ export default defineConfig({
       output: {
         manualChunks: {
           'monaco-editor': ['monaco-editor'],
+          'pdf-viewer': ['react-pdf', 'pdfjs-dist'],
         },
       },
     },
+  },
+  // PDF.js worker configuration
+  worker: {
+    format: 'es',
   },
   test: {
     globals: true,

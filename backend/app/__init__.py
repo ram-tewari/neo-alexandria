@@ -194,6 +194,7 @@ async def lifespan(app: FastAPI):
     Application lifespan manager for startup and shutdown events.
 
     Startup:
+    - Warmup embedding model to avoid cold start latency
     - Register event hooks for automatic data consistency
     - Initialize Redis cache connection
     - Log event system initialization
@@ -203,6 +204,18 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting Neo Alexandria 2.0...")
+
+    # Warmup embedding model to avoid cold start latency
+    try:
+        from .shared.embeddings import EmbeddingService
+        
+        embedding_service = EmbeddingService()
+        if embedding_service.warmup():
+            logger.info("✓ Embedding model warmed up successfully")
+        else:
+            logger.warning("⚠ Embedding model warmup failed - first encoding may be slow")
+    except Exception as e:
+        logger.warning(f"Embedding model warmup failed: {e} - first encoding may be slow")
 
     # Initialize Redis cache connection
     try:

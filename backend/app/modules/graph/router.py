@@ -1365,13 +1365,67 @@ def traverse_graph(
 # ============================================================================
 
 
-@router.get(
-    "/code/hover",
+@router.post(
+    "/hover",
     summary="Get hover information for code position",
     description=(
         "Retrieve contextual information for code at a specific position. "
         "Returns symbol information, documentation, related chunks, and context lines. "
         "Target response time: <100ms. Supports Python, JavaScript, TypeScript, Java, C++, Go, and Rust."
+    ),
+)
+def post_hover_information(
+    resource_id: str = Query(..., description="Resource UUID containing the file"),
+    file_path: str = Query(..., description="File path within the resource"),
+    line: int = Query(..., ge=1, description="Line number (1-indexed)"),
+    column: int = Query(..., ge=0, description="Column number (0-indexed)"),
+    db: Session = Depends(get_sync_db),
+) -> dict:
+    """
+    Get hover information for code at a specific position (POST method).
+
+    This endpoint provides contextual information for code at a given position,
+    including:
+    - Symbol name and type (function, class, variable, etc.)
+    - Definition location
+    - Documentation string
+    - Related document chunks with similar content
+    - Surrounding code lines for context
+
+    The endpoint uses static analysis (Tree-Sitter AST parsing) to extract
+    symbol information without executing code. Results are cached for 5 minutes.
+
+    Args:
+        resource_id: UUID of the resource containing the file
+        file_path: File path within the resource
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        db: Database session dependency
+
+    Returns:
+        HoverInformationResponse: Hover information with symbol details and context
+
+    Raises:
+        HTTPException: If resource is not found or hover extraction fails
+    """
+    from uuid import UUID as UUIDType
+    return _get_hover_information_impl(
+        resource_id=UUIDType(resource_id),
+        file_path=file_path,
+        line=line,
+        column=column,
+        db=db
+    )
+
+
+@router.get(
+    "/code/hover",
+    summary="Get hover information for code position (GET alias)",
+    description=(
+        "Retrieve contextual information for code at a specific position. "
+        "Returns symbol information, documentation, related chunks, and context lines. "
+        "Target response time: <100ms. Supports Python, JavaScript, TypeScript, Java, C++, Go, and Rust. "
+        "Note: This is a GET alias for backward compatibility. Use POST /hover for new implementations."
     ),
 )
 def get_hover_information(
@@ -1380,6 +1434,27 @@ def get_hover_information(
     column: int = Query(..., ge=0, description="Column number (0-indexed)"),
     resource_id: UUID = Query(..., description="Resource UUID containing the file"),
     db: Session = Depends(get_sync_db),
+) -> dict:
+    """
+    Get hover information for code at a specific position (GET method - deprecated).
+
+    This is a backward compatibility alias. New implementations should use POST /hover.
+    """
+    return _get_hover_information_impl(
+        resource_id=resource_id,
+        file_path=file_path,
+        line=line,
+        column=column,
+        db=db
+    )
+
+
+def _get_hover_information_impl(
+    resource_id: UUID,
+    file_path: str,
+    line: int,
+    column: int,
+    db: Session,
 ) -> dict:
     """
     Get hover information for code at a specific position.

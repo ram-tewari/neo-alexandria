@@ -335,7 +335,7 @@ export const handlers = [
       note: body.note,
       tags: body.tags,
       color: body.color || '#ffeb3b',
-      is_shared: false,
+      is_shared: false, // Always include is_shared
       collection_ids: body.collection_ids,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -456,7 +456,21 @@ export const handlers = [
       a.highlighted_text.toLowerCase().includes(query.toLowerCase())
     );
     
-    return HttpResponse.json(results);
+    // Return search results with resource_title field
+    return HttpResponse.json({
+      items: results.map(a => ({
+        id: a.id,
+        resource_id: a.resource_id,
+        resource_title: mockResource.title, // Add resource_title
+        highlighted_text: a.highlighted_text,
+        note: a.note,
+        tags: a.tags,
+        similarity_score: 0.95,
+        created_at: a.created_at,
+      })),
+      total: results.length,
+      query,
+    });
   }),
 
   // Search annotations - semantic
@@ -464,9 +478,21 @@ export const handlers = [
     const url = new URL(request.url);
     const query = url.searchParams.get('query') || '';
     
-    // For testing, just return all annotations
-    // In real implementation, this would use semantic search
-    return HttpResponse.json(mockAnnotations);
+    // Return search results with resource_title field
+    return HttpResponse.json({
+      items: mockAnnotations.map(a => ({
+        id: a.id,
+        resource_id: a.resource_id,
+        resource_title: mockResource.title, // Add resource_title
+        highlighted_text: a.highlighted_text,
+        note: a.note,
+        tags: a.tags,
+        similarity_score: 0.95,
+        created_at: a.created_at,
+      })),
+      total: mockAnnotations.length,
+      query,
+    });
   }),
 
   // ==========================================================================
